@@ -1,0 +1,15 @@
+.glare-hover-wrapper {
+  position: relative;
+  overflow: hidden;
+  border-radius: inherit;
+  display: inline-block;
+}
+
+.glare-hover-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 10;
+  will-change: background, opacity;
+}

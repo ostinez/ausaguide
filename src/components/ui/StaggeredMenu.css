@@ -1,0 +1,307 @@
+.staggered-menu-wrapper {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.staggered-menu-wrapper[data-open="true"] {
+  pointer-events: auto;
+}
+
+.staggered-menu-wrapper.fixed-wrapper {
+  position: fixed;
+}
+
+.sm-prelayers {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.sm-prelayer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.staggered-menu-header {
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: calc(100% - 4rem);
+  z-index: 30;
+  pointer-events: auto;
+}
+
+.staggered-menu-wrapper[data-position="left"] .staggered-menu-header {
+  left: 2rem;
+  right: auto;
+  flex-direction: row-reverse;
+}
+
+.sm-logo {
+  display: flex;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.sm-logo-img {
+  display: block;
+}
+
+.sm-toggle {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  pointer-events: auto;
+  font-family: inherit;
+  transition: transform 0.3s ease, filter 0.3s ease, opacity 0.3s ease;
+  outline: none;
+  color: var(--foreground) !important;
+}
+
+/* Hover State: Minimal opacity effect */
+.sm-toggle:hover {
+  opacity: 0.8;
+}
+
+.sm-toggle-textWrap {
+  display: inline-block;
+  height: 1em;
+  overflow: hidden;
+  position: relative;
+  font-size: 1rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sm-toggle-textInner {
+  display: flex;
+  flex-direction: column;
+}
+
+.sm-toggle-line {
+  display: block;
+  height: 1em;
+  line-height: 1em;
+}
+
+.sm-icon {
+  position: relative;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: block;
+}
+
+.sm-icon-line {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--foreground) !important;
+  margin-top: -1px;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.sm-icon-line-v {
+  transform: rotate(90deg);
+}
+
+/* Open State (data-open="true"): Still blends with dark background */
+.staggered-menu-wrapper[data-open="true"] .sm-toggle {
+  color: #FFFFFE !important;
+}
+
+/* Open State: Lines stay clean white */
+.staggered-menu-wrapper[data-open="true"] .sm-toggle .sm-icon-line {
+  background-color: #FFFFFE !important;
+}
+
+/* Open State Hover: minimal opacity shift */
+.staggered-menu-wrapper[data-open="true"] .sm-toggle:hover {
+  opacity: 0.8;
+}
+
+.staggered-menu-panel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #000000 !important; /* Pure black panel background */
+  color: #FFFFFE !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 6rem 10vw 2rem 10vw;
+  z-index: 20;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.sm-panel-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: min-content;
+}
+
+.staggered-menu-wrapper[data-position="left"] .sm-panel-inner {
+  flex-direction: row-reverse;
+}
+
+.sm-panel-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.staggered-menu-wrapper[data-position="left"] .sm-panel-list {
+  align-items: flex-end;
+}
+
+.sm-panel-itemWrap {
+  overflow: hidden;
+}
+
+.sm-panel-item {
+  display: inline-block;
+  text-decoration: none;
+  color: #94A1B2 !important; /* Light gray text for default items */
+  font-size: clamp(2.25rem, 4.5vw, 4.5rem);
+  font-weight: 700;
+  line-height: 1.05;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  transform-origin: 0% 100%;
+  transition: color 0.3s ease;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0.25rem 0;
+  font-family: var(--font-accent), sans-serif;
+}
+
+.staggered-menu-wrapper[data-position="left"] .sm-panel-item {
+  transform-origin: 100% 100%;
+}
+
+.sm-panel-item:hover,
+.sm-panel-item:focus-visible {
+  color: #FFFFFE !important; /* Pure white text on hover */
+  outline: none;
+}
+
+.sm-panel-list[data-numbering] .sm-panel-item {
+  position: relative;
+}
+
+.sm-panel-list[data-numbering] .sm-panel-item::before {
+  content: "0" attr(data-index);
+  position: absolute;
+  top: 15%;
+  left: -2rem;
+  font-size: 1rem;
+  font-weight: 400;
+  opacity: var(--sm-num-opacity, 0);
+  transform: translateX(-50%);
+  color: #94A1B2 !important; /* Light gray for item index number */
+  transition: color 0.3s ease;
+}
+
+.sm-panel-item:hover::before {
+  color: #FFFFFE !important; /* White item numbering on hover */
+}
+
+.staggered-menu-wrapper[data-position="left"] .sm-panel-list[data-numbering] .sm-panel-item::before {
+  left: auto;
+  right: -3.5rem;
+  transform: translateX(0);
+}
+
+.sm-socials {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.staggered-menu-wrapper[data-position="left"] .sm-socials {
+  align-items: flex-start;
+}
+
+.sm-socials-title {
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 0;
+  color: #94A1B2 !important; /* Light gray socials title */
+}
+
+.sm-socials-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.staggered-menu-wrapper[data-position="left"] .sm-socials-list {
+  align-items: flex-start;
+}
+
+.sm-socials-link {
+  text-decoration: none;
+  color: #94A1B2 !important; /* Light gray socials links */
+  font-size: 1.125rem;
+  transition: color 0.3s ease;
+}
+
+.sm-socials-link:hover,
+.sm-socials-link:focus-visible {
+  color: #FFFFFE !important; /* White socials links on hover */
+  outline: none;
+}
+
+@media (max-width: 768px) {
+  .sm-panel-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4rem;
+  }
+  .staggered-menu-wrapper[data-position="left"] .sm-panel-inner {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  .sm-panel-list[data-numbering] .sm-panel-item::before {
+    left: -1.5rem;
+  }
+  .staggered-menu-wrapper[data-position="left"] .sm-panel-list[data-numbering] .sm-panel-item::before {
+    right: -2.5rem;
+  }
+}
