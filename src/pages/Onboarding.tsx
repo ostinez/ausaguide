@@ -1,0 +1,852 @@
+import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
+import { motion } from "motion/react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Spinner } from "@/components/ui/spinner"
+import { Stepper } from "@/components/ui/Stepper"
+import { supabase } from "@/lib/supabase"
+import { validateName, validateEmail, validatePassword } from "@/lib/validation"
+import { identifyUser, trackEvent } from "@/lib/posthog"
+import { toast } from "sonner"
+import { cn } from "@/lib/utils"
+import { sendWelcomeEmail } from "@/lib/api/emails"
+
+// ── Types ──────────────────────────────────────────────
+type Role = "traveler" | "host"
+
+interface OnboardingData {
+  name: string
+  email: string
+  password: string
+}
+
+// ── Confetti particle ──────────────────────────────────
+interface Particle {
+  id: number
+  x: number
+  y: number
+  color: string
+  size: number
+  rotation: number
+  delay: number
+}
+
+function useConfetti(active: boolean): Particle[] {
+  const [particles, setParticles] = useState<Particle[]>([])
+  useEffect(() => {
+    if (!active) return
+    const colors = ["#7F5AF0", "#2CB67D", "#FFD700", "#FF6B6B", "#4ECDC4", "#a78bfa", "#34d399"]
+    setParticles(
+      Array.from({ length: 48 }, (_, i) => ({
+        id: i,
+        x: Math.random() * 100,
+        y: Math.random() * 100,
+        color: colors[i % colors.length],
+        size: 6 + Math.random() * 8,
+        rotation: Math.random() * 360,
+        delay: Math.random() * 0.8,
+      }))
+    )
+  }, [active])
+  return particles
+}
+
+// ── Step 1: Welcome ─────────────────────────────────────
+function StepWelcome({ onNext }: { onNext: () => void }) {
+  return (
+    <div className="flex flex-col items-center text-center gap-6 py-4 px-2 w-full">
+      {/* Animated emoji globe */}
+      <motion.div
+        initial={{ scale: 0.5, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 200, damping: 14 }}
+        className="text-7xl select-none"
+        aria-hidden
+      >
+        🌍
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15, duration: 0.5 }}
+        className="space-y-3"
+      >
+        <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+          Welcome to Ausaguide! 🎉
+        </h1>
+        <p className="text-base sm:text-lg text-[#2CB67D] font-semibold tracking-wide">
+          Be a Local. Share Your World.
+        </p>
+        <p className="text-sm text-white/60 max-w-xs mx-auto leading-relaxed">
+          You're about to join a community of real local hosts and curious global travellers. Let's set you up.
+        </p>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35, duration: 0.4 }}
+      >
+        <Button
+          id="onboarding-welcome-next"
+          size="lg"
+          onClick={onNext}
+          className="rounded-full px-10 bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 transition-all duration-300"
+        >
+          Let's get started →
+        </Button>
+      </motion.div>
+    </div>
+  )
+}
+
+// ── Step 2: Choose Role ──────────────────────────────────
+interface RoleCard {
+  id: Role
+  emoji: string
+  title: string
+  subtitle: string
+  description: string
+  color: string
+  shadow: string
+}
+
+const ROLE_CARDS: RoleCard[] = [
+  {
+    id: "traveler",
+    emoji: "🧭",
+    title: "Traveler",
+    subtitle: "Explore Kenya live with locals",
+    description: "Book immersive tours, meet real locals, and experience authentic culture.",
+    color: "border-[#2CB67D] shadow-[#2CB67D]/30",
+    shadow: "0 0 0 2px #2CB67D, 0 8px 32px rgba(44,182,125,0.25)",
+  },
+  {
+    id: "host",
+    emoji: "🏡",
+    title: "Host",
+    subtitle: "Share your world and earn",
+    description: "Turn your local knowledge into income. Share Kenya's hidden gems.",
+    color: "border-[#7F5AF0] shadow-[#7F5AF0]/30",
+    shadow: "0 0 0 2px #7F5AF0, 0 8px 32px rgba(127,90,240,0.25)",
+  },
+]
+
+function StepRole({
+  selectedRole,
+  onSelect,
+  onNext,
+}: {
+  selectedRole: Role | null
+  onSelect: (r: Role) => void
+  onNext: () => void
+}) {
+  return (
+    <div className="flex flex-col items-center gap-6 py-4 px-2 w-full">
+      <div className="text-center space-y-1.5">
+        <h2 className="text-2xl sm:text-3xl font-black text-white">Choose Your Role</h2>
+        <p className="text-sm text-white/50">You can always change this later in settings.</p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg">
+        {ROLE_CARDS.map((card) => {
+          const isSelected = selectedRole === card.id
+          return (
+            <button
+              key={card.id}
+              id={`onboarding-role-${card.id}`}
+              onClick={() => onSelect(card.id)}
+              className={cn(
+                "flex flex-col items-center gap-3 p-6 rounded-2xl border-2 transition-all duration-300 cursor-pointer text-left",
+                "bg-[#16161A]/60 backdrop-blur-xl hover:bg-[#16161A]/80",
+                isSelected
+                  ? card.color + " scale-[1.03]"
+                  : "border-border hover:border-border"
+              )}
+              style={isSelected ? { boxShadow: card.shadow } : {}}
+            >
+              <span className="text-4xl" aria-hidden>{card.emoji}</span>
+              <div className="text-center space-y-1">
+                <p className="text-lg font-black text-white">{card.title}</p>
+                <p className={cn("text-xs font-semibold", isSelected ? "text-white/80" : "text-white/50")}>
+                  {card.subtitle}
+                </p>
+                <p className="text-xs text-white/40 leading-relaxed hidden sm:block">
+                  {card.description}
+                </p>
+              </div>
+              {isSelected && (
+                <motion.span
+                  layoutId="role-check"
+                  className="text-lg"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                >
+                  ✓
+                </motion.span>
+              )}
+            </button>
+          )
+        })}
+      </div>
+
+      <Button
+        id="onboarding-role-next"
+        size="lg"
+        disabled={!selectedRole}
+        onClick={onNext}
+        className={cn(
+          "rounded-full px-10 font-bold transition-all duration-300",
+          selectedRole
+            ? "bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] text-white border-0 shadow-lg shadow-[#7F5AF0]/30 hover:opacity-90"
+            : "bg-accent/ text-white/30 border border-border cursor-not-allowed"
+        )}
+      >
+        Continue →
+      </Button>
+    </div>
+  )
+}
+
+// ── Step 3: Tell Us About You ─────────────────────────────
+function StepProfile({
+  role,
+  userId,
+  prefill,
+  onComplete,
+}: {
+  role: Role
+  userId: string
+  prefill: OnboardingData
+  onComplete: (name: string, userId: string) => void
+}) {
+  const [name, setName] = useState(prefill.name)
+  const [email, setEmail] = useState(prefill.email)
+  const [password, setPassword] = useState(prefill.password)
+  const [communityBio, setCommunityBio] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+
+    const nameErr = validateName(name)
+    if (nameErr) { setError(nameErr); return }
+    const emailErr = validateEmail(email)
+    if (emailErr) { setError(emailErr); return }
+    const passErr = validatePassword(password)
+    if (passErr) { setError(passErr); return }
+    if (role === "host" && communityBio.trim().length < 10) {
+      setError("Please tell us a bit more about your community (at least 10 characters).")
+      return
+    }
+
+    setLoading(true)
+    try {
+      if (role === "host") {
+        const { data, error: updateError } = await supabase
+          .from("profiles")
+          .update({
+            email: email.trim(),
+            full_name: name.trim(),
+            languages: ["English", "Swahili"],
+          })
+          .eq("id", userId)
+          .select("id, email, role")
+          .single()
+
+        if (updateError) throw updateError
+
+        const { error: hostErr } = await supabase.from("hosts").insert({
+          user_id: data.id,
+          full_name: name.trim(),
+          email: email.trim(),
+          city: "Nairobi",
+          host_type: "local_host",
+          bio: communityBio.trim() || "New host registered on Ausaguide.",
+          status: "pending",
+        })
+        if (hostErr) console.error("Failed to create host record:", hostErr)
+
+        localStorage.setItem("user_id", data.id)
+        localStorage.setItem("user_role", data.role)
+        trackEvent("user_signed_up", { email: data.email, role: data.role })
+        identifyUser(data.id, { email: data.email, role: data.role })
+        sendWelcomeEmail(data.email, name.trim()).catch(err => console.error("Failed to send welcome email:", err))
+        toast.success("Profile created!")
+        onComplete(name.trim(), data.id)
+      } else {
+        const { data, error: insertError } = await supabase
+          .from("profiles")
+          .insert({
+            id: userId,
+            email: email.trim(),
+            full_name: name.trim(),
+            role: "traveler",
+            languages: ["English"],
+          })
+          .select("id, email, role")
+          .single()
+
+        if (insertError) {
+          if (insertError.code === "23505") throw new Error("An account with this email already exists.")
+          throw insertError
+        }
+
+        localStorage.setItem("user_id", data.id)
+        localStorage.setItem("user_role", data.role)
+        trackEvent("user_signed_up", { email: data.email, role: data.role })
+        identifyUser(data.id, { email: data.email, role: data.role })
+        sendWelcomeEmail(data.email, name.trim()).catch(err => console.error("Failed to send welcome email:", err))
+        toast.success("Profile created!")
+        onComplete(name.trim(), data.id)
+      }
+    } catch (err) {
+      console.error(err)
+      setError(err instanceof Error ? err.message : "Failed to create account.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-5 py-4 px-2 w-full">
+      <div className="text-center space-y-1.5">
+        <h2 className="text-2xl sm:text-3xl font-black text-white">Tell Us About You</h2>
+        <p className="text-sm text-white/50">
+          {role === "host" ? "Almost there — let's set up your host profile." : "Quick setup and you're in!"}
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="w-full max-w-md space-y-4">
+        {error && (
+          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs font-semibold text-red-400">
+            {error}
+          </div>
+        )}
+
+        <div className="space-y-1.5">
+          <Label htmlFor="ob-name" className="text-white/70 text-xs font-semibold uppercase tracking-wide">
+            Full Name
+          </Label>
+          <Input
+            id="ob-name"
+            type="text"
+            placeholder="Your full name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            className="bg-[#16161A]/60 border-border text-white placeholder:text-white/30 focus:border-[#7F5AF0]/60 rounded-xl"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="ob-email" className="text-white/70 text-xs font-semibold uppercase tracking-wide">
+            Email
+          </Label>
+          <Input
+            id="ob-email"
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="bg-[#16161A]/60 border-border text-white placeholder:text-white/30 focus:border-[#7F5AF0]/60 rounded-xl"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="ob-password" className="text-white/70 text-xs font-semibold uppercase tracking-wide">
+            Password
+          </Label>
+          <Input
+            id="ob-password"
+            type="password"
+            placeholder="Min 8 characters"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="bg-[#16161A]/60 border-border text-white placeholder:text-white/30 focus:border-[#7F5AF0]/60 rounded-xl"
+          />
+        </div>
+
+        {role === "host" && (
+          <div className="space-y-1.5">
+            <Label htmlFor="ob-bio" className="text-white/70 text-xs font-semibold uppercase tracking-wide">
+              Tell us about your community
+            </Label>
+            <textarea
+              id="ob-bio"
+              placeholder="What makes your area unique? What experiences can you offer?"
+              value={communityBio}
+              onChange={(e) => setCommunityBio(e.target.value)}
+              rows={3}
+              className="w-full rounded-xl border border-border bg-[#16161A]/60 px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#7F5AF0]/60 resize-none transition-colors"
+            />
+          </div>
+        )}
+
+        <Button
+          id="onboarding-profile-submit"
+          type="submit"
+          size="lg"
+          disabled={loading}
+          className="w-full rounded-full bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 transition-all duration-300"
+        >
+          {loading ? <Spinner className="size-4" /> : "Continue →"}
+        </Button>
+      </form>
+    </div>
+  )
+}
+
+// ── Step 3.5: Identity Verification (Hosts Only) ──────────────
+function StepVerifyID({
+  userId,
+  onComplete,
+}: {
+  userId: string
+  onComplete: () => void
+}) {
+  const [loading, setLoading] = useState(false)
+  const [polling, setPolling] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [dots, setDots] = useState("")
+
+  useEffect(() => {
+    if (!polling) return
+    const interval = setInterval(() => {
+      setDots((d) => (d.length >= 3 ? "" : d + "."))
+    }, 600)
+    return () => clearInterval(interval)
+  }, [polling])
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const isDoneRedirect = params.get("didit_done") === "true"
+    if (isDoneRedirect && userId) {
+      startPolling()
+    }
+  }, [userId])
+
+  async function startVerification() {
+    setLoading(true)
+    setError(null)
+    try {
+      const tempEmail = `temp_${userId}@placeholder.ausaguide.com`
+      const { error: upsertErr } = await supabase
+        .from("profiles")
+        .upsert({
+          id: userId,
+          email: tempEmail,
+          full_name: "Pending Host",
+          role: "host",
+          languages: ["English", "Swahili"],
+        })
+
+      if (upsertErr) throw upsertErr
+
+      const redirectUrl = `${window.location.origin}/onboarding?didit_done=true&role=host&user_id=${userId}`
+      
+      const { data, error: functionErr } = await supabase.functions.invoke("verify-identity", {
+        body: { userId, redirectUrl }
+      })
+
+      if (functionErr) throw functionErr
+      if (!data?.url) throw new Error("Verification URL was not returned.")
+
+      const { DiditSdk } = await import("@didit-protocol/sdk-web")
+      
+      DiditSdk.shared.onComplete = (result: any) => {
+        console.log("flow finished client-side:", result.status)
+        if (result.status === "completed") {
+          startPolling()
+        } else if (result.status === "failed") {
+          setError("Verification failed client-side. Please try again.")
+        }
+      }
+      
+      DiditSdk.shared.startVerification({ url: data.url })
+      setLoading(false)
+    } catch (err: any) {
+      console.warn("Didit Web SDK modal failed, falling back to direct redirect...", err)
+      const redirectUrl = `${window.location.origin}/onboarding?didit_done=true&role=host&user_id=${userId}`
+      try {
+        const { data, error: functionErr } = await supabase.functions.invoke("verify-identity", {
+          body: { userId, redirectUrl }
+        })
+        if (functionErr) throw functionErr
+        if (!data?.url) throw new Error("Verification URL was not returned.")
+        window.location.href = data.url
+      } catch (innerErr: any) {
+        setError(innerErr?.message || "Failed to start identity verification. Please try again.")
+        setLoading(false)
+      }
+    }
+  }
+
+  async function startPolling() {
+    setPolling(true)
+    setError(null)
+    let attempts = 0
+    const maxAttempts = 10
+
+    const interval = setInterval(async () => {
+      attempts++
+      try {
+        const { data, error: queryErr } = await supabase
+          .from("profiles")
+          .select("id_verified, verification_status")
+          .eq("id", userId)
+          .single()
+
+        if (queryErr) throw queryErr
+
+        if (data?.id_verified || data?.verification_status === "approved") {
+          clearInterval(interval)
+          setPolling(false)
+          toast.success("Identity verified successfully!")
+          onComplete()
+          return
+        }
+
+        if (data?.verification_status === "declined" || data?.verification_status === "failed") {
+          clearInterval(interval)
+          setPolling(false)
+          setError("Verification declined or failed. Please check your document and try again.")
+          return
+        }
+      } catch (err) {
+        console.error("Polling error:", err)
+      }
+
+      if (attempts >= maxAttempts) {
+        clearInterval(interval)
+        setPolling(false)
+        setError("Verification check timed out. If you already completed it, try clicking Retry.")
+      }
+    }, 3000)
+  }
+
+  return (
+    <div className="flex flex-col items-center text-center gap-6 py-4 px-2 w-full">
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 200, damping: 14 }}
+        className="flex size-20 items-center justify-center rounded-full bg-[#7F5AF0]/10 border border-[#7F5AF0]/30 shadow-lg shadow-[#7F5AF0]/10"
+      >
+        <span className="text-4xl text-[#7F5AF0]">🛡️</span>
+      </motion.div>
+
+      <div className="space-y-2">
+        <h2 className="text-2xl sm:text-3xl font-black text-white">Verify Your Identity</h2>
+        <p className="text-sm text-white/60 max-w-sm mx-auto">
+          To build trust and keep the community safe, we partner with Didit to verify your identity. This takes less than a minute.
+        </p>
+      </div>
+
+      {error && !polling && (
+        <div className="flex flex-col items-center gap-3 w-full max-w-sm">
+          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs font-semibold text-red-400 w-full text-center">
+            {error}
+          </div>
+          <Button
+            id="onboarding-verify-retry"
+            size="lg"
+            onClick={startVerification}
+            className="rounded-full bg-[#7F5AF0] hover:bg-[#7F5AF0]/90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 w-full"
+          >
+            Retry Verification 🔄
+          </Button>
+        </div>
+      )}
+
+      <div className="flex flex-col gap-3 w-full max-w-xs">
+        {polling ? (
+          <div className="flex flex-col items-center gap-3">
+            <Spinner className="size-6 text-[#7F5AF0]" />
+            <p className="text-sm font-semibold text-[#7F5AF0] animate-pulse">
+              Verifying your details{dots}
+            </p>
+            <p className="text-xs text-white/40">
+              Please wait while we sync your verification status from Didit.
+            </p>
+          </div>
+        ) : (
+          !error && (
+            <Button
+              id="onboarding-verify-start"
+              size="lg"
+              disabled={loading}
+              onClick={startVerification}
+              className="rounded-full bg-[#7F5AF0] hover:bg-[#7F5AF0]/90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30"
+            >
+              {loading ? <Spinner className="size-4" /> : "Verify with Didit 🪪"}
+            </Button>
+          )
+        )}
+
+        <button
+          onClick={onComplete}
+          className="text-xs text-white/30 hover:text-white/60 underline font-semibold transition-colors mt-2"
+        >
+          Skip Verification (Dev Mode)
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── Step 4: Done ─────────────────────────────────────────
+function StepDone({ name, role }: { name: string; role: Role }) {
+  const navigate = useNavigate()
+  const particles = useConfetti(true)
+
+  return (
+    <div className="relative flex flex-col items-center text-center gap-6 py-4 px-2 w-full overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+        {particles.map((p) => (
+          <motion.span
+            key={p.id}
+            className="absolute block rounded-sm"
+            style={{
+              left: `${p.x}%`,
+              top: "-5%",
+              width: p.size,
+              height: p.size,
+              backgroundColor: p.color,
+              rotate: p.rotation,
+            }}
+            animate={{
+              y: ["0%", "110vh"],
+              rotate: [p.rotation, p.rotation + 360],
+              opacity: [1, 0.8, 0],
+            }}
+            transition={{
+              duration: 2.2 + Math.random() * 1.2,
+              delay: p.delay,
+              ease: "easeIn",
+              repeat: 0,
+            }}
+          />
+        ))}
+      </div>
+
+      <motion.div
+        initial={{ scale: 0, rotate: -30 }}
+        animate={{ scale: 1, rotate: 0 }}
+        transition={{ type: "spring", stiffness: 220, damping: 12, delay: 0.2 }}
+        className="flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-[#7F5AF0] to-[#2CB67D] shadow-2xl shadow-[#7F5AF0]/40"
+      >
+        <span className="text-4xl">🎊</span>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4, duration: 0.5 }}
+        className="space-y-2"
+      >
+        <h2 className="text-2xl sm:text-3xl font-black text-white">
+          Welcome to Ausaguide, {name}!
+        </h2>
+        <p className="text-sm text-white/60 max-w-xs mx-auto">
+          {role === "host"
+            ? "Your host profile is being reviewed. You can start exploring tours in the meantime."
+            : "Your adventure starts now. Discover authentic local experiences in Kenya."}
+        </p>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6, duration: 0.4 }}
+        className="flex flex-col sm:flex-row gap-3"
+      >
+        {role === "traveler" ? (
+          <>
+            <Button
+              id="onboarding-done-primary"
+              size="lg"
+              onClick={() => navigate("/tours")}
+              className="rounded-full px-8 bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30"
+            >
+              Start Exploring 🧭
+            </Button>
+            <Button
+              id="onboarding-done-secondary"
+              size="lg"
+              variant="outline"
+              onClick={() => navigate("/dashboard")}
+              className="rounded-full px-8 border-border text-white/80 hover:bg-accent/ hover:text-white font-semibold"
+            >
+              Go to Dashboard
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button
+              id="onboarding-done-primary"
+              size="lg"
+              onClick={() => navigate("/dashboard")}
+              className="rounded-full px-8 bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30"
+            >
+              Start Hosting 🏡
+            </Button>
+            <Button
+              id="onboarding-done-secondary"
+              size="lg"
+              variant="outline"
+              onClick={() => navigate("/tours")}
+              className="rounded-full px-8 border-border text-white/80 hover:bg-accent/ hover:text-white font-semibold"
+            >
+              Explore Tours
+            </Button>
+          </>
+        )}
+      </motion.div>
+    </div>
+  )
+}
+
+// ── Main page ──────────────────────────────────────────
+export default function OnboardingPage() {
+  const navigate = useNavigate()
+  const [step, setStep] = useState(0)
+  const [role, setRole] = useState<Role | null>(null)
+  const [completedName, setCompletedName] = useState("")
+  const [userId, setUserId] = useState(() => {
+    try {
+      return crypto.randomUUID()
+    } catch {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
+  })
+
+  // Guard: redirect already-authenticated users
+  useEffect(() => {
+    // Check if we are handling a Didit callback redirect
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("didit_done") === "true") {
+      const uId = params.get("user_id") || ""
+      const r = params.get("role") as Role || "host"
+      
+      setUserId(uId)
+      setRole(r)
+      setStep(2) // Directly resume at StepVerifyID
+      return
+    }
+
+    const localUserId = localStorage.getItem("user_id")
+    if (localUserId) navigate("/dashboard", { replace: true })
+  }, [navigate])
+
+  // Prefill from sessionStorage if the auth page passed data
+  const prefillRaw = sessionStorage.getItem("onboarding_data")
+  const prefill: OnboardingData = prefillRaw
+    ? (JSON.parse(prefillRaw) as OnboardingData)
+    : { name: "", email: "", password: "" }
+
+  // Stepper steps computed dynamically based on role
+  const steps = [
+    { label: "Welcome" },
+    { label: "Role" },
+    ...(role === "host" ? [{ label: "Verify ID" }] : []),
+    { label: "Profile" },
+    { label: "Done" },
+  ]
+
+  return (
+    <div className="min-h-screen bg-[#0d0d12] flex flex-col items-center justify-center px-4 py-12 relative overflow-hidden">
+      {/* Background glow blobs */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+        <div className="absolute top-1/4 left-1/4 w-[500px] h-[400px] rounded-full bg-[#7F5AF0]/8 blur-[120px] animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[300px] rounded-full bg-[#2CB67D]/6 blur-[100px] animate-pulse" style={{ animationDelay: "2s" }} />
+      </div>
+
+      <div className="relative z-10 w-full max-w-2xl">
+        {/* Card shell */}
+        <div className="rounded-3xl border border-white/8 bg-[#16161A]/70 backdrop-blur-2xl shadow-2xl shadow-black/50 p-6 sm:p-10">
+          <Stepper steps={steps} currentStep={step}>
+            {step === 0 && <StepWelcome onNext={() => setStep(1)} />}
+
+            {step === 1 && (
+              <StepRole
+                selectedRole={role}
+                onSelect={setRole}
+                onNext={() => setStep(2)}
+              />
+            )}
+
+            {role === "host" ? (
+              <>
+                {step === 2 && (
+                  <StepVerifyID
+                    userId={userId}
+                    onComplete={() => setStep(3)}
+                  />
+                )}
+                {step === 3 && (
+                  <StepProfile
+                    role={role}
+                    userId={userId}
+                    prefill={prefill}
+                    onComplete={(name) => {
+                      setCompletedName(name)
+                      setStep(4)
+                    }}
+                  />
+                )}
+                {step === 4 && (
+                  <StepDone
+                    name={completedName || prefill.name || "Explorer"}
+                    role={role}
+                  />
+                )}
+              </>
+            ) : (
+              <>
+                {step === 2 && (
+                  <StepProfile
+                    role={role ?? "traveler"}
+                    userId={userId}
+                    prefill={prefill}
+                    onComplete={(name) => {
+                      setCompletedName(name)
+                      setStep(3)
+                    }}
+                  />
+                )}
+                {step === 3 && (
+                  <StepDone
+                    name={completedName || prefill.name || "Explorer"}
+                    role={role ?? "traveler"}
+                  />
+                )}
+              </>
+            )}
+          </Stepper>
+        </div>
+
+        {/* Footer */}
+        <p className="text-center text-xs text-white/25 mt-5">
+          Already have an account?{" "}
+          <button
+            onClick={() => navigate("/auth")}
+            className="text-[#7F5AF0] hover:underline font-semibold"
+          >
+            Log in
+          </button>
+        </p>
+      </div>
+    </div>
+  )
+}

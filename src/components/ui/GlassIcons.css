@@ -1,0 +1,108 @@
+.icon-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3.5rem;
+  justify-content: center;
+  align-items: center;
+  margin: auto;
+  padding: 1rem 0;
+  overflow: visible;
+}
+
+.icon-btn {
+  background-color: transparent;
+  outline: none;
+  position: relative;
+  width: 4rem;
+  height: 4rem;
+  perspective: 24rem;
+  transform-style: preserve-3d;
+  -webkit-tap-highlight-color: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.icon-btn__back,
+.icon-btn__front,
+.icon-btn__label {
+  transition:
+    opacity 0.3s cubic-bezier(0.83, 0, 0.17, 1),
+    transform 0.3s cubic-bezier(0.83, 0, 0.17, 1);
+}
+
+.icon-btn__back,
+.icon-btn__front {
+  border-radius: 1rem;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.icon-btn__back {
+  box-shadow: 0.3rem -0.3rem 0.5rem hsla(223, 10%, 10%, 0.15);
+  display: block;
+  transform: rotate(15deg);
+  transform-origin: 100% 100%;
+  will-change: transform;
+}
+
+.icon-btn__front {
+  background-color: hsla(0, 0%, 100%, 0.08);
+  box-shadow: 0 0 0 0.08rem hsla(0, 0%, 100%, 0.25) inset;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  transform-origin: 80% 50%;
+  will-change: transform;
+}
+
+.icon-btn__icon {
+  margin: auto;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+}
+
+.icon-btn__label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #a0aec0;
+  white-space: nowrap;
+  text-align: center;
+  line-height: 2;
+  opacity: 0;
+  position: absolute;
+  top: 100%;
+  right: -2rem;
+  left: -2rem;
+  transform: translateY(0);
+}
+
+.icon-btn:focus-visible .icon-btn__back,
+.icon-btn:hover .icon-btn__back,
+.icon-btn.is-active .icon-btn__back {
+  transform: rotate(25deg) translate3d(-0.4rem, -0.4rem, 0.4rem);
+}
+
+.icon-btn:focus-visible .icon-btn__front,
+.icon-btn:hover .icon-btn__front,
+.icon-btn.is-active .icon-btn__front {
+  transform: translate3d(0, 0, 1.8rem);
+}
+
+.icon-btn:focus-visible .icon-btn__label,
+.icon-btn:hover .icon-btn__label,
+.icon-btn.is-active .icon-btn__label {
+  opacity: 1;
+  transform: translateY(15%);
+}
+
+.icon-btn.is-active .icon-btn__label {
+  color: #7f5af0;
+  font-weight: 700;
+}
