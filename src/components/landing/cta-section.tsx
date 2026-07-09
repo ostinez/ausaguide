@@ -44,7 +44,7 @@ export function CTASection() {
               role="img"
               aria-label="Kenyan travelers enjoying a peaceful moment in Kenya's coastal region near Watamu at sunset"
               className="absolute inset-0 bg-cover bg-center transition-transform duration-500 hover:scale-105" 
-              style={{ backgroundImage: "url('/src/assets/images/home/cta_coast.png')" }} 
+              style={{ backgroundImage: "url('/images/home/cta_coast.png')" }} 
             />
             <div className="absolute inset-0 bg-black/80 backdrop-blur-[1px]" />
 
@@ -104,7 +104,7 @@ export function CTASection() {
                   role="img"
                   aria-label="A Kenyan community planting trees in a reforestation project near Rift Valley"
                   className="absolute inset-0 bg-cover bg-center transition-transform duration-500 hover:scale-105" 
-                  style={{ backgroundImage: "url('/src/assets/images/home/cta_tree.png')" }} 
+                  style={{ backgroundImage: "url('/images/home/cta_tree.png')" }} 
                 />
                 <div className="absolute inset-0 bg-black/80 backdrop-blur-[1px]" />
 

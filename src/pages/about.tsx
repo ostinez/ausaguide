@@ -141,7 +141,7 @@ export default function AboutPage() {
           >
             <div className="bg-[#121214]/60 border border-border rounded-2xl overflow-hidden relative">
               <img
-                src="/src/assets/images/home/explore_rift.png"
+                src="/images/home/explore_rift.png"
                 alt="Kenyan local guides welcoming travelers"
                 className="w-full h-44 object-cover"
               />
@@ -226,7 +226,7 @@ export default function AboutPage() {
                 role="img"
                 aria-label="Kenyan travelers enjoying a peaceful sunset on Watamu beach"
                 className="absolute inset-0 bg-cover bg-center transition-transform duration-500 hover:scale-105" 
-                style={{ backgroundImage: "url('/src/assets/images/home/cta_coast.png')" }} 
+                style={{ backgroundImage: "url('/images/home/cta_coast.png')" }} 
               />
               <div className="absolute inset-0 bg-black/85 backdrop-blur-[1px]" />
               

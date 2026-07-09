@@ -49,15 +49,15 @@ const TIERS = [
 
 const GALLERY = [
   {
-    url: "/src/assets/images/mental-health/gallery_naivasha_sunset.png",
+    url: "/images/mental-health/gallery_naivasha_sunset.png",
     caption: "Sunset peace over Lake Naivasha water sanctuary",
   },
   {
-    url: "/src/assets/images/mental-health/gallery_kilimanjaro_hiking.png",
+    url: "/images/mental-health/gallery_kilimanjaro_hiking.png",
     caption: "Nature hiking paths along Chyulu Hills highlands",
   },
   {
-    url: "/src/assets/images/mental-health/gallery_lamu_beach.png",
+    url: "/images/mental-health/gallery_lamu_beach.png",
     caption: "Quiet ocean relaxation on Watamu beaches",
   },
 ]
@@ -206,7 +206,7 @@ export default function MentalHealthPage() {
           <div className="md:col-span-5 relative group">
             <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] opacity-25 blur-xl group-hover:opacity-40 transition duration-1000" />
             <img
-              src="/src/assets/images/mental-health/mental_health_hero.png"
+              src="/images/mental-health/mental_health_hero.png"
               alt="Person sitting peacefully overlooking Watamu beach sunset"
               className="relative w-full h-[280px] rounded-3xl object-cover border border-border shadow-2xl"
             />
@@ -227,7 +227,7 @@ export default function MentalHealthPage() {
               <div className="p-7 bg-[#121214]/60 border border-border rounded-2xl space-y-4 flex-1 flex flex-col justify-between hover:border-border transition duration-300">
                 <div className="space-y-3">
                   <img
-                    src="/src/assets/images/mental-health/problem_nairobi_city.png"
+                    src="/images/mental-health/problem_nairobi_city.png"
                     alt="Crowded street in Nairobi"
                     className="w-full h-36 object-cover rounded-xl mb-2"
                   />
@@ -259,7 +259,7 @@ export default function MentalHealthPage() {
               <div className="p-7 bg-[#121214]/60 border border-border rounded-2xl space-y-4 flex-1 flex flex-col justify-between hover:border-border transition duration-300">
                 <div className="space-y-3">
                   <img
-                    src="/src/assets/images/mental-health/solution_chyulu_hills.png"
+                    src="/images/mental-health/solution_chyulu_hills.png"
                     alt="Traveler relaxing in nature"
                     className="w-full h-36 object-cover rounded-xl mb-2"
                   />
@@ -284,7 +284,7 @@ export default function MentalHealthPage() {
         <div className="relative rounded-3xl overflow-hidden h-60 border border-border group">
           <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent z-10" />
           <img
-            src="/src/assets/images/mental-health/gallery_waterfall_highlands.png"
+            src="/images/mental-health/gallery_waterfall_highlands.png"
             alt="Beautiful sunlight streaming through lush serene forest path"
             className="w-full h-full object-cover z-0"
           />
