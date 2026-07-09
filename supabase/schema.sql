@@ -142,6 +142,12 @@ create policy "Public read traveler profiles"
   on public.profiles for select
   using (role = 'traveler');
 
+drop policy if exists "Users can update own profiles" on public.profiles;
+create policy "Users can update own profiles"
+  on public.profiles for update
+  using (auth.uid() = id)
+  with check (auth.uid() = id);
+
 drop policy if exists "Anyone can submit host application" on public.hosts;
 drop policy if exists "Users can insert their own host application" on public.hosts;
 create policy "Users can insert their own host application"
@@ -174,21 +180,32 @@ create policy "Public read published tours"
   on public.tours for select
   using (is_published = true);
 
+drop policy if exists "Hosts can insert tours" on public.tours;
+create policy "Hosts can insert tours"
+  on public.tours for insert
+  with check (auth.uid() = host_id);
+
+drop policy if exists "Hosts can update own tours" on public.tours;
+create policy "Hosts can update own tours"
+  on public.tours for update
+  using (auth.uid() = host_id)
+  with check (auth.uid() = host_id);
+
 drop policy if exists "Public read bookings" on public.bookings;
 create policy "Public read bookings"
   on public.bookings for select
-  using (true);
+  using (auth.uid() = guest_id OR auth.uid() = host_id);
 
 drop policy if exists "Public insert bookings" on public.bookings;
 create policy "Public insert bookings"
   on public.bookings for insert
-  with check (true);
+  with check (auth.uid() = guest_id);
 
 drop policy if exists "Public update bookings" on public.bookings;
 create policy "Public update bookings"
   on public.bookings for update
-  using (true)
-  with check (true);
+  using (auth.uid() = guest_id OR auth.uid() = host_id)
+  with check (auth.uid() = guest_id OR auth.uid() = host_id);
 
 -- ── Seed profiles ───────────────────────────────────────────────────────────
 insert into public.profiles (id, email, full_name, role, bio, location, languages, host_type, is_verified) values

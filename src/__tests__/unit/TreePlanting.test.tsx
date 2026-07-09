@@ -15,6 +15,7 @@ describe('Tree Planting Page', () => {
         <TreePlanting />
       </BrowserRouter>
     )
-    expect(screen.getByText(/We Plant Trees/i)).toBeInTheDocument()
+    const heading = screen.getByRole('heading', { level: 1 })
+    expect(heading).toHaveTextContent(/Plant Trees, Grow Hope/i)
   })
 })

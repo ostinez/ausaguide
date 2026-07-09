@@ -1,8 +1,5 @@
 import { toast } from "sonner"
-
-// Retrieve config keys from env or local storage
-const getResendKey = () => localStorage.getItem("RESEND_API_KEY") || (import.meta.env.VITE_RESEND_API_KEY as string) || ""
-const getBrevoKey = () => localStorage.getItem("BREVO_API_KEY") || (import.meta.env.VITE_BREVO_API_KEY as string) || ""
+import { supabase } from "../supabase"
 
 interface EmailPayload {
   to: string
@@ -11,70 +8,32 @@ interface EmailPayload {
 }
 
 async function dispatchEmail({ to, subject, html }: EmailPayload): Promise<boolean> {
-  const resendKey = getResendKey()
-  const brevoKey = getBrevoKey()
+  try {
+    const { data, error } = await supabase.functions.invoke("send-email", {
+      body: { to, subject, html },
+    })
 
-  if (resendKey) {
-    try {
-      const response = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${resendKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: "Ausaguide <onboarding@resend.dev>",
-          to: [to],
-          subject: subject,
-          html: html,
-        }),
-      })
-
-      if (response.ok) {
-        console.log(`[Email Sent via Resend] To: ${to} | Subject: ${subject}`)
-        return true
-      } else {
-        const errData = await response.json()
-        console.error("Resend error:", errData)
-      }
-    } catch (e) {
-      console.error("Failed to connect to Resend API", e)
+    if (error) {
+      console.error("Failed to invoke send-email edge function:", error)
+      return false
     }
-  } else if (brevoKey) {
-    try {
-      const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-        method: "POST",
-        headers: {
-          "api-key": brevoKey,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          sender: { name: "Ausaguide", email: "welcome@ausaguide.com" },
-          to: [{ email: to }],
-          subject: subject,
-          htmlContent: html,
-        }),
-      })
 
-      if (response.ok) {
-        console.log(`[Email Sent via Brevo] To: ${to} | Subject: ${subject}`)
-        return true
-      } else {
-        const errData = await response.json()
-        console.error("Brevo error:", errData)
-      }
-    } catch (e) {
-      console.error("Failed to connect to Brevo API", e)
+    if (data?.sandbox) {
+      // Sandbox mode
+      console.log(`%c[SIMULATED EMAIL] To: ${to}\nSubject: ${subject}\nContent:\n${html.replace(/<[^>]*>/g, "")}`, "color: #7f5af0; font-weight: bold;")
+      toast.info(`Simulated Email Sent: "${subject}" to ${to}`, {
+        duration: 5000,
+        description: "Sandbox mode (No API keys provided in Edge Function). Details logged to DevTools console.",
+      })
+    } else {
+      console.log(`[Email Sent via Edge Function] To: ${to} | Subject: ${subject}`)
     }
+    
+    return true
+  } catch (e) {
+    console.error("Failed to connect to send-email Edge Function", e)
+    return false
   }
-
-  // Fallback / Sandbox mode
-  console.log(`%c[SIMULATED EMAIL] To: ${to}\nSubject: ${subject}\nContent:\n${html.replace(/<[^>]*>/g, "")}`, "color: #7f5af0; font-weight: bold;")
-  toast.info(`Simulated Email Sent: "${subject}" to ${to}`, {
-    duration: 5000,
-    description: "Sandbox mode (No API keys provided). Details logged to DevTools console.",
-  })
-  return true
 }
 
 export async function sendWelcomeEmail(to: string, userName: string): Promise<boolean> {

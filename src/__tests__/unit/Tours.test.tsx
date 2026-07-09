@@ -15,6 +15,7 @@ describe('Tours Page', () => {
         <Tours />
       </BrowserRouter>
     )
-    expect(screen.getByText(/Explore Kenya Live/i)).toBeInTheDocument()
+    const heading = screen.getByRole('heading', { level: 1 })
+    expect(heading).toHaveTextContent(/Explore Tours/i)
   })
 })
