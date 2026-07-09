@@ -441,6 +441,7 @@ export default function TreePlantingPage() {
             <img
               src={treeGallery2}
               alt="Local guides protecting tree saplings"
+              loading="lazy"
               className="w-full h-[260px] rounded-3xl object-cover border border-border shadow-2xl"
             />
           </div>
@@ -480,6 +481,7 @@ export default function TreePlantingPage() {
                 <img
                   src={img.url}
                   alt={img.caption}
+                  loading="lazy"
                   className="w-full h-48 object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-4">

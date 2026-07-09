@@ -26,7 +26,6 @@ import NotificationBell from "@/components/ui/NotificationBell"
 import { getHostInitials } from "@/lib/tour-utils"
 
 export function Navbar() {
-  console.log("Navbar rendered - Logo should be attempting to load");
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
@@ -103,7 +102,7 @@ export function Navbar() {
 
     fetchUnreadCount()
 
-    const interval = setInterval(fetchUnreadCount, 4000)
+    const interval = setInterval(fetchUnreadCount, 30000)
 
     const channel = supabase
       .channel("navbar-messages-unread")
@@ -145,7 +144,8 @@ export function Navbar() {
     }
   }
 
-  function handleSignOut() {
+  async function handleSignOut() {
+    await supabase.auth.signOut()
     localStorage.removeItem("user_id")
     localStorage.removeItem("user_role")
     window.location.href = "/"
@@ -211,12 +211,10 @@ export function Navbar() {
             height={32}
             className="h-8 w-auto block object-contain transition-all duration-300 group-hover:drop-shadow-[0_0_8px_rgba(127,90,240,0.6)]"
             onError={(e) => {
-              console.log("Navbar logo failed to load, triggering fallback");
               e.currentTarget.style.display = "none";
               const fb = document.getElementById("navbar-brand-fallback");
               if (fb) fb.style.display = "flex";
             }}
-            onLoad={() => console.log("Navbar logo loaded successfully")}
           />
           <div id="navbar-brand-fallback" className="items-center gap-2" style={{ display: "none" }}>
             <Globe className="size-6 text-[#2CB67D]" />
@@ -375,12 +373,10 @@ export function Navbar() {
                   height={28}
                   className="h-7 w-auto block object-contain"
                   onError={(e) => {
-                    console.log("Mobile Navbar logo failed to load, triggering fallback");
                     e.currentTarget.style.display = "none";
                     const fb = document.getElementById("navbar-brand-fallback-mobile");
                     if (fb) fb.style.display = "flex";
                   }}
-                  onLoad={() => console.log("Mobile Navbar logo loaded successfully")}
                 />
                 <div id="navbar-brand-fallback-mobile" className="items-center gap-2" style={{ display: "none" }}>
                   <Globe className="size-5 text-[#2CB67D]" />

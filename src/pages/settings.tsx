@@ -309,10 +309,9 @@ export default function SettingsPage() {
         notification_preferences: notifs,
         is_busy: false,
       }
-      console.log('[Settings] Saving host settings for userId:', userId)
-      console.log('[Settings] Host settings payload:', hostSettingsPayload)
 
       await updateHostSettings(userId, hostSettingsPayload)
+
 
       // Save interests and payout details to localStorage
       localStorage.setItem(`traveler_interests_${userId}`, JSON.stringify(interests))

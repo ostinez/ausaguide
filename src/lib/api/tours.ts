@@ -86,6 +86,7 @@ export async function fetchTours(): Promise<Tour[]> {
   const { data, error } = await supabase
     .from("tours")
     .select(TOUR_SELECT)
+    .eq("is_published", true)
     .order("created_at", { ascending: false })
 
   if (error) throw error
@@ -96,6 +97,7 @@ export async function fetchFeaturedTours(limit = 4): Promise<Tour[]> {
   const { data, error } = await supabase
     .from("tours")
     .select(TOUR_SELECT)
+    .eq("is_published", true)
     .order("created_at", { ascending: false })
     .limit(limit)
 

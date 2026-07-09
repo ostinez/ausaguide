@@ -33,6 +33,7 @@ import JournalPage from "@/pages/journal"
 import FeedPage from "@/pages/feed"
 import TravelerProfilePage from "@/pages/traveler-profile"
 import AdminSettingsPage from "@/pages/admin-settings"
+import AdminHostsPage from "@/pages/admin-hosts"
 import TermsPage from "@/pages/legal/terms"
 import PrivacyPage from "@/pages/legal/privacy"
 import OnboardingPage from "@/pages/Onboarding"
@@ -79,7 +80,7 @@ export default function App() {
             <Route path="/host/tours/new" element={<NewTourPage />} />
             <Route path="/host/tours/:id/edit" element={<EditTourPage />} />
             <Route path="/admin" element={<AdminDashboardPage />} />
-            <Route path="/admin/hosts" element={<AdminDashboardPage />} />
+            <Route path="/admin/hosts" element={<AdminHostsPage />} />
             <Route path="/admin/settings" element={<AdminSettingsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/profile/edit" element={<SettingsPage />} />

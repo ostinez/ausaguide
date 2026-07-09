@@ -292,6 +292,7 @@ export default function MentalHealthPage() {
           <img
             src={mentalGallery3}
             alt="Beautiful sunlight streaming through lush serene forest path"
+            loading="lazy"
             className="w-full h-full object-cover z-0"
           />
           <div className="absolute bottom-6 left-6 right-6 z-20 space-y-1">
@@ -410,6 +411,7 @@ export default function MentalHealthPage() {
                 <img
                   src={img.url}
                   alt={img.caption}
+                  loading="lazy"
                   className="w-full h-48 object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-4">

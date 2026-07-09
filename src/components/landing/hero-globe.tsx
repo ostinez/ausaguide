@@ -130,7 +130,6 @@ function GlobeVisual() {
       .then((data) => {
         if (data && data.country) {
           const code = data.country.toUpperCase()
-          console.log("[HeroGlobe] Detected user country via IP:", code)
           setUserCountryCode(code)
         } else {
           throw new Error("No country returned in ipinfo data")
@@ -149,7 +148,6 @@ function GlobeVisual() {
           }
         } catch (fallbackErr) {
           console.warn("[HeroGlobe] Fallbacks failed, defaulting to KE:", (fallbackErr as Error).message)
-          console.log("[HeroGlobe] Detected user country: KE")
           setUserCountryCode("KE")
         }
       })

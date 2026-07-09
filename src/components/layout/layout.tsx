@@ -63,8 +63,8 @@ export function Layout() {
         position="right"
         colors={["#000000", "#0A0A0A"]}
         accentColor="#FFFFFF"
-        menuButtonColor="#000000"
-        openMenuButtonColor="#000000"
+        menuButtonColor="#FFFFFF"
+        openMenuButtonColor="#2CB67D"
         displayItemNumbering={true}
         displaySocials={true}
         closeOnClickAway={true}

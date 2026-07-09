@@ -345,7 +345,7 @@ export async function updateHostSettings(
     busy_reason: settings.busy_reason ?? null,
     updated_at: new Date().toISOString()
   }
-  console.log('[updateHostSettings] Full request payload:', payload)
+
 
   const { error } = await supabase
     .from('host_settings')
@@ -362,6 +362,6 @@ export async function updateHostSettings(
     throw error
   }
 
-  console.log('[updateHostSettings] Settings saved successfully for host_id:', hostId)
+
 }
 

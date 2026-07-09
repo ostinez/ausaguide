@@ -17,6 +17,7 @@ const footerLinks = {
     { href: "/mental-health", label: "Mental Health Support" },
   ],
   company: [
+    { href: "/about", label: "About" },
     { href: "/help", label: "Help & FAQ" },
     { href: "/host/signup", label: "Become a Host" },
     { href: "/settings", label: "Account Settings" },
@@ -174,12 +175,14 @@ export function Footer() {
             &copy; {new Date().getFullYear()} Ausaguide. All rights reserved.
           </p>
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => { throw new Error('Test error for Sentry'); }}
-              className="text-[10px] text-muted-foreground/30 hover:text-muted-foreground hover:underline transition-colors cursor-pointer"
-            >
-              Test Sentry
-            </button>
+            {import.meta.env.DEV && (
+              <button
+                onClick={() => { throw new Error('Test error for Sentry'); }}
+                className="text-[10px] text-muted-foreground/30 hover:text-muted-foreground hover:underline transition-colors cursor-pointer"
+              >
+                Test Sentry
+              </button>
+            )}
           </div>
         </div>
       </div>
