@@ -15,38 +15,46 @@ import { toast } from "sonner"
 import { useSEO } from "@/hooks/useSEO"
 import { JsonLd } from "@/components/seo/JsonLd"
 
+import treePlantingHero from "../assets/images/tree-planting/tree-planting-hero.jpg"
+import meruOakImage from "../assets/images/tree-planting/meru-oak.jpg"
+import africanTulipImage from "../assets/images/tree-planting/african-tulip.jpg"
+import crotonImage from "../assets/images/tree-planting/croton.jpg"
+import treeGallery1 from "../assets/images/tree-planting/tree-gallery-1.jpg"
+import treeGallery2 from "../assets/images/tree-planting/tree-gallery-2.jpg"
+import treeGallery3 from "../assets/images/tree-planting/tree-gallery-3.jpg"
+
 const TREE_TYPES = [
   {
     name: "Meru Oak (Vitex keniensis)",
     description: "Native to Kenya's highlands. Features a massive canopy offering excellent shade, historically valued for timber and traditional medicine, and plays a vital role in supporting local highland biodiversity.",
-    image: "/images/tree-planting/meru_oak_card.png",
+    image: meruOakImage,
     color: "2CB67D",
   },
   {
     name: "African Tulip Tree (Spathodea campanulata)",
     description: "Native to tropical Africa including Kenya. Its bright red/orange bell-shaped flowers attract local birds and bees. Fast-growing and resilient, making it highly popular for community reforestation efforts.",
-    image: "/images/tree-planting/african_tulip_card.png",
+    image: africanTulipImage,
     color: "7F5AF0",
   },
   {
     name: "Croton (Croton megalocarpus)",
     description: "Indigenous to Kenya. Produces oil-rich seeds historically utilized for biofuel. Its expansive canopy provides shade, improves soil fertility, and adapts well across different regions of Kenya.",
-    image: "/images/tree-planting/croton_card.png",
+    image: crotonImage,
     color: "3b82f6",
   },
 ]
 
 const GALLERY = [
   {
-    url: "/images/tree-planting/gallery_planting_community.png",
+    url: treeGallery1,
     caption: "Community sapling nurseries in Mount Kenya region",
   },
   {
-    url: "/images/tree-planting/gallery_restored_forest.png",
+    url: treeGallery2,
     caption: "Lush native forest canopy restoration",
   },
   {
-    url: "/images/tree-planting/gallery_tree_nursery.png",
+    url: treeGallery3,
     caption: "Water catchment protection in highlands",
   },
 ]
@@ -235,7 +243,7 @@ export default function TreePlantingPage() {
           <div className="md:col-span-5 relative group">
             <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-[#2CB67D] to-[#7F5AF0] opacity-20 blur-xl group-hover:opacity-35 transition duration-1000" />
             <img
-              src="/images/tree-planting/tree_planting_hero.png"
+              src={treePlantingHero}
               alt="Community tree planting in Kenya forest restoration"
               className="relative w-full h-[260px] rounded-3xl object-cover border border-border shadow-2xl"
             />
@@ -431,7 +439,7 @@ export default function TreePlantingPage() {
           <div className="md:col-span-5 relative group">
             <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-[#2CB67D] to-[#7F5AF0] opacity-15 blur-xl group-hover:opacity-30 transition duration-1000" />
             <img
-              src="/images/tree-planting/gallery_rift_valley_sunset.png"
+              src={treeGallery2}
               alt="Local guides protecting tree saplings"
               className="w-full h-[260px] rounded-3xl object-cover border border-border shadow-2xl"
             />

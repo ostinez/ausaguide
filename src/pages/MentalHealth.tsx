@@ -12,6 +12,12 @@ import { toast } from "sonner"
 import { useSEO } from "@/hooks/useSEO"
 import { JsonLd } from "@/components/seo/JsonLd"
 
+import mentalHealthHero from "../assets/images/mental-health/mental-health-hero.jpg"
+import mentalGallery1 from "../assets/images/mental-health/mental-gallery-1.jpg"
+import mentalGallery2 from "../assets/images/mental-health/mental-gallery-2.jpg"
+import mentalGallery3 from "../assets/images/mental-health/mental-gallery-3.jpg"
+import mentalGallery4 from "../assets/images/mental-health/mental-gallery-4.jpg"
+
 const TIERS = [
   {
     icon: <Leaf className="size-6 text-[#2CB67D]" />,
@@ -49,15 +55,15 @@ const TIERS = [
 
 const GALLERY = [
   {
-    url: "/images/mental-health/gallery_naivasha_sunset.png",
+    url: mentalGallery1,
     caption: "Sunset peace over Lake Naivasha water sanctuary",
   },
   {
-    url: "/images/mental-health/gallery_kilimanjaro_hiking.png",
+    url: mentalGallery2,
     caption: "Nature hiking paths along Chyulu Hills highlands",
   },
   {
-    url: "/images/mental-health/gallery_lamu_beach.png",
+    url: mentalGallery4,
     caption: "Quiet ocean relaxation on Watamu beaches",
   },
 ]
@@ -206,7 +212,7 @@ export default function MentalHealthPage() {
           <div className="md:col-span-5 relative group">
             <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] opacity-25 blur-xl group-hover:opacity-40 transition duration-1000" />
             <img
-              src="/images/mental-health/mental_health_hero.png"
+              src={mentalHealthHero}
               alt="Person sitting peacefully overlooking Watamu beach sunset"
               className="relative w-full h-[280px] rounded-3xl object-cover border border-border shadow-2xl"
             />
@@ -284,7 +290,7 @@ export default function MentalHealthPage() {
         <div className="relative rounded-3xl overflow-hidden h-60 border border-border group">
           <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent z-10" />
           <img
-            src="/images/mental-health/gallery_waterfall_highlands.png"
+            src={mentalGallery3}
             alt="Beautiful sunlight streaming through lush serene forest path"
             className="w-full h-full object-cover z-0"
           />
