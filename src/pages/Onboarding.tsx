@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion } from "motion/react"
 import { Button } from "@/components/ui/button"
@@ -498,6 +498,7 @@ function StepVerifyID({
   const [polling, setPolling] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [dots, setDots] = useState("")
+  const pollingStarted = useRef(false)
 
   useEffect(() => {
     if (!polling) return
@@ -510,9 +511,13 @@ function StepVerifyID({
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const isDoneRedirect = params.get("didit_done") === "true"
-    if (isDoneRedirect && userId) {
+    // Auto-start polling when we return from Didit redirect.
+    // Guard with pollingStarted ref so re-renders don't fire it twice.
+    if (isDoneRedirect && userId && !pollingStarted.current) {
+      pollingStarted.current = true
       startPolling()
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId])
 
   async function startVerification() {
@@ -583,10 +588,17 @@ function StepVerifyID({
           return
         }
 
-        if (data?.verification_status === "declined" || data?.verification_status === "failed") {
+        if (data?.verification_status === "declined") {
           clearInterval(interval)
           setPolling(false)
-          setError("Verification declined or failed. Please check your document and try again.")
+          setError("Verification was declined. Please re-check your document and try again.")
+          return
+        }
+
+        if (data?.verification_status === "failed") {
+          clearInterval(interval)
+          setPolling(false)
+          setError("Something went wrong during verification. Please contact support.")
           return
         }
       } catch (err) {
@@ -596,7 +608,7 @@ function StepVerifyID({
       if (attempts >= maxAttempts) {
         clearInterval(interval)
         setPolling(false)
-        setError("Verification check timed out. If you already completed it, try clicking Retry.")
+        setError("timed_out")
       }
     }, 3000)
   }
@@ -619,19 +631,47 @@ function StepVerifyID({
         </p>
       </div>
 
+      {/* Error state */}
       {error && !polling && (
         <div className="flex flex-col items-center gap-3 w-full max-w-sm">
-          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs font-semibold text-red-400 w-full text-center">
-            {error}
-          </div>
-          <Button
-            id="onboarding-verify-retry"
-            size="lg"
-            onClick={startVerification}
-            className="rounded-full bg-[#7F5AF0] hover:bg-[#7F5AF0]/90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 w-full"
-          >
-            Retry Verification 🔄
-          </Button>
+          {error === "timed_out" ? (
+            <>
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs font-semibold text-amber-400 w-full text-center">
+                Verification is processing — this may take a few seconds. Click below to check again.
+              </div>
+              <Button
+                id="onboarding-verify-check-status"
+                size="lg"
+                onClick={() => { pollingStarted.current = false; startPolling() }}
+                className="rounded-full bg-[#2CB67D] hover:bg-[#2CB67D]/90 text-white border-0 font-bold shadow-lg shadow-[#2CB67D]/30 w-full"
+              >
+                Check My Status ✓
+              </Button>
+              <Button
+                id="onboarding-verify-retry"
+                size="lg"
+                variant="ghost"
+                onClick={startVerification}
+                className="rounded-full text-white/60 hover:text-white hover:bg-white/5 font-semibold w-full"
+              >
+                Restart Verification 🔄
+              </Button>
+            </>
+          ) : (
+            <>
+              <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs font-semibold text-red-400 w-full text-center">
+                {error}
+              </div>
+              <Button
+                id="onboarding-verify-retry"
+                size="lg"
+                onClick={startVerification}
+                className="rounded-full bg-[#7F5AF0] hover:bg-[#7F5AF0]/90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 w-full"
+              >
+                Retry Verification 🔄
+              </Button>
+            </>
+          )}
         </div>
       )}
 
@@ -643,7 +683,7 @@ function StepVerifyID({
               Verifying your details{dots}
             </p>
             <p className="text-xs text-white/40">
-              Please wait while we sync your verification status from Didit.
+              Verification is processing — this may take a few seconds.
             </p>
           </div>
         ) : (

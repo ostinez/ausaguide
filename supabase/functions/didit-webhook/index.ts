@@ -128,8 +128,23 @@ serve(async (req) => {
 
     console.log(`Processing Didit Webhook: user_id=${userId}, status=${status}, isApproved=${isApproved}`)
 
-    // 4. Update the user record in public.users table
-    const { error: dbError } = await supabaseClient
+    // 4a. Update the profiles table (what the frontend polls during onboarding)
+    const { error: profilesError } = await supabaseClient
+      .from("profiles")
+      .update({
+        id_verified: isApproved,
+        verification_status: finalStatus,
+        verification_date: new Date().toISOString(),
+      })
+      .eq("id", userId)
+
+    if (profilesError) {
+      console.error("profiles update error:", profilesError)
+      // Non-fatal — continue to also try the users table
+    }
+
+    // 4b. Also update the users table for data consistency
+    const { error: usersError } = await supabaseClient
       .from("users")
       .update({
         id_verified: isApproved,
@@ -139,8 +154,13 @@ serve(async (req) => {
       })
       .eq("id", userId)
 
-    if (dbError) {
-      console.error("Database update error:", dbError)
+    if (usersError) {
+      // Log but don't fail — the profiles update is the critical one
+      console.warn("users table update error (non-fatal):", usersError)
+    }
+
+    if (profilesError && usersError) {
+      console.error("Both table updates failed — returning 500")
       return new Response("db error", { status: 500, headers: corsHeaders })
     }
 
