@@ -35,6 +35,7 @@ interface OnboardingData {
   name: string
   email: string
   password: string
+  subscribeNewsletter?: boolean
 }
 
 // ── Confetti particle ──────────────────────────────────
@@ -288,21 +289,41 @@ function StepProfile({
       // Use the real auth user ID (not a randomly generated one)
       const realUserId = authData.user.id
 
+      // If updates opt-in was checked, save to database table
+      if (prefill.subscribeNewsletter) {
+        supabase
+          .from("newsletter_subscribers")
+          .insert({ email: email.trim(), name: name.trim() })
+          .then(({ error: subError }) => {
+            if (subError) console.error("Failed to subscribe to newsletter database table:", subError)
+          })
+      }
+
+      // Brief pause: give the on_auth_user_created trigger time to insert
+      // the profile row before we upsert over it with the real full_name.
+      await new Promise((r) => setTimeout(r, 350))
+
       if (role === "host") {
-        // For hosts: upsert profile (may already exist from verification step)
+        // Upsert profile with explicit conflict target on 'id'
         const { data: profileData, error: upsertError } = await supabase
           .from("profiles")
-          .upsert({
-            id: realUserId,
-            email: email.trim(),
-            full_name: name.trim(),
-            role: "host",
-            languages: ["English", "Swahili"],
-          })
+          .upsert(
+            {
+              id: realUserId,
+              email: email.trim(),
+              full_name: name.trim(),
+              role: "host",
+              languages: ["English", "Swahili"],
+            },
+            { onConflict: "id" }
+          )
           .select("id, email, role")
           .single()
 
-        if (upsertError) throw upsertError
+        // Non-fatal: log but don't block — auth session is already created
+        if (upsertError) {
+          console.error("[StepProfile] Profile upsert error (non-fatal):", upsertError)
+        }
 
         const { error: hostErr } = await supabase.from("hosts").insert({
           user_id: realUserId,
@@ -319,34 +340,39 @@ function StepProfile({
         localStorage.setItem("user_role", profileData?.role ?? "host")
         trackEvent("user_signed_up", { email: email.trim(), role: "host" })
         identifyUser(realUserId, { email: email.trim(), role: "host" })
-        sendWelcomeEmail(email.trim(), name.trim()).catch(err => console.error("Failed to send welcome email:", err))
+        sendWelcomeEmail(email.trim(), name.trim(), prefill.subscribeNewsletter)
+          .catch(err => console.error("Failed to send welcome email:", err))
         toast.success("Account created! Check your inbox to confirm your email.")
         onComplete(name.trim(), realUserId)
       } else {
-        // For travellers: insert profile row using real auth user ID
-        const { data: profileData, error: insertError } = await supabase
+        // Upsert profile with explicit conflict target on 'id'
+        const { data: profileData, error: upsertError } = await supabase
           .from("profiles")
-          .upsert({
-            id: realUserId,
-            email: email.trim(),
-            full_name: name.trim(),
-            role: "traveler",
-            languages: ["English"],
-          })
+          .upsert(
+            {
+              id: realUserId,
+              email: email.trim(),
+              full_name: name.trim(),
+              role: "traveler",
+              languages: ["English"],
+            },
+            { onConflict: "id" }
+          )
           .select("id, email, role")
           .single()
 
-        if (insertError) {
-          if (insertError.code === "23505")
-            throw new Error("An account with this email already exists. Please log in instead.")
-          throw insertError
+        // Non-fatal: if trigger already created the row and upsert fails due
+        // to RLS, we still have a valid auth session — proceed gracefully.
+        if (upsertError) {
+          console.error("[StepProfile] Profile upsert error (non-fatal):", upsertError)
         }
 
         localStorage.setItem("user_id", realUserId)
         localStorage.setItem("user_role", profileData?.role ?? "traveler")
         trackEvent("user_signed_up", { email: email.trim(), role: "traveler" })
         identifyUser(realUserId, { email: email.trim(), role: "traveler" })
-        sendWelcomeEmail(email.trim(), name.trim()).catch(err => console.error("Failed to send welcome email:", err))
+        sendWelcomeEmail(email.trim(), name.trim(), prefill.subscribeNewsletter)
+          .catch(err => console.error("Failed to send welcome email:", err))
         toast.success("Account created! Check your inbox to confirm your email.")
         onComplete(name.trim(), realUserId)
       }

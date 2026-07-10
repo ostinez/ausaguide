@@ -5,12 +5,14 @@ interface EmailPayload {
   to: string
   subject: string
   html: string
+  subscribeNewsletter?: boolean
+  name?: string
 }
 
-async function dispatchEmail({ to, subject, html }: EmailPayload): Promise<boolean> {
+async function dispatchEmail({ to, subject, html, subscribeNewsletter, name }: EmailPayload): Promise<boolean> {
   try {
     const { data, error } = await supabase.functions.invoke("send-email", {
-      body: { to, subject, html },
+      body: { to, subject, html, subscribeNewsletter, name },
     })
 
     if (error) {
@@ -36,21 +38,34 @@ async function dispatchEmail({ to, subject, html }: EmailPayload): Promise<boole
   }
 }
 
-export async function sendWelcomeEmail(to: string, userName: string): Promise<boolean> {
-  const subject = "Welcome to Ausaguide - Explore Kenya!"
+export async function sendWelcomeEmail(to: string, userName: string, subscribeNewsletter?: boolean): Promise<boolean> {
+  const subject = `Welcome to Ausaguide, ${userName}!`
   const html = `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-      <h1 style="color: #7f5af0; margin-bottom: 20px;">Welcome to Ausaguide, ${userName}!</h1>
-      <p style="font-size: 16px; color: #4a5568; line-height: 1.6;">We're thrilled to have you join our community. Ausaguide helps you discover authentic Kenyan experiences led by passionate local hosts.</p>
-      <p style="font-size: 16px; color: #4a5568; line-height: 1.6;">You can now browse and book street food tours, nature safaris, photography walks, and cultural journeys.</p>
-      <div style="margin: 30px 0; text-align: center;">
-        <a href="https://ausaguide.com/tours" style="background-color: #7f5af0; color: #ffffff; padding: 12px 24px; border-radius: 9999px; text-decoration: none; font-weight: bold; display: inline-block;">Explore Tours</a>
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; color: #1a202c; line-height: 1.6;">
+      <p style="font-size: 16px; margin-bottom: 20px;">Hi ${userName},</p>
+      <p style="font-size: 16px; margin-bottom: 20px;">Welcome to Ausaguide! 🎉</p>
+      <p style="font-size: 16px; margin-bottom: 25px;">You're now part of a community that connects travelers with authentic local experiences in Kenya.</p>
+      
+      <div style="background-color: #f7fafc; padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #edf2f7;">
+        <h3 style="margin-top: 0; margin-bottom: 12px; color: #2d3748; font-size: 16px; font-weight: bold;">What's next?</h3>
+        <ul style="margin: 0; padding-left: 20px; font-size: 15px; color: #4a5568; list-style-type: disc;">
+          <li style="margin-bottom: 8px;">Browse tours and discover unique experiences</li>
+          <li style="margin-bottom: 8px;">Connect with local hosts</li>
+          <li style="margin-bottom: 0;">Start your adventure</li>
+        </ul>
       </div>
-      <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 30px 0;" />
-      <p style="font-size: 12px; color: #a0aec0; text-align: center;">© 2026 Ausaguide. Nairobi, Kenya.</p>
+
+      <p style="font-size: 15px; margin-bottom: 20px;">If you're interested in becoming a host, visit our <a href="https://ausaguide.com/host/signup" style="color: #7f5af0; text-decoration: underline; font-weight: bold;">host page</a> to learn more.</p>
+      
+      <p style="font-size: 15px; margin-bottom: 20px;">Questions? Reach out at <a href="mailto:welcome@ausaguide.com" style="color: #7f5af0; text-decoration: none; font-weight: bold;">welcome@ausaguide.com</a></p>
+      
+      <p style="font-size: 15px; margin-bottom: 0; font-weight: bold;">Cheers,<br/>The Ausaguide Team</p>
+      
+      <hr style="border: 0; border-top: 1px solid #edf2f7; margin: 30px 0;" />
+      <p style="font-size: 12px; color: #a0aec0; text-align: center; margin: 0;">© 2026 Ausaguide. Nairobi, Kenya.</p>
     </div>
   `
-  return dispatchEmail({ to, subject, html })
+  return dispatchEmail({ to, subject, html, subscribeNewsletter, name: userName })
 }
 
 export async function sendBookingConfirmationEmail(

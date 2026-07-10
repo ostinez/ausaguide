@@ -235,6 +235,7 @@ function SignUpForm() {
   const [confirmPassword, setConfirmPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [subscribeNewsletter, setSubscribeNewsletter] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   function handleSubmit(e: React.FormEvent) {
@@ -253,7 +254,12 @@ function SignUpForm() {
     // Pass credentials to onboarding flow via sessionStorage
     sessionStorage.setItem(
       "onboarding_data",
-      JSON.stringify({ name: name.trim(), email: email.trim(), password })
+      JSON.stringify({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+        subscribeNewsletter,
+      })
     )
     navigate("/onboarding")
   }
@@ -345,6 +351,19 @@ function SignUpForm() {
             {showConfirmPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
           </button>
         </div>
+      </div>
+
+      <div className="flex items-center gap-2.5 py-1">
+        <input
+          id="signup-newsletter"
+          type="checkbox"
+          checked={subscribeNewsletter}
+          onChange={(e) => setSubscribeNewsletter(e.target.checked)}
+          className="rounded border-border text-primary focus:ring-primary size-4 accent-[#7F5AF0]"
+        />
+        <Label htmlFor="signup-newsletter" className="text-xs font-normal text-muted-foreground select-none cursor-pointer">
+          I'd like to receive updates and news from Ausaguide
+        </Label>
       </div>
 
       <Button type="submit" className="w-full rounded-full py-5 text-sm font-semibold gap-2">
