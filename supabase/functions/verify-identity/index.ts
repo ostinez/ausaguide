@@ -43,7 +43,7 @@ serve(async (req) => {
       body: JSON.stringify({
         workflow_id: "8857b669-bf52-4189-a61a-6da932ed20a0",
         vendor_data: userId,
-        callback: redirectUrl || "http://localhost:5173/onboarding?didit_done=true",
+        callback: redirectUrl || "https://www.ausaguide.com/onboarding?didit_done=true",
       }),
     })
 

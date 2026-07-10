@@ -116,6 +116,7 @@ function SignInForm() {
       }
 
       // Fetch role from profiles table
+      let role = "traveler"
       try {
         const { data: profile } = await supabase
           .from("profiles")
@@ -124,9 +125,10 @@ function SignInForm() {
           .maybeSingle()
 
         if (profile) {
-          localStorage.setItem("user_role", profile.role)
+          role = profile.role ?? "traveler"
+          localStorage.setItem("user_role", role)
           localStorage.setItem("user_id", profile.id)
-          identifyUser(profile.id, { email: profile.email, role: profile.role })
+          identifyUser(profile.id, { email: profile.email, role })
         } else {
           localStorage.setItem("user_role", "traveler")
           localStorage.setItem("user_id", authData.user.id)
@@ -136,7 +138,11 @@ function SignInForm() {
         localStorage.setItem("user_id", authData.user.id)
       }
 
-      navigate("/dashboard")
+      // Redirect based on role
+      if (role === "admin") navigate("/admin/dashboard")
+      else if (role === "host") navigate("/host/dashboard")
+      else navigate("/dashboard")
+
     } catch (err: any) {
       setError(friendlyAuthError(err?.message ?? "Something went wrong. Please try again."))
     } finally {
