@@ -40,6 +40,12 @@ export function LocationToggle({ userId, className }: LocationToggleProps) {
     try {
       // Remove location update entry on toggle-off
       await supabase.from("location_updates").delete().eq("user_id", userId)
+      await supabase.from("profiles").update({
+        share_location: false,
+        last_location_lat: null,
+        last_location_lng: null,
+        last_location_updated: null,
+      }).eq("id", userId)
     } catch (err) {
       console.error("Failed to delete location on stop:", err)
     } finally {
@@ -61,6 +67,9 @@ export function LocationToggle({ userId, className }: LocationToggleProps) {
       async (position) => {
         try {
           const { latitude, longitude } = position.coords
+          await supabase.from("profiles").update({
+            share_location: true
+          }).eq("id", userId)
           await upsertLocation(latitude, longitude)
           setSharing(true)
           setLoading(false)
@@ -119,6 +128,14 @@ export function LocationToggle({ userId, className }: LocationToggleProps) {
 
   const upsertLocation = async (lat: number, lng: number) => {
     try {
+      // Update profiles
+      await supabase.from("profiles").update({
+        last_location_lat: lat,
+        last_location_lng: lng,
+        last_location_updated: new Date().toISOString(),
+      }).eq("id", userId)
+
+      // Also upsert to location_updates
       const { data: existing } = await supabase
         .from("location_updates")
         .select("id")
@@ -157,14 +174,31 @@ export function LocationToggle({ userId, className }: LocationToggleProps) {
     }
   }
 
-  // Cleanup on unmount
+  // Load initial location sharing state and cleanup on unmount
   useEffect(() => {
+    async function checkInitialState() {
+      if (!userId) return
+      try {
+        const { data } = await supabase
+          .from("profiles")
+          .select("share_location")
+          .eq("id", userId)
+          .maybeSingle()
+        if (data && data.share_location) {
+          startSharing()
+        }
+      } catch (e) {
+        console.warn("Failed to fetch initial sharing status:", e)
+      }
+    }
+    checkInitialState()
+
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
       }
     }
-  }, [])
+  }, [userId])
 
   return (
     <div className={`rounded-xl border border-border/80 bg-card/60 p-4 backdrop-blur-sm space-y-3 ${className}`}>
@@ -175,10 +209,10 @@ export function LocationToggle({ userId, className }: LocationToggleProps) {
           </div>
           <div>
             <Label htmlFor="live-location" className="font-semibold text-sm cursor-pointer select-none">
-              Share Live Location
+              Share my location on the map
             </Label>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Let travelers track your arrival in real-time
+              Let travelers see your live location on the host map
             </p>
           </div>
         </div>

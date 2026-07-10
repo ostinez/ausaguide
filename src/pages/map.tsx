@@ -26,14 +26,7 @@ interface HostMarker {
   isLive?: boolean
 }
 
-// Fallback mock data for hosts in Nairobi area
-const MOCK_HOSTS: HostMarker[] = [
-  { id: "11111111-1111-1111-1111-111111111101", name: "Amina Osei", bio: "Street food expert", location: "Nairobi", lat: -1.286, lng: 36.817, tour: "Nairobi Street Food Safari" },
-  { id: "11111111-1111-1111-1111-111111111102", name: "David Kimani", bio: "Wildlife guide", location: "Narok", lat: -1.478, lng: 35.285, tour: "Maasai Mara Safari" },
-  { id: "11111111-1111-1111-1111-111111111103", name: "Fatima Hassan", bio: "Lamu heritage expert", location: "Lamu", lat: -2.269, lng: 40.902, tour: "Lamu Heritage Walk" },
-  { id: "11111111-1111-1111-1111-111111111105", name: "Austin Murithi", bio: "Certified guide", location: "Nairobi", lat: -1.295, lng: 36.825, tour: "Kibera Community Walk" },
-]
-
+// Fallback map boundary center
 const KENYA_BOUNDS = { lat: -1.2921, lng: 36.8219 }
 
 const COUNTRY_COORDS: Record<string, { lat: number; lng: number; zoom: number }> = {
@@ -57,7 +50,7 @@ const COUNTRY_COORDS: Record<string, { lat: number; lng: number; zoom: number }>
 export default function MapPage() {
   const [searchParams] = useSearchParams()
   const mapRef = useRef<HTMLDivElement>(null)
-  const [hosts, setHosts] = useState<HostMarker[]>(MOCK_HOSTS)
+  const [hosts, setHosts] = useState<HostMarker[]>([])
   const [selected, setSelected] = useState<HostMarker | null>(null)
   const [mapLoaded, setMapLoaded] = useState(false)
   const [mapError, setMapError] = useState(false)
@@ -70,36 +63,33 @@ export default function MapPage() {
     try {
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, full_name, bio, location")
+        .select("id, full_name, bio, location, last_location_lat, last_location_lng, last_location_updated")
         .eq("role", "host")
-
-      const { data: locations } = await supabase
-        .from("location_updates")
-        .select("user_id, latitude, longitude, updated_at")
-
-      const locationMap = new Map(
-        (locations ?? []).map((l) => [l.user_id, { lat: Number(l.latitude), lng: Number(l.longitude), updated_at: l.updated_at }])
-      )
+        .eq("share_location", true)
 
       if (profiles && profiles.length > 0) {
-        const coordMap: Record<string, { lat: number; lng: number }> = {
-          "nairobi": { lat: -1.286 + (Math.random() - 0.5) * 0.05, lng: 36.817 + (Math.random() - 0.5) * 0.05 },
-          "narok": { lat: -1.478, lng: 35.285 },
-          "lamu": { lat: -2.269, lng: 40.902 },
-        }
-        const mapped: HostMarker[] = profiles.map((h) => {
-          const liveLoc = locationMap.get(h.id)
-          const isLive = liveLoc && (new Date().getTime() - new Date(liveLoc.updated_at).getTime()) / 1000 < 25
+        const mapped: HostMarker[] = []
+        profiles.forEach((h) => {
+          if (h.last_location_lat !== null && h.last_location_lng !== null) {
+            // Check if the update is recent (within 5 minutes / 300s to avoid stale locations showing up)
+            const isLive = h.last_location_updated && (new Date().getTime() - new Date(h.last_location_updated).getTime()) / 1000 < 300
 
-          if (isLive && liveLoc) {
-            return { id: h.id, name: h.full_name, bio: h.bio, location: h.location, lat: liveLoc.lat, lng: liveLoc.lng, isLive: true }
+            if (isLive) {
+              mapped.push({
+                id: h.id,
+                name: h.full_name,
+                bio: h.bio,
+                location: h.location,
+                lat: Number(h.last_location_lat),
+                lng: Number(h.last_location_lng),
+                isLive: true
+              })
+            }
           }
-
-          const loc = (h.location ?? "nairobi").toLowerCase()
-          const coords = coordMap[loc] ?? { lat: -1.286 + (Math.random() - 0.5) * 0.3, lng: 36.817 + (Math.random() - 0.5) * 0.3 }
-          return { id: h.id, name: h.full_name, bio: h.bio, location: h.location, ...coords, isLive: false }
         })
         setHosts(mapped)
+      } else {
+        setHosts([])
       }
     } catch (err) {
       console.error(err)
@@ -109,12 +99,12 @@ export default function MapPage() {
   useEffect(() => {
     fetchHostsAndLocations()
 
-    // Subscribe to realtime location updates
+    // Subscribe to realtime profiles updates
     const channel = supabase
-      .channel("public-map-locations")
+      .channel("public-profiles-locations")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "location_updates" },
+        { event: "UPDATE", schema: "public", table: "profiles" },
         () => {
           fetchHostsAndLocations()
         }
@@ -280,7 +270,36 @@ export default function MapPage() {
       </div>
 
       {/* Map Container */}
-      {mapError ? (
+      {hosts.length === 0 ? (
+        <div className="flex min-h-screen flex-col items-center justify-center p-6 text-center space-y-6 bg-background relative overflow-hidden">
+          <div className="absolute top-10 left-1/4 h-[300px] w-[400px] rounded-full bg-primary/10 blur-3xl" />
+          <div className="absolute bottom-10 right-1/4 h-[350px] w-[450px] rounded-full bg-teal/5 blur-3xl" />
+          
+          <div className="relative z-10 space-y-6 max-w-md mx-auto">
+            <div className="inline-flex size-16 items-center justify-center rounded-full bg-[#7F5AF0]/10 border border-[#7F5AF0]/20 text-[#7F5AF0]">
+              <MapPin className="size-8" />
+            </div>
+            <h1 className="text-3xl font-extrabold text-white tracking-tight">No hosts online right now</h1>
+            <p className="text-sm text-white/70 leading-relaxed">
+              There are currently no hosts sharing their live location. Join the waiting list to get notified when we launch, or join our host waiting list to start hosting!
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2">
+              <Link
+                to="/waitlist"
+                className="inline-flex items-center justify-center px-6 py-3 rounded-full bg-[#7F5AF0] text-white text-sm font-bold shadow-lg hover:bg-[#7F5AF0]/90 transition duration-300"
+              >
+                Join General Waitlist
+              </Link>
+              <Link
+                to="/host-waitlist"
+                className="inline-flex items-center justify-center px-6 py-3 rounded-full bg-[#2CB67D] text-white text-sm font-bold shadow-lg hover:bg-[#2CB67D]/90 transition duration-300"
+              >
+                Join Host Waitlist
+              </Link>
+            </div>
+          </div>
+        </div>
+      ) : mapError ? (
         <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background text-center">
           <div className="relative w-full max-w-3xl h-[600px] rounded-2xl overflow-hidden border border-border mx-auto bg-card/50">
             {/* Decorative fallback map */}

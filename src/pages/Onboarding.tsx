@@ -12,6 +12,21 @@ import { identifyUser, trackEvent } from "@/lib/posthog"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { sendWelcomeEmail } from "@/lib/api/emails"
+import { Eye, EyeOff, AlertCircle } from "lucide-react"
+
+/** Map Supabase auth errors to user-friendly messages */
+function friendlySignUpError(message: string): string {
+  const m = message.toLowerCase()
+  if (m.includes("user already registered") || m.includes("already exists") || m.includes("already been registered"))
+    return "An account with this email already exists. Please log in instead."
+  if (m.includes("weak_password") || m.includes("at least 8"))
+    return "Password must be at least 8 characters."
+  if (m.includes("invalid email") || m.includes("email address"))
+    return "Please enter a valid email address."
+  if (m.includes("network") || m.includes("fetch"))
+    return "Network error — please check your connection and try again."
+  return message
+}
 
 // ── Types ──────────────────────────────────────────────
 type Role = "traveler" | "host"
@@ -214,7 +229,7 @@ function StepRole({
 // ── Step 3: Tell Us About You ─────────────────────────────
 function StepProfile({
   role,
-  userId,
+  userId: _userId,
   prefill,
   onComplete,
 }: {
@@ -226,6 +241,7 @@ function StepProfile({
   const [name, setName] = useState(prefill.name)
   const [email, setEmail] = useState(prefill.email)
   const [password, setPassword] = useState(prefill.password)
+  const [showPassword, setShowPassword] = useState(false)
   const [communityBio, setCommunityBio] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -247,22 +263,49 @@ function StepProfile({
 
     setLoading(true)
     try {
+      // ✅ Step 1: Create the real Supabase Auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          data: {
+            full_name: name.trim(),
+            role,
+          },
+        },
+      })
+
+      if (authError) {
+        setError(friendlySignUpError(authError.message))
+        return
+      }
+
+      if (!authData.user) {
+        setError("Account creation failed — no user returned. Please try again.")
+        return
+      }
+
+      // Use the real auth user ID (not a randomly generated one)
+      const realUserId = authData.user.id
+
       if (role === "host") {
-        const { data, error: updateError } = await supabase
+        // For hosts: upsert profile (may already exist from verification step)
+        const { data: profileData, error: upsertError } = await supabase
           .from("profiles")
-          .update({
+          .upsert({
+            id: realUserId,
             email: email.trim(),
             full_name: name.trim(),
+            role: "host",
             languages: ["English", "Swahili"],
           })
-          .eq("id", userId)
           .select("id, email, role")
           .single()
 
-        if (updateError) throw updateError
+        if (upsertError) throw upsertError
 
         const { error: hostErr } = await supabase.from("hosts").insert({
-          user_id: data.id,
+          user_id: realUserId,
           full_name: name.trim(),
           email: email.trim(),
           city: "Nairobi",
@@ -272,18 +315,19 @@ function StepProfile({
         })
         if (hostErr) console.error("Failed to create host record:", hostErr)
 
-        localStorage.setItem("user_id", data.id)
-        localStorage.setItem("user_role", data.role)
-        trackEvent("user_signed_up", { email: data.email, role: data.role })
-        identifyUser(data.id, { email: data.email, role: data.role })
-        sendWelcomeEmail(data.email, name.trim()).catch(err => console.error("Failed to send welcome email:", err))
-        toast.success("Profile created!")
-        onComplete(name.trim(), data.id)
+        localStorage.setItem("user_id", realUserId)
+        localStorage.setItem("user_role", profileData?.role ?? "host")
+        trackEvent("user_signed_up", { email: email.trim(), role: "host" })
+        identifyUser(realUserId, { email: email.trim(), role: "host" })
+        sendWelcomeEmail(email.trim(), name.trim()).catch(err => console.error("Failed to send welcome email:", err))
+        toast.success("Account created! Check your inbox to confirm your email.")
+        onComplete(name.trim(), realUserId)
       } else {
-        const { data, error: insertError } = await supabase
+        // For travellers: insert profile row using real auth user ID
+        const { data: profileData, error: insertError } = await supabase
           .from("profiles")
-          .insert({
-            id: userId,
+          .upsert({
+            id: realUserId,
             email: email.trim(),
             full_name: name.trim(),
             role: "traveler",
@@ -293,21 +337,22 @@ function StepProfile({
           .single()
 
         if (insertError) {
-          if (insertError.code === "23505") throw new Error("An account with this email already exists.")
+          if (insertError.code === "23505")
+            throw new Error("An account with this email already exists. Please log in instead.")
           throw insertError
         }
 
-        localStorage.setItem("user_id", data.id)
-        localStorage.setItem("user_role", data.role)
-        trackEvent("user_signed_up", { email: data.email, role: data.role })
-        identifyUser(data.id, { email: data.email, role: data.role })
-        sendWelcomeEmail(data.email, name.trim()).catch(err => console.error("Failed to send welcome email:", err))
-        toast.success("Profile created!")
-        onComplete(name.trim(), data.id)
+        localStorage.setItem("user_id", realUserId)
+        localStorage.setItem("user_role", profileData?.role ?? "traveler")
+        trackEvent("user_signed_up", { email: email.trim(), role: "traveler" })
+        identifyUser(realUserId, { email: email.trim(), role: "traveler" })
+        sendWelcomeEmail(email.trim(), name.trim()).catch(err => console.error("Failed to send welcome email:", err))
+        toast.success("Account created! Check your inbox to confirm your email.")
+        onComplete(name.trim(), realUserId)
       }
     } catch (err) {
       console.error(err)
-      setError(err instanceof Error ? err.message : "Failed to create account.")
+      setError(err instanceof Error ? friendlySignUpError(err.message) : "Failed to create account. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -324,8 +369,9 @@ function StepProfile({
 
       <form onSubmit={handleSubmit} className="w-full max-w-md space-y-4">
         {error && (
-          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs font-semibold text-red-400">
-            {error}
+          <div className="flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs font-semibold text-red-400">
+            <AlertCircle className="size-4 shrink-0 mt-0.5" />
+            <span>{error}</span>
           </div>
         )}
 
@@ -363,15 +409,25 @@ function StepProfile({
           <Label htmlFor="ob-password" className="text-white/70 text-xs font-semibold uppercase tracking-wide">
             Password
           </Label>
-          <Input
-            id="ob-password"
-            type="password"
-            placeholder="Min 8 characters"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="bg-[#16161A]/60 border-border text-white placeholder:text-white/30 focus:border-[#7F5AF0]/60 rounded-xl"
-          />
+          <div className="relative">
+            <Input
+              id="ob-password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Min 8 characters"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="bg-[#16161A]/60 border-border text-white placeholder:text-white/30 focus:border-[#7F5AF0]/60 rounded-xl pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((s) => !s)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition-colors"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
+          </div>
         </div>
 
         {role === "host" && (
@@ -397,7 +453,7 @@ function StepProfile({
           disabled={loading}
           className="w-full rounded-full bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 transition-all duration-300"
         >
-          {loading ? <Spinner className="size-4" /> : "Continue →"}
+          {loading ? <Spinner className="size-4" /> : "Create Account"}
         </Button>
       </form>
     </div>

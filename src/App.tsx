@@ -28,6 +28,8 @@ import TreePlantedPage from "@/pages/TreePlanted"
 import MentalHealthPage from "@/pages/MentalHealth"
 import TravelCommitmentThankYouPage from "@/pages/TravelCommitmentThankYou"
 import ThankYouPage from "@/pages/ThankYou"
+import HostWaitlistPage from "@/pages/host-waitlist"
+import WaitlistPage from "@/pages/waitlist"
 import AboutPage from "@/pages/about"
 import JournalPage from "@/pages/journal"
 import FeedPage from "@/pages/feed"
@@ -93,6 +95,8 @@ export default function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/help" element={<HelpPage />} />
           <Route path="/map" element={<MapPage />} />
+          <Route path="/host-waitlist" element={<HostWaitlistPage />} />
+          <Route path="/waitlist" element={<WaitlistPage />} />
 
           <Route path="/feed" element={<FeedPage />} />
           <Route path="/traveler/:id" element={<TravelerProfilePage />} />

@@ -22,6 +22,10 @@ export interface Profile {
   two_factor_enabled?: boolean
   two_factor_secret?: string | null
   two_factor_backup_codes?: string[]
+  share_location?: boolean
+  last_location_lat?: number | null
+  last_location_lng?: number | null
+  last_location_updated?: string | null
 }
 
 export interface Tour {

@@ -42,6 +42,7 @@ export default function PrivacyPage() {
             <ul className="list-disc list-inside space-y-1 pl-4">
               <li><strong>Account Information:</strong> Name, email address, password, profile picture, and role details.</li>
               <li><strong>Booking Details:</strong> Tourist names, email addresses, phone numbers, date, time, and special notes.</li>
+              <li><strong>Location Data:</strong> With your consent, we collect precise live location coordinates (latitude and longitude) of hosts while location sharing is enabled. This is used solely to display active host positions on the interactive map.</li>
               <li><strong>Host Profiles:</strong> Bios, location, languages, guides verification statuses, and license uploads.</li>
               <li><strong>Interactive Data:</strong> Chat messages, support history, reviews, and favorites.</li>
               <li><strong>Technical Data:</strong> IP address, browser type, device information, and platform activity data.</li>

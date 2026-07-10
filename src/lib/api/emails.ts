@@ -136,3 +136,33 @@ export async function sendTourApprovalEmail(
   `
   return dispatchEmail({ to: hostEmail, subject, html })
 }
+
+export async function sendHostWaitlistEmail(to: string, userName: string): Promise<boolean> {
+  const subject = "Welcome to the Ausaguide Host Waiting List!"
+  const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; color: #1a202c;">
+      <h1 style="color: #7f5af0; margin-bottom: 20px;">Welcome to the Host Waiting List, ${userName}!</h1>
+      <p style="font-size: 16px; color: #4a5568; line-height: 1.6;">Thank you for your interest in becoming a local host on Ausaguide. We are building a platform to connect curious global travelers with passionate local guides like you.</p>
+      <p style="font-size: 16px; color: #4a5568; line-height: 1.6;">We have successfully received your registration details. Our team is review applications for host onboarding, and we'll contact you when locations open up in your area!</p>
+      <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 30px 0;" />
+      <p style="font-size: 12px; color: #a0aec0; text-align: center;">© 2026 Ausaguide. Nairobi, Kenya.</p>
+    </div>
+  `
+  return dispatchEmail({ to, subject, html })
+}
+
+export async function sendGeneralWaitlistEmail(to: string, userName: string, role: string): Promise<boolean> {
+  const roleName = role === "both" ? "Traveler & Host" : role.charAt(0).toUpperCase() + role.slice(1)
+  const subject = "You're on the Ausaguide Launch Waiting List!"
+  const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; color: #1a202c;">
+      <h1 style="color: #7f5af0; margin-bottom: 20px;">Welcome to the Waitlist, ${userName}!</h1>
+      <p style="font-size: 16px; color: #4a5568; line-height: 1.6;">Thank you for joining the waiting list for Ausaguide. We are launching early access soon and we're excited to have you onboard as a <strong>${roleName}</strong>.</p>
+      <p style="font-size: 16px; color: #4a5568; line-height: 1.6;">We will send you updates as we approach our launch day (90 days from now). Stay tuned for early sneak peeks, feature updates, and special pioneer bonuses!</p>
+      <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 30px 0;" />
+      <p style="font-size: 12px; color: #a0aec0; text-align: center;">© 2026 Ausaguide. Nairobi, Kenya.</p>
+    </div>
+  `
+  return dispatchEmail({ to, subject, html })
+}
+

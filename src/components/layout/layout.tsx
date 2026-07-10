@@ -53,12 +53,19 @@ export function Layout() {
   const socialItems = [
     { label: "Instagram", link: "https://instagram.com/ausaguide" },
     { label: "Twitter", link: "https://twitter.com/ausaguide" },
-    { label: "YouTube", link: "https://youtube.com/ausaguide" },
+    { label: "YouTube", link: "https://youtube.com/@ausaguide" },
     { label: "TikTok", link: "https://tiktok.com/@ausaguide" },
   ]
 
   return (
     <div className="flex min-h-svh flex-col bg-[#16161A]">
+      {/* Beta Banner */}
+      <div className="w-full bg-[#7F5AF0] text-white text-xs sm:text-sm font-semibold py-2.5 px-4 text-center z-50 relative flex flex-wrap items-center justify-center gap-1.5 shadow-md">
+        <span>🚀 Early Access — We're testing with real users.</span>
+        <a href="/waitlist" className="underline hover:text-white/80 font-bold transition duration-200">
+          Join the waitlist for launch.
+        </a>
+      </div>
       <StaggeredMenu
         position="right"
         colors={["#000000", "#0A0A0A"]}

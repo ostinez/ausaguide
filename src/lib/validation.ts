@@ -95,3 +95,9 @@ export function validatePassword(password: string): string | null {
   if (password.length < 8) return "Password must be at least 8 characters"
   return null
 }
+
+export function validateConfirmPassword(password: string, confirm: string): string | null {
+  if (!confirm) return "Please confirm your password"
+  if (password !== confirm) return "Passwords do not match"
+  return null
+}

@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Link, useSearchParams, useNavigate } from "react-router-dom"
-import { Mail, Lock, User, Eye, EyeOff } from "lucide-react"
+import { Mail, Lock, User, Eye, EyeOff, ArrowRight, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,7 +9,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { supabase } from "@/lib/supabase"
 import { identifyUser } from "@/lib/posthog"
 import { checkRateLimit, getLoginKey } from "@/lib/api/rate-limit"
-import { validateName, validateEmail, validatePassword } from "@/lib/validation"
+import { validateName, validateEmail, validatePassword, validateConfirmPassword } from "@/lib/validation"
 import {
   Card,
   CardContent,
@@ -45,6 +45,24 @@ function GoogleIcon() {
   )
 }
 
+/** Map Supabase / network error messages to user-friendly strings */
+function friendlyAuthError(message: string): string {
+  const m = message.toLowerCase()
+  if (m.includes("invalid login credentials") || m.includes("invalid credentials"))
+    return "Incorrect email or password. Please try again."
+  if (m.includes("email not confirmed"))
+    return "Please check your inbox and confirm your email before logging in."
+  if (m.includes("user already registered") || m.includes("already exists"))
+    return "An account with this email already exists. Try logging in instead."
+  if (m.includes("weak_password") || m.includes("at least 8"))
+    return "Password must be at least 8 characters."
+  if (m.includes("rate limit") || m.includes("too many"))
+    return "Too many attempts. Please wait a moment and try again."
+  if (m.includes("network") || m.includes("fetch"))
+    return "Network error — please check your connection and try again."
+  return message
+}
+
 function SignInForm() {
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
@@ -58,7 +76,7 @@ function SignInForm() {
     setError(null)
     setLoading(true)
 
-    // Rate Limit: 5 attempts per 15 minutes per IP
+    // Rate limit: 5 attempts per 15 minutes per IP
     let ipAddress = "local"
     try {
       const res = await fetch("https://api.ipify.org?format=json")
@@ -74,33 +92,53 @@ function SignInForm() {
     const limitResult = await checkRateLimit(rateLimitKey, { max: 5, windowMs: 15 * 60 * 1000 })
     if (!limitResult.allowed) {
       const retryAfter = Math.ceil((limitResult.resetAt.getTime() - Date.now()) / 1000)
-      console.warn("Rate limit exceeded:", {
-        error: "Too many requests. Please wait a moment.",
-        retryAfter
-      })
-      setError("Too many requests. Please wait a moment.")
+      console.warn("Rate limit exceeded:", { retryAfter })
+      setError("Too many login attempts. Please wait a moment and try again.")
       setLoading(false)
       return
     }
 
     try {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, email, role")
-        .eq("email", email.trim())
-        .maybeSingle()
+      // ✅ Properly call Supabase Auth signInWithPassword
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      })
 
-      if (data) {
-        localStorage.setItem("user_role", data.role)
-        localStorage.setItem("user_id", data.id)
-        identifyUser(data.id, { email: data.email, role: data.role })
-      } else {
-        localStorage.setItem("user_role", "traveler")
+      if (authError) {
+        setError(friendlyAuthError(authError.message))
+        return
       }
+
+      if (!authData.user) {
+        setError("Login failed — no user session returned. Please try again.")
+        return
+      }
+
+      // Fetch role from profiles table
+      try {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id, email, role")
+          .eq("id", authData.user.id)
+          .maybeSingle()
+
+        if (profile) {
+          localStorage.setItem("user_role", profile.role)
+          localStorage.setItem("user_id", profile.id)
+          identifyUser(profile.id, { email: profile.email, role: profile.role })
+        } else {
+          localStorage.setItem("user_role", "traveler")
+          localStorage.setItem("user_id", authData.user.id)
+        }
+      } catch {
+        localStorage.setItem("user_role", "traveler")
+        localStorage.setItem("user_id", authData.user.id)
+      }
+
       navigate("/dashboard")
-    } catch (err) {
-      localStorage.setItem("user_role", "traveler")
-      navigate("/dashboard")
+    } catch (err: any) {
+      setError(friendlyAuthError(err?.message ?? "Something went wrong. Please try again."))
     } finally {
       setLoading(false)
     }
@@ -109,8 +147,9 @@ function SignInForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs font-semibold text-destructive animate-in fade-in">
-          {error}
+        <div className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs font-semibold text-destructive animate-in fade-in">
+          <AlertCircle className="size-4 shrink-0 mt-0.5" />
+          <span>{error}</span>
         </div>
       )}
 
@@ -193,7 +232,9 @@ function SignUpForm() {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   function handleSubmit(e: React.FormEvent) {
@@ -206,6 +247,8 @@ function SignUpForm() {
     if (emailErr) { setError(emailErr); return }
     const passErr = validatePassword(password)
     if (passErr) { setError(passErr); return }
+    const confirmErr = validateConfirmPassword(password, confirmPassword)
+    if (confirmErr) { setError(confirmErr); return }
 
     // Pass credentials to onboarding flow via sessionStorage
     sessionStorage.setItem(
@@ -218,8 +261,9 @@ function SignUpForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs font-semibold text-destructive animate-in fade-in">
-          {error}
+        <div className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs font-semibold text-destructive animate-in fade-in">
+          <AlertCircle className="size-4 shrink-0 mt-0.5" />
+          <span>{error}</span>
         </div>
       )}
 
@@ -262,7 +306,7 @@ function SignUpForm() {
           <Input
             id="signup-password"
             type={showPassword ? "text" : "password"}
-            placeholder="Create a password"
+            placeholder="Min 8 characters"
             className="pl-10 pr-10 border-border/80 text-foreground placeholder:text-muted-foreground/50"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -279,8 +323,33 @@ function SignUpForm() {
         </div>
       </div>
 
-      <Button type="submit" className="w-full rounded-full py-5 text-sm font-semibold">
-        Get Started →
+      <div className="space-y-2">
+        <Label htmlFor="signup-confirm-password">Confirm password</Label>
+        <div className="relative">
+          <Lock className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            id="signup-confirm-password"
+            type={showConfirmPassword ? "text" : "password"}
+            placeholder="Re-enter your password"
+            className="pl-10 pr-10 border-border/80 text-foreground placeholder:text-muted-foreground/50"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword((s) => !s)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+          >
+            {showConfirmPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+          </button>
+        </div>
+      </div>
+
+      <Button type="submit" className="w-full rounded-full py-5 text-sm font-semibold gap-2">
+        Get Started
+        <ArrowRight className="size-4" />
       </Button>
 
       <p className="text-center text-xs text-muted-foreground">
@@ -331,6 +400,9 @@ export default function AuthPage() {
           <p className="text-sm text-muted-foreground">
             Discover Kenya through local eyes
           </p>
+          <div className="mt-2 text-xs font-semibold text-[#7F5AF0] px-2.5 py-1 rounded-full bg-[#7F5AF0]/10 border border-[#7F5AF0]/20 inline-block">
+            Early access — testing in progress
+          </div>
         </div>
 
         <Card className="border-border/60 shadow-[var(--shadow-3)]">
