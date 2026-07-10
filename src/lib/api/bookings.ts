@@ -21,6 +21,7 @@ export interface CreateBookingInput {
   notes?: string
   booking_time?: string
   guest_id?: string
+  booking_type?: 'physical' | 'virtual'
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -97,6 +98,7 @@ function mapBooking(
     guest_count: row.guest_count,
     status: row.status,
     total_price: Number(row.total_price),
+    booking_type: (row as any).booking_type,
     stripe_payment_intent_id: row.stripe_payment_intent_id,
     daily_room_url: row.daily_room_url,
     guest_name: row.guest_name,

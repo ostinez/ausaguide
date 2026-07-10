@@ -272,10 +272,10 @@ export default function MessagesPage() {
 
     try {
       const sentMsg = await sendMessage(
-        selectedThreadId,
         currentUserId,
         selectedThread.otherUser.id,
-        cleanMessage
+        cleanMessage,
+        selectedThreadId
       )
 
       // Optimistic state updates

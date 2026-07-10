@@ -353,7 +353,7 @@ export function HeroGlobe() {
     }
   }, [userId])
 
-  const showBecomeHost = !userId || (userRole !== "host" && !hasAppliedHost)
+  const showBecomeHost = false
 
   const handleSearch = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -452,22 +452,12 @@ export function HeroGlobe() {
         </form>
 
         <div className="flex gap-4 w-full justify-center">
-          <Link to="/tours" className="w-1/2 max-w-[150px]">
+          <Link to="/tours" className="w-full max-w-[200px]">
             <Button size="lg" className="rounded-full w-full bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-95 text-white border-0 font-bold cursor-pointer transition-all duration-300 shadow-[0_4px_14px_rgba(127,90,240,0.3)] hover:shadow-[0_6px_20px_rgba(44,182,125,0.4)]">
               Find a Tour
               <ArrowRight className="ml-1 size-4" />
             </Button>
           </Link>
-          {showBecomeHost && (
-            <Link to="/host/signup" className="w-1/2 max-w-[150px]">
-              <Button
-                size="lg"
-                className="rounded-full w-full bg-[#7F5AF0] hover:bg-[#7F5AF0]/90 text-white border-0 font-bold cursor-pointer transition-all duration-300 shadow-[0_4px_14px_rgba(127,90,240,0.3)] hover:shadow-[0_6px_20px_rgba(127,90,240,0.5)]"
-              >
-                Become a Host
-              </Button>
-            </Link>
-          )}
         </div>
 
         {/* Subtitles & Tagline */}

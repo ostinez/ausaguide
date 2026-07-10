@@ -76,6 +76,8 @@ function mapTour(
     status: (row as any).status ?? (row.is_published ? "published" : "draft"),
     tags: (row as any).tags ?? [],
     views: Number((row as any).views ?? 0),
+    physical_price: (row as any).physical_price ? Number((row as any).physical_price) : undefined,
+    virtual_price: (row as any).virtual_price ? Number((row as any).virtual_price) : undefined,
     created_at: now,
     updated_at: row.updated_at ?? now,
     host: hostProfile ? mapProfile(hostProfile) : undefined,

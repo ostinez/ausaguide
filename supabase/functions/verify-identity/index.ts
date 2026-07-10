@@ -51,7 +51,7 @@ serve(async (req) => {
       const errorText = await response.text()
       console.error("Didit API error:", errorText)
       return new Response(
-        JSON.stringify({ error: `Didit session creation failed: ${response.statusText}` }),
+        JSON.stringify({ error: `Didit session creation failed: ${response.statusText} (${errorText})` }),
         {
           status: 502,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -76,7 +76,7 @@ serve(async (req) => {
 
     // Update user record with verification_id
     const { error: dbError } = await supabaseClient
-      .from("users")
+      .from("profiles")
       .update({
         verification_id: session_id,
         verification_status: "started",
@@ -85,7 +85,7 @@ serve(async (req) => {
 
     if (dbError) {
       console.error("Database update error:", dbError)
-      return new Response(JSON.stringify({ error: "Database update failed" }), {
+      return new Response(JSON.stringify({ error: `Database update failed: ${dbError.message || JSON.stringify(dbError)}` }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       })
@@ -97,7 +97,7 @@ serve(async (req) => {
     })
   } catch (error: any) {
     console.error("Unhandled error:", error)
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: `Unhandled server error: ${error.message || String(error)}` }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     })

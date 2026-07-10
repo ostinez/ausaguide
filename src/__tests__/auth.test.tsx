@@ -48,7 +48,7 @@ describe("Auth Page Unit Tests", () => {
     // Signup form inputs should render
     expect(screen.getByPlaceholderText("Your name")).toBeInTheDocument()
     expect(screen.getByPlaceholderText("you@example.com")).toBeInTheDocument()
-    expect(screen.getByPlaceholderText("Create a password")).toBeInTheDocument()
+    expect(screen.getByPlaceholderText("Min 8 characters")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /Get Started/i })).toBeInTheDocument()
   })
 

@@ -23,6 +23,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { fetchTourById } from "@/lib/api/tours"
 import { createBooking } from "@/lib/api/bookings"
+import { supabase } from "@/lib/supabase"
 import type { Tour } from "@/lib/types"
 import { formatTourPrice, getHostInitials, getTourGradient } from "@/lib/tour-utils"
 import { cn } from "@/lib/utils"
@@ -43,6 +44,7 @@ export default function CheckoutPage() {
   const dateParam = searchParams.get("date") // YYYY-MM-DD
   const timeParam = searchParams.get("time") // HH:MM
   const guestsParam = Number(searchParams.get("guests") ?? "1")
+  const typeParam = (searchParams.get("type") as "physical" | "virtual") || "physical"
 
   const [tour, setTour] = useState<Tour | null>(null)
   const [loadingTour, setLoadingTour] = useState(true)
@@ -111,7 +113,8 @@ export default function CheckoutPage() {
 
   const bookingDate = new Date(dateParam + "T00:00:00")
   const guests = Math.min(Math.max(1, guestsParam), tour.max_guests)
-  const total = tour.price * guests
+  const price = typeParam === "virtual" ? (tour.virtual_price ?? 0) : (tour.physical_price ?? tour.price)
+  const total = price * guests
   const hostName = tour.host?.full_name ?? "Local Host"
   const hostInitials = getHostInitials(hostName)
 
@@ -162,8 +165,28 @@ export default function CheckoutPage() {
         guest_phone: phone.trim(),
         notes: notes.trim() ? sanitizeText(notes) : undefined,
         guest_id: localStorage.getItem("user_id") || undefined,
+        booking_type: typeParam,
       })
-      navigate(`/confirmation/${booking.id}`)
+
+      // Call the create-booking-session Edge Function to get the Stripe Checkout redirect URL
+      const { data, error: functionErr } = await supabase.functions.invoke("create-booking-session", {
+        body: {
+          bookingId: booking.id,
+          tourType: typeParam,
+        }
+      })
+
+      if (functionErr) {
+        throw new Error(functionErr.message || "Failed to create Stripe payment session")
+      }
+
+      if (data?.sessionUrl) {
+        // Redirect traveler to Stripe Checkout
+        window.location.href = data.sessionUrl
+      } else {
+        // Fallback if Stripe redirect is unavailable
+        navigate(`/confirmation/${booking.id}`)
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Something went wrong"
       setSubmitError(message)

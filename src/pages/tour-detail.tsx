@@ -58,6 +58,7 @@ export default function TourDetailPage() {
   const [userBooking, setUserBooking] = useState<Booking | null>(null)
   const [tourBookings, setTourBookings] = useState<Booking[]>([])
   const [hostAvailability, setHostAvailability] = useState<HostAvailability[]>([])
+  const [bookingType, setBookingType] = useState<'physical' | 'virtual'>('physical')
   const [hostSettings, setHostSettings] = useState<HostSettings | null>(null)
 
   // Reset selectedTime when date changes
@@ -163,7 +164,8 @@ export default function TourDetailPage() {
   const typeLabel = isVirtual ? "Virtual" : "In-Person"
   const hostName = tour.host?.full_name ?? "Local Host"
   const hostInitials = getHostInitials(hostName)
-  const total = selectedDate ? tour.price * guests : null
+  const currentPrice = bookingType === 'virtual' ? (tour.virtual_price ?? 0) : (tour.physical_price ?? tour.price)
+  const total = selectedDate ? currentPrice * guests : null
 
   // Auth guard — consistent with rest of app (localStorage pattern)
   const isAuthenticated = !!localStorage.getItem("user_id")
@@ -175,7 +177,7 @@ export default function TourDetailPage() {
     }
     if (!selectedDate || !tour || !selectedTime) return
     const dateStr = selectedDate.toISOString().slice(0, 10)
-    navigate(`/checkout/${tour.id}?date=${dateStr}&time=${selectedTime}&guests=${guests}`)
+    navigate(`/checkout/${tour.id}?date=${dateStr}&time=${selectedTime}&guests=${guests}&type=${bookingType}`)
   }
 
   function handleJoinWaitlist() {
@@ -532,9 +534,37 @@ export default function TourDetailPage() {
               </div>
             )}
             <div className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-3)]">
+              {/* Tour Booking Type Toggle Selector */}
+              <div className="flex gap-2 mb-5 bg-muted/40 p-1 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setBookingType('physical')}
+                  className={cn(
+                    "flex-1 py-2 text-xs font-semibold rounded-lg transition-all",
+                    bookingType === 'physical'
+                      ? "bg-background text-foreground shadow-sm font-bold"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  In-Person
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBookingType('virtual')}
+                  className={cn(
+                    "flex-1 py-2 text-xs font-semibold rounded-lg transition-all",
+                    bookingType === 'virtual'
+                      ? "bg-background text-foreground shadow-sm font-bold"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Virtual Live
+                </button>
+              </div>
+
               <div className="flex items-baseline gap-1.5">
                 <span className="text-3xl font-bold text-foreground">
-                  {formatTourPrice(tour.price, tour.currency)}
+                  {formatTourPrice(bookingType === 'virtual' ? (tour.virtual_price ?? 0) : (tour.physical_price ?? tour.price), tour.currency)}
                 </span>
                 <span className="text-sm text-muted-foreground">/ person</span>
               </div>

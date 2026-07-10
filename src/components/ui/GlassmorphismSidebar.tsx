@@ -264,22 +264,7 @@ export function GlassmorphismSidebar({
                 </div>
               </div>
             )}
-            {/* Role Switcher Button */}
-            <button
-              onClick={() => {
-                onToggleRole?.()
-                onClose()
-              }}
-              className={cn(
-                "flex w-full items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-200 border",
-                userRole === "host"
-                  ? "border-[#7F5AF0]/35 bg-[#7F5AF0]/10 hover:bg-[#7F5AF0]/20 text-[#7F5AF0]"
-                  : "border-[#2CB67D]/35 bg-[#2CB67D]/10 hover:bg-[#2CB67D]/20 text-[#2CB67D]"
-              )}
-            >
-              <LayoutDashboard className="size-4" />
-              {userRole === "host" ? "Switch to Traveling" : "Switch to Hosting"}
-            </button>
+
 
             <Link
               to="/profile/edit"

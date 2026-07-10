@@ -30,7 +30,7 @@ export function CTASection() {
     }
   }, [userId])
 
-  const showBecomeHost = !userId || (userRole !== "host" && !hasAppliedHost)
+  const showBecomeHost = false
 
   return (
     <section className="py-20 bg-[#16161A]">

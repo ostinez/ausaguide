@@ -1310,10 +1310,31 @@ export default function DashboardPage() {
   }, [userRole, navigate, loadDashboard])
 
   async function handleUpdateBookingStatus(bookingId: string, status: BookingStatus, reason?: string) {
-    const updated = await updateBookingStatus(bookingId, status, reason)
-    setHostBookings((prev) =>
-      prev.map((b) => (b.id === bookingId ? { ...b, status: updated.status, decline_reason: updated.decline_reason } : b))
-    )
+    if (status === "confirmed" || status === "declined") {
+      try {
+        const action = status === "confirmed" ? "confirm" : "reject"
+        const { data, error } = await supabase.functions.invoke("manage-booking-payment", {
+          body: {
+            bookingId,
+            action,
+            declineReason: reason,
+          }
+        })
+        if (error) throw error
+        
+        if (data?.success) {
+          toast.success(`Booking ${status === "confirmed" ? "confirmed" : "declined"} successfully!`)
+        }
+      } catch (err: any) {
+        console.error("Failed to update payment status:", err)
+        toast.error(`Error: ${err.message || "Failed to update booking"}`)
+      }
+    } else {
+      const updated = await updateBookingStatus(bookingId, status, reason)
+      setHostBookings((prev) =>
+        prev.map((b) => (b.id === bookingId ? { ...b, status: updated.status, decline_reason: updated.decline_reason } : b))
+      )
+    }
     loadDashboard()
   }
 
@@ -1332,25 +1353,7 @@ export default function DashboardPage() {
     }
   }
 
-  const handleToggleRole = async () => {
-    const newRole = userRole === "host" ? "traveler" : "host"
-    if (newRole === "host" && (!hostRecord || hostRecord.status !== "approved")) {
-      toast.info("Switching to host: Please complete your host application first!")
-      navigate("/host/signup")
-      return
-    }
-    try {
-      localStorage.setItem("user_role", newRole)
-      if (userId) {
-        await supabase.from("profiles").update({ role: newRole }).eq("id", userId)
-      }
-      toast.success(`Switched to ${newRole === "host" ? "Hosting" : "Traveling"} Mode`)
-      window.location.reload()
-    } catch (err) {
-      console.error(err)
-      toast.error("Failed to switch user roles.")
-    }
-  }
+
 
 
 
@@ -1394,23 +1397,7 @@ export default function DashboardPage() {
 
               {/* Top-Right Header Actions (Bell + Role Switch + Avatar) */}
               <div className="flex items-center gap-3 ml-auto sm:ml-0">
-                {userRole === "host" ? (
-                  <Button
-                    onClick={handleToggleRole}
-                    variant="outline"
-                    className="rounded-full border-[#7F5AF0]/30 text-[#7F5AF0] hover:bg-[#7F5AF0]/10 text-xs py-1 h-8"
-                  >
-                    Switch to Traveling
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={handleToggleRole}
-                    variant="outline"
-                    className="rounded-full border-[#2CB67D]/30 text-[#2CB67D] hover:bg-[#2CB67D]/10 text-xs py-1 h-8"
-                  >
-                    Switch to Hosting
-                  </Button>
-                )}
+
 
                 {userId && <NotificationBell />}
 
@@ -1445,11 +1432,8 @@ export default function DashboardPage() {
         ) : userRole === "host" ? (
           !hostRecord ? (
             <div className="py-16 text-center">
-              <p className="text-lg font-semibold text-foreground">You are not a host. Apply here.</p>
-              <p className="mt-2 text-sm text-muted-foreground">Become a host and start earning.</p>
-              <Link to="/host/signup">
-                <Button className="mt-6 rounded-full">Apply Now</Button>
-              </Link>
+              <p className="text-lg font-semibold text-foreground">Host profile pending</p>
+              <p className="mt-2 text-sm text-muted-foreground">Your host profile registration is pending review.</p>
             </div>
           ) : hostRecord.status === "pending" ? (
             <Card>

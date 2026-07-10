@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Link, useSearchParams, useNavigate } from "react-router-dom"
 import { Mail, Lock, User, Eye, EyeOff, ArrowRight, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -389,13 +389,16 @@ function SignUpForm() {
 export default function AuthPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const defaultTab = searchParams.get("tab") === "signup" ? "signup" : "signin"
+  const becomeHost = searchParams.get("become-host") === "true"
+  const defaultTab = becomeHost ? "signup" : (searchParams.get("tab") === "signup" ? "signup" : "signin")
 
-  // If someone lands on /auth?tab=signup, send them straight to onboarding
-  if (searchParams.get("tab") === "signup") {
-    navigate("/onboarding", { replace: true })
-    return null
-  }
+  useEffect(() => {
+    if (becomeHost) {
+      sessionStorage.setItem("become_host", "true")
+    }
+  }, [becomeHost])
+
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-24">
@@ -427,6 +430,13 @@ export default function AuthPage() {
         <Card className="border-border/60 shadow-[var(--shadow-3)]">
           <Tabs defaultValue={defaultTab}>
             <CardHeader className="pb-4">
+              {becomeHost && (
+                <div className="mb-4 rounded-xl border border-primary/20 bg-primary/10 p-4 text-center animate-in fade-in">
+                  <p className="text-sm font-semibold text-primary">
+                    Sign up to become a host and share your world with travelers.
+                  </p>
+                </div>
+              )}
               <TabsList className="w-full">
                 <TabsTrigger value="signin" className="flex-1">
                   Log In

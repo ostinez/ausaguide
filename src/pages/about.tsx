@@ -10,6 +10,7 @@ import { JsonLd } from "@/components/seo/JsonLd"
 import founderPhoto from "../assets/images/founder/austin-mbote.jpg"
 
 export default function AboutPage() {
+  const isAuthenticated = !!localStorage.getItem("user_id")
   useSEO({
     title: "About Us — Discover Local Experiences",
     description: "Learn how Ausaguide connects travelers with local Kenyan hosts for authentic, immersive tours.",
@@ -370,12 +371,14 @@ export default function AboutPage() {
               </p>
               
               <div className="relative z-10 flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
-                <StarBorder as={Link} to="/host/signup" color="#7F5AF0" className="w-full sm:w-auto rounded-full overflow-hidden">
-                  <div className="px-8 py-3 text-sm font-bold text-white bg-[#121214] flex items-center justify-center gap-1.5">
-                    Become a Host
-                    <ArrowRight className="size-4" />
-                  </div>
-                </StarBorder>
+                {!isAuthenticated && (
+                  <StarBorder as={Link} to="/auth?tab=signup" color="#7F5AF0" className="w-full sm:w-auto rounded-full overflow-hidden">
+                    <div className="px-8 py-3 text-sm font-bold text-white bg-[#121214] flex items-center justify-center gap-1.5">
+                      Sign Up Now
+                      <ArrowRight className="size-4" />
+                    </div>
+                  </StarBorder>
+                )}
                 
                 <StarBorder as={Link} to="/tours" color="#2CB67D" className="w-full sm:w-auto rounded-full overflow-hidden">
                   <div className="px-8 py-3 text-sm font-bold text-white bg-[#121214] flex items-center justify-center gap-1.5">

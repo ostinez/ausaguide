@@ -78,6 +78,7 @@ export default function App() {
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/host/dashboard" element={<DashboardPage />} />
             <Route path="/dashboard/earnings" element={<EarningsDashboard />} />
             <Route path="/host/tours/new" element={<NewTourPage />} />
             <Route path="/host/tours/:id/edit" element={<EditTourPage />} />

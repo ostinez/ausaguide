@@ -24,6 +24,43 @@ test.describe("Onboarding E2E Flow", () => {
         }),
       });
     });
+
+    // Intercept Supabase Auth signup request
+    await page.route("**/auth/v1/signup*", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          user: {
+            id: "new-user-789",
+            email: "newuser@example.com",
+            user_metadata: { full_name: "Jane Traveler" },
+          },
+        }),
+      });
+    });
+
+    // Intercept auth/v1/user check
+    await page.route("**/auth/v1/user*", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "new-user-789",
+          email: "newuser@example.com",
+          user_metadata: { full_name: "Jane Traveler" },
+        }),
+      });
+    });
+
+    // Intercept rate_limits check
+    await page.route("**/rest/v1/rate_limits*", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([]),
+      });
+    });
   });
 
   test("User can complete the onboarding walkthrough successfully as traveler", async ({ page }) => {

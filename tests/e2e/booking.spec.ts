@@ -84,6 +84,15 @@ test.describe("Booking E2E Flow", () => {
         body: JSON.stringify([]),
       });
     });
+
+    // Intercept booking Stripe session edge function
+    await page.route("**/functions/v1/create-booking-session*", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ sessionUrl: "" }),
+      });
+    });
   });
 
   test("User can load checkout page and complete booking form successfully", async ({ page }) => {

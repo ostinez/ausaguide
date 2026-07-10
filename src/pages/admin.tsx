@@ -682,23 +682,12 @@ export default function AdminDashboardPage() {
                                     </Button>
                                   )}
                                   {p.id !== adminId && (
-                                    <>
-                                      <select
-                                        value={p.role}
-                                        onChange={(e) => handleUpdateUserRole(p.id, e.target.value)}
-                                        className="h-7 text-[10px] rounded-full border border-border bg-background px-2 text-foreground font-semibold"
-                                      >
-                                        <option value="traveler">Traveler</option>
-                                        <option value="host">Host</option>
-                                        <option value="admin">Admin</option>
-                                      </select>
-                                      <Button size="icon" variant="ghost"
-                                        className="size-7 rounded-lg hover:bg-destructive/10 hover:text-destructive"
-                                        title="Delete user"
-                                        onClick={() => handleDeleteUser(p.id)}>
-                                        <Trash2 className="size-3.5" />
-                                      </Button>
-                                    </>
+                                    <Button size="icon" variant="ghost"
+                                      className="size-7 rounded-lg hover:bg-destructive/10 hover:text-destructive"
+                                      title="Delete user"
+                                      onClick={() => handleDeleteUser(p.id)}>
+                                      <Trash2 className="size-3.5" />
+                                    </Button>
                                   )}
                                 </div>
                               </td>

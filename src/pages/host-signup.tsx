@@ -57,6 +57,11 @@ const PERKS = [
 
 export default function HostSignupPage() {
   const navigate = useNavigate()
+  
+  useEffect(() => {
+    navigate("/onboarding", { replace: true })
+  }, [navigate])
+
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [hostType, setHostType] = useState<HostType | "">("")

@@ -24,9 +24,13 @@ test.describe("Authentication E2E Tests", () => {
         body: JSON.stringify({
           access_token: "mock-access-token",
           refresh_token: "mock-refresh-token",
+          expires_in: 3600,
+          token_type: "bearer",
           user: {
             id: "mock-user-123",
             email: "traveler@example.com",
+            aud: "authenticated",
+            role: "authenticated",
             user_metadata: { full_name: "Test Traveler" },
           },
         }),
@@ -65,6 +69,21 @@ test.describe("Authentication E2E Tests", () => {
         body: JSON.stringify([]),
       });
     });
+
+    // Intercept auth/v1/user check
+    await page.route("**/auth/v1/user*", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "mock-user-123",
+          email: "traveler@example.com",
+          aud: "authenticated",
+          role: "authenticated",
+          user_metadata: { full_name: "Test Traveler" },
+        }),
+      });
+    });
   });
 
   test("User can log in successfully and redirect to dashboard", async ({ page }) => {
@@ -95,6 +114,7 @@ test.describe("Authentication E2E Tests", () => {
     await page.locator("#signup-name").fill("John Doe");
     await page.locator("#signup-email").fill("newtraveler@example.com");
     await page.locator("#signup-password").fill("safePassword123");
+    await page.locator("#signup-confirm-password").fill("safePassword123");
 
     // Submit signup triggers onboarding redirect
     await page.getByRole("button", { name: /Get Started/i }).click({ force: true });

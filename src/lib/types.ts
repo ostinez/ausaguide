@@ -52,6 +52,8 @@ export interface Tour {
   status?: "draft" | "published"
   tags?: string[]
   views?: number
+  physical_price?: number
+  virtual_price?: number
   created_at: string
   updated_at: string
   host?: Profile
@@ -68,6 +70,7 @@ export interface Booking {
   guest_count: number
   status: BookingStatus
   total_price: number
+  booking_type?: 'physical' | 'virtual'
   stripe_payment_intent_id: string | null
   daily_room_url: string | null
   guest_name: string

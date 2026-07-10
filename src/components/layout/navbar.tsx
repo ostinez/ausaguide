@@ -306,16 +306,6 @@ export function Navbar() {
                         Settings
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={handleToggleRole}
-                      className={cn(
-                        "hover:bg-accent/ cursor-pointer rounded-lg mx-1 flex items-center gap-2.5 px-3 py-2 text-sm font-medium",
-                        userRole === "host" ? "text-[#7F5AF0] hover:text-[#7F5AF0]" : "text-[#2CB67D] hover:text-[#2CB67D]"
-                      )}
-                    >
-                      <LayoutDashboard className="size-4" />
-                      {userRole === "host" ? "Switch to Traveling" : "Switch to Hosting"}
-                    </DropdownMenuItem>
                     <DropdownMenuSeparator className="bg-accent/" />
                     <DropdownMenuItem
                       onClick={handleSignOut}
@@ -329,11 +319,6 @@ export function Navbar() {
               </div>
             ) : (
               <>
-                <Link to="/host/signup">
-                  <Button variant="ghost" size="sm" className="text-[#2CB67D] hover:text-[#2CB67D]/80 hover:bg-[#2CB67D]/5 font-medium">
-                    Become a Host
-                  </Button>
-                </Link>
                 <Link to="/auth">
                   <Button
                     variant="ghost"
@@ -343,7 +328,7 @@ export function Navbar() {
                     Log In
                   </Button>
                 </Link>
-                <Link to="/onboarding">
+                <Link to="/auth?tab=signup">
                   <Button
                     size="sm"
                     className="bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] text-white border-0 hover:opacity-90 hover:shadow-md hover:shadow-[#7F5AF0]/30 transition-all duration-200 font-semibold"
@@ -435,28 +420,6 @@ export function Navbar() {
                   </Link>
 
                   <button
-                    onClick={() => {
-                      handleToggleRole()
-                      setMobileOpen(false)
-                    }}
-                    className={cn(
-                      "flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all text-left",
-                      userRole === "host" ? "text-[#7F5AF0] hover:bg-[#7F5AF0]/5" : "text-[#2CB67D] hover:bg-[#2CB67D]/5"
-                    )}
-                  >
-                    <LayoutDashboard className="size-4" />
-                    {userRole === "host" ? "Switch to Traveling" : "Switch to Hosting"}
-                  </button>
-
-                  {userRole !== "traveler" && userRole !== "host" && !hasAppliedHost && (
-                    <Link to="/host/signup" onClick={() => setMobileOpen(false)}>
-                      <span className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-[#2CB67D] hover:bg-[#2CB67D]/5 transition-all">
-                        Become a Host
-                      </span>
-                    </Link>
-                  )}
-
-                  <button
                     onClick={() => { handleSignOut(); setMobileOpen(false) }}
                     className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all mt-1"
                   >
@@ -465,17 +428,12 @@ export function Navbar() {
                 </>
               ) : (
                 <>
-                  <Link to="/host/signup" onClick={() => setMobileOpen(false)}>
-                    <span className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium text-[#2CB67D] hover:bg-[#2CB67D]/5 transition-all">
-                      Become a Host
-                    </span>
-                  </Link>
                   <Link to="/auth" onClick={() => setMobileOpen(false)}>
                     <Button variant="outline" className="w-full mt-1 border-border text-white/70 hover:text-white hover:bg-accent/">
                       Log In
                     </Button>
                   </Link>
-                  <Link to="/onboarding" onClick={() => setMobileOpen(false)}>
+                  <Link to="/auth?tab=signup" onClick={() => setMobileOpen(false)}>
                     <Button className="w-full mt-2 bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] text-white border-0 hover:opacity-90 font-semibold">
                       Sign Up
                     </Button>

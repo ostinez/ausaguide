@@ -56,8 +56,12 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Handle succeeded and failed payment intent events
-    if (event.type === "payment_intent.succeeded" || event.type === "payment_intent.payment_failed") {
+    // Handle succeeded, failed, created, and canceled payment intent events
+    if (
+      event.type === "payment_intent.succeeded" ||
+      event.type === "payment_intent.payment_failed" ||
+      event.type === "payment_intent.canceled"
+    ) {
       const paymentIntent = event.data.object as Stripe.PaymentIntent
       const piId = paymentIntent.id
       const bookingId = paymentIntent.metadata?.booking_id
@@ -86,8 +90,19 @@ serve(async (req) => {
         })
       }
 
-      const isSuccess = event.type === "payment_intent.succeeded"
-      const newStatus = isSuccess ? "confirmed" : "failed"
+      let newStatus = "pending"
+      let historyReason = ""
+
+      if (event.type === "payment_intent.succeeded") {
+        newStatus = "confirmed"
+        historyReason = "Payment captured and confirmed via Stripe webhook"
+      } else if (event.type === "payment_intent.payment_failed") {
+        newStatus = "failed"
+        historyReason = `Payment failed: ${paymentIntent.last_payment_error?.message || "unknown failure"}`
+      } else if (event.type === "payment_intent.canceled") {
+        newStatus = "declined"
+        historyReason = "Payment pre-authorization cancelled / refunded via Stripe webhook"
+      }
 
       // Append to status history
       let statusHistory = booking.status_history || []
@@ -99,7 +114,7 @@ serve(async (req) => {
       statusHistory.push({
         status: newStatus,
         timestamp: new Date().toISOString(),
-        reason: isSuccess ? "Payment succeeded via Stripe webhook" : `Payment failed: ${paymentIntent.last_payment_error?.message || "unknown failure"}`
+        reason: historyReason
       })
 
       // Update booking status
@@ -125,7 +140,7 @@ serve(async (req) => {
       const notifications = []
       const tourTitle = booking.tour?.title || "your tour"
 
-      if (isSuccess) {
+      if (newStatus === "confirmed") {
         if (booking.guest_id) {
           notifications.push({
             user_id: booking.guest_id,
@@ -142,7 +157,17 @@ serve(async (req) => {
           type: "booking_request",
           read: false,
         })
-      } else {
+      } else if (newStatus === "declined") {
+        if (booking.guest_id) {
+          notifications.push({
+            user_id: booking.guest_id,
+            booking_id: booking.id,
+            message: `Your booking request for '${tourTitle}' was declined. Your funds have been released/refunded.`,
+            type: "booking_declined",
+            read: false,
+          })
+        }
+      } else if (newStatus === "failed") {
         if (booking.guest_id) {
           notifications.push({
             user_id: booking.guest_id,
@@ -162,6 +187,9 @@ serve(async (req) => {
           console.log(`Inserted ${notifications.length} notification(s) for booking ${booking.id}`)
         }
       }
+    } else if (event.type === "payment_intent.created") {
+      const paymentIntent = event.data.object as Stripe.PaymentIntent
+      console.log(`PaymentIntent created: ${paymentIntent.id}`)
     } else if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session
       const sessionId = session.id

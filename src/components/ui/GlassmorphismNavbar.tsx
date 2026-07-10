@@ -128,26 +128,6 @@ export function GlassmorphismNavbar({ className, ...props }: GlassmorphismNavbar
   const userRole = profile?.role || localStorage.getItem("user_role") || "traveler"
   const userInitials = profile?.full_name ? getHostInitials(profile.full_name) : "U"
 
-  const handleToggleRole = async () => {
-    const newRole = userRole === "host" ? "traveler" : "host"
-    if (newRole === "host" && !hasAppliedHost) {
-      toast.info("Switching to host: Please complete your host application first!")
-      navigate("/host/signup")
-      return
-    }
-    try {
-      localStorage.setItem("user_role", newRole)
-      if (userId) {
-        await supabase.from("profiles").update({ role: newRole }).eq("id", userId)
-      }
-      toast.success(`Switched to ${newRole === "host" ? "Hosting" : "Traveling"} Mode`)
-      window.location.reload()
-    } catch (err) {
-      console.error(err)
-      toast.error("Failed to switch user roles.")
-    }
-  }
-
   function handleSignOut() {
     localStorage.removeItem("user_id")
     localStorage.removeItem("user_role")
@@ -278,16 +258,6 @@ export function GlassmorphismNavbar({ className, ...props }: GlassmorphismNavbar
                         Settings
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={handleToggleRole}
-                      className={cn(
-                        "hover:bg-accent/ cursor-pointer rounded-xl mx-1 my-0.5 flex items-center gap-2.5 px-3 py-2 text-sm font-medium",
-                        userRole === "host" ? "text-[#7F5AF0] hover:text-[#7F5AF0]" : "text-[#2CB67D] hover:text-[#2CB67D]"
-                      )}
-                    >
-                      <LayoutDashboard className="size-4" />
-                      {userRole === "host" ? "Switch to Traveling" : "Switch to Hosting"}
-                    </DropdownMenuItem>
                     <DropdownMenuSeparator className="bg-accent/ mx-1" />
                     <DropdownMenuItem
                       onClick={handleSignOut}
@@ -310,7 +280,7 @@ export function GlassmorphismNavbar({ className, ...props }: GlassmorphismNavbar
                     Log In
                   </Button>
                 </Link>
-                <Link to="/onboarding">
+                <Link to="/auth?tab=signup">
                   <Button
                     size="sm"
                     className="bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] text-white border-0 hover:opacity-90 hover:scale-105 transition-all duration-300 font-bold shadow-md shadow-[#7F5AF0]/30 rounded-full px-5"
@@ -402,26 +372,11 @@ export function GlassmorphismNavbar({ className, ...props }: GlassmorphismNavbar
                         💬 {unreadCount} unread messages
                       </div>
                     )}
-
                     <Link to="/settings" onClick={() => setMobileOpen(false)}>
                       <span className="flex w-full items-center gap-2.5 rounded-full px-4 py-2.5 text-sm font-medium text-white/60 hover:text-white hover:bg-accent/ transition-all duration-300">
                         <Settings className="size-4 text-[#2CB67D]" /> Settings
                       </span>
                     </Link>
-
-                    <button
-                      onClick={() => {
-                        handleToggleRole()
-                        setMobileOpen(false)
-                      }}
-                      className={cn(
-                        "flex w-full items-center gap-2.5 rounded-full px-4 py-2.5 text-sm font-medium transition-all duration-300 text-left",
-                        userRole === "host" ? "text-[#7F5AF0] hover:bg-[#7F5AF0]/5" : "text-[#2CB67D] hover:bg-[#2CB67D]/5"
-                      )}
-                    >
-                      <LayoutDashboard className="size-4" />
-                      {userRole === "host" ? "Switch to Traveling" : "Switch to Hosting"}
-                    </button>
 
                     <button
                       onClick={() => { handleSignOut(); setMobileOpen(false) }}
@@ -437,7 +392,7 @@ export function GlassmorphismNavbar({ className, ...props }: GlassmorphismNavbar
                         Log In
                       </Button>
                     </Link>
-                    <Link to="/onboarding" onClick={() => setMobileOpen(false)}>
+                    <Link to="/auth?tab=signup" onClick={() => setMobileOpen(false)}>
                       <Button className="w-full bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] text-white border-0 hover:opacity-90 font-semibold rounded-full py-5">
                         Sign Up
                       </Button>

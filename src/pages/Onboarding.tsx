@@ -164,7 +164,7 @@ function StepRole({
     <div className="flex flex-col items-center gap-6 py-4 px-2 w-full">
       <div className="text-center space-y-1.5">
         <h2 className="text-2xl sm:text-3xl font-black text-white">Choose Your Role</h2>
-        <p className="text-sm text-white/50">You can always change this later in settings.</p>
+        <p className="text-sm text-[#2CB67D] font-semibold">Choose carefully. Your role cannot be changed once selected.</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg">
@@ -519,19 +519,6 @@ function StepVerifyID({
     setLoading(true)
     setError(null)
     try {
-      const tempEmail = `temp_${userId}@placeholder.ausaguide.com`
-      const { error: upsertErr } = await supabase
-        .from("profiles")
-        .upsert({
-          id: userId,
-          email: tempEmail,
-          full_name: "Pending Host",
-          role: "host",
-          languages: ["English", "Swahili"],
-        })
-
-      if (upsertErr) throw upsertErr
-
       const redirectUrl = `${window.location.origin}/onboarding?didit_done=true&role=host&user_id=${userId}`
       
       const { data, error: functionErr } = await supabase.functions.invoke("verify-identity", {
@@ -673,12 +660,14 @@ function StepVerifyID({
           )
         )}
 
-        <button
-          onClick={onComplete}
-          className="text-xs text-white/30 hover:text-white/60 underline font-semibold transition-colors mt-2"
-        >
-          Skip Verification (Dev Mode)
-        </button>
+        {import.meta.env.DEV && (
+          <button
+            onClick={onComplete}
+            className="text-xs text-white/30 hover:text-white/60 underline font-semibold transition-colors mt-2"
+          >
+            Skip Verification (Dev Mode)
+          </button>
+        )}
       </div>
     </div>
   )
@@ -775,7 +764,7 @@ function StepDone({ name, role }: { name: string; role: Role }) {
             <Button
               id="onboarding-done-primary"
               size="lg"
-              onClick={() => navigate("/dashboard")}
+              onClick={() => navigate("/host/dashboard")}
               className="rounded-full px-8 bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30"
             >
               Start Hosting 🏡
@@ -796,11 +785,185 @@ function StepDone({ name, role }: { name: string; role: Role }) {
   )
 }
 
+// ── Step 5: Payout Setup (Hosts Only) ─────────────────────────
+function StepPayout({
+  userId,
+  onComplete,
+}: {
+  userId: string
+  onComplete: () => void
+}) {
+  const [method, setMethod] = useState<"mpesa" | "bank">("mpesa")
+  const [phone, setPhone] = useState("")
+  const [bankName, setBankName] = useState("")
+  const [accountNo, setAccountNo] = useState("")
+  const [accountName, setAccountName] = useState("")
+
+  function handleSave(e: React.FormEvent) {
+    e.preventDefault()
+
+    if (method === "mpesa" && !phone.trim()) {
+      toast.error("Please enter your M-Pesa phone number.")
+      return
+    }
+    if (method === "bank" && (!bankName.trim() || !accountNo.trim() || !accountName.trim())) {
+      toast.error("Please fill in all bank details.")
+      return
+    }
+
+    try {
+      localStorage.setItem(
+        `host_payout_${userId}`,
+        JSON.stringify({
+          method,
+          phone: phone.trim(),
+          bankName: bankName.trim(),
+          accountNo: accountNo.trim(),
+          accountName: accountName.trim(),
+        })
+      )
+      toast.success("Payout settings saved!")
+      onComplete()
+    } catch (err) {
+      console.error(err)
+      toast.error("Failed to save payout settings.")
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-5 py-4 px-2 w-full">
+      <div className="text-center space-y-1.5">
+        <h2 className="text-2xl sm:text-3xl font-black text-white">Set Up Payouts</h2>
+        <p className="text-sm text-white/50">
+          Choose how you would like to receive payments from bookings.
+        </p>
+      </div>
+
+      <form onSubmit={handleSave} className="w-full max-w-md space-y-5">
+        <div className="space-y-1.5">
+          <Label className="text-white/70 text-xs font-semibold uppercase tracking-wide">
+            Payout Method
+          </Label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setMethod("mpesa")}
+              className={cn(
+                "py-3 rounded-xl border font-bold text-sm transition-all duration-200 cursor-pointer",
+                method === "mpesa"
+                  ? "border-[#2CB67D] bg-[#2CB67D]/10 text-[#2CB67D] shadow-[0_0_12px_rgba(44,182,125,0.15)]"
+                  : "border-border bg-[#16161A]/60 text-white/60 hover:text-white"
+              )}
+            >
+              M-Pesa 📱
+            </button>
+            <button
+              type="button"
+              onClick={() => setMethod("bank")}
+              className={cn(
+                "py-3 rounded-xl border font-bold text-sm transition-all duration-200 cursor-pointer",
+                method === "bank"
+                  ? "border-[#7F5AF0] bg-[#7F5AF0]/10 text-[#7F5AF0] shadow-[0_0_12px_rgba(127,90,240,0.15)]"
+                  : "border-border bg-[#16161A]/60 text-white/60 hover:text-white"
+              )}
+            >
+              Bank Transfer 🏦
+            </button>
+          </div>
+        </div>
+
+        {method === "mpesa" ? (
+          <div className="space-y-1.5">
+            <Label htmlFor="pay-phone" className="text-white/70 text-xs font-semibold uppercase tracking-wide">
+              M-Pesa Phone Number
+            </Label>
+            <Input
+              id="pay-phone"
+              type="tel"
+              placeholder="e.g. +254 712 345678"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              required
+              className="bg-[#16161A]/60 border-border text-white placeholder:text-white/30 focus:border-[#7F5AF0]/60 rounded-xl"
+            />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="pay-bank" className="text-white/70 text-xs font-semibold uppercase tracking-wide">
+                Bank Name
+              </Label>
+              <Input
+                id="pay-bank"
+                type="text"
+                placeholder="e.g. Kenya Commercial Bank"
+                value={bankName}
+                onChange={(e) => setBankName(e.target.value)}
+                required
+                className="bg-[#16161A]/60 border-border text-white placeholder:text-white/30 focus:border-[#7F5AF0]/60 rounded-xl"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="pay-acc-no" className="text-white/70 text-xs font-semibold uppercase tracking-wide">
+                Account Number
+              </Label>
+              <Input
+                id="pay-acc-no"
+                type="text"
+                placeholder="Your bank account number"
+                value={accountNo}
+                onChange={(e) => setAccountNo(e.target.value)}
+                required
+                className="bg-[#16161A]/60 border-border text-white placeholder:text-white/30 focus:border-[#7F5AF0]/60 rounded-xl"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="pay-acc-name" className="text-white/70 text-xs font-semibold uppercase tracking-wide">
+                Account Holder Name
+              </Label>
+              <Input
+                id="pay-acc-name"
+                type="text"
+                placeholder="Full name on the account"
+                value={accountName}
+                onChange={(e) => setAccountName(e.target.value)}
+                required
+                className="bg-[#16161A]/60 border-border text-white placeholder:text-white/30 focus:border-[#7F5AF0]/60 rounded-xl"
+              />
+            </div>
+          </div>
+        )}
+
+        <Button
+          type="submit"
+          size="lg"
+          className="w-full rounded-full bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 transition-all duration-300"
+        >
+          Save & Continue →
+        </Button>
+      </form>
+    </div>
+  )
+}
+
 // ── Main page ──────────────────────────────────────────
 export default function OnboardingPage() {
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
-  const [role, setRole] = useState<Role | null>(null)
+  const [role, setRole] = useState<Role | null>(() => {
+    try {
+      const isBecomeHost = sessionStorage.getItem("become_host") === "true"
+      if (isBecomeHost) {
+        sessionStorage.removeItem("become_host")
+        return "host"
+      }
+    } catch (e) {
+      console.error("Failed to read become_host from sessionStorage:", e)
+    }
+    return null
+  })
   const [completedName, setCompletedName] = useState("")
   const [userId, setUserId] = useState(() => {
     try {
@@ -823,7 +986,7 @@ export default function OnboardingPage() {
       
       setUserId(uId)
       setRole(r)
-      setStep(2) // Directly resume at StepVerifyID
+      setStep(3) // Directly resume at StepVerifyID (Verify ID is now step 3 for Host)
       return
     }
 
@@ -841,8 +1004,13 @@ export default function OnboardingPage() {
   const steps = [
     { label: "Welcome" },
     { label: "Role" },
-    ...(role === "host" ? [{ label: "Verify ID" }] : []),
     { label: "Profile" },
+    ...(role === "host"
+      ? [
+          { label: "Verify ID" },
+          { label: "Payout" },
+        ]
+      : []),
     { label: "Done" },
   ]
 
@@ -868,26 +1036,34 @@ export default function OnboardingPage() {
               />
             )}
 
+            {step === 2 && (
+              <StepProfile
+                role={role ?? "traveler"}
+                userId={userId}
+                prefill={prefill}
+                onComplete={(name, realUserId) => {
+                  setCompletedName(name)
+                  setUserId(realUserId)
+                  setStep(3)
+                }}
+              />
+            )}
+
             {role === "host" ? (
               <>
-                {step === 2 && (
+                {step === 3 && (
                   <StepVerifyID
                     userId={userId}
-                    onComplete={() => setStep(3)}
-                  />
-                )}
-                {step === 3 && (
-                  <StepProfile
-                    role={role}
-                    userId={userId}
-                    prefill={prefill}
-                    onComplete={(name) => {
-                      setCompletedName(name)
-                      setStep(4)
-                    }}
+                    onComplete={() => setStep(4)}
                   />
                 )}
                 {step === 4 && (
+                  <StepPayout
+                    userId={userId}
+                    onComplete={() => setStep(5)}
+                  />
+                )}
+                {step === 5 && (
                   <StepDone
                     name={completedName || prefill.name || "Explorer"}
                     role={role}
@@ -896,17 +1072,6 @@ export default function OnboardingPage() {
               </>
             ) : (
               <>
-                {step === 2 && (
-                  <StepProfile
-                    role={role ?? "traveler"}
-                    userId={userId}
-                    prefill={prefill}
-                    onComplete={(name) => {
-                      setCompletedName(name)
-                      setStep(3)
-                    }}
-                  />
-                )}
                 {step === 3 && (
                   <StepDone
                     name={completedName || prefill.name || "Explorer"}
