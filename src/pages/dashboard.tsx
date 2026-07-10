@@ -1279,7 +1279,7 @@ export default function DashboardPage() {
 
     // Subscribe to bookings updates
     const bookingChannel = supabase
-      .channel("bookings-updates")
+      .channel(`bookings-updates-${userId || "anon"}-${Date.now()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "bookings" },
@@ -1292,7 +1292,7 @@ export default function DashboardPage() {
 
     // Subscribe to notifications inserts
     const notifChannel = supabase
-      .channel("notifications-updates")
+      .channel(`notifications-updates-${userId || "anon"}-${Date.now()}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications" },
@@ -1304,6 +1304,8 @@ export default function DashboardPage() {
       .subscribe()
 
     return () => {
+      bookingChannel.unsubscribe()
+      notifChannel.unsubscribe()
       supabase.removeChannel(bookingChannel)
       supabase.removeChannel(notifChannel)
     }
