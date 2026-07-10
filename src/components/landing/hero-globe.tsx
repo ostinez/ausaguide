@@ -12,7 +12,6 @@ import {
 import { useNavigate, Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Search, ArrowRight } from "lucide-react"
-import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
 import MagicRings from "@/components/ui/MagicRings"
 import { TextType } from "@/components/ui/TextType"
@@ -321,39 +320,13 @@ export function HeroGlobe() {
   const [isFocused, setIsFocused] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
 
-  const userId = localStorage.getItem("user_id")
-  const userRole = localStorage.getItem("user_role")
-  const [hasAppliedHost, setHasAppliedHost] = useState(false)
-
   // Track responsive screen size for props
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
+    const handleResize = () => setIsMobile(window.innerWidth < 768)
     handleResize()
     window.addEventListener("resize", handleResize)
     return () => window.removeEventListener("resize", handleResize)
   }, [])
-
-  useEffect(() => {
-    if (userId) {
-      async function checkHost() {
-        try {
-          const { data } = await supabase
-            .from("hosts")
-            .select("id")
-            .eq("user_id", userId)
-            .maybeSingle()
-          if (data) setHasAppliedHost(true)
-        } catch (err) {
-          console.error(err)
-        }
-      }
-      checkHost()
-    }
-  }, [userId])
-
-  const showBecomeHost = false
 
   const handleSearch = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()

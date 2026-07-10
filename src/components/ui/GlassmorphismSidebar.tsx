@@ -40,7 +40,6 @@ interface GlassmorphismSidebarProps {
   userRole: string
   pendingCount?: number
   unreadNotifications?: number
-  onToggleRole?: () => void
 }
 
 // ────────────────────────────────────────────────────────────
@@ -87,7 +86,6 @@ export function GlassmorphismSidebar({
   userRole,
   pendingCount = 0,
   unreadNotifications = 0,
-  onToggleRole,
 }: GlassmorphismSidebarProps) {
   const location = useLocation()
   const navigate = useNavigate()

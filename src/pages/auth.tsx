@@ -387,7 +387,6 @@ function SignUpForm() {
 }
 
 export default function AuthPage() {
-  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const becomeHost = searchParams.get("become-host") === "true"
   const defaultTab = becomeHost ? "signup" : (searchParams.get("tab") === "signup" ? "signup" : "signin")

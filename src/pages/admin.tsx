@@ -387,16 +387,6 @@ export default function AdminDashboardPage() {
     } catch { showToast("Failed to delete user", "error") }
   }
 
-  async function handleUpdateUserRole(userIdToUpdate: string, newRole: any) {
-    try {
-      const matchedUser = profiles.find(p => p.id === userIdToUpdate)
-      const { error } = await supabase.from("profiles").update({ role: newRole }).eq("id", userIdToUpdate)
-      if (error) throw error
-      setProfiles((prev) => prev.map((p) => p.id === userIdToUpdate ? { ...p, role: newRole } : p))
-      showToast(`User role updated to ${newRole}`, "success")
-      await logAdminAction("Update User Role", "user", userIdToUpdate, { old_role: matchedUser?.role, new_role: newRole })
-    } catch { showToast("Failed to update user role", "error") }
-  }
 
   // ── Filtered datasets ───────────────────────────────────────────────────────
   const q = search.toLowerCase()

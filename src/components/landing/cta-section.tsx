@@ -1,34 +1,11 @@
-import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Globe, Users } from "lucide-react"
 import { BorderGlow } from "@/components/ui/BorderGlow"
 import { GlareHover } from "@/components/ui/GlareHover"
 import { StarBorder } from "@/components/ui/StarBorder"
-import { supabase } from "@/lib/supabase"
 
 export function CTASection() {
-  const userId = localStorage.getItem("user_id")
-  const userRole = localStorage.getItem("user_role")
-  const [hasAppliedHost, setHasAppliedHost] = useState(false)
-
-  useEffect(() => {
-    if (userId) {
-      async function checkHost() {
-        try {
-          const { data } = await supabase
-            .from("hosts")
-            .select("id")
-            .eq("user_id", userId)
-            .maybeSingle()
-          if (data) setHasAppliedHost(true)
-        } catch (err) {
-          console.error(err)
-        }
-      }
-      checkHost()
-    }
-  }, [userId])
 
   const showBecomeHost = false
 

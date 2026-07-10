@@ -1373,7 +1373,6 @@ export default function DashboardPage() {
         userRole={userRole}
         pendingCount={pendingCount}
         unreadNotifications={unreadNotifications}
-        onToggleRole={handleToggleRole}
       />
 
       {/* Main content — full width, sidebar no longer takes permanent space */}

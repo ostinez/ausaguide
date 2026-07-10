@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react"
-import { Link, useLocation, useNavigate } from "react-router-dom"
+import { Link, useLocation } from "react-router-dom"
 import { Menu, X, Globe, LogOut, Settings, LayoutDashboard, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { toast } from "sonner"
 import {
   Sheet,
   SheetContent,
@@ -28,7 +27,6 @@ import { getHostInitials } from "@/lib/tour-utils"
 export interface GlassmorphismNavbarProps extends React.ComponentProps<"nav"> {}
 
 export function GlassmorphismNavbar({ className, ...props }: GlassmorphismNavbarProps) {
-  const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const location = useLocation()
@@ -37,7 +35,6 @@ export function GlassmorphismNavbar({ className, ...props }: GlassmorphismNavbar
   const userId = localStorage.getItem("user_id")
   const [profile, setProfile] = useState<Profile | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
-  const [hasAppliedHost, setHasAppliedHost] = useState(false)
 
   // Scroll-aware glass intensification
   useEffect(() => {
@@ -108,22 +105,6 @@ export function GlassmorphismNavbar({ className, ...props }: GlassmorphismNavbar
     }
   }, [userId])
 
-  useEffect(() => {
-    if (!userId) return
-    async function checkHostApplication() {
-      try {
-        const { data } = await supabase
-          .from("hosts")
-          .select("id")
-          .eq("user_id", userId)
-          .maybeSingle()
-        if (data) setHasAppliedHost(true)
-      } catch (err) {
-        console.error(err)
-      }
-    }
-    checkHostApplication()
-  }, [userId])
 
   const userRole = profile?.role || localStorage.getItem("user_role") || "traveler"
   const userInitials = profile?.full_name ? getHostInitials(profile.full_name) : "U"

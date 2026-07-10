@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react"
-import { Link, useLocation, useNavigate } from "react-router-dom"
+import { Link, useLocation } from "react-router-dom"
 import { Menu, X, Globe, LogOut, Settings, LayoutDashboard, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { toast } from "sonner"
 import {
   Sheet,
   SheetContent,
@@ -26,7 +25,6 @@ import NotificationBell from "@/components/ui/NotificationBell"
 import { getHostInitials } from "@/lib/tour-utils"
 
 export function Navbar() {
-  const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const location = useLocation()
@@ -35,7 +33,6 @@ export function Navbar() {
   const userId = localStorage.getItem("user_id")
   const [profile, setProfile] = useState<Profile | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
-  const [hasAppliedHost, setHasAppliedHost] = useState(false)
 
   // Scroll-aware glass intensification
   useEffect(() => {
@@ -47,7 +44,6 @@ export function Navbar() {
   useEffect(() => {
     if (!userId) {
       setProfile(null)
-      setHasAppliedHost(false)
       return
     }
     async function loadProfile() {
@@ -62,20 +58,6 @@ export function Navbar() {
       }
     }
     loadProfile()
-
-    async function checkHostApplication() {
-      try {
-        const { data } = await supabase
-          .from("hosts")
-          .select("id")
-          .eq("user_id", userId)
-          .maybeSingle()
-        if (data) setHasAppliedHost(true)
-      } catch (err) {
-        console.error(err)
-      }
-    }
-    checkHostApplication()
   }, [userId, location.pathname])
 
   useEffect(() => {
@@ -124,25 +106,6 @@ export function Navbar() {
   const userRole = profile?.role || localStorage.getItem("user_role") || "traveler"
   const userInitials = profile?.full_name ? getHostInitials(profile.full_name) : "U"
 
-  const handleToggleRole = async () => {
-    const newRole = userRole === "host" ? "traveler" : "host"
-    if (newRole === "host" && !hasAppliedHost) {
-      toast.info("Switching to host: Please complete your host application first!")
-      navigate("/host/signup")
-      return
-    }
-    try {
-      localStorage.setItem("user_role", newRole)
-      if (userId) {
-        await supabase.from("profiles").update({ role: newRole }).eq("id", userId)
-      }
-      toast.success(`Switched to ${newRole === "host" ? "Hosting" : "Traveling"} Mode`)
-      window.location.reload()
-    } catch (err) {
-      console.error(err)
-      toast.error("Failed to switch user roles.")
-    }
-  }
 
   async function handleSignOut() {
     await supabase.auth.signOut()
@@ -257,18 +220,6 @@ export function Navbar() {
           <div className="hidden items-center gap-2 md:flex">
             {userId ? (
               <div className="flex items-center gap-2">
-                {/* Become a Host link for eligible users */}
-                {userRole !== "traveler" && userRole !== "host" && !hasAppliedHost && (
-                  <Link to="/host/signup">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-[#2CB67D] hover:text-[#2CB67D]/80 hover:bg-[#2CB67D]/5 font-medium"
-                    >
-                      Become a Host
-                    </Button>
-                  </Link>
-                )}
 
                 {/* Profile Avatar Dropdown */}
                 <DropdownMenu>
