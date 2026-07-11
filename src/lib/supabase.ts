@@ -15,3 +15,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient<any>(supabaseUrl, supabaseAnonKey)
+
+if (typeof window !== "undefined") {
+  ;(window as any).supabase = supabase
+}

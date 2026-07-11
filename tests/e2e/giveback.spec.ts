@@ -20,13 +20,25 @@ test.describe("Giveback Initiatives E2E Tests", () => {
       });
     });
 
-    // Intercept travel commitments inserts
+    // Intercept travel commitments
     await page.route("**/rest/v1/travel_commitments*", async (route) => {
-      await route.fulfill({
-        status: 201,
-        contentType: "application/json",
-        body: JSON.stringify([{ id: 1, commitment_id: "AUS-TRAVEL-9999" }]),
-      });
+      const method = route.request().method();
+      if (method === "GET") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([]),
+          headers: {
+            "content-range": "0-0/0",
+          }
+        });
+      } else {
+        await route.fulfill({
+          status: 201,
+          contentType: "application/json",
+          body: JSON.stringify([{ id: 1, commitment_id: "AUS-TRAVEL-9999" }]),
+        });
+      }
     });
 
     // Intercept partnership inquiries inserts

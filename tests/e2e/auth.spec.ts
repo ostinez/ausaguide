@@ -128,4 +128,56 @@ test.describe("Authentication E2E Tests", () => {
     // Check redirect to auth page
     await expect(page).toHaveURL(/.*auth/);
   });
+
+  test("User can request password reset email", async ({ page }) => {
+    await page.goto("/auth");
+
+    // Fill email
+    await page.locator("#signin-email").fill("traveler@example.com");
+
+    // Mock recover request
+    await page.route("**/auth/v1/recover*", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({}),
+      });
+    });
+
+    // Click Forgot Password button
+    await page.getByRole("button", { name: /Forgot password\?/i }).click({ force: true });
+
+    // Verify success message
+    await expect(page.locator("text=Check your inbox for the reset link.").first()).toBeVisible();
+  });
+
+  test("User can click Google login and gets redirected to Google OAuth and then back to onboarding", async ({ page }) => {
+    await page.goto("/auth");
+
+    // Setup route for auth profiles check to return empty/null profile to mock new user
+    await page.route("**/rest/v1/profiles*", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([]), // return empty to trigger onboarding redirect
+      });
+    });
+
+    // Mock supabase.auth.signInWithOAuth to prevent actual redirection
+    await page.evaluate(() => {
+      if ((window as any).supabase?.auth) {
+        (window as any).supabase.auth.signInWithOAuth = async () => {
+          return { data: { provider: "google", url: "" }, error: null };
+        };
+      }
+    });
+
+    await page.getByRole("button", { name: /Google/i }).click({ force: true });
+
+    // Directly navigate to callback page (simulating the client-side redirect after authorization)
+    await page.goto("/auth/callback#access_token=mock-access-token&refresh_token=mock-refresh-token&expires_in=3600&token_type=bearer");
+
+    // Wait for redirect to onboarding
+    await expect(page).toHaveURL(/.*onboarding/);
+  });
 });

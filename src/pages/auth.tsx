@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { Link, useSearchParams, useNavigate } from "react-router-dom"
-import { Mail, Lock, User, Eye, EyeOff, ArrowRight, AlertCircle } from "lucide-react"
+import { Mail, Lock, User, Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,6 +9,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { supabase } from "@/lib/supabase"
 import { identifyUser } from "@/lib/posthog"
 import { checkRateLimit, getLoginKey } from "@/lib/api/rate-limit"
+import { toast } from "sonner"
 import { validateName, validateEmail, validatePassword, validateConfirmPassword } from "@/lib/validation"
 import {
   Card,
@@ -70,10 +71,13 @@ function SignInForm() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [resetLoading, setResetLoading] = useState(false)
+  const [infoMessage, setInfoMessage] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    setInfoMessage(null)
     setLoading(true)
 
     // Rate limit: 5 attempts per 15 minutes per IP
@@ -150,12 +154,68 @@ function SignInForm() {
     }
   }
 
+  const handleForgotPassword = async () => {
+    setError(null)
+    setInfoMessage(null)
+    if (!email.trim()) {
+      setError("Please enter your email address in the email field first.")
+      return
+    }
+    setResetLoading(true)
+    try {
+      const redirectToUrl =
+        window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+          ? window.location.origin + "/reset-password"
+          : "https://ausaguide.com/reset-password"
+
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: redirectToUrl,
+      })
+
+      if (resetError) {
+        setError(friendlyAuthError(resetError.message))
+      } else {
+        toast.success("Check your inbox for the reset link.")
+        setInfoMessage("Check your inbox for the reset link.")
+      }
+    } catch (err: any) {
+      setError(friendlyAuthError(err?.message ?? "Failed to request password reset."))
+    } finally {
+      setResetLoading(false)
+    }
+  }
+
+  const handleGoogleSignIn = async () => {
+    setError(null)
+    setInfoMessage(null)
+    try {
+      const { error: authError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: window.location.origin + "/auth/callback",
+        },
+      })
+      if (authError) {
+        setError(friendlyAuthError(authError.message))
+      }
+    } catch (err: any) {
+      setError(friendlyAuthError(err?.message ?? "Google authentication failed."))
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
         <div className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs font-semibold text-destructive animate-in fade-in">
           <AlertCircle className="size-4 shrink-0 mt-0.5" />
           <span>{error}</span>
+        </div>
+      )}
+
+      {infoMessage && (
+        <div className="flex items-start gap-2 rounded-xl border border-[#2CB67D]/30 bg-[#2CB67D]/10 p-3 text-xs font-semibold text-[#2CB67D] animate-in fade-in">
+          <CheckCircle2 className="size-4 shrink-0 mt-0.5" />
+          <span>{infoMessage}</span>
         </div>
       )}
 
@@ -180,9 +240,11 @@ function SignInForm() {
           <Label htmlFor="signin-password">Password</Label>
           <button
             type="button"
-            className="text-xs text-primary hover:text-primary/80 transition-colors"
+            onClick={handleForgotPassword}
+            disabled={resetLoading}
+            className="text-xs text-primary hover:text-primary/80 transition-colors cursor-pointer disabled:opacity-50"
           >
-            Forgot password?
+            {resetLoading ? "Sending..." : "Forgot password?"}
           </button>
         </div>
         <div className="relative">
@@ -224,6 +286,7 @@ function SignInForm() {
       <Button
         type="button"
         variant="outline"
+        onClick={handleGoogleSignIn}
         className="w-full rounded-full py-5 text-sm font-medium border-border/80"
       >
         <GoogleIcon />

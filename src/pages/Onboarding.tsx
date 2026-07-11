@@ -246,6 +246,23 @@ function StepProfile({
   const [communityBio, setCommunityBio] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isOAuthUser, setIsOAuthUser] = useState(false)
+
+  useEffect(() => {
+    async function checkUser() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          setIsOAuthUser(true)
+          if (!name) setName(user.user_metadata?.full_name || "")
+          if (!email) setEmail(user.email || "")
+        }
+      } catch (err) {
+        console.error("Error checking active session:", err)
+      }
+    }
+    checkUser()
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -255,8 +272,10 @@ function StepProfile({
     if (nameErr) { setError(nameErr); return }
     const emailErr = validateEmail(email)
     if (emailErr) { setError(emailErr); return }
-    const passErr = validatePassword(password)
-    if (passErr) { setError(passErr); return }
+    if (!isOAuthUser) {
+      const passErr = validatePassword(password)
+      if (passErr) { setError(passErr); return }
+    }
     if (role === "host" && communityBio.trim().length < 10) {
       setError("Please tell us a bit more about your community (at least 10 characters).")
       return
@@ -264,30 +283,37 @@ function StepProfile({
 
     setLoading(true)
     try {
-      // ✅ Step 1: Create the real Supabase Auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-        options: {
-          data: {
-            full_name: name.trim(),
-            role,
+      let realUserId: string
+      if (isOAuthUser) {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          throw new Error("No active user session found.")
+        }
+        realUserId = user.id
+      } else {
+        // ✅ Step 1: Create the real Supabase Auth user
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: {
+            data: {
+              full_name: name.trim(),
+              role,
+            },
           },
-        },
-      })
+        })
 
-      if (authError) {
-        setError(friendlySignUpError(authError.message))
-        return
+        if (authError) {
+          setError(friendlySignUpError(authError.message))
+          return
+        }
+
+        if (!authData.user) {
+          setError("Account creation failed — no user returned. Please try again.")
+          return
+        }
+        realUserId = authData.user.id
       }
-
-      if (!authData.user) {
-        setError("Account creation failed — no user returned. Please try again.")
-        return
-      }
-
-      // Use the real auth user ID (not a randomly generated one)
-      const realUserId = authData.user.id
 
       // If updates opt-in was checked, save to database table
       if (prefill.subscribeNewsletter) {
@@ -427,34 +453,37 @@ function StepProfile({
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="bg-[#16161A]/60 border-border text-white placeholder:text-white/30 focus:border-[#7F5AF0]/60 rounded-xl"
+            disabled={isOAuthUser}
+            className="bg-[#16161A]/60 border-border text-white placeholder:text-white/30 focus:border-[#7F5AF0]/60 rounded-xl disabled:opacity-70"
           />
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="ob-password" className="text-white/70 text-xs font-semibold uppercase tracking-wide">
-            Password
-          </Label>
-          <div className="relative">
-            <Input
-              id="ob-password"
-              type={showPassword ? "text" : "password"}
-              placeholder="Min 8 characters"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="bg-[#16161A]/60 border-border text-white placeholder:text-white/30 focus:border-[#7F5AF0]/60 rounded-xl pr-10"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((s) => !s)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition-colors"
-              aria-label={showPassword ? "Hide password" : "Show password"}
-            >
-              {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-            </button>
+        {!isOAuthUser && (
+          <div className="space-y-1.5">
+            <Label htmlFor="ob-password" className="text-white/70 text-xs font-semibold uppercase tracking-wide">
+              Password
+            </Label>
+            <div className="relative">
+              <Input
+                id="ob-password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Min 8 characters"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="bg-[#16161A]/60 border-border text-white placeholder:text-white/30 focus:border-[#7F5AF0]/60 rounded-xl pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition-colors"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {role === "host" && (
           <div className="space-y-1.5">
@@ -479,7 +508,7 @@ function StepProfile({
           disabled={loading}
           className="w-full rounded-full bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 transition-all duration-300"
         >
-          {loading ? <Spinner className="size-4" /> : "Create Account"}
+          {loading ? <Spinner className="size-4 animate-spin" /> : (isOAuthUser ? "Save Profile" : "Create Account")}
         </Button>
       </form>
     </div>

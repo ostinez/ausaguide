@@ -38,6 +38,7 @@ import AdminSettingsPage from "@/pages/admin-settings"
 import AdminHostsPage from "@/pages/admin-hosts"
 import TermsPage from "@/pages/legal/terms"
 import PrivacyPage from "@/pages/legal/privacy"
+import AuthCallbackPage from "@/pages/AuthCallback"
 import OnboardingPage from "@/pages/Onboarding"
 
 function ScrollToTop() {
@@ -72,6 +73,7 @@ export default function App() {
           <Route path="/checkout/:tourId" element={<CheckoutPage />} />
           <Route path="/confirmation/:bookingId" element={<ConfirmationPage />} />
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/host/signup" element={<HostSignupPage />} />
           <Route path="/host/:id" element={<HostProfilePage />} />
