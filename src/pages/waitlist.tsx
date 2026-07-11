@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { toast } from "sonner"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "../lib/supabase"
 import { sendGeneralWaitlistEmail } from "@/lib/api/emails"
 import { Loader2, CheckCircle2, User, Mail, Sparkles, MapPin, AlignLeft } from "lucide-react"
 
@@ -50,7 +50,7 @@ export default function WaitlistPage() {
       // Send Brevo confirmation email
       await sendGeneralWaitlistEmail(email.trim(), name.trim(), role)
 
-      toast.success("🎉 You're on the list! We'll notify you when we launch.")
+      toast.success("🎉 You're on the list!")
       setSuccess(true)
     } catch (err: any) {
       console.error(err)
