@@ -13,7 +13,7 @@ import AuthPage from "@/pages/auth"
 import HostSignupPage from "@/pages/host-signup"
 import DashboardPage from "@/pages/dashboard"
 import EarningsDashboard from "@/pages/earnings"
-import AdminDashboardPage from "@/pages/admin"
+import AdminDashboard from "@/pages/AdminDashboard"
 import HostProfilePage from "@/pages/host-profile"
 import NewTourPage from "@/pages/new-tour"
 import EditTourPage from "@/pages/edit-tour"
@@ -82,7 +82,8 @@ export default function App() {
             <Route path="/dashboard/earnings" element={<EarningsDashboard />} />
             <Route path="/host/tours/new" element={<NewTourPage />} />
             <Route path="/host/tours/:id/edit" element={<EditTourPage />} />
-            <Route path="/admin" element={<AdminDashboardPage />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/hosts" element={<AdminHostsPage />} />
             <Route path="/admin/settings" element={<AdminSettingsPage />} />
             <Route path="/settings" element={<SettingsPage />} />

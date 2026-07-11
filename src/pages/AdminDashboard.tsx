@@ -155,7 +155,7 @@ function ChartTooltip({ active, payload, label }: any) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Main Page
 // ─────────────────────────────────────────────────────────────────────────────
-export default function AdminDashboardPage() {
+export default function AdminDashboard() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [checkingAuth, setCheckingAuth] = useState(true)
