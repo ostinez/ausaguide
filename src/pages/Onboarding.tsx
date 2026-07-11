@@ -284,15 +284,18 @@ function StepProfile({
     setLoading(true)
     try {
       let realUserId: string
+      let emailConfirmed = false
+
       if (isOAuthUser) {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) {
           throw new Error("No active user session found.")
         }
         realUserId = user.id
+        emailConfirmed = !!user.email_confirmed_at
       } else {
         // ✅ Step 1: Create the real Supabase Auth user
-        const { data: authData, error: authError } = await supabase.auth.signUp({
+        let { data: signUpData, error: authError } = await supabase.auth.signUp({
           email: email.trim(),
           password,
           options: {
@@ -304,15 +307,30 @@ function StepProfile({
         })
 
         if (authError) {
-          setError(friendlySignUpError(authError.message))
-          return
+          const errMsg = authError.message.toLowerCase()
+          if (errMsg.includes("already registered") || errMsg.includes("already exists")) {
+            // Attempt to sign in instead
+            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+              email: email.trim(),
+              password,
+            })
+            if (signInError) {
+              setError(friendlySignUpError(authError.message))
+              return
+            }
+            signUpData = signInData
+          } else {
+            setError(friendlySignUpError(authError.message))
+            return
+          }
         }
 
-        if (!authData.user) {
+        if (!signUpData.user) {
           setError("Account creation failed — no user returned. Please try again.")
           return
         }
-        realUserId = authData.user.id
+        realUserId = signUpData.user.id
+        emailConfirmed = !!signUpData.user.email_confirmed_at
       }
 
       // If updates opt-in was checked, save to database table
@@ -368,7 +386,12 @@ function StepProfile({
         identifyUser(realUserId, { email: email.trim(), role: "host" })
         sendWelcomeEmail(email.trim(), name.trim(), prefill.subscribeNewsletter)
           .catch(err => console.error("Failed to send welcome email:", err))
-        toast.success("Account created! Check your inbox to confirm your email.")
+        
+        if (emailConfirmed) {
+          toast.success("Account profile completed successfully!")
+        } else {
+          toast.success("Account created! Check your inbox to confirm your email.")
+        }
         onComplete(name.trim(), realUserId)
       } else {
         // Upsert profile with explicit conflict target on 'id'
@@ -399,7 +422,12 @@ function StepProfile({
         identifyUser(realUserId, { email: email.trim(), role: "traveler" })
         sendWelcomeEmail(email.trim(), name.trim(), prefill.subscribeNewsletter)
           .catch(err => console.error("Failed to send welcome email:", err))
-        toast.success("Account created! Check your inbox to confirm your email.")
+        
+        if (emailConfirmed) {
+          toast.success("Account profile completed successfully!")
+        } else {
+          toast.success("Account created! Check your inbox to confirm your email.")
+        }
         onComplete(name.trim(), realUserId)
       }
     } catch (err) {
