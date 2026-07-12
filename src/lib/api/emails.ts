@@ -167,18 +167,35 @@ export async function sendHostWaitlistEmail(to: string, userName: string): Promi
   return dispatchEmail({ to, subject, html })
 }
 
-export async function sendGeneralWaitlistEmail(to: string, userName: string, _role: string): Promise<boolean> {
+export async function sendGeneralWaitlistEmail(
+  to: string,
+  userName: string,
+  _role: string,
+  confirmToken?: string
+): Promise<boolean> {
   const subject = "You're on the Ausaguide Waitlist! 🎉"
+  const confirmUrl = confirmToken
+    ? `https://ausaguide.com/waitlist?token=${confirmToken}`
+    : "https://ausaguide.com/waitlist"
   const html = `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 24px; background-color: #16161A; color: #fffffe; line-height: 1.6;">
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid rgba(127,90,240,0.3); border-radius: 24px; background-color: #16161A; color: #fffffe; line-height: 1.6;">
       <div style="text-align: center; margin-bottom: 32px;">
         <img src="https://ausaguide.com/logo-primary.png" alt="Ausaguide" style="height: 36px; width: auto; display: inline-block;" />
       </div>
       <p style="font-size: 16px; margin-bottom: 20px; color: #fffffe;">Hi ${userName}, thanks for joining the Ausaguide waitlist!</p>
-      <p style="font-size: 16px; margin-bottom: 20px; color: #a7a9be;">We'll notify you in approximately 90 days when we launch.</p>
-      <p style="font-size: 16px; margin-bottom: 24px; color: #a7a9be;">In the meantime, you can share the waitlist with friends: <a href="https://ausaguide.com/waitlist" style="color: #2CB67D; text-decoration: underline; font-weight: 600;">https://ausaguide.com/waitlist</a></p>
-      <p style="font-size: 16px; margin-bottom: 32px; color: #a7a9be;">If you're interested in becoming a host, reply to this email and we'll reach out.</p>
-      
+      <p style="font-size: 16px; margin-bottom: 24px; color: #a7a9be;">One last step — click below to confirm your spot and unlock your <strong style="color: #7F5AF0;">🎉 confirmed status</strong>:</p>
+
+      <div style="text-align: center; margin-bottom: 32px;">
+        <a href="${confirmUrl}"
+           style="background: linear-gradient(135deg, #7F5AF0, #2CB67D); color: #ffffff; padding: 14px 36px; border-radius: 9999px; text-decoration: none; font-weight: 700; display: inline-block; font-size: 15px; box-shadow: 0 4px 20px rgba(127,90,240,0.4);">
+          ✅ Confirm My Spot →
+        </a>
+      </div>
+
+      <p style="font-size: 14px; margin-bottom: 20px; color: #a7a9be;">Or paste this link in your browser:<br/><a href="${confirmUrl}" style="color: #2CB67D; word-break: break-all;">${confirmUrl}</a></p>
+      <p style="font-size: 14px; margin-bottom: 20px; color: #a7a9be;">We'll notify you when we launch on <strong style="color: #fffffe;">October 10, 2026</strong>.</p>
+      <p style="font-size: 14px; margin-bottom: 32px; color: #a7a9be;">In the meantime, share the waitlist with friends: <a href="https://ausaguide.com/waitlist" style="color: #2CB67D; font-weight: 600;">https://ausaguide.com/waitlist</a></p>
+
       <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 32px 0;" />
       <p style="font-size: 13px; color: #7F5AF0; font-weight: 700; text-align: center; margin-bottom: 4px;">Ausaguide — Be a Local. Share Your World.</p>
       <p style="font-size: 11px; color: #5f6368; text-align: center; margin: 0;">© 2026 Ausaguide. Nairobi, Kenya.</p>
