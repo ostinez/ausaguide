@@ -9,7 +9,7 @@ import {
   Shield, Users, Calendar, DollarSign, Search, ArrowLeft,
   XCircle, CheckCircle2, BadgeAlert, TrendingUp, MapPin,
   Eye, Trash2, Ban, UserCheck, Download, RefreshCw,
-  Star,
+  Star, ClipboardList,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -162,12 +162,12 @@ export default function AdminDashboard() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<"overview" | "users" | "tours" | "bookings" | "analytics">("overview")
+  const [activeTab, setActiveTab] = useState<"overview" | "users" | "tours" | "bookings" | "analytics" | "waitlist">("overview")
 
   useEffect(() => {
     const tab = searchParams.get("tab")
-    if (tab === "overview" || tab === "users" || tab === "tours" || tab === "bookings" || tab === "analytics") {
-      setActiveTab(tab)
+    if (tab === "overview" || tab === "users" || tab === "tours" || tab === "bookings" || tab === "analytics" || tab === "waitlist") {
+      setActiveTab(tab as any)
     }
   }, [searchParams])
 
@@ -177,6 +177,7 @@ export default function AdminDashboard() {
   const [tours, setTours] = useState<TourRow[]>([])
   const [bookings, setBookings] = useState<BookingRow[]>([])
   const [dailyRevenue, setDailyRevenue] = useState<DailyRevenue[]>([])
+  const [waitlists, setWaitlists] = useState<any[]>([])
 
   // UI
   const [search, setSearch] = useState("")
@@ -190,13 +191,33 @@ export default function AdminDashboard() {
 
   // Auth check
   useEffect(() => {
-    const role = localStorage.getItem("user_role")
-    if (role === "admin") {
-      setIsAdmin(true)
-      load()
-    } else {
-      navigate("/dashboard")
+    async function checkAdminAuth() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session?.user) {
+          navigate("/auth")
+          return
+        }
+
+        const { data: profile, error: profileErr } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", session.user.id)
+          .single()
+
+        if (profileErr || profile?.role !== "admin") {
+          navigate("/dashboard")
+          return
+        }
+
+        setIsAdmin(true)
+        load()
+      } catch (err) {
+        console.error("Auth check failed:", err)
+        navigate("/dashboard")
+      }
     }
+    checkAdminAuth()
   }, [])
 
   // Toast auto-dismiss
@@ -211,21 +232,24 @@ export default function AdminDashboard() {
   async function load() {
     setLoading(true)
     try {
-      const [profRes, hostRes, tourRes, bkRes] = await Promise.all([
+      const [profRes, hostRes, tourRes, bkRes, waitlistRes] = await Promise.all([
         supabase.from("profiles").select("*").order("created_at", { ascending: false }),
         supabase.from("hosts").select("*").order("created_at", { ascending: false }),
         supabase.from("tours").select("*").order("created_at", { ascending: false }),
         supabase.from("bookings").select("*").order("booking_date", { ascending: false }),
+        supabase.from("waitlist").select("*").order("created_at", { ascending: false }),
       ])
       if (profRes.error) throw profRes.error
       if (hostRes.error) throw hostRes.error
       if (tourRes.error) throw tourRes.error
       if (bkRes.error) throw bkRes.error
+      if (waitlistRes.error) throw waitlistRes.error
 
       const profs: Profile[] = profRes.data ?? []
       const hostApps: HostRecord[] = hostRes.data ?? []
       const rawTours: any[] = tourRes.data ?? []
       const rawBks: any[] = bkRes.data ?? []
+      const rawWaitlists: any[] = waitlistRes.data ?? []
 
       // Stitch host names onto tours and bookings
       const stitchedTours: TourRow[] = rawTours.map((t) => {
@@ -259,6 +283,7 @@ export default function AdminDashboard() {
       setTours(stitchedTours)
       setBookings(stitchedBks)
       setDailyRevenue(daily)
+      setWaitlists(rawWaitlists)
       setError(null)
     } catch (e: any) {
       setError(e.message ?? "Failed to load admin data")
@@ -449,6 +474,14 @@ export default function AdminDashboard() {
   // ─────────────────────────────────────────────────────────────────────────────
   // Main Layout
   // ─────────────────────────────────────────────────────────────────────────────
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Spinner className="size-8 text-primary animate-spin" />
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background px-4 py-24">
       {/* Ambient glow */}
@@ -504,11 +537,12 @@ export default function AdminDashboard() {
           setSearchParams({ tab: v })
           setSearch("")
         }}>
-          <TabsList className="grid w-full grid-cols-5 h-auto">
+          <TabsList className="grid w-full grid-cols-6 h-auto">
             <TabsTrigger value="overview" className="text-xs py-2.5">Overview</TabsTrigger>
             <TabsTrigger value="users" className="text-xs py-2.5">Users</TabsTrigger>
             <TabsTrigger value="tours" className="text-xs py-2.5">Tours</TabsTrigger>
             <TabsTrigger value="bookings" className="text-xs py-2.5">Bookings</TabsTrigger>
+            <TabsTrigger value="waitlist" className="text-xs py-2.5">Waitlist</TabsTrigger>
             <TabsTrigger value="analytics" className="text-xs py-2.5">Analytics</TabsTrigger>
           </TabsList>
         </Tabs>
@@ -527,15 +561,19 @@ export default function AdminDashboard() {
             {activeTab === "overview" && (
               <div className="space-y-8">
                 {/* Stat cards */}
-                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-6">
                   <StatCard label="Total Revenue" value={fmt(totalRevenue)} icon={DollarSign}
                     color="oklch(0.541 0.217 292)" sub="Confirmed + Completed" />
                   <StatCard label="Total Bookings" value={bookings.length} icon={Calendar}
                     color="oklch(0.696 0.17 162)" sub="All time" />
                   <StatCard label="Platform Users" value={profiles.length} icon={Users}
                     color="oklch(0.828 0.189 84.429)" sub="All roles" />
-                  <StatCard label="Pending Approvals" value={pendingHostsCount} icon={BadgeAlert}
-                    color="oklch(0.645 0.246 16.439)" sub="Host applications" />
+                  <StatCard label="Active Hosts" value={profiles.filter(p => p.role === "host").length} icon={UserCheck}
+                    color="oklch(0.627 0.265 303.9)" sub="Approved guides" />
+                  <StatCard label="Total Tours" value={tours.length} icon={MapPin}
+                    color="oklch(0.696 0.17 162)" sub="All listings" />
+                  <StatCard label="Waitlist" value={waitlists.length} icon={ClipboardList}
+                    color="oklch(0.645 0.246 16.439)" sub="Launch signups" />
                 </div>
 
                 {/* Revenue chart */}
@@ -592,6 +630,103 @@ export default function AdminDashboard() {
                     </CardContent>
                   </Card>
                 )}
+
+                {/* Recent Signups and Waitlist side-by-side */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Recent Signups */}
+                  <Card className="border-border/60 bg-gradient-to-br from-card to-card/40">
+                    <CardHeader>
+                      <CardTitle className="text-base font-bold flex items-center gap-2 text-white">
+                        <Users className="size-4 text-primary" />
+                        Recent Signups
+                      </CardTitle>
+                      <CardDescription>Latest users to register accounts</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="border-b border-border/40 bg-muted/20">
+                              <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground">User</th>
+                              <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground">Role</th>
+                              <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground">Joined</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border/10">
+                            {profiles.slice(0, 5).map((p) => (
+                              <tr key={p.id} className="hover:bg-muted/5 transition-colors">
+                                <td className="px-4 py-3 font-medium text-white">
+                                  {p.full_name}
+                                  <div className="text-[10px] text-white/40">{p.email}</div>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold tracking-wide uppercase ${
+                                    p.role === "admin" ? "bg-red-500/10 text-red-400 border border-red-500/20" :
+                                    p.role === "host" ? "bg-purple-500/10 text-purple-400 border border-purple-500/20" :
+                                    "bg-teal-500/10 text-teal-400 border border-teal-500/20"
+                                  }`}>
+                                    {p.role}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-white/60">
+                                  {p.created_at ? format(parseISO(p.created_at), "MMM d, yyyy") : "N/A"}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {profiles.length === 0 && (
+                        <div className="py-8 text-center text-xs text-muted-foreground">No users registered yet.</div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Recent Waitlist */}
+                  <Card className="border-border/60 bg-gradient-to-br from-card to-card/40">
+                    <CardHeader>
+                      <CardTitle className="text-base font-bold flex items-center gap-2 text-white">
+                        <ClipboardList className="size-4 text-[#2CB67D]" />
+                        Recent Waitlist Signups
+                      </CardTitle>
+                      <CardDescription>Latest users to join the launch waiting list</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="border-b border-border/40 bg-muted/20">
+                              <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground">Name</th>
+                              <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground">Role</th>
+                              <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground">Joined</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border/10">
+                            {waitlists.slice(0, 5).map((w) => (
+                              <tr key={w.id} className="hover:bg-muted/5 transition-colors">
+                                <td className="px-4 py-3 font-medium text-white">
+                                  {w.name}
+                                  <div className="text-[10px] text-white/40">{w.email}</div>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold tracking-wide uppercase bg-[#2CB67D]/10 text-[#2CB67D] border border-[#2CB67D]/20">
+                                    {w.role}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-white/60">
+                                  {w.created_at ? format(parseISO(w.created_at), "MMM d, yyyy") : "N/A"}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {waitlists.length === 0 && (
+                        <div className="py-8 text-center text-xs text-muted-foreground">No waitlist entries yet.</div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
             )}
 
@@ -935,6 +1070,63 @@ export default function AdminDashboard() {
                     </div>
                     {filteredBookings.length === 0 && (
                       <div className="py-12 text-center text-sm text-muted-foreground">No bookings found.</div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* ── WAITLIST ───────────────────────────────────────────────── */}
+            {activeTab === "waitlist" && (
+              <div className="space-y-6 animate-in fade-in duration-300">
+                <div className="flex flex-wrap gap-3 items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-bold text-white">Waitlist Directory</h2>
+                    <p className="text-xs text-muted-foreground">All launch waiting list submissions ({waitlists.length})</p>
+                  </div>
+                  <Button size="sm" variant="outline" className="rounded-full border-border/60 text-muted-foreground hover:text-white"
+                    onClick={() => downloadCSV(waitlists.map((w) => ({
+                      name: w.name, email: w.email, role: w.role, location: w.location, reason: w.reason, joined: w.created_at,
+                    })), "waitlist-export.csv")}>
+                    <Download className="size-3.5 mr-1.5" />Export CSV
+                  </Button>
+                </div>
+
+                <Card className="border-border/60 bg-[#121214]/30">
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border/40 bg-muted/20">
+                            {["User Details", "Role Interest", "Location", "Reason", "Signed Up"].map((h) => (
+                              <th key={h} className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border/10">
+                          {waitlists.map((w) => (
+                            <tr key={w.id} className="hover:bg-muted/10 transition-colors">
+                              <td className="px-4 py-3 text-xs font-semibold text-white">
+                                {w.name}
+                                <div className="text-[10px] text-white/40">{w.email}</div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <Badge className="text-[9px] font-bold tracking-wide uppercase bg-primary/10 text-primary border-primary/20" variant="outline">
+                                  {w.role}
+                                </Badge>
+                              </td>
+                              <td className="px-4 py-3 text-xs text-white/80">{w.location || "N/A"}</td>
+                              <td className="px-4 py-3 text-xs text-muted-foreground max-w-xs truncate" title={w.reason}>{w.reason || "N/A"}</td>
+                              <td className="px-4 py-3 text-xs text-white/60">
+                                {w.created_at ? format(parseISO(w.created_at), "MMM d, yyyy") : "N/A"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {waitlists.length === 0 && (
+                      <div className="py-12 text-center text-sm text-muted-foreground">No waitlist signups found.</div>
                     )}
                   </CardContent>
                 </Card>

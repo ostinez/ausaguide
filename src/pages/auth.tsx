@@ -74,6 +74,32 @@ function SignInForm() {
   const [resetLoading, setResetLoading] = useState(false)
   const [infoMessage, setInfoMessage] = useState<string | null>(null)
 
+  const handleResendConfirmation = async () => {
+    setError(null)
+    setInfoMessage(null)
+    if (!email.trim()) {
+      setError("Please enter your email address to resend confirmation.")
+      return
+    }
+    setLoading(true)
+    try {
+      const { error: resendError } = await supabase.auth.resend({
+        type: 'signup',
+        email: email.trim(),
+        options: {
+          emailRedirectTo: window.location.origin + "/auth/callback",
+        }
+      })
+      if (resendError) throw resendError
+      toast.success("Confirmation email resent. Please check your inbox.")
+      setInfoMessage("Confirmation email resent. Please check your inbox.")
+    } catch (err: any) {
+      setError(friendlyAuthError(err.message))
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -110,7 +136,12 @@ function SignInForm() {
       })
 
       if (authError) {
-        setError(friendlyAuthError(authError.message))
+        const msg = authError.message.toLowerCase()
+        if (msg.includes("confirm") || msg.includes("verified") || msg.includes("verification")) {
+          setError("unconfirmed_email")
+        } else {
+          setError(friendlyAuthError(authError.message))
+        }
         return
       }
 
@@ -134,8 +165,10 @@ function SignInForm() {
           localStorage.setItem("user_id", profile.id)
           identifyUser(profile.id, { email: profile.email, role })
         } else {
-          localStorage.setItem("user_role", "traveler")
+          // No profile exists yet! Redirect to onboarding to complete profile creation
           localStorage.setItem("user_id", authData.user.id)
+          navigate("/onboarding")
+          return
         }
       } catch {
         localStorage.setItem("user_role", "traveler")
@@ -148,7 +181,12 @@ function SignInForm() {
       else navigate("/dashboard")
 
     } catch (err: any) {
-      setError(friendlyAuthError(err?.message ?? "Something went wrong. Please try again."))
+      const msg = (err?.message ?? "").toLowerCase()
+      if (msg.includes("confirm") || msg.includes("verified") || msg.includes("verification")) {
+        setError("unconfirmed_email")
+      } else {
+        setError(friendlyAuthError(err?.message ?? "Something went wrong. Please try again."))
+      }
     } finally {
       setLoading(false)
     }
@@ -158,28 +196,19 @@ function SignInForm() {
     setError(null)
     setInfoMessage(null)
     if (!email.trim()) {
-      setError("Please enter your email address in the email field first.")
+      setError("Please enter your email address to reset password.")
       return
     }
     setResetLoading(true)
     try {
-      const redirectToUrl =
-        window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-          ? window.location.origin + "/reset-password"
-          : "https://ausaguide.com/reset-password"
-
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: redirectToUrl,
+      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: window.location.origin + "/reset-password",
       })
-
-      if (resetError) {
-        setError(friendlyAuthError(resetError.message))
-      } else {
-        toast.success("Check your inbox for the reset link.")
-        setInfoMessage("Check your inbox for the reset link.")
-      }
+      if (resetErr) throw resetErr
+      setInfoMessage("Check your inbox for the reset link.")
+      toast.success("Password reset email sent!")
     } catch (err: any) {
-      setError(friendlyAuthError(err?.message ?? "Failed to request password reset."))
+      setError(friendlyAuthError(err?.message ?? "Failed to send reset link. Please try again."))
     } finally {
       setResetLoading(false)
     }
@@ -208,7 +237,20 @@ function SignInForm() {
       {error && (
         <div className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs font-semibold text-destructive animate-in fade-in">
           <AlertCircle className="size-4 shrink-0 mt-0.5" />
-          <span>{error}</span>
+          {error === "unconfirmed_email" ? (
+            <span>
+              Please confirm your email before logging in.{" "}
+              <button
+                type="button"
+                onClick={handleResendConfirmation}
+                className="underline font-bold text-primary hover:text-primary/80 transition-colors ml-1 focus:outline-none cursor-pointer"
+              >
+                Resend confirmation?
+              </button>
+            </span>
+          ) : (
+            <span>{error}</span>
+          )}
         </div>
       )}
 
