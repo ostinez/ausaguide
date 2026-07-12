@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
 import { Stepper } from "@/components/ui/Stepper"
 import { supabase } from "@/lib/supabase"
-import { validateName, validateEmail, validatePassword } from "@/lib/validation"
+import { validateName, validateEmail, validatePassword, validateUsername } from "@/lib/validation"
 import { identifyUser, trackEvent } from "@/lib/posthog"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -34,6 +34,7 @@ type Role = "traveler" | "host"
 interface OnboardingData {
   name: string
   email: string
+  username?: string
   password: string
   subscribeNewsletter?: boolean
 }
@@ -241,6 +242,7 @@ function StepProfile({
 }) {
   const [name, setName] = useState(prefill.name)
   const [email, setEmail] = useState(prefill.email)
+  const [username, setUsername] = useState(prefill.username || "")
   const [password, setPassword] = useState(prefill.password)
   const [showPassword, setShowPassword] = useState(false)
   const [communityBio, setCommunityBio] = useState("")
@@ -272,6 +274,8 @@ function StepProfile({
     if (nameErr) { setError(nameErr); return }
     const emailErr = validateEmail(email)
     if (emailErr) { setError(emailErr); return }
+    const userErr = validateUsername(username)
+    if (userErr) { setError(userErr); return }
     if (!isOAuthUser) {
       const passErr = validatePassword(password)
       if (passErr) { setError(passErr); return }
@@ -285,6 +289,19 @@ function StepProfile({
     try {
       let realUserId: string
       let emailConfirmed = false
+
+      // Check username availability
+      const { data: existingUser, error: checkError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("username", username.trim().toLowerCase())
+        .maybeSingle()
+
+      if (checkError) throw checkError
+      if (existingUser && existingUser.id !== _userId) {
+        setError("This username is already taken.")
+        return
+      }
 
       if (isOAuthUser) {
         const { data: { user } } = await supabase.auth.getUser()
@@ -302,6 +319,7 @@ function StepProfile({
             data: {
               full_name: name.trim(),
               role,
+              username: username.trim().toLowerCase(),
             },
           },
         })
@@ -356,6 +374,7 @@ function StepProfile({
               id: realUserId,
               email: email.trim(),
               full_name: name.trim(),
+              username: username.trim().toLowerCase(),
               role: "host",
               languages: ["English", "Swahili"],
             },
@@ -402,6 +421,7 @@ function StepProfile({
               id: realUserId,
               email: email.trim(),
               full_name: name.trim(),
+              username: username.trim().toLowerCase(),
               role: "traveler",
               languages: ["English"],
             },
@@ -468,6 +488,26 @@ function StepProfile({
             required
             className="bg-[#16161A]/60 border-border text-white placeholder:text-white/30 focus:border-[#7F5AF0]/60 rounded-xl"
           />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="ob-username" className="text-white/70 text-xs font-semibold uppercase tracking-wide">
+            Username
+          </Label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-white/50">@</span>
+            <Input
+              id="ob-username"
+              type="text"
+              placeholder="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              minLength={3}
+              maxLength={20}
+              className="pl-7 bg-[#16161A]/60 border-border text-white placeholder:text-white/30 focus:border-[#7F5AF0]/60 rounded-xl"
+            />
+          </div>
         </div>
 
         <div className="space-y-1.5">

@@ -80,7 +80,7 @@ export default function WishlistPage() {
               <Heart className="size-8 text-primary" />
             </div>
             <div className="text-center">
-              <h3 className="font-semibold text-foreground">No saved tours yet</h3>
+              <h3 className="font-semibold text-foreground">Your wishlist is empty</h3>
               <p className="text-sm text-muted-foreground mt-1">Browse tours and tap the heart to save them here.</p>
             </div>
             <Button onClick={() => navigate("/tours")} className="rounded-full">Browse Tours</Button>
@@ -88,7 +88,8 @@ export default function WishlistPage() {
         ) : (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((item) => {
-              const tour = item.tour!
+              const tour = item.tour
+              if (!tour) return null
               const hostName = tour.host?.full_name ?? "Local Host"
               const hostInitials = getHostInitials(hostName)
               return (

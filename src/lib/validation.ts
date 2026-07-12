@@ -101,3 +101,16 @@ export function validateConfirmPassword(password: string, confirm: string): stri
   if (password !== confirm) return "Passwords do not match"
   return null
 }
+
+export function validateUsername(username: string): string | null {
+  const clean = username.trim()
+  if (!clean) return "Username is required"
+  if (clean.length < 3 || clean.length > 20) {
+    return "Username must be between 3 and 20 characters"
+  }
+  if (!/^[a-zA-Z0-9_]+$/.test(clean)) {
+    return "Username can only contain letters, numbers, and underscores"
+  }
+  return null
+}
+

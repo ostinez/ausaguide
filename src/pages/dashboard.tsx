@@ -1087,7 +1087,7 @@ export function HostDashboard({
   )
 }
 
-function TravelerDashboard({ bookings, onChat }: { bookings: Booking[]; onChat?: (booking: Booking) => void }) {
+function TravelerDashboard({ bookings = [], onChat }: { bookings?: Booking[]; onChat?: (booking: Booking) => void }) {
   const upcoming = bookings.filter(
     (b) => b.status === "confirmed" || b.status === "pending",
   )
@@ -1117,7 +1117,7 @@ function TravelerDashboard({ bookings, onChat }: { bookings: Booking[]; onChat?:
         <CardContent className="space-y-3">
           {upcoming.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">
-              No upcoming tours. Time to explore!
+              No upcoming tours yet
             </p>
           ) : (
             upcoming.map((b) => (
@@ -1164,12 +1164,12 @@ function TravelerDashboard({ bookings, onChat }: { bookings: Booking[]; onChat?:
 export default function DashboardPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams()
-  const userRole = localStorage.getItem("user_role") || "traveler";
+  const [userRoleState, setUserRoleState] = useState<string>(() => localStorage.getItem("user_role") || "traveler");
   const userId = localStorage.getItem("user_id");
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const [view, setView] = useState<string>(() => {
-    if (userRole === "host") {
+    if (userRoleState === "host") {
       const tab = searchParams.get("tab")
       if (tab && ["dashboard", "tours", "bookings", "reviews", "settings"].includes(tab)) {
         return tab
@@ -1204,13 +1204,13 @@ export default function DashboardPage() {
   const [notifications, setNotifications] = useState<any[]>([]);
 
   useEffect(() => {
-    if (userRole === "host") {
+    if (userRoleState === "host") {
       const tab = searchParams.get("tab")
       if (tab && ["dashboard", "tours", "bookings", "reviews", "settings"].includes(tab)) {
         setView(tab)
       }
     }
-  }, [searchParams, userRole])
+  }, [searchParams, userRoleState])
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -1227,9 +1227,10 @@ export default function DashboardPage() {
         return
       }
 
-      // Sync role in localStorage
-      if (profile.role !== userRole) {
+      // Sync role in localStorage and state
+      if (profile.role !== userRoleState) {
         localStorage.setItem("user_role", profile.role)
+        setUserRoleState(profile.role)
       }
 
       setTravelerProfile(profile)
@@ -1267,10 +1268,10 @@ export default function DashboardPage() {
     } finally {
       setLoading(false)
     }
-  }, [userId, userRole])
+  }, [userId, userRoleState])
 
   useEffect(() => {
-    if (userRole === "admin") {
+    if (userRoleState === "admin") {
       navigate("/admin");
       return;
     }
@@ -1309,7 +1310,7 @@ export default function DashboardPage() {
       supabase.removeChannel(bookingChannel)
       supabase.removeChannel(notifChannel)
     }
-  }, [userRole, navigate, loadDashboard])
+  }, [userRoleState, navigate, loadDashboard])
 
   async function handleUpdateBookingStatus(bookingId: string, status: BookingStatus, reason?: string) {
     if (status === "confirmed" || status === "declined") {
@@ -1350,7 +1351,7 @@ export default function DashboardPage() {
       return
     }
     setView(v)
-    if (userRole === "host") {
+    if (userRoleState === "host") {
       setSearchParams({ tab: v })
     }
   }
@@ -1372,7 +1373,7 @@ export default function DashboardPage() {
         view={view}
         onViewChange={handleViewChange}
         profile={profile}
-        userRole={userRole}
+        userRole={userRoleState}
         pendingCount={pendingCount}
         unreadNotifications={unreadNotifications}
       />
@@ -1414,7 +1415,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <p className="text-sm text-muted-foreground">
-              {userRole === "host"
+              {userRoleState === "host"
                 ? "Manage your tours and bookings"
                 : "Track your upcoming adventures"}
             </p>
@@ -1430,7 +1431,7 @@ export default function DashboardPage() {
             <p className="text-lg font-semibold text-foreground">Could not load dashboard</p>
             <p className="mt-2 text-sm text-muted-foreground">{error}</p>
           </div>
-        ) : userRole === "host" ? (
+        ) : userRoleState === "host" ? (
           !hostRecord ? (
             <div className="py-16 text-center">
               <p className="text-lg font-semibold text-foreground">Host profile pending</p>
@@ -1696,7 +1697,7 @@ export default function DashboardPage() {
             </div>
           )
         ) : view === "reviews" ? (
-          userRole === "host" ? (
+          userRoleState === "host" ? (
             <ReviewList hostId={hostRecord?.id} />
           ) : (
             <div className="space-y-6">
@@ -1726,7 +1727,7 @@ export default function DashboardPage() {
           )
         ) : (
           <>
-            {userRole !== "host" && (
+            {userRoleState !== "host" && (
               <div className="mb-6 rounded-xl border border-teal-500/20 bg-teal-500/10 p-4 text-center">
                 <p className="text-sm font-medium text-teal-400">Want to earn as a host? Apply now.</p>
                 <Link to="/host/signup">
@@ -1750,7 +1751,7 @@ export default function DashboardPage() {
         )}
 
         {chatBooking && (() => {
-          const isHost = userRole === "host"
+          const isHost = userRoleState === "host"
           const curUid = userId || (isHost ? chatBooking.host_id : (chatBooking.guest_id || "22222222-2222-2222-2222-222222222202"))
           const recUid = isHost ? (chatBooking.guest_id || "22222222-2222-2222-2222-222222222202") : chatBooking.host_id
           const recName = isHost ? chatBooking.guest_name : (chatBooking.host?.full_name || chatBooking.tour?.host?.full_name || "Host")

@@ -10,7 +10,7 @@ import { supabase } from "@/lib/supabase"
 import { identifyUser } from "@/lib/posthog"
 import { checkRateLimit, getLoginKey } from "@/lib/api/rate-limit"
 import { toast } from "sonner"
-import { validateName, validateEmail, validatePassword, validateConfirmPassword } from "@/lib/validation"
+import { validateName, validateEmail, validatePassword, validateConfirmPassword, validateUsername } from "@/lib/validation"
 import {
   Card,
   CardContent,
@@ -46,13 +46,7 @@ function GoogleIcon() {
   )
 }
 
-function AppleIcon() {
-  return (
-    <svg className="size-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.7 9.05 7.42c1.42.07 2.4.74 3.22.8 1.22-.24 2.39-.93 3.65-.84 1.55.12 2.72.72 3.47 1.84-3.19 1.9-2.41 6.1.66 7.26-.56 1.4-1.25 2.8-3 3.8zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
-    </svg>
-  )
-}
+
 
 /** Map Supabase / network error messages to user-friendly strings */
 function friendlyAuthError(message: string): string {
@@ -86,22 +80,37 @@ function SignInForm() {
   const handleResendConfirmation = async () => {
     setError(null)
     setInfoMessage(null)
-    if (!email.trim()) {
-      setError("Please enter your email address to resend confirmation.")
+    let emailToResend = email.trim()
+    if (!emailToResend) {
+      setError("Please enter your email or username to resend confirmation.")
       return
     }
     setLoading(true)
     try {
+      if (!emailToResend.includes("@")) {
+        const { data: profileData, error: profileErr } = await supabase
+          .from("profiles")
+          .select("email")
+          .eq("username", emailToResend.toLowerCase())
+          .maybeSingle()
+
+        if (profileErr || !profileData?.email) {
+          setError("No user found with that username.")
+          return
+        }
+        emailToResend = profileData.email
+      }
+
       const { error: resendError } = await supabase.auth.resend({
         type: 'signup',
-        email: email.trim(),
+        email: emailToResend,
         options: {
           emailRedirectTo: window.location.origin + "/auth/callback",
         }
       })
       if (resendError) throw resendError
-      toast.success("Confirmation email resent. Please check your inbox.")
-      setInfoMessage("Confirmation email resent. Please check your inbox.")
+      toast.success("Confirmation email resent. Check your inbox.")
+      setInfoMessage("Confirmation email resent. Check your inbox.")
     } catch (err: any) {
       setError(friendlyAuthError(err.message))
     } finally {
@@ -138,9 +147,26 @@ function SignInForm() {
     }
 
     try {
+      let targetEmail = email.trim()
+
+      if (!targetEmail.includes("@")) {
+        const { data: profileData, error: profileErr } = await supabase
+          .from("profiles")
+          .select("email")
+          .eq("username", targetEmail.toLowerCase())
+          .maybeSingle()
+
+        if (profileErr || !profileData?.email) {
+          setError("No user found with that username.")
+          setLoading(false)
+          return
+        }
+        targetEmail = profileData.email
+      }
+
       // ✅ Properly call Supabase Auth signInWithPassword
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
+        email: targetEmail,
         password,
       })
 
@@ -341,17 +367,17 @@ function SignInForm() {
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="signin-email">Email</Label>
+        <Label htmlFor="signin-email">Email or Username</Label>
         <div className="relative">
-          <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <User className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             id="signin-email"
-            type="email"
-            placeholder="you@example.com"
+            type="text"
+            placeholder="Email or username"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="pl-10 border-border/80 text-foreground placeholder:text-muted-foreground/50"
-            autoComplete="email"
+            autoComplete="username"
             required
           />
         </div>
@@ -403,6 +429,16 @@ function SignInForm() {
         )}
       </Button>
 
+      <div className="text-center mt-2">
+        <button
+          type="button"
+          onClick={handleResendConfirmation}
+          className="text-xs text-muted-foreground hover:text-[#7F5AF0] transition-colors underline focus:outline-none cursor-pointer"
+        >
+          Didn't receive the confirmation email? Resend
+        </button>
+      </div>
+
       <div className="flex items-center gap-3">
         <Separator className="flex-1" />
         <span className="text-xs text-muted-foreground">or continue with</span>
@@ -418,27 +454,6 @@ function SignInForm() {
         <GoogleIcon />
         Continue with Google
       </Button>
-
-      <Button
-        type="button"
-        variant="outline"
-        onClick={async () => {
-          setError(null)
-          try {
-            const { error: authError } = await supabase.auth.signInWithOAuth({
-              provider: "apple",
-              options: { redirectTo: window.location.origin + "/auth/callback" },
-            })
-            if (authError) setError(friendlyAuthError(authError.message))
-          } catch (err: any) {
-            setError(friendlyAuthError(err?.message ?? "Apple sign-in failed."))
-          }
-        }}
-        className="w-full rounded-full py-5 text-sm font-medium border-border/80 gap-2 flex items-center justify-center"
-      >
-        <AppleIcon />
-        Continue with Apple
-      </Button>
     </form>
   )
 }
@@ -447,14 +462,16 @@ function SignUpForm() {
   const navigate = useNavigate()
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
+  const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [subscribeNewsletter, setSubscribeNewsletter] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
 
@@ -462,22 +479,45 @@ function SignUpForm() {
     if (nameErr) { setError(nameErr); return }
     const emailErr = validateEmail(email)
     if (emailErr) { setError(emailErr); return }
+    const userErr = validateUsername(username)
+    if (userErr) { setError(userErr); return }
     const passErr = validatePassword(password)
     if (passErr) { setError(passErr); return }
     const confirmErr = validateConfirmPassword(password, confirmPassword)
     if (confirmErr) { setError(confirmErr); return }
 
-    // Pass credentials to onboarding flow via sessionStorage
-    sessionStorage.setItem(
-      "onboarding_data",
-      JSON.stringify({
-        name: name.trim(),
-        email: email.trim(),
-        password,
-        subscribeNewsletter,
-      })
-    )
-    navigate("/onboarding")
+    setLoading(true)
+    try {
+      const { data: existingUser, error: checkError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("username", username.trim().toLowerCase())
+        .maybeSingle()
+
+      if (checkError) throw checkError
+
+      if (existingUser) {
+        setError("This username is already taken.")
+        return
+      }
+
+      // Pass credentials to onboarding flow via sessionStorage
+      sessionStorage.setItem(
+        "onboarding_data",
+        JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          username: username.trim().toLowerCase(),
+          password,
+          subscribeNewsletter,
+        })
+      )
+      navigate("/onboarding")
+    } catch (err: any) {
+      setError(err.message || "Failed to check username availability.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -501,6 +541,24 @@ function SignUpForm() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="signup-username">Username</Label>
+        <div className="relative">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">@</span>
+          <Input
+            id="signup-username"
+            type="text"
+            placeholder="username"
+            className="pl-7 border-border/80 text-foreground placeholder:text-muted-foreground/50"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            minLength={3}
+            maxLength={20}
           />
         </div>
       </div>
@@ -582,9 +640,15 @@ function SignUpForm() {
         </Label>
       </div>
 
-      <Button type="submit" className="w-full rounded-full py-5 text-sm font-semibold gap-2">
-        Get Started
-        <ArrowRight className="size-4" />
+      <Button type="submit" className="w-full rounded-full py-5 text-sm font-semibold gap-2" disabled={loading}>
+        {loading ? (
+          <Spinner className="size-4 text-white animate-spin" />
+        ) : (
+          <>
+            Get Started
+            <ArrowRight className="size-4" />
+          </>
+        )}
       </Button>
 
       <p className="text-center text-xs text-muted-foreground">
