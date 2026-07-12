@@ -162,11 +162,19 @@ export default function AdminDashboard() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<"overview" | "users" | "tours" | "bookings" | "analytics" | "waitlist">("overview")
+  const [activeTab, setActiveTab] = useState<"overview" | "users" | "tours" | "bookings" | "analytics" | "waitlist" | "guide_reviews">("overview")
 
   useEffect(() => {
     const tab = searchParams.get("tab")
-    if (tab === "overview" || tab === "users" || tab === "tours" || tab === "bookings" || tab === "analytics" || tab === "waitlist") {
+    if (
+      tab === "overview" ||
+      tab === "users" ||
+      tab === "tours" ||
+      tab === "bookings" ||
+      tab === "analytics" ||
+      tab === "waitlist" ||
+      tab === "guide_reviews"
+    ) {
       setActiveTab(tab as any)
     }
   }, [searchParams])
@@ -188,6 +196,60 @@ export default function AdminDashboard() {
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [rejectLoading, setRejectLoading] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null)
+
+  const handleApproveGuide = async (userId: string) => {
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          host_tier: "certified_guide",
+          license_status: "approved"
+        } as any)
+        .eq("id", userId)
+      if (error) throw error
+      showToast("Guide application approved successfully!", "success")
+      load()
+    } catch (err: any) {
+      showToast(err.message || "Failed to approve guide", "error")
+    }
+  }
+
+  const handleRejectGuide = async (userId: string) => {
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          host_tier: "local_host",
+          license_status: "rejected"
+        } as any)
+        .eq("id", userId)
+      if (error) throw error
+      showToast("Guide application rejected.", "success")
+      load()
+    } catch (err: any) {
+      showToast(err.message || "Failed to reject guide", "error")
+    }
+  }
+
+  const handleViewLicense = async (licenseUrl: string) => {
+    if (!licenseUrl) return
+    try {
+      let path = licenseUrl
+      if (licenseUrl.includes("/object/public/licenses/")) {
+        path = licenseUrl.split("/object/public/licenses/")[1]
+      } else if (licenseUrl.includes("/object/sign/licenses/")) {
+        path = licenseUrl.split("/object/sign/licenses/")[1]?.split("?")[0]
+      }
+      
+      const { data, error } = await supabase.storage.from("licenses").createSignedUrl(path, 3600)
+      if (error) throw error
+      if (data?.signedUrl) {
+        window.open(data.signedUrl, "_blank")
+      }
+    } catch (err: any) {
+      window.open(licenseUrl, "_blank")
+    }
+  }
 
   // Auth check
   useEffect(() => {
@@ -537,13 +599,14 @@ export default function AdminDashboard() {
           setSearchParams({ tab: v })
           setSearch("")
         }}>
-          <TabsList className="grid w-full grid-cols-6 h-auto">
+          <TabsList className="grid w-full grid-cols-7 h-auto">
             <TabsTrigger value="overview" className="text-xs py-2.5">Overview</TabsTrigger>
             <TabsTrigger value="users" className="text-xs py-2.5">Users</TabsTrigger>
             <TabsTrigger value="tours" className="text-xs py-2.5">Tours</TabsTrigger>
             <TabsTrigger value="bookings" className="text-xs py-2.5">Bookings</TabsTrigger>
             <TabsTrigger value="waitlist" className="text-xs py-2.5">Waitlist</TabsTrigger>
             <TabsTrigger value="analytics" className="text-xs py-2.5">Analytics</TabsTrigger>
+            <TabsTrigger value="guide_reviews" className="text-xs py-2.5">Guide Reviews</TabsTrigger>
           </TabsList>
         </Tabs>
 
@@ -1325,6 +1388,160 @@ export default function AdminDashboard() {
                     <Download className="size-3.5 mr-1.5" />All Tours CSV
                   </Button>
                 </div>
+              </div>
+            )}
+
+            {/* ── GUIDE REVIEWS ───────────────────────────────────────────── */}
+            {activeTab === "guide_reviews" && (
+              <div className="space-y-8">
+                {/* Pending guide applications */}
+                <Card className="border-border/60">
+                  <CardHeader>
+                    <CardTitle className="text-base">Pending Guide Applications</CardTitle>
+                    <CardDescription>
+                      Hosts who applied for Certified Guide status and uploaded their certification.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm">
+                        <thead>
+                          <tr className="border-b border-border/40 text-muted-foreground font-semibold">
+                            <th className="pb-3 pr-4">Host Name</th>
+                            <th className="pb-3 pr-4">Email</th>
+                            <th className="pb-3 pr-4">Applied Date</th>
+                            <th className="pb-3 pr-4">License Document</th>
+                            <th className="pb-3 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border/20">
+                          {profiles
+                            .filter(
+                              (p) =>
+                                p.license_status === "pending" &&
+                                (p.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+                                  p.email?.toLowerCase().includes(search.toLowerCase()))
+                            )
+                            .map((p) => (
+                              <tr key={p.id} className="hover:bg-muted/10 transition-colors">
+                                <td className="py-3.5 pr-4 font-medium text-foreground">{p.full_name}</td>
+                                <td className="py-3.5 pr-4 text-muted-foreground">{p.email}</td>
+                                <td className="py-3.5 pr-4 text-muted-foreground">
+                                  {p.created_at ? format(parseISO(p.created_at), "yyyy-MM-dd") : "N/A"}
+                                </td>
+                                <td className="py-3.5 pr-4">
+                                  {p.license_url ? (
+                                    <button
+                                      onClick={() => handleViewLicense(p.license_url!)}
+                                      className="text-[#7F5AF0] underline hover:text-[#7F5AF0]/80 font-medium"
+                                    >
+                                      View Uploaded License
+                                    </button>
+                                  ) : (
+                                    <span className="text-muted-foreground/50">No Document</span>
+                                  )}
+                                </td>
+                                <td className="py-3.5 text-right space-x-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleApproveGuide(p.id)}
+                                    className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-full px-3 py-1 text-xs"
+                                  >
+                                    Approve
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => handleRejectGuide(p.id)}
+                                    className="rounded-full px-3 py-1 text-xs"
+                                  >
+                                    Reject
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {profiles.filter((p) => p.license_status === "pending").length === 0 && (
+                      <div className="py-12 text-center text-sm text-muted-foreground">
+                        No pending guide reviews found.
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* History of guide applications */}
+                <Card className="border-border/60">
+                  <CardHeader>
+                    <CardTitle className="text-base">Guide Application History</CardTitle>
+                    <CardDescription>
+                      Review logs of previously approved or rejected guide applications.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm">
+                        <thead>
+                          <tr className="border-b border-border/40 text-muted-foreground font-semibold">
+                            <th className="pb-3 pr-4">Host Name</th>
+                            <th className="pb-3 pr-4">Email</th>
+                            <th className="pb-3 pr-4">Status</th>
+                            <th className="pb-3 pr-4">License Document</th>
+                            <th className="pb-3">Onboarded Tier</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border/20">
+                          {profiles
+                            .filter(
+                              (p) =>
+                                (p.license_status === "approved" || p.license_status === "rejected") &&
+                                (p.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+                                  p.email?.toLowerCase().includes(search.toLowerCase()))
+                            )
+                            .map((p) => (
+                              <tr key={p.id} className="hover:bg-muted/10 transition-colors">
+                                <td className="py-3.5 pr-4 font-medium text-foreground">{p.full_name}</td>
+                                <td className="py-3.5 pr-4 text-muted-foreground">{p.email}</td>
+                                <td className="py-3.5 pr-4">
+                                  {p.license_status === "approved" ? (
+                                    <Badge className="bg-emerald-500/10 border-emerald-500/30 text-emerald-400">
+                                      Approved
+                                    </Badge>
+                                  ) : (
+                                    <Badge className="bg-destructive/10 border-destructive/30 text-destructive">
+                                      Rejected
+                                    </Badge>
+                                  )}
+                                </td>
+                                <td className="py-3.5 pr-4">
+                                  {p.license_url ? (
+                                    <button
+                                      onClick={() => handleViewLicense(p.license_url!)}
+                                      className="text-[#7F5AF0] underline hover:text-[#7F5AF0]/80 font-medium"
+                                    >
+                                      View Uploaded License
+                                    </button>
+                                  ) : (
+                                    <span className="text-muted-foreground/50">No Document</span>
+                                  )}
+                                </td>
+                                <td className="py-3.5 capitalize text-muted-foreground font-semibold">
+                                  {p.host_tier?.replace("_", " ")}
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {profiles.filter((p) => p.license_status === "approved" || p.license_status === "rejected")
+                      .length === 0 && (
+                      <div className="py-12 text-center text-sm text-muted-foreground">
+                        No review history found.
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
             )}
           </>

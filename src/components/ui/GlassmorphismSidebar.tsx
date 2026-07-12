@@ -14,6 +14,7 @@ import {
   ChevronRight,
   TrendingUp,
   MessageSquare,
+  Rss,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Profile } from "@/lib/types"
@@ -54,16 +55,19 @@ function getNavItems(
   if (userRole === "host") {
     return [
       { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { id: "feed", label: "Feed", icon: Rss, href: "/feed" },
       { id: "messages", label: "Messages", icon: MessageSquare, href: "/messages", badge: unreadNotifications > 0 ? unreadNotifications : undefined },
       { id: "tours", label: "My Tours", icon: Map },
       { id: "bookings", label: "Bookings", icon: Calendar, badge: pendingCount > 0 ? pendingCount : undefined },
       { id: "earnings", label: "Earnings", icon: DollarSign, href: "/dashboard/earnings" },
+      { id: "journal", label: "Journal", icon: BookOpen, href: "/journal" },
       { id: "reviews", label: "Reviews", icon: Star },
       { id: "settings", label: "Settings", icon: Settings },
     ]
   }
   return [
     { id: "traveler", label: "Dashboard", icon: LayoutDashboard },
+    { id: "feed", label: "Feed", icon: Rss, href: "/feed" },
     { id: "messages", label: "Messages", icon: MessageSquare, href: "/messages" },
     { id: "wishlist", label: "Wishlist", icon: Heart, href: "/wishlist" },
     { id: "journal", label: "Journal", icon: BookOpen, href: "/journal" },

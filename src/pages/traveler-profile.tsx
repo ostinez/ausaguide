@@ -8,6 +8,21 @@ import { Spinner } from "@/components/ui/spinner"
 import { supabase } from "@/lib/supabase"
 import { getHostInitials } from "@/lib/tour-utils"
 
+const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+  </svg>
+)
+
+const FacebookIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+  </svg>
+)
+
+
 interface Profile {
   id: string
   full_name: string
@@ -17,6 +32,10 @@ interface Profile {
   location: string | null
   languages: string[]
   created_at: string
+  tiktok?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  reddit?: string | null
 }
 
 interface JournalPost {
@@ -54,7 +73,7 @@ export default function TravelerProfilePage() {
         // 1. Fetch profile
         const { data: prof, error: profErr } = await supabase
           .from("profiles")
-          .select("id, full_name, avatar_url, bio, location, languages, created_at")
+          .select("id, full_name, avatar_url, bio, location, languages, created_at, tiktok, instagram, facebook, reddit")
           .eq("id", id)
           .maybeSingle()
 
@@ -179,6 +198,56 @@ export default function TravelerProfilePage() {
                     <Calendar className="size-3.5 text-muted-foreground shrink-0" />
                     <span>Member since {new Date(profile.created_at).getFullYear()}</span>
                   </div>
+
+                  {/* Social Links */}
+                  {(profile.instagram || profile.facebook || profile.tiktok || profile.reddit) && (
+                    <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-white/5 mt-3">
+                      {profile.instagram && (
+                        <a
+                          href={profile.instagram}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1 rounded-full bg-white/5 border border-border/40 hover:border-[#7F5AF0] text-muted-foreground hover:text-white transition-colors"
+                          title="Instagram"
+                        >
+                          <InstagramIcon className="size-3.5" />
+                        </a>
+                      )}
+                      {profile.facebook && (
+                        <a
+                          href={profile.facebook}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1 rounded-full bg-white/5 border border-border/40 hover:border-[#7F5AF0] text-muted-foreground hover:text-white transition-colors"
+                          title="Facebook"
+                        >
+                          <FacebookIcon className="size-3.5" />
+                        </a>
+                      )}
+                      {profile.tiktok && (
+                        <a
+                          href={profile.tiktok}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-2 py-0.5 rounded-full bg-white/5 border border-border/40 hover:border-[#7F5AF0] text-[9px] font-bold text-muted-foreground hover:text-white transition-colors font-mono tracking-tighter"
+                          title="TikTok"
+                        >
+                          TikTok
+                        </a>
+                      )}
+                      {profile.reddit && (
+                        <a
+                          href={profile.reddit}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-2 py-0.5 rounded-full bg-white/5 border border-border/40 hover:border-[#7F5AF0] text-[9px] font-bold text-muted-foreground hover:text-white transition-colors font-mono tracking-tighter"
+                          title="Reddit"
+                        >
+                          Reddit
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

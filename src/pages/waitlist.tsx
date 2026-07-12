@@ -3,6 +3,9 @@ import { toast } from "sonner"
 import { supabase } from "../lib/supabase"
 import { sendGeneralWaitlistEmail } from "@/lib/api/emails"
 import { Loader2, CheckCircle2, User, Mail, Sparkles, MapPin, AlignLeft } from "lucide-react"
+import { CountdownTimer } from "@/components/ui/CountdownTimer"
+
+const LAUNCH_DATE = new Date("2026-10-10T00:00:00Z")
 
 export default function WaitlistPage() {
   const [name, setName] = useState("")
@@ -67,6 +70,10 @@ export default function WaitlistPage() {
       <div className="absolute bottom-10 right-1/4 h-[400px] w-[400px] rounded-full bg-teal/5 blur-[100px]" />
 
       <div className="relative z-10 w-full max-w-lg">
+        {/* Countdown Banner */}
+        <div className="mb-8">
+          <CountdownTimer targetDate={LAUNCH_DATE} />
+        </div>
         {success ? (
           <div className="rounded-3xl border border-white/10 p-8 backdrop-blur-xl bg-[#121214]/50 shadow-2xl text-center space-y-6 animate-in fade-in zoom-in duration-300">
             <div className="inline-flex size-16 items-center justify-center rounded-full bg-teal/10 border border-teal/20 text-[#2CB67D]">

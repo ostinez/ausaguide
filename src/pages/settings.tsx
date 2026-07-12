@@ -67,6 +67,12 @@ export default function SettingsPage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
+  // Social links
+  const [tiktok, setTiktok] = useState("")
+  const [instagram, setInstagram] = useState("")
+  const [facebook, setFacebook] = useState("")
+  const [reddit, setReddit] = useState("")
+
   // Interests (Preferences)
   const [interests, setInterests] = useState<string[]>(["food", "nature"])
 
@@ -221,6 +227,10 @@ export default function SettingsPage() {
           setTwoFactorBackupCodes(p.two_factor_backup_codes ?? [])
           setAvatarUrl(p.avatar_url || null)
           setIsVerified(!!p.is_verified)
+          setTiktok((p as any).tiktok || "")
+          setInstagram((p as any).instagram || "")
+          setFacebook((p as any).facebook || "")
+          setReddit((p as any).reddit || "")
         }
 
         // Load traveler preferences from local storage
@@ -298,7 +308,11 @@ export default function SettingsPage() {
         languages: languages.split(",").map((l) => l.trim()).filter(Boolean),
         host_type: hostType || null,
         avatar_url: avatarUrl || null,
-      })
+        tiktok: tiktok.trim() || null,
+        instagram: instagram.trim() || null,
+        facebook: facebook.trim() || null,
+        reddit: reddit.trim() || null,
+      } as any)
 
       const notifs: string[] = []
       if (emailNotifs) notifs.push("email")
@@ -485,6 +499,32 @@ export default function SettingsPage() {
                       rows={4}
                       className="w-full rounded-md border border-border/80 bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     />
+                  </div>
+
+                  {/* Social Links */}
+                  <div className="sm:col-span-2 space-y-3">
+                    <Label className="text-sm font-semibold">Social Links</Label>
+                    <p className="text-xs text-muted-foreground -mt-1">Add your social profiles (TikTok, Instagram, Facebook, Reddit).</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {[
+                        { id: "settings-tiktok", label: "TikTok", placeholder: "https://tiktok.com/@yourhandle", value: tiktok, set: setTiktok },
+                        { id: "settings-instagram", label: "Instagram", placeholder: "https://instagram.com/yourhandle", value: instagram, set: setInstagram },
+                        { id: "settings-facebook", label: "Facebook", placeholder: "https://facebook.com/yourpage", value: facebook, set: setFacebook },
+                        { id: "settings-reddit", label: "Reddit", placeholder: "https://reddit.com/u/yourhandle", value: reddit, set: setReddit },
+                      ].map(({ id, label, placeholder, value, set }) => (
+                        <div key={id} className="space-y-1">
+                          <Label htmlFor={id} className="text-xs text-muted-foreground">{label}</Label>
+                          <Input
+                            id={id}
+                            type="url"
+                            placeholder={placeholder}
+                            value={value}
+                            onChange={(e) => set(e.target.value)}
+                            className="border-border/80 text-foreground placeholder:text-muted-foreground/50 text-sm"
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-1.5 sm:col-span-2">

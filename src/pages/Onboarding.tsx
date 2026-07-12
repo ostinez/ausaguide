@@ -12,7 +12,7 @@ import { identifyUser, trackEvent } from "@/lib/posthog"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { sendWelcomeEmail } from "@/lib/api/emails"
-import { Eye, EyeOff, AlertCircle } from "lucide-react"
+import { Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react"
 
 /** Map Supabase auth errors to user-friendly messages */
 function friendlySignUpError(message: string): string {
@@ -1045,6 +1045,111 @@ function StepPayout({
   )
 }
 
+// ── Step: Host Tier ────────────────────────────────────
+function StepHostTier({
+  userId,
+  onComplete,
+}: {
+  userId: string
+  onComplete: () => void
+}) {
+  const [tier, setTier] = useState<"certified_guide" | "local_host" | null>(null)
+  const [licenseFile, setLicenseFile] = useState<File | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  const handleContinue = async () => {
+    if (!tier) return
+    setUploading(true)
+    try {
+      let licenseUrl: string | null = null
+      let licenseStatus: string | null = null
+
+      if (tier === "certified_guide") {
+        licenseStatus = "pending"
+        if (licenseFile) {
+          const ext = licenseFile.name.split(".").pop()
+          const path = `${userId}/${Date.now()}.${ext}`
+          const { error: upErr } = await supabase.storage.from("licenses").upload(path, licenseFile)
+          if (upErr) throw upErr
+          const { data: { publicUrl } } = supabase.storage.from("licenses").getPublicUrl(path)
+          licenseUrl = publicUrl
+        }
+      }
+
+      await supabase
+        .from("profiles")
+        .update({
+          host_tier: "local_host", // Initially set as local_host until guide review approves
+          license_url: licenseUrl,
+          license_status: licenseStatus,
+        } as any)
+        .eq("id", userId)
+      onComplete()
+    } catch (err: any) {
+      console.error(err)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-6 py-4 w-full">
+      <div className="text-center space-y-2">
+        <div className="text-4xl">🏅</div>
+        <h2 className="text-2xl font-black text-white">What kind of host are you?</h2>
+        <p className="text-sm text-white/60">This helps travelers find the right experience for them.</p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {([
+          { value: "certified_guide" as const, emoji: "🏅", label: "Certified Guide", desc: "I hold a government-issued tour guide license or certification.", color: "border-[#7F5AF0]" },
+          { value: "local_host" as const, emoji: "🏡", label: "Local Host", desc: "I'm a passionate local sharing my knowledge and hidden gems.", color: "border-[#2CB67D]" },
+        ]).map(({ value, emoji, label, desc, color }) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setTier(value)}
+            className={`rounded-2xl border-2 p-5 text-left transition-all duration-200 ${
+              tier === value ? `${color} bg-white/5` : "border-white/10 bg-white/2 hover:border-white/20"
+            }`}
+          >
+            <span className="text-3xl block mb-2">{emoji}</span>
+            <p className="font-bold text-white text-base">{label}</p>
+            <p className="text-xs text-white/50 mt-1 leading-relaxed">{desc}</p>
+          </button>
+        ))}
+      </div>
+
+      {tier === "certified_guide" && (
+        <div className="space-y-2 animate-in fade-in duration-300">
+          <p className="text-sm font-semibold text-white/80">Upload your tour guide license / certification</p>
+          <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden"
+            onChange={e => { if (e.target.files?.[0]) setLicenseFile(e.target.files[0]); e.target.value = "" }} />
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="w-full py-3 rounded-xl border border-dashed border-[#7F5AF0]/40 text-sm text-[#a78bfa] hover:border-[#7F5AF0] hover:bg-[#7F5AF0]/5 transition-colors"
+          >
+            {licenseFile ? `✅ ${licenseFile.name}` : "Click to upload license / certificate"}
+          </button>
+          <p className="text-[11px] text-white/30">PDF or image (JPG/PNG). This will be reviewed by our team.</p>
+        </div>
+      )}
+
+      <Button
+        size="lg"
+        disabled={!tier || uploading}
+        onClick={handleContinue}
+        className="w-full rounded-full bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 transition-all duration-300"
+      >
+        {uploading ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
+        Continue →
+      </Button>
+    </div>
+  )
+}
+
 // ── Main page ──────────────────────────────────────────
 export default function OnboardingPage() {
   const navigate = useNavigate()
@@ -1106,6 +1211,7 @@ export default function OnboardingPage() {
       ? [
           { label: "Verify ID" },
           { label: "Payout" },
+          { label: "Host Type" },
         ]
       : []),
     { label: "Done" },
@@ -1161,6 +1267,12 @@ export default function OnboardingPage() {
                   />
                 )}
                 {step === 5 && (
+                  <StepHostTier
+                    userId={userId}
+                    onComplete={() => setStep(6)}
+                  />
+                )}
+                {step === 6 && (
                   <StepDone
                     name={completedName || prefill.name || "Explorer"}
                     role={role}

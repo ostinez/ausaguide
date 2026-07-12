@@ -16,6 +16,9 @@ const TOUR_SELECT = `
     languages,
     host_type,
     is_verified,
+    host_tier,
+    license_url,
+    license_status,
     created_at,
     updated_at
   )
@@ -35,6 +38,9 @@ function mapProfile(row: ProfileRow): Profile {
     languages: row.languages ?? [],
     host_type: row.host_type ?? null,
     is_verified: row.is_verified ?? false,
+    host_tier: (row as any).host_tier ?? null,
+    license_url: (row as any).license_url ?? null,
+    license_status: (row as any).license_status ?? null,
     created_at: row.created_at ?? now,
     updated_at: row.updated_at ?? now,
   }
@@ -149,8 +155,9 @@ export async function createTour(tourData: Partial<Tour>): Promise<Tour> {
       tour_type: tourData.tour_type || "in_person",
       images: tourData.images || [],
       highlights: tourData.highlights || [],
-      is_published: tourData.status === "published",
-      status: tourData.status || "draft",
+      // Auto-publish: tours go live immediately; admins can moderate after
+      is_published: true,
+      status: "published",
       availability: tourData.availability || {},
       tags: tourData.tags || [],
     })

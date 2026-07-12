@@ -105,10 +105,20 @@ export function TourCard({ tour, isWishlisted, onToggleWishlist, onClick, viewMo
       </div>
 
       <div className={cn("flex flex-1 flex-col gap-3 px-4 pb-4", isList ? "pt-4" : "pt-8")}>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center flex-wrap gap-1.5">
           <span className="text-xs font-medium text-muted-foreground">{hostName}</span>
           {tour.host?.is_verified && (
             <BadgeCheck className="size-3.5 text-primary" />
+          )}
+          {tour.host?.host_tier === "certified_guide" && (
+            <span className="text-[10px] bg-[#7F5AF0]/15 border border-[#7F5AF0]/40 text-[#a78bfa] rounded-full px-1.5 py-0.5 font-bold">
+              🏅 Certified Guide
+            </span>
+          )}
+          {tour.host?.host_tier === "local_host" && (
+            <span className="text-[10px] bg-[#2CB67D]/15 border border-[#2CB67D]/40 text-[#2CB67D] rounded-full px-1.5 py-0.5 font-bold">
+              Local Host
+            </span>
           )}
         </div>
 

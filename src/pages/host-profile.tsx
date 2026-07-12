@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
-import { useParams, Link } from "react-router-dom"
-import { MapPin, AlertCircle } from "lucide-react"
+import { useParams, Link, useNavigate } from "react-router-dom"
+import { MapPin, AlertCircle, MessageSquare } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,6 +13,21 @@ import { HostCardCarousel } from "@/components/ui/HostCardCarousel"
 import { TourCard } from "@/components/ui/TourCard"
 import { fetchWishlist, addToWishlist, removeFromWishlist } from "@/lib/api/wishlist"
 import { toast } from "sonner"
+
+const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+  </svg>
+)
+
+const FacebookIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+  </svg>
+)
+
 
 export default function HostProfilePage() {
   const { id } = useParams()
@@ -28,6 +43,7 @@ export default function HostProfilePage() {
   const userId = localStorage.getItem("user_id")
   const role = localStorage.getItem("user_role")
   const [wishlist, setWishlist] = useState<Set<string>>(new Set())
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (userId && role === "traveler") {
@@ -73,6 +89,31 @@ export default function HostProfilePage() {
     }
   }
 
+  const handleMessage = async () => {
+    if (!userId) { toast.error("Please sign in to message this host."); return }
+    if (!id) return
+    // Find or create a conversation
+    const { data: existing } = await supabase
+      .from("conversations")
+      .select("id")
+      .or(`and(participant_a.eq.${userId},participant_b.eq.${id}),and(participant_a.eq.${id},participant_b.eq.${userId})`)
+      .maybeSingle()
+    let convId: string
+    if (existing) {
+      convId = existing.id
+    } else {
+      const { data: created, error } = await supabase
+        .from("conversations")
+        .insert({ participant_a: userId, participant_b: id })
+        .select("id")
+        .single()
+      if (error) { toast.error("Could not start conversation."); return }
+      convId = created.id
+    }
+    navigate(`/messages?conversationId=${convId}`)
+  }
+
+
   useEffect(() => {
     async function loadHost() {
       if (!id) return
@@ -80,7 +121,7 @@ export default function HostProfilePage() {
       try {
         const { data: profileData, error: profileErr } = await supabase
           .from("profiles")
-          .select("id, role, full_name, avatar_url, bio, location, languages, host_type, is_verified")
+          .select("id, role, full_name, avatar_url, bio, location, languages, host_type, is_verified, host_tier, tiktok, instagram, facebook, reddit")
           .eq("id", id)
           .maybeSingle()
 
@@ -163,6 +204,17 @@ export default function HostProfilePage() {
                 <Badge variant="secondary" className="capitalize">
                   {profile.host_type?.replace("_", " ")}
                 </Badge>
+                {/* Host tier badge */}
+                {(profile as any).host_tier === "certified_guide" && (
+                  <Badge className="bg-[#7F5AF0]/15 border border-[#7F5AF0]/40 text-[#a78bfa] hover:bg-[#7F5AF0]/25 gap-1">
+                    🏅 Certified Guide
+                  </Badge>
+                )}
+                {(profile as any).host_tier === "local_host" && (
+                  <Badge className="bg-[#2CB67D]/15 border border-[#2CB67D]/40 text-[#2CB67D] hover:bg-[#2CB67D]/25">
+                    Local Host
+                  </Badge>
+                )}
                 {profile.is_verified && (
                   <Badge variant="outline" className="border-teal/30 bg-teal/10 text-teal">
                     Verified Host
@@ -175,11 +227,61 @@ export default function HostProfilePage() {
                   </span>
                 )}
               </div>
+
+              {/* Social Links */}
+              {(profile.instagram || profile.facebook || profile.tiktok || profile.reddit) && (
+                <div className="flex flex-wrap items-center justify-center gap-3 pt-2 md:justify-start">
+                  {profile.instagram && (
+                    <a
+                      href={profile.instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1.5 rounded-full bg-white/5 border border-border/40 hover:border-[#7F5AF0] text-muted-foreground hover:text-white transition-colors"
+                      title="Instagram"
+                    >
+                      <InstagramIcon className="size-4" />
+                    </a>
+                  )}
+                  {profile.facebook && (
+                    <a
+                      href={profile.facebook}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1.5 rounded-full bg-white/5 border border-border/40 hover:border-[#7F5AF0] text-muted-foreground hover:text-white transition-colors"
+                      title="Facebook"
+                    >
+                      <FacebookIcon className="size-4" />
+                    </a>
+                  )}
+                  {profile.tiktok && (
+                    <a
+                      href={profile.tiktok}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2.5 py-0.5 rounded-full bg-white/5 border border-border/40 hover:border-[#7F5AF0] text-[10px] font-bold text-muted-foreground hover:text-white transition-colors font-mono tracking-tighter"
+                      title="TikTok"
+                    >
+                      TikTok
+                    </a>
+                  )}
+                  {profile.reddit && (
+                    <a
+                      href={profile.reddit}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2.5 py-0.5 rounded-full bg-white/5 border border-border/40 hover:border-[#7F5AF0] text-[10px] font-bold text-muted-foreground hover:text-white transition-colors font-mono tracking-tighter"
+                      title="Reddit"
+                    >
+                      Reddit
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
           </div>
           
-          {/* Availability Status Badge */}
-          <div className="flex justify-center md:justify-end">
+          {/* Availability Status + Message Button */}
+          <div className="flex flex-col items-center md:items-end gap-3 justify-center md:justify-end">
             <div className={`flex flex-col items-center justify-center rounded-2xl border px-6 py-4 shadow-sm ${
               isBusy 
                 ? "border-destructive/20 bg-destructive/5 text-destructive" 
@@ -195,6 +297,18 @@ export default function HostProfilePage() {
                 <span className="text-xs opacity-80">{busyReason}</span>
               )}
             </div>
+            {userId && userId !== id && (
+              <Button
+                id="message-host-btn"
+                variant="outline"
+                size="sm"
+                className="rounded-full gap-2 border-primary/40 text-primary hover:bg-primary/5"
+                onClick={handleMessage}
+              >
+                <MessageSquare className="size-4" />
+                Message Host
+              </Button>
+            )}
           </div>
         </div>
 

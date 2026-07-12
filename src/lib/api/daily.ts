@@ -69,3 +69,39 @@ export async function createOrGetDailyRoom(bookingId: string): Promise<string> {
 
   return roomUrl
 }
+
+/**
+ * Creates a general two-participant Daily.co room for DMs.
+ * Returns the room URL.
+ */
+export async function createGeneralDailyRoom(conversationId: string): Promise<string> {
+  const exp = Math.floor(Date.now() / 1000) + 2 * 60 * 60 // 2 hours from now
+  const roomName = `chat-${conversationId.slice(0, 8)}-${Date.now().toString().slice(-4)}`
+
+  const response = await fetch(`${DAILY_API_BASE}/rooms`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${DAILY_API_KEY}`,
+    },
+    body: JSON.stringify({
+      name: roomName,
+      privacy: "public",
+      properties: {
+        max_participants: 2,
+        exp,
+        enable_prejoin_ui: true,
+        enable_knocking: false,
+      },
+    }),
+  })
+
+  if (!response.ok) {
+    const errorBody = await response.text()
+    throw new Error(`Daily.co API error: ${response.status} ${errorBody}`)
+  }
+
+  const room: DailyRoom = await response.json()
+  return room.url
+}
+

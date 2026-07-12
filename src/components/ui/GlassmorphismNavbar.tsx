@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link, useLocation } from "react-router-dom"
-import { Menu, X, Globe, LogOut, Settings, LayoutDashboard, ChevronDown } from "lucide-react"
+import { Menu, X, Globe, LogOut, Settings, LayoutDashboard, ChevronDown, MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -193,11 +193,20 @@ export function GlassmorphismNavbar({ className, ...props }: GlassmorphismNavbar
         <div className="flex items-center gap-3">
           {userId && <NotificationBell />}
 
-          {/* Unread badge (desktop) */}
-          {userId && unreadCount > 0 && (
-            <div className="hidden md:flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full bg-[#2CB67D]/10 border border-[#2CB67D]/20 text-[#2CB67D] animate-pulse">
-              💬 {unreadCount}
-            </div>
+          {/* Unread message icon (desktop) */}
+          {userId && (
+            <Link
+              to="/messages"
+              className="relative p-1.5 rounded-full hover:bg-white/5 text-white/70 hover:text-white transition-colors"
+              title="Messages"
+            >
+              <MessageSquare className="size-5" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-[#7F5AF0] text-[9px] text-white font-black animate-pulse">
+                  {unreadCount}
+                </span>
+              )}
+            </Link>
           )}
 
           <div className="hidden items-center gap-3 md:flex">
@@ -349,9 +358,11 @@ export function GlassmorphismNavbar({ className, ...props }: GlassmorphismNavbar
                     )}
 
                     {unreadCount > 0 && (
-                      <div className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-[#2CB67D] bg-[#2CB67D]/10 border border-[#2CB67D]/20 rounded-full justify-center">
-                        💬 {unreadCount} unread messages
-                      </div>
+                      <Link to="/messages" onClick={() => setMobileOpen(false)}>
+                        <div className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-[#2CB67D] bg-[#2CB67D]/10 border border-[#2CB67D]/20 rounded-full justify-center">
+                          💬 {unreadCount} unread messages
+                        </div>
+                      </Link>
                     )}
                     <Link to="/settings" onClick={() => setMobileOpen(false)}>
                       <span className="flex w-full items-center gap-2.5 rounded-full px-4 py-2.5 text-sm font-medium text-white/60 hover:text-white hover:bg-accent/ transition-all duration-300">

@@ -26,6 +26,13 @@ export interface Profile {
   last_location_lat?: number | null
   last_location_lng?: number | null
   last_location_updated?: string | null
+  host_tier?: "certified_guide" | "local_host" | null
+  license_url?: string | null
+  license_status?: "pending" | "approved" | "rejected" | null
+  tiktok?: string | null
+  instagram?: string | null
+  facebook?: string | null
+  reddit?: string | null
 }
 
 export interface Tour {

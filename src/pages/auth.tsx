@@ -46,6 +46,14 @@ function GoogleIcon() {
   )
 }
 
+function AppleIcon() {
+  return (
+    <svg className="size-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.7 9.05 7.42c1.42.07 2.4.74 3.22.8 1.22-.24 2.39-.93 3.65-.84 1.55.12 2.72.72 3.47 1.84-3.19 1.9-2.41 6.1.66 7.26-.56 1.4-1.25 2.8-3 3.8zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+    </svg>
+  )
+}
+
 /** Map Supabase / network error messages to user-friendly strings */
 function friendlyAuthError(message: string): string {
   const m = message.toLowerCase()
@@ -343,6 +351,7 @@ function SignInForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="pl-10 border-border/80 text-foreground placeholder:text-muted-foreground/50"
+            autoComplete="email"
             required
           />
         </div>
@@ -372,6 +381,7 @@ function SignInForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="pl-10 pr-10 border-border/80 text-foreground placeholder:text-muted-foreground/50"
+            autoComplete="current-password"
             required
           />
           <button
@@ -407,6 +417,27 @@ function SignInForm() {
       >
         <GoogleIcon />
         Continue with Google
+      </Button>
+
+      <Button
+        type="button"
+        variant="outline"
+        onClick={async () => {
+          setError(null)
+          try {
+            const { error: authError } = await supabase.auth.signInWithOAuth({
+              provider: "apple",
+              options: { redirectTo: window.location.origin + "/auth/callback" },
+            })
+            if (authError) setError(friendlyAuthError(authError.message))
+          } catch (err: any) {
+            setError(friendlyAuthError(err?.message ?? "Apple sign-in failed."))
+          }
+        }}
+        className="w-full rounded-full py-5 text-sm font-medium border-border/80 gap-2 flex items-center justify-center"
+      >
+        <AppleIcon />
+        Continue with Apple
       </Button>
     </form>
   )

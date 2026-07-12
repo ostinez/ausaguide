@@ -167,7 +167,7 @@ export async function sendHostWaitlistEmail(to: string, userName: string): Promi
   return dispatchEmail({ to, subject, html })
 }
 
-export async function sendGeneralWaitlistEmail(to: string, userName: string, role: string): Promise<boolean> {
+export async function sendGeneralWaitlistEmail(to: string, userName: string, _role: string): Promise<boolean> {
   const subject = "You're on the Ausaguide Waitlist! 🎉"
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 24px; background-color: #16161A; color: #fffffe; line-height: 1.6;">
@@ -211,4 +211,29 @@ export async function sendPasswordResetEmail(to: string, userName: string, reset
   return dispatchEmail({ to, subject, html })
 }
 
-
+/**
+ * sendLaunchEmail — sent to a single subscriber when Ausaguide goes live.
+ * Call this in a loop over all waitlist rows on launch day.
+ */
+export async function sendLaunchEmail(to: string, userName: string): Promise<boolean> {
+  const subject = "🚀 Ausaguide is Live!"
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 24px; background-color: #16161A; color: #fffffe; line-height: 1.6;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <img src="https://ausaguide.com/logo-primary.png" alt="Ausaguide" style="height: 36px; width: auto; display: inline-block;" />
+      </div>
+      <p style="font-size: 16px; margin-bottom: 20px; color: #fffffe;">Hi ${userName}, we have some exciting news!</p>
+      <p style="font-size: 18px; font-weight: 700; margin-bottom: 24px; color: #7F5AF0;">🚀 Ausaguide is officially live!</p>
+      <p style="font-size: 16px; margin-bottom: 24px; color: #a7a9be;">You've been waiting patiently — and today is the day. Discover local guides, book authentic experiences, and explore Kenya like never before.</p>
+      
+      <div style="text-align: center; margin-bottom: 28px;">
+        <a href="https://ausaguide.com/auth" style="background-color: #7F5AF0; color: #ffffff; padding: 14px 32px; border-radius: 9999px; text-decoration: none; font-weight: bold; display: inline-block; font-size: 15px; box-shadow: 0 4px 14px rgba(127, 90, 240, 0.4);">Sign In Now →</a>
+      </div>
+      
+      <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 32px 0;" />
+      <p style="font-size: 13px; color: #2CB67D; font-weight: 700; text-align: center; margin-bottom: 4px;">Ausaguide — Be a Local. Share Your World.</p>
+      <p style="font-size: 11px; color: #5f6368; text-align: center; margin: 0;">© 2026 Ausaguide. Nairobi, Kenya.</p>
+    </div>
+  `
+  return dispatchEmail({ to, subject, html })
+}

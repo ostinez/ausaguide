@@ -1,261 +1,354 @@
-import { useState, useEffect } from "react"
-import { Plus, MapPin, Lock, Globe, Trash2, BookOpen, AlertCircle } from "lucide-react"
+import { useState, useEffect, useRef } from "react"
+import { BookOpen, Plus, Edit3, Trash2, X, Check, Loader2, ImageIcon, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
 import { supabase } from "@/lib/supabase"
-import { cn } from "@/lib/utils"
-import { Link } from "react-router-dom"
-import Dropzone from "@/components/ui/Dropzone"
+import { fetchJournals, createJournal, updateJournal, deleteJournal, type Journal } from "@/lib/api/content"
+import { toast } from "sonner"
+import { format } from "date-fns"
 import { useSEO } from "@/hooks/useSEO"
+import { useNavigate } from "react-router-dom"
 
-interface JournalEntry {
-  id: string
-  title: string
-  location: string | null
-  description: string | null
-  image_urls: string[]
-  is_public: boolean
-  created_at: string
+function PrivateJournalImage({ src, alt, className, onClick }: { src: string; alt?: string; className?: string; onClick?: () => void }) {
+  const [signedUrl, setSignedUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function load() {
+      try {
+        let path = src
+        if (src.includes("/object/public/posts/")) {
+          path = src.split("/object/public/posts/")[1]
+        } else if (src.includes("/object/sign/posts/")) {
+          path = src.split("/object/sign/posts/")[1]?.split("?")[0]
+        } else if (src.includes("/object/public/chat-images/")) {
+          path = src.split("/object/public/chat-images/")[1]
+          const { data, error } = await supabase.storage.from("chat-images").createSignedUrl(path, 3600)
+          if (!error && data?.signedUrl) {
+            setSignedUrl(data.signedUrl)
+            return
+          }
+        }
+        const { data, error } = await supabase.storage.from("posts").createSignedUrl(path, 3600)
+        if (!error && data?.signedUrl) {
+          setSignedUrl(data.signedUrl)
+        } else {
+          setSignedUrl(src)
+        }
+      } catch {
+        setSignedUrl(src)
+      }
+    }
+    if (src) load()
+  }, [src])
+
+  if (!signedUrl) return <div className={`bg-muted/20 animate-pulse ${className}`} />
+
+  return (
+    <img
+      src={signedUrl}
+      alt={alt}
+      className={className}
+      onClick={onClick}
+    />
+  )
 }
+
+type Mode = "list" | "create" | "edit" | "view"
 
 export default function JournalPage() {
   useSEO({
-    title: "Traveler Journals & Stories",
-    description:
-      "Read unfiltered guides, reviews, and stories shared by real travelers in Kenya.",
+    title: "My Travel Journals",
+    description: "Your personal travel journals — write, edit, and save your stories.",
     url: "https://ausaguide.com/journal",
   })
-  const userId = localStorage.getItem("user_id")
-  const [entries, setEntries] = useState<JournalEntry[]>([])
+  const navigate = useNavigate()
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [journals, setJournals] = useState<Journal[]>([])
   const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
+  const [mode, setMode] = useState<Mode>("list")
+  const [selected, setSelected] = useState<Journal | null>(null)
   const [saving, setSaving] = useState(false)
 
   // Form state
-  const [title, setTitle] = useState("")
-  const [location, setLocation] = useState("")
-  const [description, setDescription] = useState("")
-  const [isPublic, setIsPublic] = useState(false)
-  const [imageUrls, setImageUrls] = useState<string[]>([])
+  const [formTitle, setFormTitle] = useState("")
+  const [formContent, setFormContent] = useState("")
+  const [formImageFile, setFormImageFile] = useState<File | null>(null)
+  const [formImagePreview, setFormImagePreview] = useState<string | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
 
+  // Load user
   useEffect(() => {
-    if (!userId) { setLoading(false); return }
-    const load = async () => {
-      try {
-        const { data } = await supabase
-          .from("journal_entries")
-          .select("id, title, location, description, image_urls, is_public, created_at")
-          .eq("user_id", userId)
-          .order("created_at", { ascending: false })
-        setEntries((data ?? []) as JournalEntry[])
-      } catch (err) {
-        console.error(err)
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
-  }, [userId])
+    supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null))
+  }, [])
 
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault()
-    if (!userId || !title.trim()) return
+  // Load journals (own only)
+  useEffect(() => {
+    if (!currentUserId) { setLoading(false); return }
+    fetchJournals(currentUserId)
+      .then(setJournals)
+      .catch(err => { console.error(err); toast.error("Failed to load journals.") })
+      .finally(() => setLoading(false))
+  }, [currentUserId])
+
+  const resetForm = () => {
+    setFormTitle("")
+    setFormContent("")
+    setFormImageFile(null)
+    setFormImagePreview(null)
+    setSelected(null)
+  }
+
+  const openCreate = () => {
+    resetForm()
+    setMode("create")
+  }
+
+  const openEdit = (j: Journal) => {
+    setSelected(j)
+    setFormTitle(j.title)
+    setFormContent(j.content)
+    setFormImagePreview(j.image_url ?? null)
+    setFormImageFile(null)
+    setMode("edit")
+  }
+
+  const openView = (j: Journal) => {
+    setSelected(j)
+    setMode("view")
+  }
+
+  const uploadImage = async (userId: string): Promise<string | undefined> => {
+    if (!formImageFile) return undefined
+    const ext = formImageFile.name.split(".").pop()
+    const path = `${userId}/${Date.now()}.${ext}`
+    const { error } = await supabase.storage.from("posts").upload(path, formImageFile)
+    if (error) throw error
+    const { data: { publicUrl } } = supabase.storage.from("posts").getPublicUrl(path)
+    return publicUrl
+  }
+
+  const handleSave = async () => {
+    if (!formTitle.trim() || !formContent.trim()) {
+      toast.error("Title and content are required.")
+      return
+    }
+    if (!currentUserId) return
     setSaving(true)
     try {
-      const { data, error } = await supabase
-        .from("journal_entries")
-        .insert({
-          user_id: userId,
-          title: title.trim(),
-          location: location || null,
-          description: description || null,
-          is_public: isPublic,
-          image_urls: imageUrls,
-        })
-        .select("id, title, location, description, image_urls, is_public, created_at")
-        .single()
-      if (error) throw error
-      setEntries((prev) => [data as JournalEntry, ...prev])
-      setTitle("")
-      setLocation("")
-      setDescription("")
-      setIsPublic(false)
-      setImageUrls([])
-      setShowForm(false)
+      const imageUrl = await uploadImage(currentUserId)
+      if (mode === "create") {
+        const j = await createJournal(currentUserId, formTitle, formContent, imageUrl)
+        setJournals(prev => [j, ...prev])
+        toast.success("Journal entry created!")
+      } else if (mode === "edit" && selected) {
+        await updateJournal(selected.id, formTitle, formContent, imageUrl ?? formImagePreview)
+        setJournals(prev => prev.map(jj => jj.id === selected.id ? { ...jj, title: formTitle, content: formContent, image_url: imageUrl ?? formImagePreview ?? null } : jj))
+        toast.success("Journal entry updated!")
+      }
+      resetForm()
+      setMode("list")
+    } catch (err: any) {
+      toast.error(err.message ?? "Failed to save.")
     } finally {
       setSaving(false)
     }
   }
 
-  async function handleDelete(id: string) {
-    await supabase.from("journal_entries").delete().eq("id", id)
-    setEntries((prev) => prev.filter((e) => e.id !== id))
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this journal entry?")) return
+    try {
+      await deleteJournal(id)
+      setJournals(prev => prev.filter(j => j.id !== id))
+      if (selected?.id === id) { setSelected(null); setMode("list") }
+      toast.success("Deleted.")
+    } catch (err: any) {
+      toast.error(err.message)
+    }
   }
 
-  if (!userId) {
+  if (!currentUserId && !loading) {
     return (
-      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4 px-4 text-center">
-        <AlertCircle className="size-12 text-muted-foreground" />
-        <h2 className="text-xl font-bold">Log in to access your journal</h2>
-        <Link to="/auth"><Button className="rounded-full">Log In</Button></Link>
+      <div className="min-h-screen flex items-center justify-center px-4 text-center bg-background">
+        <div className="space-y-4">
+          <BookOpen className="mx-auto size-12 text-muted-foreground" />
+          <h2 className="text-xl font-bold">Sign in to access your journals</h2>
+          <Button className="rounded-full" onClick={() => navigate("/auth")}>Sign In</Button>
+        </div>
       </div>
     )
   }
 
-  return (
-    <div className="min-h-screen bg-background pt-20 pb-24">
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-primary/5 blur-3xl" />
-      </div>
+  // ─── Form view ────────────────────────────────────────────────────────────
+  if (mode === "create" || mode === "edit") {
+    return (
+      <div className="min-h-screen bg-background pt-24 pb-20">
+        <div className="mx-auto max-w-2xl px-4 space-y-5">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" className="rounded-full" onClick={() => { resetForm(); setMode("list") }}>
+              <X className="size-4 mr-1" /> Cancel
+            </Button>
+            <h1 className="text-xl font-bold">{mode === "create" ? "New Journal Entry" : "Edit Entry"}</h1>
+          </div>
 
-      <div className="relative z-10 mx-auto max-w-3xl px-4">
+          <div className="space-y-4 rounded-2xl border border-border/60 bg-card/60 backdrop-blur p-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="journal-title">Title *</Label>
+              <Input
+                id="journal-title"
+                value={formTitle}
+                onChange={e => setFormTitle(e.target.value)}
+                placeholder="Give your entry a title…"
+                className="border-border/80"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="journal-content">Content *</Label>
+              <textarea
+                id="journal-content"
+                value={formContent}
+                onChange={e => setFormContent(e.target.value)}
+                rows={12}
+                placeholder="Write your travel story, tips, or reflections…"
+                className="w-full rounded-md border border-border/80 bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-y"
+              />
+            </div>
+
+            {/* Cover image */}
+            <div className="space-y-1.5">
+              <Label>Cover Image (optional)</Label>
+              {formImagePreview && (
+                <div className="relative w-fit">
+                  <img src={formImagePreview} alt="Preview" className="max-h-48 rounded-xl" />
+                  <button
+                    className="absolute top-1 right-1 size-6 rounded-full bg-black/60 flex items-center justify-center"
+                    onClick={() => { setFormImageFile(null); setFormImagePreview(null) }}
+                  >
+                    <X className="size-3 text-white" />
+                  </button>
+                </div>
+              )}
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={e => {
+                  const file = e.target.files?.[0]
+                  if (file) { setFormImageFile(file); setFormImagePreview(URL.createObjectURL(file)) }
+                  e.target.value = ""
+                }}
+              />
+              <Button variant="outline" size="sm" className="rounded-full gap-2" onClick={() => fileRef.current?.click()}>
+                <ImageIcon className="size-4" /> {formImagePreview ? "Change Image" : "Add Image"}
+              </Button>
+            </div>
+
+            <Button
+              className="w-full rounded-full bg-[#7F5AF0] hover:bg-[#6b47d6] text-white font-semibold"
+              onClick={handleSave}
+              disabled={saving}
+            >
+              {saving ? <Loader2 className="size-4 animate-spin mr-2" /> : <Check className="size-4 mr-2" />}
+              {mode === "create" ? "Save Entry" : "Update Entry"}
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ─── View single entry ────────────────────────────────────────────────────
+  if (mode === "view" && selected) {
+    return (
+      <div className="min-h-screen bg-background pt-24 pb-20">
+        <div className="mx-auto max-w-2xl px-4 space-y-5">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" className="rounded-full" onClick={() => setMode("list")}>
+              ← Back
+            </Button>
+          </div>
+          {selected.image_url && (
+            <PrivateJournalImage src={selected.image_url} alt="Cover" className="w-full max-h-72 object-cover rounded-2xl" />
+          )}
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold tracking-tight">{selected.title}</h1>
+            <p className="text-xs text-muted-foreground">{format(new Date(selected.created_at), "MMMM d, yyyy")}</p>
+          </div>
+          <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground">{selected.content}</p>
+          <div className="flex gap-2 pt-2">
+            <Button size="sm" variant="outline" className="rounded-full gap-1.5" onClick={() => openEdit(selected)}>
+              <Edit3 className="size-3.5" /> Edit
+            </Button>
+            <Button size="sm" variant="destructive" className="rounded-full gap-1.5" onClick={() => handleDelete(selected.id)}>
+              <Trash2 className="size-3.5" /> Delete
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ─── List view ────────────────────────────────────────────────────────────
+  return (
+    <div className="min-h-screen bg-background pt-24 pb-20">
+      <div className="mx-auto max-w-2xl px-4 space-y-5">
         {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/10">
-              <BookOpen className="size-6 text-primary" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center">
+              <BookOpen className="size-4 text-primary" />
             </div>
             <div>
-              <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Travel Journal</h1>
-              <p className="text-sm text-muted-foreground">Your personal travel diary</p>
+              <h1 className="text-xl font-bold tracking-tight">My Journals</h1>
+              <p className="text-xs text-muted-foreground">{journals.length} {journals.length === 1 ? "entry" : "entries"}</p>
             </div>
           </div>
-          <Button onClick={() => setShowForm(!showForm)} className="gap-2 rounded-full">
+          <Button id="new-journal-btn" size="sm" className="rounded-full gap-1.5 bg-[#7F5AF0] hover:bg-[#6b47d6] text-white" onClick={openCreate}>
             <Plus className="size-4" /> New Entry
           </Button>
         </div>
 
-        {/* New Entry Form */}
-        {showForm && (
-          <div className="mb-8 rounded-2xl border border-border bg-card/60 p-6">
-            <h2 className="mb-4 text-lg font-bold text-foreground">New Journal Entry</h2>
-            <form onSubmit={handleSave} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="j-title">Title *</Label>
-                <Input id="j-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="What an adventure!" required />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="j-location">Location</Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                  <Input id="j-location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Nairobi, Kenya" className="pl-9" />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="j-desc">Description</Label>
-                <textarea
-                  id="j-desc"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={4}
-                  placeholder="Write about your experience..."
-                  className="w-full resize-none rounded-md border border-border/80 bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Photos</Label>
-                <Dropzone
-                  bucket="journals"
-                  multiple={true}
-                  value={imageUrls}
-                  onChange={setImageUrls}
-                />
-              </div>
-              <div className="flex items-center justify-between rounded-xl border border-border/50 bg-card/30 px-4 py-3">
-                <div>
-                  <p className="text-sm font-semibold text-foreground">
-                    {isPublic ? "Public post" : "Private entry"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {isPublic ? "Visible on the social feed" : "Only you can see this"}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsPublic(!isPublic)}
-                  className={cn(
-                    "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200",
-                    isPublic ? "bg-primary" : "bg-muted"
-                  )}
-                >
-                  <span className={cn("pointer-events-none inline-block size-5 rounded-full bg-white shadow-lg transition-transform duration-200", isPublic ? "translate-x-5" : "translate-x-0")} />
-                </button>
-              </div>
-              <div className="flex gap-3">
-                <Button type="submit" disabled={saving} className="rounded-full">
-                  {saving ? <Spinner className="size-4" /> : "Save Entry"}
-                </Button>
-                <Button type="button" variant="ghost" onClick={() => setShowForm(false)} className="rounded-full">Cancel</Button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* Entries */}
+        {/* Journal list */}
         {loading ? (
-          <div className="flex min-h-[300px] items-center justify-center">
-            <Spinner className="size-8 text-primary" />
-          </div>
-        ) : entries.length === 0 ? (
-          <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-border">
-            <div className="flex size-16 items-center justify-center rounded-full bg-primary/10">
-              <BookOpen className="size-8 text-primary" />
-            </div>
-            <div className="text-center">
-              <h3 className="font-semibold text-foreground">No journal entries yet</h3>
-              <p className="text-sm text-muted-foreground mt-1">Start writing about your travel experiences.</p>
-            </div>
-            <Button onClick={() => setShowForm(true)} className="rounded-full gap-2">
-              <Plus className="size-4" /> Write First Entry
+          <div className="flex justify-center py-16"><Spinner className="size-6 text-primary" /></div>
+        ) : journals.length === 0 ? (
+          <div className="flex flex-col items-center gap-4 py-16 text-center rounded-2xl border border-dashed border-border/60 p-8">
+            <BookOpen className="size-12 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">Your journal is empty. Start writing your first entry!</p>
+            <Button className="rounded-full bg-[#7F5AF0] hover:bg-[#6b47d6] text-white" onClick={openCreate}>
+              <Plus className="size-4 mr-1" /> Write First Entry
             </Button>
           </div>
         ) : (
-          <div className="space-y-4">
-            {entries.map((entry) => (
-              <div key={entry.id} className="group rounded-2xl border border-border bg-card/50 p-5 transition-all hover:border-primary/30">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-base font-bold text-foreground truncate">{entry.title}</h3>
-                      {entry.is_public ? (
-                        <span className="flex items-center gap-1 rounded-full bg-teal/10 border border-teal/30 px-2 py-0.5 text-[10px] font-bold text-teal">
-                          <Globe className="size-2.5" /> Public
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 rounded-full bg-muted/50 border border-border px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
-                          <Lock className="size-2.5" /> Private
-                        </span>
-                      )}
+          <div className="space-y-3">
+            {journals.map(j => (
+              <div
+                key={j.id}
+                className="group rounded-2xl border border-border/60 bg-card/60 backdrop-blur overflow-hidden hover:border-primary/30 transition-colors"
+              >
+                <div className="flex items-stretch">
+                  {j.image_url && (
+                    <PrivateJournalImage src={j.image_url} alt="Cover" className="w-20 object-cover flex-shrink-0" />
+                  )}
+                  <div className="flex flex-1 items-center px-4 py-3.5 gap-3 min-w-0">
+                    <button className="flex-1 text-left min-w-0" onClick={() => openView(j)}>
+                      <p className="font-semibold text-sm truncate">{j.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{j.content}</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">{format(new Date(j.created_at), "MMM d, yyyy")}</p>
+                    </button>
+                    <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => openEdit(j)} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+                        <Edit3 className="size-3.5" />
+                      </button>
+                      <button onClick={() => handleDelete(j.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                        <Trash2 className="size-3.5" />
+                      </button>
                     </div>
-                    {entry.location && (
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
-                        <MapPin className="size-3" />{entry.location}
-                      </div>
-                    )}
-                    {entry.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-3">{entry.description}</p>
-                    )}
-                    {entry.image_urls && entry.image_urls.length > 0 && (
-                      <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
-                        {entry.image_urls.map((url) => (
-                          <div key={url} className="aspect-square overflow-hidden rounded-xl border border-border/80 bg-muted">
-                            <img src={url} alt="Journal spot" className="h-full w-full object-cover" />
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <p className="mt-2 text-xs text-muted-foreground/60">
-                      {new Date(entry.created_at).toLocaleDateString("en-KE", { day: "numeric", month: "long", year: "numeric" })}
-                    </p>
+                    <ChevronRight className="size-4 text-muted-foreground/40 flex-shrink-0" />
                   </div>
-                  <button
-                    onClick={() => handleDelete(entry.id)}
-                    className="opacity-0 group-hover:opacity-100 flex size-8 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
                 </div>
               </div>
             ))}
