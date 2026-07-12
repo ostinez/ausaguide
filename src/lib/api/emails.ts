@@ -42,7 +42,7 @@ export async function sendWelcomeEmail(to: string, userName: string, subscribeNe
   const subject = "Welcome to Ausaguide — Confirm Your Email"
   const confirmationLink = "https://ausaguide.com/auth/callback"
   const html = `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 24px; background-color: #0d0d12; color: #fffffe; line-height: 1.6;">
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 24px; background-color: #16161A; color: #fffffe; line-height: 1.6;">
       <div style="text-align: center; margin-bottom: 32px;">
         <img src="https://ausaguide.com/logo-primary.png" alt="Ausaguide" style="height: 36px; width: auto; display: inline-block;" />
       </div>
@@ -150,7 +150,7 @@ export async function sendTourApprovalEmail(
 export async function sendHostWaitlistEmail(to: string, userName: string): Promise<boolean> {
   const subject = "You're on the Ausaguide Waitlist! 🎉"
   const html = `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 24px; background-color: #0d0d12; color: #fffffe; line-height: 1.6;">
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 24px; background-color: #16161A; color: #fffffe; line-height: 1.6;">
       <div style="text-align: center; margin-bottom: 32px;">
         <img src="https://ausaguide.com/logo-primary.png" alt="Ausaguide" style="height: 36px; width: auto; display: inline-block;" />
       </div>
@@ -170,7 +170,7 @@ export async function sendHostWaitlistEmail(to: string, userName: string): Promi
 export async function sendGeneralWaitlistEmail(to: string, userName: string, role: string): Promise<boolean> {
   const subject = "You're on the Ausaguide Waitlist! 🎉"
   const html = `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 24px; background-color: #0d0d12; color: #fffffe; line-height: 1.6;">
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 24px; background-color: #16161A; color: #fffffe; line-height: 1.6;">
       <div style="text-align: center; margin-bottom: 32px;">
         <img src="https://ausaguide.com/logo-primary.png" alt="Ausaguide" style="height: 36px; width: auto; display: inline-block;" />
       </div>
@@ -186,4 +186,29 @@ export async function sendGeneralWaitlistEmail(to: string, userName: string, rol
   `
   return dispatchEmail({ to, subject, html })
 }
+
+export async function sendPasswordResetEmail(to: string, userName: string, resetLink: string): Promise<boolean> {
+  const subject = "Reset Your Ausaguide Password"
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 24px; background-color: #16161A; color: #fffffe; line-height: 1.6;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <img src="https://ausaguide.com/logo-primary.png" alt="Ausaguide" style="height: 36px; width: auto; display: inline-block;" />
+      </div>
+      <p style="font-size: 16px; margin-bottom: 20px; color: #fffffe;">Hi ${userName}, we received a request to reset your password.</p>
+      <p style="font-size: 16px; margin-bottom: 24px; color: #a7a9be;">Click the link below to set a new password:</p>
+      
+      <div style="text-align: center; margin-bottom: 28px;">
+        <a href="${resetLink}" style="background-color: #7F5AF0; color: #ffffff; padding: 14px 32px; border-radius: 9999px; text-decoration: none; font-weight: bold; display: inline-block; font-size: 15px; box-shadow: 0 4px 14px rgba(127, 90, 240, 0.4);">Reset Password →</a>
+      </div>
+      
+      <p style="font-size: 14px; margin-bottom: 32px; color: #a7a9be; font-style: italic;">If you didn't request this, you can ignore this email.</p>
+      
+      <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 32px 0;" />
+      <p style="font-size: 13px; color: #2CB67D; font-weight: 700; text-align: center; margin-bottom: 4px;">Ausaguide — Be a Local. Share Your World.</p>
+      <p style="font-size: 11px; color: #5f6368; text-align: center; margin: 0;">© 2026 Ausaguide. Nairobi, Kenya.</p>
+    </div>
+  `
+  return dispatchEmail({ to, subject, html })
+}
+
 

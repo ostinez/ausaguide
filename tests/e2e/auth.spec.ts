@@ -147,6 +147,9 @@ test.describe("Authentication E2E Tests", () => {
     // Click Forgot Password button
     await page.getByRole("button", { name: /Forgot password\?/i }).click({ force: true });
 
+    // Click Send Link button
+    await page.getByRole("button", { name: /Send Link/i }).click({ force: true });
+
     // Verify success message
     await expect(page.locator("text=Check your inbox for the reset link.").first()).toBeVisible();
   });

@@ -73,6 +73,7 @@ function SignInForm() {
   const [loading, setLoading] = useState(false)
   const [resetLoading, setResetLoading] = useState(false)
   const [infoMessage, setInfoMessage] = useState<string | null>(null)
+  const [showForgotPasswordView, setShowForgotPasswordView] = useState(false)
 
   const handleResendConfirmation = async () => {
     setError(null)
@@ -150,6 +151,13 @@ function SignInForm() {
         return
       }
 
+      // Check if email is confirmed!
+      if (authData.user.email_confirmed_at === null) {
+        await supabase.auth.signOut()
+        setError("unconfirmed_email")
+        return
+      }
+
       // Fetch role from profiles table
       let role = "traveler"
       try {
@@ -192,28 +200,6 @@ function SignInForm() {
     }
   }
 
-  const handleForgotPassword = async () => {
-    setError(null)
-    setInfoMessage(null)
-    if (!email.trim()) {
-      setError("Please enter your email address to reset password.")
-      return
-    }
-    setResetLoading(true)
-    try {
-      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: window.location.origin + "/reset-password",
-      })
-      if (resetErr) throw resetErr
-      setInfoMessage("Check your inbox for the reset link.")
-      toast.success("Password reset email sent!")
-    } catch (err: any) {
-      setError(friendlyAuthError(err?.message ?? "Failed to send reset link. Please try again."))
-    } finally {
-      setResetLoading(false)
-    }
-  }
-
   const handleGoogleSignIn = async () => {
     setError(null)
     setInfoMessage(null)
@@ -230,6 +216,91 @@ function SignInForm() {
     } catch (err: any) {
       setError(friendlyAuthError(err?.message ?? "Google authentication failed."))
     }
+  }
+
+  if (showForgotPasswordView) {
+    return (
+      <form
+        onSubmit={async (e) => {
+          e.preventDefault()
+          setError(null)
+          setInfoMessage(null)
+          if (!email.trim()) {
+            setError("Please enter your email address to reset password.")
+            return
+          }
+          setResetLoading(true)
+          try {
+            const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+              redirectTo: window.location.origin + "/reset-password",
+            })
+            if (resetErr) throw resetErr
+            setInfoMessage("Check your inbox for the reset link.")
+            toast.success("Password reset email sent!")
+          } catch (err: any) {
+            setError(friendlyAuthError(err?.message ?? "Failed to send reset link. Please try again."))
+          } finally {
+            setResetLoading(false)
+          }
+        }}
+        className="space-y-4"
+      >
+        <div className="text-center space-y-1">
+          <h3 className="text-lg font-bold text-white">Reset Password</h3>
+          <p className="text-xs text-muted-foreground">
+            Enter your email and we'll send you a recovery link to set a new password.
+          </p>
+        </div>
+
+        {error && (
+          <div className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs font-semibold text-destructive animate-in fade-in">
+            <AlertCircle className="size-4 shrink-0 mt-0.5" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {infoMessage && (
+          <div className="flex items-start gap-2 rounded-xl border border-[#2CB67D]/30 bg-[#2CB67D]/10 p-3 text-xs font-semibold text-[#2CB67D] animate-in fade-in">
+            <CheckCircle2 className="size-4 shrink-0 mt-0.5" />
+            <span>{infoMessage}</span>
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <Label htmlFor="reset-email">Email Address</Label>
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              id="reset-email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="pl-10 border-border/80 text-foreground placeholder:text-muted-foreground/50"
+              required
+            />
+          </div>
+        </div>
+
+        <Button type="submit" className="w-full rounded-full py-5 text-sm font-semibold" disabled={resetLoading}>
+          {resetLoading ? <Spinner className="size-4 text-white animate-spin" /> : "Send Link"}
+        </Button>
+
+        <div className="text-center">
+          <button
+            type="button"
+            onClick={() => {
+              setShowForgotPasswordView(false)
+              setError(null)
+              setInfoMessage(null)
+            }}
+            className="text-xs text-primary hover:text-primary/80 transition-colors underline cursor-pointer"
+          >
+            Back to Log In
+          </button>
+        </div>
+      </form>
+    )
   }
 
   return (
@@ -282,11 +353,14 @@ function SignInForm() {
           <Label htmlFor="signin-password">Password</Label>
           <button
             type="button"
-            onClick={handleForgotPassword}
-            disabled={resetLoading}
-            className="text-xs text-primary hover:text-primary/80 transition-colors cursor-pointer disabled:opacity-50"
+            onClick={() => {
+              setShowForgotPasswordView(true)
+              setError(null)
+              setInfoMessage(null)
+            }}
+            className="text-xs text-primary hover:text-primary/80 transition-colors cursor-pointer"
           >
-            {resetLoading ? "Sending..." : "Forgot password?"}
+            Forgot password?
           </button>
         </div>
         <div className="relative">
@@ -329,10 +403,10 @@ function SignInForm() {
         type="button"
         variant="outline"
         onClick={handleGoogleSignIn}
-        className="w-full rounded-full py-5 text-sm font-medium border-border/80"
+        className="w-full rounded-full py-5 text-sm font-medium border-border/80 gap-2 flex items-center justify-center"
       >
         <GoogleIcon />
-        Google
+        Continue with Google
       </Button>
     </form>
   )
