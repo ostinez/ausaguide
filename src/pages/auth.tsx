@@ -675,13 +675,54 @@ export default function AuthPage() {
   const becomeHost = searchParams.get("become-host") === "true"
   const defaultTab = becomeHost ? "signup" : (searchParams.get("tab") === "signup" ? "signup" : "signin")
 
+  // Fix 1 — Bounce already-authenticated users to their role-correct dashboard.
+  // This prevents a logged-in user from seeing the login form and stops the
+  // redirect loop caused by Google OAuth landing back on /auth.
   useEffect(() => {
-    if (becomeHost || searchParams.get("tab") === "signup") {
+    async function redirectIfAuthenticated() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session?.user) return
+
+        // Session exists — fetch role from profiles
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", session.user.id)
+          .maybeSingle()
+
+        const role = profile?.role ?? "traveler"
+        localStorage.setItem("user_id", session.user.id)
+        localStorage.setItem("user_role", role)
+
+        if (role === "admin") navigate("/admin/dashboard", { replace: true })
+        else if (role === "host") navigate("/host/dashboard", { replace: true })
+        else navigate("/dashboard", { replace: true })
+      } catch {
+        // No session or error — stay on login page
+      }
+    }
+    redirectIfAuthenticated()
+  }, [navigate])
+
+  // Fix 2 — Only redirect to /onboarding for unauthenticated users.
+  // Previously this ran unconditionally, overriding the post-login redirect.
+  useEffect(() => {
+    if (!(becomeHost || searchParams.get("tab") === "signup")) return
+
+    async function maybeRedirectToOnboarding() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user) return  // Already logged in — skip
+      } catch {
+        // Proceed
+      }
       if (becomeHost) {
         sessionStorage.setItem("become_host", "true")
       }
       navigate("/onboarding", { replace: true })
     }
+    maybeRedirectToOnboarding()
   }, [becomeHost, searchParams, navigate])
 
   return (
@@ -728,7 +769,6 @@ export default function AuthPage() {
                 <TabsTrigger
                   value="signup"
                   className="flex-1"
-                  onClick={() => navigate("/onboarding")}
                 >
                   Sign Up
                 </TabsTrigger>
