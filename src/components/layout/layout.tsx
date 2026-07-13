@@ -9,10 +9,8 @@ export function Layout() {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      const uId = session?.user?.id || localStorage.getItem("user_id")
-      setUserId(uId)
-      
       if (session?.user) {
+        setUserId(session.user.id)
         localStorage.setItem("user_id", session.user.id)
         
         try {
@@ -22,23 +20,28 @@ export function Layout() {
             .eq("id", session.user.id)
             .maybeSingle()
 
-          if (profile) {
-            localStorage.setItem("user_role", profile.role || "traveler")
-          }
+          const role = profile?.role || "traveler"
+          localStorage.setItem("user_role", role)
 
           if (event === "SIGNED_IN") {
             const path = window.location.pathname
             if (path === "/auth" || path === "/auth/callback") {
-              if (profile) {
-                window.location.href = profile.role === "host" ? "/host/dashboard" : "/dashboard"
+              if (role === "admin") {
+                window.location.href = "/admin/dashboard"
+              } else if (role === "host") {
+                window.location.href = "/host/dashboard"
               } else {
-                window.location.href = "/onboarding"
+                window.location.href = "/dashboard"
               }
             }
           }
         } catch (err) {
           console.error("Error checking profile on auth change:", err)
         }
+      } else {
+        setUserId(null)
+        localStorage.removeItem("user_id")
+        localStorage.removeItem("user_role")
       }
     })
 

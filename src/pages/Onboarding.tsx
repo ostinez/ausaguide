@@ -1279,8 +1279,8 @@ export default function OnboardingPage() {
             navigate(profile.role === "host" ? "/host/dashboard" : "/dashboard", { replace: true })
           }
         } else {
-          const localUserId = localStorage.getItem("user_id")
-          if (localUserId) navigate("/dashboard", { replace: true })
+          localStorage.removeItem("user_id")
+          localStorage.removeItem("user_role")
         }
       } catch (err) {
         console.error("Error syncing session in onboarding:", err)
