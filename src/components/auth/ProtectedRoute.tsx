@@ -28,12 +28,23 @@ export function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) 
           return
         }
 
-        // Fetch user role from profiles
+        // Fetch user role and banned status from profiles
         const { data: profile } = await supabase
           .from("profiles")
-          .select("role")
+          .select("role, banned")
           .eq("id", session.user.id)
           .maybeSingle()
+
+        if (profile?.banned) {
+          await supabase.auth.signOut()
+          localStorage.removeItem("user_id")
+          localStorage.removeItem("user_role")
+          if (active) {
+            setAuthenticated(false)
+            setLoading(false)
+          }
+          return
+        }
 
         const role = profile?.role ?? null
 

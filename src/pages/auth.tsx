@@ -459,7 +459,6 @@ function SignInForm() {
 }
 
 function SignUpForm() {
-  const navigate = useNavigate()
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [username, setUsername] = useState("")
@@ -469,11 +468,13 @@ function SignUpForm() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [subscribeNewsletter, setSubscribeNewsletter] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [infoMessage, setInfoMessage] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    setInfoMessage(null)
 
     const nameErr = validateName(name)
     if (nameErr) { setError(nameErr); return }
@@ -501,20 +502,39 @@ function SignUpForm() {
         return
       }
 
-      // Pass credentials to onboarding flow via sessionStorage
-      sessionStorage.setItem(
-        "onboarding_data",
-        JSON.stringify({
-          name: name.trim(),
-          email: email.trim(),
-          username: username.trim().toLowerCase(),
-          password,
-          subscribeNewsletter,
-        })
-      )
-      navigate("/onboarding")
+      const { data: signUpData, error: authError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          emailRedirectTo: window.location.origin + "/auth/callback",
+          data: {
+            full_name: name.trim(),
+            username: username.trim().toLowerCase(),
+            role: null,
+          },
+        },
+      })
+
+      if (authError) throw authError
+
+      if (signUpData.user) {
+        if (subscribeNewsletter) {
+          await supabase
+            .from("newsletter_subscribers")
+            .insert({ email: email.trim(), name: name.trim() })
+        }
+        toast.success("Account created successfully! Please confirm your email.")
+        setInfoMessage(`We've sent a verification email to ${email.trim()}. Please click the link inside it to verify your account and proceed to onboarding.`)
+        setName("")
+        setEmail("")
+        setUsername("")
+        setPassword("")
+        setConfirmPassword("")
+      } else {
+        throw new Error("Registration failed — no user returned.")
+      }
     } catch (err: any) {
-      setError(err.message || "Failed to check username availability.")
+      setError(friendlyAuthError(err.message))
     } finally {
       setLoading(false)
     }
@@ -526,6 +546,13 @@ function SignUpForm() {
         <div className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs font-semibold text-destructive animate-in fade-in">
           <AlertCircle className="size-4 shrink-0 mt-0.5" />
           <span>{error}</span>
+        </div>
+      )}
+
+      {infoMessage && (
+        <div className="flex items-start gap-2 rounded-xl border border-[#2CB67D]/30 bg-[#2CB67D]/10 p-3 text-xs font-semibold text-[#2CB67D] animate-in fade-in">
+          <CheckCircle2 className="size-4 shrink-0 mt-0.5" />
+          <span>{infoMessage}</span>
         </div>
       )}
 
@@ -710,25 +737,7 @@ export default function AuthPage() {
     redirectIfAuthenticated()
   }, [navigate])
 
-  // Fix 2 — Only redirect to /onboarding for unauthenticated users.
-  // Previously this ran unconditionally, overriding the post-login redirect.
-  useEffect(() => {
-    if (!(becomeHost || searchParams.get("tab") === "signup")) return
 
-    async function maybeRedirectToOnboarding() {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (session?.user) return  // Already logged in — skip
-      } catch {
-        // Proceed
-      }
-      if (becomeHost) {
-        sessionStorage.setItem("become_host", "true")
-      }
-      navigate("/onboarding", { replace: true })
-    }
-    maybeRedirectToOnboarding()
-  }, [becomeHost, searchParams, navigate])
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-24">

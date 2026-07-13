@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Link, useNavigate, useSearchParams } from "react-router-dom"
+import { Link, useNavigate, useSearchParams, Navigate } from "react-router-dom"
 import { format, parseISO, subDays } from "date-fns"
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -612,33 +612,7 @@ export default function AdminDashboard() {
   }
 
   if (!isAdmin) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-4">
-        <div className="pointer-events-none fixed inset-0">
-          <div className="absolute -top-40 left-1/2 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-primary/8 blur-3xl" />
-        </div>
-        <Card className="relative z-10 w-full max-w-md border-border/60">
-          <CardContent className="flex flex-col items-center py-12 text-center">
-            <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-destructive/10">
-              <Shield className="size-8 text-destructive" />
-            </div>
-            <h1 className="text-xl font-bold">Access Denied</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              This console is restricted to admin users only. Use the admin login flow with your credentials.
-            </p>
-            <div className="mt-6 flex flex-col gap-2 w-full">
-              <Button onClick={() => { localStorage.setItem("user_role", "admin"); setIsAdmin(true); load() }}
-                className="w-full rounded-full bg-primary">
-                Simulate Admin Login
-              </Button>
-              <Link to="/auth" className="w-full">
-                <Button variant="outline" className="w-full rounded-full">Go to Login</Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
+    return <Navigate to="/dashboard" replace />
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -993,7 +967,7 @@ export default function AdminDashboard() {
                             : "border-border/50 text-muted-foreground hover:bg-muted/30"
                         }`}>
                         {r.charAt(0).toUpperCase() + r.slice(1)}
-                        {r === "suspended" ? ` (${profiles.filter((p: any) => p.is_suspended).length})` : r !== "all" ? ` (${profiles.filter((p) => p.role === r).length})` : ""}
+                        {r === "suspended" ? ` (${profiles.filter((p: any) => p.is_suspended || p.banned).length})` : r !== "all" ? ` (${profiles.filter((p) => p.role === r).length})` : ""}
                       </button>
                     ))}
                   </div>
@@ -1020,7 +994,7 @@ export default function AdminDashboard() {
                         <tbody className="divide-y divide-border/20">
                           {profiles
                             .filter((p) => {
-                              if (userRoleFilter === "suspended") return (p as any).is_suspended
+                              if (userRoleFilter === "suspended") return (p as any).is_suspended || (p as any).banned
                               if (userRoleFilter !== "all" && p.role !== userRoleFilter) return false
                               return (
                                 p.full_name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -1045,7 +1019,7 @@ export default function AdminDashboard() {
                                     className="text-[10px] capitalize">{p.role}</Badge>
                                 </td>
                                 <td className="px-4 py-3 text-xs">
-                                  {(p as any).is_suspended ? (
+                                  {(p as any).is_suspended || (p as any).banned ? (
                                     <Badge variant="outline" className="border-red-500/30 text-red-400 bg-red-500/5">Suspended</Badge>
                                   ) : (
                                     <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/5">Active</Badge>
@@ -1064,18 +1038,18 @@ export default function AdminDashboard() {
                                         <Eye className="size-3.5 text-primary" />
                                       </Button>
                                     )}
-                                    {(p as any).is_suspended ? (
+                                    {(p as any).is_suspended || (p as any).banned ? (
                                       <Button size="icon" variant="ghost"
                                         className="size-7 rounded-lg hover:bg-emerald-500/10 hover:text-emerald-400"
                                         title="Activate user"
-                                        onClick={() => handleUserUpdate(p.id, { is_suspended: false }, "User activated")}>
+                                        onClick={() => handleUserUpdate(p.id, { is_suspended: false, banned: false }, "User activated")}>
                                         <UserCheck className="size-3.5 text-emerald-400" />
                                       </Button>
                                     ) : (
                                       <Button size="icon" variant="ghost"
                                         className="size-7 rounded-lg hover:bg-amber-500/10 hover:text-amber-400"
                                         title="Suspend user"
-                                        onClick={() => handleUserUpdate(p.id, { is_suspended: true }, "User suspended")}>
+                                        onClick={() => handleUserUpdate(p.id, { is_suspended: true, banned: true }, "User suspended")}>
                                         <Ban className="size-3.5 text-amber-400" />
                                       </Button>
                                     )}
@@ -1097,7 +1071,7 @@ export default function AdminDashboard() {
                     {profiles.length === 0 ? (
                       <div className="py-12 text-center text-sm text-muted-foreground">No users yet</div>
                     ) : profiles.filter((p) => {
-                      if (userRoleFilter === "suspended") return (p as any).is_suspended
+                      if (userRoleFilter === "suspended") return (p as any).is_suspended || (p as any).banned
                       if (userRoleFilter !== "all" && p.role !== userRoleFilter) return false
                       return (
                         p.full_name?.toLowerCase().includes(search.toLowerCase()) ||

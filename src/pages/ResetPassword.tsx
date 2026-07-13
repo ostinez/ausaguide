@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { supabase } from "@/lib/supabase"
 import { Eye, EyeOff, KeyRound, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
@@ -51,7 +51,12 @@ export default function ResetPasswordPage() {
       }
     })
 
-    // Also handle case where session was already established
+    // Support query param type=recovery or type=signup recovery URL structures
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("type") === "recovery" || params.get("type") === "signup") {
+      setReady(true)
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) setReady(true)
     })

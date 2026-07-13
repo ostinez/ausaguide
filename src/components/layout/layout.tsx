@@ -46,33 +46,21 @@ export function Layout() {
         try {
           const { data: { session } } = await supabase.auth.getSession()
           if (session?.user) {
-            const { data: profile, error: profileErr } = await supabase
+            const { data: profile } = await supabase
               .from("profiles")
               .select("*")
               .eq("id", session.user.id)
               .maybeSingle()
 
-            console.log("[Layout checkRedirect] result:", { profile, error: profileErr })
-
-            let role = profile?.role
-            if (!profile && !profileErr) {
-              console.log("[Layout checkRedirect] Auto-creating missing profile for user...")
-              const { data: newProfile, error: createErr } = await supabase
-                .from("profiles")
-                .insert({
-                  id: session.user.id,
-                  email: session.user.email,
-                  full_name: session.user.user_metadata?.full_name || "New Traveler",
-                  role: "traveler",
-                  languages: ["English"],
-                })
-                .select("*")
-                .maybeSingle()
-              if (!createErr && newProfile) {
-                role = newProfile.role
-              }
+            if (profile?.banned) {
+              await supabase.auth.signOut()
+              localStorage.removeItem("user_id")
+              localStorage.removeItem("user_role")
+              window.location.href = "/auth?error=banned"
+              return
             }
 
+            const role = profile?.role
             if (role === "admin") {
               window.location.href = "/admin/dashboard"
             } else if (role === "host") {
@@ -97,33 +85,21 @@ export function Layout() {
         localStorage.setItem("user_id", session.user.id)
         
         try {
-          const { data: profile, error: profileErr } = await supabase
+          const { data: profile } = await supabase
             .from("profiles")
             .select("*")
             .eq("id", session.user.id)
             .maybeSingle()
 
-          console.log("[Layout onAuthStateChange] SIGNED_IN/CHANGE result:", { profile, error: profileErr })
-
-          let role = profile?.role
-          if (!profile && !profileErr) {
-            console.log("[Layout onAuthStateChange] Auto-creating missing profile for user...")
-            const { data: newProfile, error: createErr } = await supabase
-              .from("profiles")
-              .insert({
-                id: session.user.id,
-                email: session.user.email,
-                full_name: session.user.user_metadata?.full_name || "New Traveler",
-                role: "traveler",
-                languages: ["English"],
-              })
-              .select("*")
-              .maybeSingle()
-            if (!createErr && newProfile) {
-              role = newProfile.role
-            }
+          if (profile?.banned) {
+            await supabase.auth.signOut()
+            localStorage.removeItem("user_id")
+            localStorage.removeItem("user_role")
+            window.location.href = "/auth?error=banned"
+            return
           }
 
+          const role = profile?.role
           if (role) {
             localStorage.setItem("user_role", role)
           } else {
@@ -132,7 +108,7 @@ export function Layout() {
 
           if (event === "SIGNED_IN") {
             const path = window.location.pathname
-            if (path === "/auth" || path === "/auth/callback") {
+            if (path === "/auth" || path === "/auth/callback" || path === "/") {
               if (role === "admin") {
                 window.location.href = "/admin/dashboard"
               } else if (role === "host") {

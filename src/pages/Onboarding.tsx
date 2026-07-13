@@ -7,37 +7,15 @@ import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
 import { Stepper } from "@/components/ui/Stepper"
 import { supabase } from "@/lib/supabase"
-import { validateName, validateEmail, validatePassword, validateUsername } from "@/lib/validation"
+import { validateName, validateUsername } from "@/lib/validation"
 import { identifyUser, trackEvent } from "@/lib/posthog"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import { sendWelcomeEmail } from "@/lib/api/emails"
-import { Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react"
+import { AlertCircle, Loader2 } from "lucide-react"
 
-/** Map Supabase auth errors to user-friendly messages */
-function friendlySignUpError(message: string): string {
-  const m = message.toLowerCase()
-  if (m.includes("user already registered") || m.includes("already exists") || m.includes("already been registered"))
-    return "An account with this email already exists. Please log in instead."
-  if (m.includes("weak_password") || m.includes("at least 8"))
-    return "Password must be at least 8 characters."
-  if (m.includes("invalid email") || m.includes("email address"))
-    return "Please enter a valid email address."
-  if (m.includes("network") || m.includes("fetch"))
-    return "Network error — please check your connection and try again."
-  return message
-}
 
 // ── Types ──────────────────────────────────────────────
 type Role = "traveler" | "host"
-
-interface OnboardingData {
-  name: string
-  email: string
-  username?: string
-  password: string
-  subscribeNewsletter?: boolean
-}
 
 // ── Confetti particle ──────────────────────────────────
 interface Particle {
@@ -231,33 +209,42 @@ function StepRole({
 // ── Step 3: Tell Us About You ─────────────────────────────
 function StepProfile({
   role,
-  userId: _userId,
-  prefill,
+  userId,
   onComplete,
 }: {
   role: Role
   userId: string
-  prefill: OnboardingData
   onComplete: (name: string, userId: string) => void
 }) {
-  const [name, setName] = useState(prefill.name)
-  const [email, setEmail] = useState(prefill.email)
-  const [username, setUsername] = useState(prefill.username || "")
-  const [password, setPassword] = useState(prefill.password)
-  const [showPassword, setShowPassword] = useState(false)
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+  const [username, setUsername] = useState("")
   const [communityBio, setCommunityBio] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [isOAuthUser, setIsOAuthUser] = useState(false)
 
   useEffect(() => {
     async function checkUser() {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
-          setIsOAuthUser(true)
-          if (!name) setName(user.user_metadata?.full_name || "")
-          if (!email) setEmail(user.email || "")
+          setEmail(user.email || "")
+          
+          // Fetch existing profile if trigger created it
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", user.id)
+            .maybeSingle()
+            
+          if (profile) {
+            setName(profile.full_name || user.user_metadata?.full_name || "")
+            setUsername(profile.username || user.user_metadata?.username || "")
+            setCommunityBio(profile.bio || "")
+          } else {
+            setName(user.user_metadata?.full_name || "")
+            setUsername(user.user_metadata?.username || "")
+          }
         }
       } catch (err) {
         console.error("Error checking active session:", err)
@@ -272,14 +259,8 @@ function StepProfile({
 
     const nameErr = validateName(name)
     if (nameErr) { setError(nameErr); return }
-    const emailErr = validateEmail(email)
-    if (emailErr) { setError(emailErr); return }
     const userErr = validateUsername(username)
     if (userErr) { setError(userErr); return }
-    if (!isOAuthUser) {
-      const passErr = validatePassword(password)
-      if (passErr) { setError(passErr); return }
-    }
     if (role === "host" && communityBio.trim().length < 10) {
       setError("Please tell us a bit more about your community (at least 10 characters).")
       return
@@ -287,10 +268,7 @@ function StepProfile({
 
     setLoading(true)
     try {
-      let realUserId: string
-      let emailConfirmed = false
-
-      // Check username availability
+      // Check if username is taken by anyone else
       const { data: existingUser, error: checkError } = await supabase
         .from("profiles")
         .select("id")
@@ -298,161 +276,59 @@ function StepProfile({
         .maybeSingle()
 
       if (checkError) throw checkError
-      if (existingUser && existingUser.id !== _userId) {
+      if (existingUser && existingUser.id !== userId) {
         setError("This username is already taken.")
+        setLoading(false)
         return
       }
 
-      if (isOAuthUser) {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
-          throw new Error("No active user session found.")
-        }
-        realUserId = user.id
-        emailConfirmed = !!user.email_confirmed_at
-      } else {
-        // ✅ Step 1: Create the real Supabase Auth user
-        let { data: signUpData, error: authError } = await supabase.auth.signUp({
-          email: email.trim(),
-          password,
-          options: {
-            data: {
-              full_name: name.trim(),
-              role,
-              username: username.trim().toLowerCase(),
-            },
+      const { error: upsertError } = await supabase
+        .from("profiles")
+        .upsert(
+          {
+            id: userId,
+            email: email.trim(),
+            full_name: name.trim(),
+            username: username.trim().toLowerCase(),
+            role: role,
+            languages: role === "host" ? ["English", "Swahili"] : ["English"],
+            bio: role === "host" ? communityBio.trim() : null,
           },
-        })
+          { onConflict: "id" }
+        )
 
-        if (authError) {
-          const errMsg = authError.message.toLowerCase()
-          if (errMsg.includes("already registered") || errMsg.includes("already exists")) {
-            // Attempt to sign in instead
-            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-              email: email.trim(),
-              password,
-            })
-            if (signInError) {
-              setError(friendlySignUpError(authError.message))
-              return
-            }
-            signUpData = signInData
-          } else {
-            setError(friendlySignUpError(authError.message))
-            return
-          }
-        }
+      if (upsertError) throw upsertError
 
-        if (!signUpData.user) {
-          setError("Account creation failed — no user returned. Please try again.")
-          return
-        }
-        realUserId = signUpData.user.id
-        emailConfirmed = !!signUpData.user.email_confirmed_at
-      }
-
-      // If updates opt-in was checked, save to database table
-      if (prefill.subscribeNewsletter) {
-        supabase
-          .from("newsletter_subscribers")
-          .insert({ email: email.trim(), name: name.trim() })
-          .then(({ error: subError }) => {
-            if (subError) console.error("Failed to subscribe to newsletter database table:", subError)
-          })
-      }
-
-      // Brief pause: give the on_auth_user_created trigger time to insert
-      // the profile row before we upsert over it with the real full_name.
-      await new Promise((r) => setTimeout(r, 350))
+      // Save role & ID to localStorage
+      localStorage.setItem("user_id", userId)
+      localStorage.setItem("user_role", role)
 
       if (role === "host") {
-        // Upsert profile with explicit conflict target on 'id'
-        const { data: profileData, error: upsertError } = await supabase
-          .from("profiles")
+        const { error: hostErr } = await supabase
+          .from("hosts")
           .upsert(
             {
-              id: realUserId,
-              email: email.trim(),
+              user_id: userId,
               full_name: name.trim(),
-              username: username.trim().toLowerCase(),
-              role: "host",
-              languages: ["English", "Swahili"],
+              email: email.trim(),
+              city: "Nairobi",
+              host_type: "local_host",
+              bio: communityBio.trim() || "New host registered on Ausaguide.",
+              status: "pending",
             },
-            { onConflict: "id" }
+            { onConflict: "user_id" }
           )
-          .select("id, email, role")
-          .single()
-
-        // Non-fatal: log but don't block — auth session is already created
-        if (upsertError) {
-          console.error("[StepProfile] Profile upsert error (non-fatal):", upsertError)
-        }
-
-        const { error: hostErr } = await supabase.from("hosts").insert({
-          user_id: realUserId,
-          full_name: name.trim(),
-          email: email.trim(),
-          city: "Nairobi",
-          host_type: "local_host",
-          bio: communityBio.trim() || "New host registered on Ausaguide.",
-          status: "pending",
-        })
         if (hostErr) console.error("Failed to create host record:", hostErr)
-
-        localStorage.setItem("user_id", realUserId)
-        localStorage.setItem("user_role", profileData?.role ?? "host")
-        trackEvent("user_signed_up", { email: email.trim(), role: "host" })
-        identifyUser(realUserId, { email: email.trim(), role: "host" })
-        sendWelcomeEmail(email.trim(), name.trim(), prefill.subscribeNewsletter)
-          .catch(err => console.error("Failed to send welcome email:", err))
-        
-        if (emailConfirmed) {
-          toast.success("Account profile completed successfully!")
-        } else {
-          toast.success("Account created! Check your inbox to confirm your email.")
-        }
-        onComplete(name.trim(), realUserId)
-      } else {
-        // Upsert profile with explicit conflict target on 'id'
-        const { data: profileData, error: upsertError } = await supabase
-          .from("profiles")
-          .upsert(
-            {
-              id: realUserId,
-              email: email.trim(),
-              full_name: name.trim(),
-              username: username.trim().toLowerCase(),
-              role: "traveler",
-              languages: ["English"],
-            },
-            { onConflict: "id" }
-          )
-          .select("id, email, role")
-          .single()
-
-        // Non-fatal: if trigger already created the row and upsert fails due
-        // to RLS, we still have a valid auth session — proceed gracefully.
-        if (upsertError) {
-          console.error("[StepProfile] Profile upsert error (non-fatal):", upsertError)
-        }
-
-        localStorage.setItem("user_id", realUserId)
-        localStorage.setItem("user_role", profileData?.role ?? "traveler")
-        trackEvent("user_signed_up", { email: email.trim(), role: "traveler" })
-        identifyUser(realUserId, { email: email.trim(), role: "traveler" })
-        sendWelcomeEmail(email.trim(), name.trim(), prefill.subscribeNewsletter)
-          .catch(err => console.error("Failed to send welcome email:", err))
-        
-        if (emailConfirmed) {
-          toast.success("Account profile completed successfully!")
-        } else {
-          toast.success("Account created! Check your inbox to confirm your email.")
-        }
-        onComplete(name.trim(), realUserId)
       }
-    } catch (err) {
+
+      trackEvent("user_onboarded", { email: email.trim(), role })
+      identifyUser(userId, { email: email.trim(), role })
+      
+      toast.success("Profile updated successfully!")
+      onComplete(name.trim(), userId)
+    } catch (err: any) {
       console.error(err)
-      setError(err instanceof Error ? friendlySignUpError(err.message) : "Failed to create account. Please try again.")
+      setError(err?.message || "Failed to update profile. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -519,39 +395,11 @@ function StepProfile({
             type="email"
             placeholder="you@example.com"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
             required
-            disabled={isOAuthUser}
+            disabled
             className="bg-[#16161A]/60 border-border text-white placeholder:text-white/30 focus:border-[#7F5AF0]/60 rounded-xl disabled:opacity-70"
           />
         </div>
-
-        {!isOAuthUser && (
-          <div className="space-y-1.5">
-            <Label htmlFor="ob-password" className="text-white/70 text-xs font-semibold uppercase tracking-wide">
-              Password
-            </Label>
-            <div className="relative">
-              <Input
-                id="ob-password"
-                type={showPassword ? "text" : "password"}
-                placeholder="Min 8 characters"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="bg-[#16161A]/60 border-border text-white placeholder:text-white/30 focus:border-[#7F5AF0]/60 rounded-xl pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((s) => !s)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition-colors"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-              </button>
-            </div>
-          </div>
-        )}
 
         {role === "host" && (
           <div className="space-y-1.5">
@@ -576,7 +424,7 @@ function StepProfile({
           disabled={loading}
           className="w-full rounded-full bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 transition-all duration-300"
         >
-          {loading ? <Spinner className="size-4 animate-spin" /> : (isOAuthUser ? "Save Profile" : "Create Account")}
+          {loading ? <Spinner className="size-4 animate-spin" /> : "Save Profile & Continue"}
         </Button>
       </form>
     </div>
@@ -948,168 +796,7 @@ function StepDone({ name, role }: { name: string; role: Role }) {
   )
 }
 
-// ── Step 5: Payout Setup (Hosts Only) ─────────────────────────
-function StepPayout({
-  userId,
-  onComplete,
-}: {
-  userId: string
-  onComplete: () => void
-}) {
-  const [method, setMethod] = useState<"mpesa" | "bank">("mpesa")
-  const [phone, setPhone] = useState("")
-  const [bankName, setBankName] = useState("")
-  const [accountNo, setAccountNo] = useState("")
-  const [accountName, setAccountName] = useState("")
 
-  function handleSave(e: React.FormEvent) {
-    e.preventDefault()
-
-    if (method === "mpesa" && !phone.trim()) {
-      toast.error("Please enter your M-Pesa phone number.")
-      return
-    }
-    if (method === "bank" && (!bankName.trim() || !accountNo.trim() || !accountName.trim())) {
-      toast.error("Please fill in all bank details.")
-      return
-    }
-
-    try {
-      localStorage.setItem(
-        `host_payout_${userId}`,
-        JSON.stringify({
-          method,
-          phone: phone.trim(),
-          bankName: bankName.trim(),
-          accountNo: accountNo.trim(),
-          accountName: accountName.trim(),
-        })
-      )
-      toast.success("Payout settings saved!")
-      onComplete()
-    } catch (err) {
-      console.error(err)
-      toast.error("Failed to save payout settings.")
-    }
-  }
-
-  return (
-    <div className="flex flex-col items-center gap-5 py-4 px-2 w-full">
-      <div className="text-center space-y-1.5">
-        <h2 className="text-2xl sm:text-3xl font-black text-white">Set Up Payouts</h2>
-        <p className="text-sm text-white/50">
-          Choose how you would like to receive payments from bookings.
-        </p>
-      </div>
-
-      <form onSubmit={handleSave} className="w-full max-w-md space-y-5">
-        <div className="space-y-1.5">
-          <Label className="text-white/70 text-xs font-semibold uppercase tracking-wide">
-            Payout Method
-          </Label>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setMethod("mpesa")}
-              className={cn(
-                "py-3 rounded-xl border font-bold text-sm transition-all duration-200 cursor-pointer",
-                method === "mpesa"
-                  ? "border-[#2CB67D] bg-[#2CB67D]/10 text-[#2CB67D] shadow-[0_0_12px_rgba(44,182,125,0.15)]"
-                  : "border-border bg-[#16161A]/60 text-white/60 hover:text-white"
-              )}
-            >
-              M-Pesa 📱
-            </button>
-            <button
-              type="button"
-              onClick={() => setMethod("bank")}
-              className={cn(
-                "py-3 rounded-xl border font-bold text-sm transition-all duration-200 cursor-pointer",
-                method === "bank"
-                  ? "border-[#7F5AF0] bg-[#7F5AF0]/10 text-[#7F5AF0] shadow-[0_0_12px_rgba(127,90,240,0.15)]"
-                  : "border-border bg-[#16161A]/60 text-white/60 hover:text-white"
-              )}
-            >
-              Bank Transfer 🏦
-            </button>
-          </div>
-        </div>
-
-        {method === "mpesa" ? (
-          <div className="space-y-1.5">
-            <Label htmlFor="pay-phone" className="text-white/70 text-xs font-semibold uppercase tracking-wide">
-              M-Pesa Phone Number
-            </Label>
-            <Input
-              id="pay-phone"
-              type="tel"
-              placeholder="e.g. +254 712 345678"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              required
-              className="bg-[#16161A]/60 border-border text-white placeholder:text-white/30 focus:border-[#7F5AF0]/60 rounded-xl"
-            />
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="pay-bank" className="text-white/70 text-xs font-semibold uppercase tracking-wide">
-                Bank Name
-              </Label>
-              <Input
-                id="pay-bank"
-                type="text"
-                placeholder="e.g. Kenya Commercial Bank"
-                value={bankName}
-                onChange={(e) => setBankName(e.target.value)}
-                required
-                className="bg-[#16161A]/60 border-border text-white placeholder:text-white/30 focus:border-[#7F5AF0]/60 rounded-xl"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="pay-acc-no" className="text-white/70 text-xs font-semibold uppercase tracking-wide">
-                Account Number
-              </Label>
-              <Input
-                id="pay-acc-no"
-                type="text"
-                placeholder="Your bank account number"
-                value={accountNo}
-                onChange={(e) => setAccountNo(e.target.value)}
-                required
-                className="bg-[#16161A]/60 border-border text-white placeholder:text-white/30 focus:border-[#7F5AF0]/60 rounded-xl"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="pay-acc-name" className="text-white/70 text-xs font-semibold uppercase tracking-wide">
-                Account Holder Name
-              </Label>
-              <Input
-                id="pay-acc-name"
-                type="text"
-                placeholder="Full name on the account"
-                value={accountName}
-                onChange={(e) => setAccountName(e.target.value)}
-                required
-                className="bg-[#16161A]/60 border-border text-white placeholder:text-white/30 focus:border-[#7F5AF0]/60 rounded-xl"
-              />
-            </div>
-          </div>
-        )}
-
-        <Button
-          type="submit"
-          size="lg"
-          className="w-full rounded-full bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 transition-all duration-300"
-        >
-          Save & Continue →
-        </Button>
-      </form>
-    </div>
-  )
-}
 
 // ── Step: Host Tier ────────────────────────────────────
 function StepHostTier({
@@ -1289,11 +976,6 @@ export default function OnboardingPage() {
     syncSession()
   }, [navigate])
 
-  // Prefill from sessionStorage if the auth page passed data
-  const prefillRaw = sessionStorage.getItem("onboarding_data")
-  const prefill: OnboardingData = prefillRaw
-    ? (JSON.parse(prefillRaw) as OnboardingData)
-    : { name: "", email: "", password: "" }
 
   // Stepper steps computed dynamically based on role
   const steps = [
@@ -1303,7 +985,6 @@ export default function OnboardingPage() {
     ...(role === "host"
       ? [
           { label: "Verify ID" },
-          { label: "Payout" },
           { label: "Host Type" },
         ]
       : []),
@@ -1336,7 +1017,6 @@ export default function OnboardingPage() {
               <StepProfile
                 role={role ?? "traveler"}
                 userId={userId}
-                prefill={prefill}
                 onComplete={(name, realUserId) => {
                   setCompletedName(name)
                   setUserId(realUserId)
@@ -1354,20 +1034,14 @@ export default function OnboardingPage() {
                   />
                 )}
                 {step === 4 && (
-                  <StepPayout
+                  <StepHostTier
                     userId={userId}
                     onComplete={() => setStep(5)}
                   />
                 )}
                 {step === 5 && (
-                  <StepHostTier
-                    userId={userId}
-                    onComplete={() => setStep(6)}
-                  />
-                )}
-                {step === 6 && (
                   <StepDone
-                    name={completedName || prefill.name || "Explorer"}
+                    name={completedName || "Explorer"}
                     role={role}
                   />
                 )}
@@ -1376,7 +1050,7 @@ export default function OnboardingPage() {
               <>
                 {step === 3 && (
                   <StepDone
-                    name={completedName || prefill.name || "Explorer"}
+                    name={completedName || "Explorer"}
                     role={role ?? "traveler"}
                   />
                 )}
