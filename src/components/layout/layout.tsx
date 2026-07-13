@@ -8,6 +8,38 @@ export function Layout() {
   const [userId, setUserId] = useState<string | null>(localStorage.getItem("user_id"))
 
   useEffect(() => {
+    // 1. Initial check: bounce already authenticated users away from / or /auth
+    async function checkRedirect() {
+      const path = window.location.pathname
+      if (path === "/" || path === "/auth" || path === "/auth/callback") {
+        try {
+          const { data: { session } } = await supabase.auth.getSession()
+          if (session?.user) {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("role")
+              .eq("id", session.user.id)
+              .maybeSingle()
+
+            const role = profile?.role
+            if (role === "admin") {
+              window.location.href = "/admin/dashboard"
+            } else if (role === "host") {
+              window.location.href = "/host/dashboard"
+            } else if (role === "traveler") {
+              window.location.href = "/dashboard"
+            } else {
+              window.location.href = "/onboarding"
+            }
+          }
+        } catch (e) {
+          console.error("Layout mount checkRedirect error:", e)
+        }
+      }
+    }
+    checkRedirect()
+
+    // 2. Listen to active session modifications
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         setUserId(session.user.id)
@@ -20,8 +52,12 @@ export function Layout() {
             .eq("id", session.user.id)
             .maybeSingle()
 
-          const role = profile?.role || "traveler"
-          localStorage.setItem("user_role", role)
+          const role = profile?.role
+          if (role) {
+            localStorage.setItem("user_role", role)
+          } else {
+            localStorage.removeItem("user_role")
+          }
 
           if (event === "SIGNED_IN") {
             const path = window.location.pathname
@@ -30,8 +66,10 @@ export function Layout() {
                 window.location.href = "/admin/dashboard"
               } else if (role === "host") {
                 window.location.href = "/host/dashboard"
-              } else {
+              } else if (role === "traveler") {
                 window.location.href = "/dashboard"
+              } else {
+                window.location.href = "/onboarding"
               }
             }
           }

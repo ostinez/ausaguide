@@ -691,13 +691,18 @@ export default function AuthPage() {
           .eq("id", session.user.id)
           .maybeSingle()
 
-        const role = profile?.role ?? "traveler"
+        const role = profile?.role
         localStorage.setItem("user_id", session.user.id)
-        localStorage.setItem("user_role", role)
+        if (role) {
+          localStorage.setItem("user_role", role)
+        } else {
+          localStorage.removeItem("user_role")
+        }
 
         if (role === "admin") navigate("/admin/dashboard", { replace: true })
         else if (role === "host") navigate("/host/dashboard", { replace: true })
-        else navigate("/dashboard", { replace: true })
+        else if (role === "traveler") navigate("/dashboard", { replace: true })
+        else navigate("/onboarding", { replace: true })
       } catch {
         // No session or error — stay on login page
       }

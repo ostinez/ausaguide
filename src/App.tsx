@@ -78,17 +78,25 @@ export default function App() {
           <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/host/signup" element={<Navigate to="/onboarding?become-host=true" replace />} />
           <Route path="/host/:id" element={<HostProfilePage />} />
-          {/* Protected routes */}
-          <Route element={<ProtectedRoute />}>
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/host/dashboard" element={<DashboardPage />} />
-            <Route path="/dashboard/earnings" element={<EarningsDashboard />} />
-            <Route path="/host/tours/new" element={<NewTourPage />} />
-            <Route path="/host/tours/:id/edit" element={<EditTourPage />} />
+          {/* Admin routes */}
+          <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/hosts" element={<AdminHostsPage />} />
             <Route path="/admin/settings" element={<AdminSettingsPage />} />
+          </Route>
+
+          {/* Host routes */}
+          <Route element={<ProtectedRoute allowedRoles={["host"]} />}>
+            <Route path="/host/dashboard" element={<DashboardPage />} />
+            <Route path="/dashboard/earnings" element={<EarningsDashboard />} />
+            <Route path="/host/tours/new" element={<NewTourPage />} />
+            <Route path="/host/tours/:id/edit" element={<EditTourPage />} />
+          </Route>
+
+          {/* General/Traveler routes */}
+          <Route element={<ProtectedRoute allowedRoles={["traveler", "host", "admin"]} />}>
+            <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/profile/edit" element={<SettingsPage />} />
             <Route path="/wishlist" element={<WishlistPage />} />
