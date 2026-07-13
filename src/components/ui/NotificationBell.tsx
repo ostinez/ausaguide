@@ -43,9 +43,19 @@ export default function NotificationBell() {
 
     if (!userId) return
 
-    // Supabase Real-time updates subscription
+    // Use a unique channel name per mount to avoid the Supabase channel-reuse
+    // error: "cannot add postgres_changes callbacks after subscribe()".
+    // The timestamp suffix ensures a fresh channel even on strict-mode double-mount.
+    const channelName = `user-notifications-${userId}-${Date.now()}`
+
+    // Remove any pre-existing channel with the same base name to prevent leaks
+    const existingChannels = supabase.getChannels()
+    existingChannels
+      .filter((ch) => ch.topic.includes(`user-notifications-${userId}`))
+      .forEach((ch) => supabase.removeChannel(ch))
+
     const channel = supabase
-      .channel(`user-notifications-${userId}`)
+      .channel(channelName)
       .on(
         "postgres_changes",
         {

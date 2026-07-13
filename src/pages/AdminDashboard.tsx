@@ -161,7 +161,6 @@ export default function AdminDashboard() {
   const [checkingAuth, setCheckingAuth] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<"overview" | "users" | "tours" | "bookings" | "analytics" | "waitlist" | "guide_reviews">("overview")
 
   useEffect(() => {
@@ -265,9 +264,9 @@ export default function AdminDashboard() {
           .from("profiles")
           .select("role")
           .eq("id", session.user.id)
-          .single()
+          .maybeSingle()
 
-        if (profileErr || profile?.role !== "admin") {
+        if (profileErr || !profile || profile?.role !== "admin") {
           navigate("/dashboard")
           return
         }
@@ -294,35 +293,39 @@ export default function AdminDashboard() {
   async function load() {
     setLoading(true)
     try {
-      const [profRes, hostRes, tourRes, bkRes, waitlistRes] = await Promise.all([
-        supabase.from("profiles").select("*").order("created_at", { ascending: false }),
-        supabase.from("hosts").select("*").order("created_at", { ascending: false }),
-        supabase.from("tours").select("*").order("created_at", { ascending: false }),
-        supabase.from("bookings").select("*").order("booking_date", { ascending: false }),
-        supabase.from("waitlist").select("*").order("created_at", { ascending: false }),
-      ])
-      if (profRes.error) throw profRes.error
-      if (hostRes.error) throw hostRes.error
-      if (tourRes.error) throw tourRes.error
-      if (bkRes.error) throw bkRes.error
-      if (waitlistRes.error) throw waitlistRes.error
+      // Run all queries independently — a single table failure won't crash the dashboard
+      const safeQuery = async (promise: PromiseLike<{ data: any; error: any }>, label: string) => {
+        try {
+          const { data, error } = await promise
+          if (error) {
+            console.warn(`[AdminDashboard] ${label} query error (non-fatal):`, error.message)
+            return []
+          }
+          return data ?? []
+        } catch (e: any) {
+          console.warn(`[AdminDashboard] ${label} exception (non-fatal):`, e?.message)
+          return []
+        }
+      }
 
-      const profs: Profile[] = profRes.data ?? []
-      const hostApps: HostRecord[] = hostRes.data ?? []
-      const rawTours: any[] = tourRes.data ?? []
-      const rawBks: any[] = bkRes.data ?? []
-      const rawWaitlists: any[] = waitlistRes.data ?? []
+      const [profs, hostApps, rawTours, rawBks, rawWaitlists] = await Promise.all([
+        safeQuery(supabase.from("profiles").select("*").order("created_at", { ascending: false }), "profiles"),
+        safeQuery(supabase.from("hosts").select("*").order("created_at", { ascending: false }), "hosts"),
+        safeQuery(supabase.from("tours").select("*").order("created_at", { ascending: false }), "tours"),
+        safeQuery(supabase.from("bookings").select("*").order("booking_date", { ascending: false }), "bookings"),
+        safeQuery(supabase.from("waitlist").select("*").order("created_at", { ascending: false }), "waitlist"),
+      ])
 
       // Stitch host names onto tours and bookings
-      const stitchedTours: TourRow[] = rawTours.map((t) => {
-        const hostProf = profs.find((p) => p.id === t.host_id)
-        const bkCount = rawBks.filter((b) => b.tour_id === t.id).length
+      const stitchedTours: TourRow[] = rawTours.map((t: any) => {
+        const hostProf = (profs as any[]).find((p: any) => p.id === t.host_id)
+        const bkCount = rawBks.filter((b: any) => b.tour_id === t.id).length
         return { ...t, host_name: hostProf?.full_name ?? "Unknown Host", booking_count: bkCount }
       })
 
-      const stitchedBks: BookingRow[] = rawBks.map((b) => {
-        const tour = rawTours.find((t) => t.id === b.tour_id)
-        const hostProf = profs.find((p) => p.id === b.host_id)
+      const stitchedBks: BookingRow[] = rawBks.map((b: any) => {
+        const tour = rawTours.find((t: any) => t.id === b.tour_id)
+        const hostProf = (profs as any[]).find((p: any) => p.id === b.host_id)
         return { ...b, tour_title: tour?.title ?? "Unknown Tour", host_name: hostProf?.full_name ?? "Host" }
       })
 
@@ -334,8 +337,8 @@ export default function AdminDashboard() {
       }
       for (const b of stitchedBks) {
         if (b.status === "confirmed" || b.status === "completed") {
-          const key = b.booking_date.slice(0, 10)
-          if (key in dayMap) dayMap[key] += Number(b.total_price)
+          const key = b.booking_date?.slice(0, 10)
+          if (key && key in dayMap) dayMap[key] += Number(b.total_price)
         }
       }
       const daily = Object.entries(dayMap).map(([date, amount]) => ({ date, amount }))
@@ -346,9 +349,9 @@ export default function AdminDashboard() {
       setBookings(stitchedBks)
       setDailyRevenue(daily)
       setWaitlists(rawWaitlists)
-      setError(null)
     } catch (e: any) {
-      setError(e.message ?? "Failed to load admin data")
+      // Only fatal errors (e.g. auth failure) — log but don't block the UI
+      console.error("[AdminDashboard] Fatal load error:", e?.message)
     } finally {
       setCheckingAuth(false)
       setLoading(false)
@@ -536,13 +539,6 @@ export default function AdminDashboard() {
   // ─────────────────────────────────────────────────────────────────────────────
   // Main Layout
   // ─────────────────────────────────────────────────────────────────────────────
-  if (checkingAuth) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Spinner className="size-8 text-primary animate-spin" />
-      </div>
-    )
-  }
 
   return (
     <div className="min-h-screen bg-background px-4 py-24">
@@ -610,11 +606,7 @@ export default function AdminDashboard() {
           </TabsList>
         </Tabs>
 
-        {error && (
-          <Card className="border-destructive/30 bg-destructive/5">
-            <CardContent className="py-4 text-center text-sm text-destructive">{error}</CardContent>
-          </Card>
-        )}
+        {/* Error banner removed — individual sections show empty states instead */}
 
         {loading ? (
           <div className="flex justify-center py-24"><Spinner className="size-8 text-primary" /></div>
