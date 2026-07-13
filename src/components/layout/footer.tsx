@@ -19,7 +19,7 @@ const footerLinks = {
   company: [
     { href: "/about", label: "About" },
     { href: "/help", label: "Help & FAQ" },
-    { href: "/host/signup", label: "Become a Host" },
+    { href: "/onboarding?become-host=true", label: "Become a Host" },
     { href: "/settings", label: "Account Settings" },
   ],
   legal: [
@@ -53,7 +53,7 @@ export function Footer() {
 
   const showBecomeHost = !userId || (userRole === "traveler" && !hasAppliedHost)
   const filteredCompanyLinks = footerLinks.company.filter(link => {
-    if (link.href === "/host/signup") {
+    if (link.href === "/onboarding?become-host=true" || link.href === "/host/signup") {
       return showBecomeHost
     }
     return true

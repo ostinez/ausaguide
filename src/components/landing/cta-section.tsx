@@ -102,7 +102,7 @@ export function CTASection() {
                 </div>
 
                 <div className="relative z-10 pt-6">
-                  <Link to="/host/signup">
+                  <Link to="/onboarding?become-host=true">
                     <GlareHover style={{ borderRadius: "9999px", display: "inline-block" }}>
                       <StarBorder
                         as="div"

@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import { Routes, Route, useLocation } from "react-router-dom"
+import { Routes, Route, useLocation, Navigate } from "react-router-dom"
 import { Layout } from "@/components/layout/layout"
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute"
 import { trackEvent } from "@/lib/posthog"
@@ -10,7 +10,6 @@ import TourDetailPage from "@/pages/tour-detail"
 import CheckoutPage from "@/pages/checkout"
 import ConfirmationPage from "@/pages/confirmation"
 import AuthPage from "@/pages/auth"
-import HostSignupPage from "@/pages/host-signup"
 import DashboardPage from "@/pages/dashboard"
 import EarningsDashboard from "@/pages/earnings"
 import AdminDashboard from "@/pages/AdminDashboard"
@@ -75,7 +74,7 @@ export default function App() {
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/onboarding" element={<OnboardingPage />} />
-          <Route path="/host/signup" element={<HostSignupPage />} />
+          <Route path="/host/signup" element={<Navigate to="/onboarding?become-host=true" replace />} />
           <Route path="/host/:id" element={<HostProfilePage />} />
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>

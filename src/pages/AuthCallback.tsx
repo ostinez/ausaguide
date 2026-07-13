@@ -9,14 +9,41 @@ export default function AuthCallbackPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    let active = true
+
     async function handleAuthCallback() {
       try {
-        // Wait for session to be established by Supabase Client
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-
-        if (sessionError) {
-          throw sessionError
+        let session = null
+        
+        // Wait for session to be parsed (up to 5 attempts, 200ms apart)
+        for (let i = 0; i < 5; i++) {
+          const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession()
+          if (sessionError) throw sessionError
+          if (currentSession) {
+            session = currentSession
+            break
+          }
+          if (!active) return
+          await new Promise((r) => setTimeout(r, 200))
         }
+
+        if (!session || !session.user) {
+          // Fallback check: listen to onAuthStateChange for SIGNED_IN event
+          session = await new Promise<any>((resolve) => {
+            const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
+              if (event === "SIGNED_IN" && currentSession) {
+                subscription.unsubscribe()
+                resolve(currentSession)
+              }
+            })
+            setTimeout(() => {
+              subscription.unsubscribe()
+              resolve(null)
+            }, 2500)
+          })
+        }
+
+        if (!active) return
 
         if (!session || !session.user) {
           // No session found, redirect back to login page
@@ -25,6 +52,7 @@ export default function AuthCallbackPage() {
         }
 
         const user = session.user
+        localStorage.setItem("user_id", user.id)
 
         // Check if profile exists for user.id
         const { data: profile, error: profileError } = await supabase
@@ -66,6 +94,9 @@ export default function AuthCallbackPage() {
     }
 
     handleAuthCallback()
+    return () => {
+      active = false
+    }
   }, [navigate])
 
   return (

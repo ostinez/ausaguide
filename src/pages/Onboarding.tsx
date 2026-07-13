@@ -1222,6 +1222,10 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(0)
   const [role, setRole] = useState<Role | null>(() => {
     try {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get("become-host") === "true") {
+        return "host"
+      }
       const isBecomeHost = sessionStorage.getItem("become_host") === "true"
       if (isBecomeHost) {
         sessionStorage.removeItem("become_host")
