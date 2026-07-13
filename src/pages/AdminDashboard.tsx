@@ -3,13 +3,13 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { format, parseISO, subDays } from "date-fns"
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, BarChart, Bar, Cell,
+  ResponsiveContainer, BarChart, Bar,
 } from "recharts"
 import {
   Shield, Users, Calendar, DollarSign, Search, ArrowLeft,
-  XCircle, CheckCircle2, BadgeAlert, TrendingUp, MapPin,
+  XCircle, CheckCircle2, MapPin,
   Eye, Trash2, Ban, UserCheck, Download, RefreshCw,
-  Star, ClipboardList,
+  ClipboardList, Settings, Terminal,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -41,6 +41,10 @@ interface TourRow {
   created_at: string
   host_name?: string
   booking_count?: number
+  physical_price?: number
+  virtual_price?: number
+  location?: string
+  capacity?: number
 }
 
 interface BookingRow {
@@ -161,7 +165,7 @@ export default function AdminDashboard() {
   const [checkingAuth, setCheckingAuth] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<"overview" | "users" | "tours" | "bookings" | "analytics" | "waitlist" | "guide_reviews">("overview")
+  const [activeTab, setActiveTab] = useState<"overview" | "users" | "tours" | "bookings" | "waitlist" | "moderation" | "system" | "logs">("overview")
 
   useEffect(() => {
     const tab = searchParams.get("tab")
@@ -170,9 +174,10 @@ export default function AdminDashboard() {
       tab === "users" ||
       tab === "tours" ||
       tab === "bookings" ||
-      tab === "analytics" ||
       tab === "waitlist" ||
-      tab === "guide_reviews"
+      tab === "moderation" ||
+      tab === "system" ||
+      tab === "logs"
     ) {
       setActiveTab(tab as any)
     }
@@ -186,10 +191,37 @@ export default function AdminDashboard() {
   const [dailyRevenue, setDailyRevenue] = useState<DailyRevenue[]>([])
   const [waitlists, setWaitlists] = useState<any[]>([])
 
+  // Moderation state
+  const [journals, setJournals] = useState<any[]>([])
+  const [posts, setPosts] = useState<any[]>([])
+
+  // System Configurations (Persistent in Local Storage for Mocking)
+  const [maintenanceMode, setMaintenanceMode] = useState<boolean>(() => {
+    return localStorage.getItem("system_maintenance_mode") === "true"
+  })
+  const [commissionRate, setCommissionRate] = useState<number>(() => {
+    return Number(localStorage.getItem("system_commission_rate") || "10")
+  })
+  const [stripeMode, setStripeMode] = useState<string>(() => {
+    return localStorage.getItem("system_stripe_mode") || "test"
+  })
+  const [diditAddress, setDiditAddress] = useState<string>(() => {
+    return localStorage.getItem("system_didit_address") || "0x44Fe8507be060C9e84C1C4a4237dFeBE6FA8a83f"
+  })
+
+  // Developer Logs (Sentry and Edge Functions Mock logs)
+  const [logs, setLogs] = useState<any[]>([
+    { id: 1, type: "info", source: "Auth", message: "Edge Function session synchronized successfully", time: "19:02:15" },
+    { id: 2, type: "warning", source: "Rate Limit", message: "IP 198.51.100.42 reached warning threshold (4/5)", time: "19:02:33" },
+    { id: 3, type: "info", source: "Stripe", message: "Webhook invoice.paid received for customer customer_stripe_ausaguide_02", time: "19:03:01" },
+    { id: 4, type: "error", source: "Sentry", message: "PGRST116: maybeSingle() returned no rows for key 'id'", time: "19:04:11" },
+    { id: 5, type: "info", source: "Realtime", message: "Subscribed to postgres_changes public.tours", time: "19:05:00" },
+  ])
+
   // UI
   const [search, setSearch] = useState("")
   const adminId = localStorage.getItem("user_id")
-  const [userRoleFilter, setUserRoleFilter] = useState<"all" | "traveler" | "host" | "admin">("all")
+  const [userRoleFilter, setUserRoleFilter] = useState<"all" | "traveler" | "host" | "admin" | "suspended">("all")
   const [hostFilter, setHostFilter] = useState<"all" | "pending" | "approved" | "rejected">("pending")
   const [bookingFilter, setBookingFilter] = useState<"all" | "pending" | "confirmed" | "completed" | "cancelled">("all")
   const [rejectingId, setRejectingId] = useState<string | null>(null)
@@ -272,14 +304,57 @@ export default function AdminDashboard() {
         }
 
         setIsAdmin(true)
-        load()
       } catch (err) {
         console.error("Auth check failed:", err)
         navigate("/dashboard")
       }
     }
     checkAdminAuth()
-  }, [])
+  }, [navigate])
+
+  // Realtime updates & Initial Load once admin authenticated
+  useEffect(() => {
+    if (!isAdmin) return
+
+    load()
+
+    const channel = supabase
+      .channel(`admin-dashboard-realtime-${Date.now()}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => {
+        load()
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "tours" }, () => {
+        load()
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, () => {
+        load()
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "waitlist" }, () => {
+        load()
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "hosts" }, () => {
+        load()
+      })
+      .subscribe()
+
+    return () => {
+      channel.unsubscribe()
+      supabase.removeChannel(channel)
+    }
+  }, [isAdmin])
+
+  // Impersonate
+  const handleImpersonate = (targetUser: Profile) => {
+    const adminId = localStorage.getItem("user_id")
+    const adminRole = localStorage.getItem("user_role")
+    if (adminId && adminRole) {
+      localStorage.setItem("admin_impersonator_id", adminId)
+      localStorage.setItem("admin_impersonator_role", adminRole)
+      localStorage.setItem("user_id", targetUser.id)
+      localStorage.setItem("user_role", targetUser.role || "traveler")
+      window.location.href = targetUser.role === "host" ? "/host/dashboard" : "/dashboard"
+    }
+  }
 
   // Toast auto-dismiss
   useEffect(() => {
@@ -297,6 +372,8 @@ export default function AdminDashboard() {
     let rawTours: any[] = []
     let rawBks: any[] = []
     let rawWaitlists: any[] = []
+    let rawJournals: any[] = []
+    let rawPosts: any[] = []
 
     try {
       const { data, error } = await supabase.from("profiles").select("*").order("created_at", { ascending: false })
@@ -339,6 +416,22 @@ export default function AdminDashboard() {
     }
 
     try {
+      const { data, error } = await supabase.from("journals").select("*").order("created_at", { ascending: false })
+      if (error) console.error("Error fetching journals:", error)
+      else rawJournals = data ?? []
+    } catch (e) {
+      console.error("Exception fetching journals:", e)
+    }
+
+    try {
+      const { data, error } = await supabase.from("posts").select("*").order("created_at", { ascending: false })
+      if (error) console.error("Error fetching posts:", error)
+      else rawPosts = data ?? []
+    } catch (e) {
+      console.error("Exception fetching posts:", e)
+    }
+
+    try {
       // Stitch host names onto tours and bookings
       const stitchedTours: TourRow[] = rawTours.map((t: any) => {
         const hostProf = profs.find((p: any) => p.id === t.host_id)
@@ -366,12 +459,25 @@ export default function AdminDashboard() {
       }
       const daily = Object.entries(dayMap).map(([date, amount]) => ({ date, amount }))
 
+      // Stitch profiles onto journals and posts
+      const stitchedJournals = rawJournals.map((j: any) => {
+        const author = profs.find((p: any) => p.id === j.user_id)
+        return { ...j, author_name: author?.full_name ?? author?.email ?? "Unknown User" }
+      })
+
+      const stitchedPosts = rawPosts.map((p: any) => {
+        const author = profs.find((p: any) => p.id === p.user_id)
+        return { ...p, author_name: author?.full_name ?? author?.email ?? "Unknown User" }
+      })
+
       setProfiles(profs)
       setHosts(hostApps)
       setTours(stitchedTours)
       setBookings(stitchedBks)
       setDailyRevenue(daily)
       setWaitlists(rawWaitlists)
+      setJournals(stitchedJournals)
+      setPosts(stitchedPosts)
     } catch (e: any) {
       console.error("[AdminDashboard] Error stitching/processing data:", e?.message)
     } finally {
@@ -384,14 +490,6 @@ export default function AdminDashboard() {
   const totalRevenue = bookings
     .filter((b) => b.status === "confirmed" || b.status === "completed")
     .reduce((s, b) => s + Number(b.total_price), 0)
-  const pendingHostsCount = hosts.filter((h) => h.status === "pending").length
-  const topTours = [...tours]
-    .sort((a, b) => (b.booking_count ?? 0) - (a.booking_count ?? 0))
-    .slice(0, 5)
-  const CHART_COLORS = [
-    "oklch(0.541 0.217 292)", "oklch(0.696 0.17 162)", "oklch(0.828 0.189 84.429)",
-    "oklch(0.627 0.265 303.9)", "oklch(0.645 0.246 16.439)",
-  ]
 
   // ── Host actions ────────────────────────────────────────────────────────────
   // Helper for audit logging admin actions
@@ -501,21 +599,6 @@ export default function AdminDashboard() {
 
 
   // ── Filtered datasets ───────────────────────────────────────────────────────
-  const q = search.toLowerCase()
-  const filteredUsers = profiles
-    .filter((p) => userRoleFilter === "all" || p.role === userRoleFilter)
-    .filter((p) => !q || p.full_name.toLowerCase().includes(q) || p.email.toLowerCase().includes(q))
-
-  const filteredHosts = hosts
-    .filter((h) => hostFilter === "all" || h.status === hostFilter)
-    .filter((h) => !q || h.full_name.toLowerCase().includes(q) || h.email.toLowerCase().includes(q))
-
-  const filteredTours = tours
-    .filter((t) => !q || t.title.toLowerCase().includes(q) || (t.host_name ?? "").toLowerCase().includes(q))
-
-  const filteredBookings = bookings
-    .filter((b) => bookingFilter === "all" || b.status === bookingFilter)
-    .filter((b) => !q || b.guest_name.toLowerCase().includes(q) || (b.tour_title ?? "").toLowerCase().includes(q))
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Auth gate
@@ -617,14 +700,15 @@ export default function AdminDashboard() {
           setSearchParams({ tab: v })
           setSearch("")
         }}>
-          <TabsList className="grid w-full grid-cols-7 h-auto">
+          <TabsList className="grid w-full grid-cols-8 h-auto bg-card/60 backdrop-blur-md border border-border/40">
             <TabsTrigger value="overview" className="text-xs py-2.5">Overview</TabsTrigger>
             <TabsTrigger value="users" className="text-xs py-2.5">Users</TabsTrigger>
             <TabsTrigger value="tours" className="text-xs py-2.5">Tours</TabsTrigger>
             <TabsTrigger value="bookings" className="text-xs py-2.5">Bookings</TabsTrigger>
             <TabsTrigger value="waitlist" className="text-xs py-2.5">Waitlist</TabsTrigger>
-            <TabsTrigger value="analytics" className="text-xs py-2.5">Analytics</TabsTrigger>
-            <TabsTrigger value="guide_reviews" className="text-xs py-2.5">Guide Reviews</TabsTrigger>
+            <TabsTrigger value="moderation" className="text-xs py-2.5">Moderation</TabsTrigger>
+            <TabsTrigger value="system" className="text-xs py-2.5">System</TabsTrigger>
+            <TabsTrigger value="logs" className="text-xs py-2.5">Logs</TabsTrigger>
           </TabsList>
         </Tabs>
 
@@ -636,77 +720,165 @@ export default function AdminDashboard() {
           <>
             {/* ── OVERVIEW ─────────────────────────────────────────────────── */}
             {activeTab === "overview" && (
-              <div className="space-y-8">
+              <div className="space-y-8 animate-in fade-in duration-300">
                 {/* Stat cards */}
                 <div className="grid grid-cols-2 gap-4 lg:grid-cols-6">
                   <StatCard label="Total Revenue" value={fmt(totalRevenue)} icon={DollarSign}
-                    color="oklch(0.541 0.217 292)" sub="Confirmed + Completed" />
+                    color="oklch(0.541 0.217 292)" sub={`${bookings.filter(b => b.status === "confirmed").length} Confirmed`} />
                   <StatCard label="Total Bookings" value={bookings.length} icon={Calendar}
-                    color="oklch(0.696 0.17 162)" sub="All time" />
+                    color="oklch(0.696 0.17 162)" sub={`${bookings.filter(b => b.status === "completed").length} Completed`} />
                   <StatCard label="Platform Users" value={profiles.length} icon={Users}
-                    color="oklch(0.828 0.189 84.429)" sub="All roles" />
+                    color="oklch(0.828 0.189 84.429)" sub={`${profiles.filter(p => p.role === "traveler").length} Travelers | ${profiles.filter(p => p.role === "host").length} Hosts`} />
                   <StatCard label="Active Hosts" value={profiles.filter(p => p.role === "host").length} icon={UserCheck}
                     color="oklch(0.627 0.265 303.9)" sub="Approved guides" />
                   <StatCard label="Total Tours" value={tours.length} icon={MapPin}
-                    color="oklch(0.696 0.17 162)" sub="All listings" />
+                    color="oklch(0.696 0.17 162)" sub={`${tours.filter(t => t.is_published).length} Published`} />
                   <StatCard label="Waitlist" value={waitlists.length} icon={ClipboardList}
                     color="oklch(0.645 0.246 16.439)" sub="Launch signups" />
                 </div>
 
-                {/* Revenue chart */}
-                <Card className="border-border/60">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <span className="size-2 rounded-full bg-primary inline-block" />
-                      Revenue — Last 30 Days
-                    </CardTitle>
-                    <CardDescription>Daily income from confirmed bookings</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={240}>
-                      <AreaChart data={dailyRevenue} margin={{ top: 5, right: 10, bottom: 0, left: 0 }}>
-                        <defs>
-                          <linearGradient id="rev30" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="oklch(0.541 0.217 292)" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="oklch(0.541 0.217 292)" stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.3 0.01 285)" vertical={false} />
-                        <XAxis dataKey="date" tick={{ fontSize: 10, fill: "oklch(0.7 0.02 260)" }}
-                          tickFormatter={(v) => { try { return format(parseISO(v), "d MMM") } catch { return v } }}
-                          axisLine={false} tickLine={false} interval={4} />
-                        <YAxis tick={{ fontSize: 10, fill: "oklch(0.7 0.02 260)" }}
-                          tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
-                          axisLine={false} tickLine={false} width={36} />
-                        <Tooltip content={<ChartTooltip />}
-                          cursor={{ stroke: "oklch(0.541 0.217 292)", strokeWidth: 1, strokeDasharray: "4 4" }} />
-                        <Area type="monotone" dataKey="amount" stroke="oklch(0.541 0.217 292)"
-                          strokeWidth={2.5} fill="url(#rev30)" dot={false}
-                          activeDot={{ r: 5, fill: "oklch(0.541 0.217 292)", stroke: "#fff", strokeWidth: 2 }} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-
-                {/* Pending host approvals */}
-                {pendingHostsCount > 0 && (
-                  <Card className="border-amber-500/20 bg-amber-500/5">
+                {/* Charts Area */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Revenue chart */}
+                  <Card className="border-border/60 bg-card/20 backdrop-blur-md">
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-amber-400 text-base">
-                        <BadgeAlert className="size-4" />
-                        {pendingHostsCount} Pending Host Application{pendingHostsCount !== 1 ? "s" : ""}
+                      <CardTitle className="flex items-center gap-2 text-base text-white">
+                        <span className="size-2 rounded-full bg-[#7F5AF0] inline-block" />
+                        Revenue Trend — Last 30 Days
                       </CardTitle>
-                      <CardDescription>These applications need your review</CardDescription>
+                      <CardDescription>Daily income tracking from confirmed bookings</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <Button size="sm" variant="outline"
-                        onClick={() => setActiveTab("users")}
-                        className="rounded-full border-amber-500/30 text-amber-400 hover:bg-amber-500/10">
-                        Review Applications →
-                      </Button>
+                      <ResponsiveContainer width="100%" height={240}>
+                        <AreaChart data={dailyRevenue} margin={{ top: 5, right: 10, bottom: 0, left: 0 }}>
+                          <defs>
+                            <linearGradient id="rev30" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="oklch(0.541 0.217 292)" stopOpacity={0.3} />
+                              <stop offset="95%" stopColor="oklch(0.541 0.217 292)" stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.3 0.01 285)" vertical={false} />
+                          <XAxis dataKey="date" tick={{ fontSize: 10, fill: "oklch(0.7 0.02 260)" }}
+                            tickFormatter={(v) => { try { return format(parseISO(v), "d MMM") } catch { return v } }}
+                            axisLine={false} tickLine={false} interval={4} />
+                          <YAxis tick={{ fontSize: 10, fill: "oklch(0.7 0.02 260)" }}
+                            tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+                            axisLine={false} tickLine={false} width={36} />
+                          <Tooltip content={<ChartTooltip />}
+                            cursor={{ stroke: "oklch(0.541 0.217 292)", strokeWidth: 1, strokeDasharray: "4 4" }} />
+                          <Area type="monotone" dataKey="amount" stroke="oklch(0.541 0.217 292)"
+                            strokeWidth={2.5} fill="url(#rev30)" dot={false}
+                            activeDot={{ r: 5, fill: "oklch(0.541 0.217 292)", stroke: "#fff", strokeWidth: 2 }} />
+                        </AreaChart>
+                      </ResponsiveContainer>
                     </CardContent>
                   </Card>
-                )}
+
+                  {/* Daily Signups Chart */}
+                  <Card className="border-border/60 bg-card/20 backdrop-blur-md">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-base text-white">
+                        <span className="size-2 rounded-full bg-[#2CB67D] inline-block" />
+                        User Signup Trends
+                      </CardTitle>
+                      <CardDescription>Daily registration volume for travelers and hosts</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={240}>
+                        <AreaChart data={
+                          (() => {
+                            const daysMap: Record<string, number> = {}
+                            for (let i = 14; i >= 0; i--) {
+                              const d = subDays(new Date(), i)
+                              daysMap[format(d, "yyyy-MM-dd")] = 0
+                            }
+                            for (const p of profiles) {
+                              const key = p.created_at?.slice(0, 10)
+                              if (key && key in daysMap) daysMap[key]++
+                            }
+                            return Object.entries(daysMap).map(([date, count]) => ({ date, amount: count }))
+                          })()
+                        } margin={{ top: 5, right: 10, bottom: 0, left: 0 }}>
+                          <defs>
+                            <linearGradient id="userGrowth" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#2CB67D" stopOpacity={0.3} />
+                              <stop offset="95%" stopColor="#2CB67D" stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.3 0.01 285)" vertical={false} />
+                          <XAxis dataKey="date" tick={{ fontSize: 10, fill: "oklch(0.7 0.02 260)" }}
+                            tickFormatter={(v) => { try { return format(parseISO(v), "d MMM") } catch { return v } }}
+                            axisLine={false} tickLine={false} interval={2} />
+                          <YAxis tick={{ fontSize: 10, fill: "oklch(0.7 0.02 260)" }}
+                            axisLine={false} tickLine={false} width={24} />
+                          <Tooltip content={<ChartTooltip />}
+                            cursor={{ stroke: "#2CB67D", strokeWidth: 1, strokeDasharray: "4 4" }} />
+                          <Area type="monotone" dataKey="amount" stroke="#2CB67D"
+                            strokeWidth={2.5} fill="url(#userGrowth)" dot={false} />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Bookings trends */}
+                  <Card className="border-border/60 bg-card/20 backdrop-blur-md lg:col-span-2">
+                    <CardHeader>
+                      <CardTitle className="text-base text-white">Daily Booking Activity</CardTitle>
+                      <CardDescription>Number of transactions initialized per day</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={200}>
+                        <BarChart data={
+                          (() => {
+                            const daysMap: Record<string, number> = {}
+                            for (let i = 14; i >= 0; i--) {
+                              const d = subDays(new Date(), i)
+                              daysMap[format(d, "yyyy-MM-dd")] = 0
+                            }
+                            for (const b of bookings) {
+                              const key = b.booking_date?.slice(0, 10)
+                              if (key && key in daysMap) daysMap[key]++
+                            }
+                            return Object.entries(daysMap).map(([date, count]) => ({ date, count }))
+                          })()
+                        }>
+                          <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.3 0.01 285)" vertical={false} />
+                          <XAxis dataKey="date" tick={{ fontSize: 9, fill: "oklch(0.7 0.02 260)" }}
+                            tickFormatter={(v) => { try { return format(parseISO(v), "d MMM") } catch { return v } }}
+                            axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fontSize: 9, fill: "oklch(0.7 0.02 260)" }} axisLine={false} tickLine={false} width={20} />
+                          <Tooltip content={<ChartTooltip />} />
+                          <Bar dataKey="count" fill="oklch(0.828 0.189 84.429)" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+
+                  {/* Host Approvals stats */}
+                  <Card className="border-border/60 bg-card/20 backdrop-blur-md">
+                    <CardHeader>
+                      <CardTitle className="text-base text-white">Host Registration Status</CardTitle>
+                      <CardDescription>Distribution of applicant approvals</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {[
+                        { label: "Approved Guides", count: hosts.filter(h => h.status === "approved").length, color: "bg-emerald-500" },
+                        { label: "Pending Verification", count: hosts.filter(h => h.status === "pending").length, color: "bg-amber-500" },
+                        { label: "Rejected Candidates", count: hosts.filter(h => h.status === "rejected").length, color: "bg-red-500" },
+                      ].map((h, i) => (
+                        <div key={i} className="flex items-center justify-between border-b border-border/10 pb-2.5">
+                          <div className="flex items-center gap-2">
+                            <span className={`size-2.5 rounded-full ${h.color}`} />
+                            <span className="text-xs text-muted-foreground">{h.label}</span>
+                          </div>
+                          <span className="text-sm font-bold text-white">{h.count}</span>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                </div>
 
                 {/* Recent Signups and Waitlist side-by-side */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -809,24 +981,24 @@ export default function AdminDashboard() {
 
             {/* ── USERS ───────────────────────────────────────────────────── */}
             {activeTab === "users" && (
-              <div className="space-y-6">
+              <div className="space-y-6 animate-in fade-in duration-300">
                 {/* Sub-tabs for profiles vs host applications */}
                 <div className="flex flex-wrap gap-3 items-center justify-between">
                   <div className="flex gap-2 flex-wrap">
-                    {(["all", "traveler", "host", "admin"] as const).map((r) => (
+                    {(["all", "traveler", "host", "admin", "suspended"] as const).map((r) => (
                       <button key={r} onClick={() => setUserRoleFilter(r)}
-                        className={`rounded-full px-3 py-1 text-xs font-medium transition-colors border ${
+                        className={`rounded-full px-3 py-1.5 text-xs font-semibold border transition-all ${
                           userRoleFilter === r
                             ? "bg-primary/15 text-primary border-primary/30"
                             : "border-border/50 text-muted-foreground hover:bg-muted/30"
                         }`}>
                         {r.charAt(0).toUpperCase() + r.slice(1)}
-                        {r !== "all" && ` (${profiles.filter((p) => p.role === r).length})`}
+                        {r === "suspended" ? ` (${profiles.filter((p: any) => p.is_suspended).length})` : r !== "all" ? ` (${profiles.filter((p) => p.role === r).length})` : ""}
                       </button>
                     ))}
                   </div>
                   <Button size="sm" variant="outline" className="rounded-full border-border/60"
-                    onClick={() => downloadCSV(filteredUsers.map((p) => ({
+                    onClick={() => downloadCSV(profiles.map((p) => ({
                       name: p.full_name, email: p.email, role: p.role, joined: p.created_at,
                     })), "users-export.csv")}>
                     <Download className="size-3.5 mr-1.5" />Export CSV
@@ -834,83 +1006,114 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Profiles table */}
-                <Card className="border-border/60">
+                <Card className="border-border/60 bg-[#121214]/30">
                   <CardContent className="p-0">
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b border-border/40 bg-muted/20">
-                            {["User", "Email", "Role", "Joined", "Actions"].map((h) => (
+                            {["User", "Email", "Role", "Status", "Joined", "Actions"].map((h) => (
                               <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border/20">
-                          {filteredUsers.map((p) => (
-                            <tr key={p.id} className="hover:bg-muted/10 transition-colors">
-                              <td className="px-4 py-3">
-                                <div className="flex items-center gap-2.5">
-                                  <Avatar className="size-7">
-                                    <AvatarFallback className="bg-primary/15 text-[10px] font-bold text-primary">
-                                      {getInitials(p.full_name)}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <span className="text-xs font-medium text-foreground">{p.full_name}</span>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 text-xs text-muted-foreground">{p.email}</td>
-                              <td className="px-4 py-3">
-                                <Badge variant={p.role === "admin" ? "destructive" : p.role === "host" ? "default" : "secondary"}
-                                  className="text-[10px] capitalize">{p.role}</Badge>
-                              </td>
-                              <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
-                                {p.created_at ? format(new Date(p.created_at), "MMM d, yyyy") : "—"}
-                              </td>
-                              <td className="px-4 py-3">
-                                <div className="flex items-center gap-1">
+                          {profiles
+                            .filter((p) => {
+                              if (userRoleFilter === "suspended") return (p as any).is_suspended
+                              if (userRoleFilter !== "all" && p.role !== userRoleFilter) return false
+                              return (
+                                p.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+                                p.email?.toLowerCase().includes(search.toLowerCase())
+                              )
+                            })
+                            .map((p) => (
+                              <tr key={p.id} className="hover:bg-muted/10 transition-colors">
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-2.5">
+                                    <Avatar className="size-7">
+                                      <AvatarFallback className="bg-primary/15 text-[10px] font-bold text-primary">
+                                        {getInitials(p.full_name)}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <span className="text-xs font-medium text-foreground">{p.full_name}</span>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 text-xs text-muted-foreground">{p.email}</td>
+                                <td className="px-4 py-3">
+                                  <Badge variant={p.role === "admin" ? "destructive" : p.role === "host" ? "default" : "secondary"}
+                                    className="text-[10px] capitalize">{p.role}</Badge>
+                                </td>
+                                <td className="px-4 py-3 text-xs">
                                   {(p as any).is_suspended ? (
-                                    <Button size="icon" variant="ghost"
-                                      className="size-7 rounded-lg hover:bg-emerald-500/10 hover:text-emerald-400"
-                                      title="Activate user"
-                                      onClick={() => handleUserUpdate(p.id, { is_suspended: false }, "User activated")}>
-                                      <UserCheck className="size-3.5" />
-                                    </Button>
+                                    <Badge variant="outline" className="border-red-500/30 text-red-400 bg-red-500/5">Suspended</Badge>
                                   ) : (
-                                    <Button size="icon" variant="ghost"
-                                      className="size-7 rounded-lg hover:bg-amber-500/10 hover:text-amber-400"
-                                      title="Suspend user"
-                                      onClick={() => handleUserUpdate(p.id, { is_suspended: true }, "User suspended")}>
-                                      <Ban className="size-3.5" />
-                                    </Button>
+                                    <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/5">Active</Badge>
                                   )}
-                                  {p.id !== adminId && (
-                                    <Button size="icon" variant="ghost"
-                                      className="size-7 rounded-lg hover:bg-destructive/10 hover:text-destructive"
-                                      title="Delete user"
-                                      onClick={() => handleDeleteUser(p.id)}>
-                                      <Trash2 className="size-3.5" />
-                                    </Button>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
+                                </td>
+                                <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                                  {p.created_at ? format(new Date(p.created_at), "MMM d, yyyy") : "—"}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-1.5">
+                                    {p.id !== adminId && (
+                                      <Button size="icon" variant="ghost"
+                                        className="size-7 rounded-lg hover:bg-primary/10 hover:text-primary"
+                                        title="Impersonate User"
+                                        onClick={() => handleImpersonate(p)}>
+                                        <Eye className="size-3.5 text-primary" />
+                                      </Button>
+                                    )}
+                                    {(p as any).is_suspended ? (
+                                      <Button size="icon" variant="ghost"
+                                        className="size-7 rounded-lg hover:bg-emerald-500/10 hover:text-emerald-400"
+                                        title="Activate user"
+                                        onClick={() => handleUserUpdate(p.id, { is_suspended: false }, "User activated")}>
+                                        <UserCheck className="size-3.5 text-emerald-400" />
+                                      </Button>
+                                    ) : (
+                                      <Button size="icon" variant="ghost"
+                                        className="size-7 rounded-lg hover:bg-amber-500/10 hover:text-amber-400"
+                                        title="Suspend user"
+                                        onClick={() => handleUserUpdate(p.id, { is_suspended: true }, "User suspended")}>
+                                        <Ban className="size-3.5 text-amber-400" />
+                                      </Button>
+                                    )}
+                                    {p.id !== adminId && (
+                                      <Button size="icon" variant="ghost"
+                                        className="size-7 rounded-lg hover:bg-destructive/10 hover:text-destructive"
+                                        title="Delete user"
+                                        onClick={() => handleDeleteUser(p.id)}>
+                                        <Trash2 className="size-3.5 text-destructive" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
                         </tbody>
                       </table>
                     </div>
                     {profiles.length === 0 ? (
                       <div className="py-12 text-center text-sm text-muted-foreground">No users yet</div>
-                    ) : filteredUsers.length === 0 ? (
+                    ) : profiles.filter((p) => {
+                      if (userRoleFilter === "suspended") return (p as any).is_suspended
+                      if (userRoleFilter !== "all" && p.role !== userRoleFilter) return false
+                      return (
+                        p.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+                        p.email?.toLowerCase().includes(search.toLowerCase())
+                      )
+                    }).length === 0 ? (
                       <div className="py-12 text-center text-sm text-muted-foreground">No users found.</div>
                     ) : null}
                   </CardContent>
                 </Card>
 
                 {/* Host applications section */}
-                <div className="space-y-4">
+                <div className="space-y-4 mt-8">
                   <div className="flex items-center justify-between">
                     <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-                      <BadgeAlert className="size-4 text-amber-400" />
+                      <Shield className="size-4 text-amber-400" />
                       Host Applications
                     </h2>
                     <div className="flex gap-1.5">
@@ -926,134 +1129,167 @@ export default function AdminDashboard() {
                       ))}
                     </div>
                   </div>
-                  {filteredHosts.length === 0 ? (
-                    <Card><CardContent className="py-10 text-center text-sm text-muted-foreground">
-                      No applications in this filter.
-                    </CardContent></Card>
-                  ) : (
-                    <div className="space-y-3">
-                      {filteredHosts.map((h) => (
-                        <Card key={h.id} className="border-border/60 hover:border-border/80 transition-colors">
-                          <CardContent className="py-4">
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex items-start gap-3 min-w-0">
-                                <Avatar className="size-9 shrink-0">
-                                  <AvatarFallback className="bg-primary/15 text-xs font-bold text-primary">
-                                    {getInitials(h.full_name)}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div className="min-w-0">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="text-sm font-semibold text-foreground">{h.full_name}</span>
-                                    <Badge variant={h.status === "approved" ? "default" : h.status === "rejected" ? "destructive" : "secondary"}
-                                      className="text-[10px]">{h.status}</Badge>
-                                  </div>
-                                  <p className="text-xs text-muted-foreground">{h.email} · {h.city}</p>
-                                  <p className="text-xs text-muted-foreground mt-0.5 capitalize">
-                                    {h.host_type === "certified_guide" ? "Certified Guide" : "Local Host"} · Applied {format(new Date(h.created_at), "MMM d, yyyy")}
-                                  </p>
-                                </div>
-                              </div>
-                              {h.status === "pending" && (
-                                <div className="flex items-center gap-2 shrink-0">
-                                  <Button size="sm" variant="outline" onClick={() => setRejectingId(h.id)}
-                                    className="rounded-full border-destructive/30 text-destructive hover:bg-destructive/10 text-xs">
-                                    Reject
-                                  </Button>
-                                  <Button size="sm" onClick={() => handleApprove(h.id)}
-                                    className="rounded-full bg-teal text-white hover:bg-teal/90 text-xs">
-                                    Approve
-                                  </Button>
-                                </div>
-                              )}
-                            </div>
-                            {h.status === "rejected" && h.rejection_reason && (
-                              <div className="mt-3 rounded-lg bg-destructive/5 border border-destructive/20 p-2.5 text-xs text-destructive">
-                                <strong>Rejection: </strong>{h.rejection_reason}
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
+
+                  <Card className="border-border/60 bg-[#121214]/30">
+                    <CardContent className="p-0">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="border-b border-border/40 bg-muted/20">
+                              {["Host Details", "City", "Document Info", "Type", "Status", "Review"].map((h) => (
+                                <th key={h} className="px-4 py-3 text-left font-bold text-muted-foreground uppercase tracking-wider">{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border/10">
+                            {hosts
+                              .filter((h) => {
+                                if (hostFilter !== "all" && h.status !== hostFilter) return false
+                                return (
+                                  h.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+                                  h.email?.toLowerCase().includes(search.toLowerCase())
+                                )
+                              })
+                              .map((h) => (
+                                <tr key={h.id} className="hover:bg-muted/10 transition-colors">
+                                  <td className="px-4 py-3">
+                                    <div className="font-semibold text-white">{h.full_name}</div>
+                                    <div className="text-[10px] text-white/50">{h.email}</div>
+                                  </td>
+                                  <td className="px-4 py-3 text-white/80">{h.city}</td>
+                                  <td className="px-4 py-3 text-xs">
+                                    {h.license_upload_url ? (
+                                      <a href={h.license_upload_url} target="_blank" rel="noreferrer" className="text-[#7F5AF0] underline hover:text-[#7F5AF0]/80">
+                                        View License Document
+                                      </a>
+                                    ) : (
+                                      <span className="text-muted-foreground/50">No Document</span>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-3 capitalize text-white/70">{h.host_type?.replace("_", " ")}</td>
+                                  <td className="px-4 py-3">
+                                    <Badge className={`text-[9px] font-bold uppercase tracking-wider ${
+                                      h.status === "approved" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" :
+                                      h.status === "rejected" ? "bg-red-500/10 text-red-400 border border-red-500/20" :
+                                      "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                                    }`} variant="outline">
+                                      {h.status}
+                                    </Badge>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    {h.status === "pending" ? (
+                                      <div className="flex items-center gap-1.5">
+                                        <Button size="icon" variant="ghost" title="Approve"
+                                          className="size-7 rounded-lg hover:bg-emerald-500/10 hover:text-emerald-400"
+                                          onClick={() => handleApprove(h.id)}>
+                                          <CheckCircle2 className="size-3.5" />
+                                        </Button>
+                                        <Button size="icon" variant="ghost" title="Reject"
+                                          className="size-7 rounded-lg hover:bg-destructive/10 hover:text-destructive"
+                                          onClick={() => setRejectingId(h.id)}>
+                                          <XCircle className="size-3.5" />
+                                        </Button>
+                                      </div>
+                                    ) : (
+                                      <span className="text-[10px] text-muted-foreground font-semibold">Reviewed</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {hosts.filter((h) => {
+                        if (hostFilter !== "all" && h.status !== hostFilter) return false
+                        return (
+                          h.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+                          h.email?.toLowerCase().includes(search.toLowerCase())
+                        )
+                      }).length === 0 && (
+                        <div className="py-8 text-center text-xs text-muted-foreground">No applications found.</div>
+                      )}
+                    </CardContent>
+                  </Card>
                 </div>
               </div>
             )}
 
             {/* ── TOURS ───────────────────────────────────────────────────── */}
             {activeTab === "tours" && (
-              <div className="space-y-4">
+              <div className="space-y-6 animate-in fade-in duration-300">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">{filteredTours.length} tours total</p>
+                  <h2 className="text-lg font-bold text-white">Tours Listings Directory</h2>
                   <Button size="sm" variant="outline" className="rounded-full border-border/60"
-                    onClick={() => downloadCSV(filteredTours.map((t) => ({
-                      title: t.title, host: t.host_name, price: t.price,
-                      currency: t.currency, published: t.is_published, bookings: t.booking_count,
+                    onClick={() => downloadCSV(tours.map((t) => ({
+                      title: t.title, host: t.host_name, price: t.physical_price, status: t.is_published ? "published" : "hidden", created: t.created_at
                     })), "tours-export.csv")}>
                     <Download className="size-3.5 mr-1.5" />Export CSV
                   </Button>
                 </div>
-                <Card className="border-border/60">
+
+                <Card className="border-border/60 bg-[#121214]/30">
                   <CardContent className="p-0">
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b border-border/40 bg-muted/20">
-                            {["Tour", "Host", "Price", "Bookings", "Rating", "Status", "Actions"].map((h) => (
-                              <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{h}</th>
+                            {["Tour Details", "Host", "Price", "Capacity", "Status", "Actions"].map((h) => (
+                              <th key={h} className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border/20">
-                          {filteredTours.map((t) => (
-                            <tr key={t.id} className="hover:bg-muted/10 transition-colors">
-                              <td className="px-4 py-3">
-                                <div className="flex items-center gap-2">
-                                  <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 shrink-0">
-                                    <MapPin className="size-3.5 text-primary" />
+                          {tours
+                            .filter((t) =>
+                              t.title?.toLowerCase().includes(search.toLowerCase()) ||
+                              t.host_name?.toLowerCase().includes(search.toLowerCase())
+                            )
+                            .map((t) => (
+                              <tr key={t.id} className="hover:bg-muted/10 transition-colors">
+                                <td className="px-4 py-3">
+                                  <div className="text-xs font-semibold text-white">{t.title}</div>
+                                  <div className="text-[10px] text-white/50">{t.location}</div>
+                                </td>
+                                <td className="px-4 py-3 text-xs text-white/80">{t.host_name}</td>
+                                <td className="px-4 py-3 text-xs font-medium text-white whitespace-nowrap">
+                                  KES {t.physical_price} / KES {t.virtual_price} (V)
+                                </td>
+                                <td className="px-4 py-3 text-xs text-white/70">{t.capacity || "Unlimited"}</td>
+                                <td className="px-4 py-3">
+                                  <Badge className={`text-[9px] font-bold tracking-wide uppercase ${
+                                    t.is_published
+                                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                      : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                                  }`} variant="outline">
+                                    {t.is_published ? "Published" : "Hidden"}
+                                  </Badge>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-1">
+                                    <Button size="icon" variant="ghost"
+                                      title={t.is_published ? "Hide tour" : "Publish tour"}
+                                      className="size-7 rounded-lg hover:bg-primary/10 hover:text-primary"
+                                      onClick={() => handleTourUpdate(t.id, { is_published: !t.is_published }, `Tour status updated`)}>
+                                      {t.is_published ? <Ban className="size-3.5 text-amber-400" /> : <CheckCircle2 className="size-3.5 text-emerald-400" />}
+                                    </Button>
+                                    <Button size="icon" variant="ghost"
+                                      className="size-7 rounded-lg hover:bg-destructive/10 hover:text-destructive"
+                                      title="Delete tour" onClick={() => handleDeleteTour(t.id)}>
+                                      <Trash2 className="size-3.5 text-destructive" />
+                                    </Button>
                                   </div>
-                                  <span className="text-xs font-medium text-foreground max-w-[160px] truncate">{t.title}</span>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 text-xs text-muted-foreground">{t.host_name}</td>
-                              <td className="px-4 py-3 text-xs font-semibold text-foreground whitespace-nowrap">
-                                {t.currency ?? "KES"} {Number(t.price).toLocaleString()}
-                              </td>
-                              <td className="px-4 py-3 text-xs text-muted-foreground">{t.booking_count ?? 0}</td>
-                              <td className="px-4 py-3">
-                                <div className="flex items-center gap-1 text-xs text-amber-400">
-                                  <Star className="size-3 fill-current" />
-                                  {Number(t.rating).toFixed(1)}
-                                </div>
-                              </td>
-                              <td className="px-4 py-3">
-                                <Badge variant={t.is_published ? "default" : "secondary"} className="text-[10px]">
-                                  {t.is_published ? "Published" : "Draft"}
-                                </Badge>
-                              </td>
-                              <td className="px-4 py-3">
-                                <div className="flex items-center gap-1">
-                                  <Button size="icon" variant="ghost" className="size-7 rounded-lg hover:bg-primary/10 hover:text-primary"
-                                    title={t.is_published ? "Hide tour" : "Publish tour"}
-                                    onClick={() => handleTourUpdate(t.id, { is_published: !t.is_published },
-                                      t.is_published ? "Tour hidden" : "Tour published")}>
-                                    <Eye className="size-3.5" />
-                                  </Button>
-                                  <Button size="icon" variant="ghost" className="size-7 rounded-lg hover:bg-destructive/10 hover:text-destructive"
-                                    title="Delete tour" onClick={() => handleDeleteTour(t.id)}>
-                                    <Trash2 className="size-3.5" />
-                                  </Button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
+                                </td>
+                              </tr>
+                            ))}
                         </tbody>
                       </table>
                     </div>
                     {tours.length === 0 ? (
                       <div className="py-12 text-center text-sm text-muted-foreground">No tours available</div>
-                    ) : filteredTours.length === 0 ? (
+                    ) : tours.filter((t) =>
+                      t.title?.toLowerCase().includes(search.toLowerCase()) ||
+                      t.host_name?.toLowerCase().includes(search.toLowerCase())
+                    ).length === 0 ? (
                       <div className="py-12 text-center text-sm text-muted-foreground">No tours found.</div>
                     ) : null}
                   </CardContent>
@@ -1063,7 +1299,7 @@ export default function AdminDashboard() {
 
             {/* ── BOOKINGS ─────────────────────────────────────────────────── */}
             {activeTab === "bookings" && (
-              <div className="space-y-4">
+              <div className="space-y-4 animate-in fade-in duration-300">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex gap-1.5 flex-wrap">
                     {(["all", "pending", "confirmed", "completed", "cancelled"] as const).map((f) => (
@@ -1079,85 +1315,100 @@ export default function AdminDashboard() {
                     ))}
                   </div>
                   <Button size="sm" variant="outline" className="rounded-full border-border/60"
-                    onClick={() => downloadCSV(filteredBookings.map((b) => ({
-                      id: b.id, guest: b.guest_name, email: b.guest_email,
-                      tour: b.tour_title, host: b.host_name, date: b.booking_date,
-                      status: b.status, amount: b.total_price,
+                    onClick={() => downloadCSV(bookings.map((b) => ({
+                      id: b.id, guest: b.guest_name, email: b.guest_email, amount: b.total_price, status: b.status, date: b.booking_date
                     })), "bookings-export.csv")}>
                     <Download className="size-3.5 mr-1.5" />Export CSV
                   </Button>
                 </div>
-                <Card className="border-border/60">
+
+                <Card className="border-border/60 bg-[#121214]/30">
                   <CardContent className="p-0">
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b border-border/40 bg-muted/20">
-                            {["Ref", "Date", "Traveller", "Tour", "Host", "Amount", "Status", "Actions"].map((h) => (
+                            {["Booking ID", "Date", "Guest", "Tour", "Host", "Amount", "Status", "Actions"].map((h) => (
                               <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border/20">
-                          {filteredBookings.map((b) => (
-                            <tr key={b.id} className="hover:bg-muted/10 transition-colors">
-                              <td className="px-4 py-3 font-mono text-[10px] text-primary font-semibold">
-                                BK-{b.id.slice(0, 8).toUpperCase()}
-                              </td>
-                              <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
-                                {format(parseISO(b.booking_date), "MMM d, yyyy")}
-                              </td>
-                              <td className="px-4 py-3 text-xs text-foreground">{b.guest_name}</td>
-                              <td className="px-4 py-3 text-xs text-muted-foreground max-w-[130px] truncate">{b.tour_title}</td>
-                              <td className="px-4 py-3 text-xs text-muted-foreground">{b.host_name}</td>
-                              <td className="px-4 py-3 text-xs font-semibold text-foreground whitespace-nowrap">
-                                KES {Number(b.total_price).toLocaleString()}
-                              </td>
-                              <td className="px-4 py-3">
-                                <Badge className={`text-[10px] ${
-                                  b.status === "confirmed" || b.status === "completed"
-                                    ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
-                                    : b.status === "cancelled"
-                                    ? "bg-destructive/15 text-destructive border-destructive/20"
-                                    : "bg-amber-500/15 text-amber-400 border-amber-500/20"
-                                }`} variant="outline">
-                                  {b.status}
-                                </Badge>
-                              </td>
-                              <td className="px-4 py-3">
-                                <div className="flex items-center gap-1">
-                                  {b.status !== "cancelled" && (
-                                    <Button size="icon" variant="ghost" title="Cancel booking"
-                                      className="size-7 rounded-lg hover:bg-destructive/10 hover:text-destructive"
-                                      onClick={async () => {
-                                        try {
-                                          const { error } = await supabase.from("bookings").update({ status: "cancelled" }).eq("id", b.id)
-                                          if (error) throw error
-                                          setBookings((prev) => prev.map((bk) => bk.id === b.id ? { ...bk, status: "cancelled" } : bk))
-                                          showToast("Booking cancelled", "success")
-                                        } catch (err: any) {
-                                          console.error("Failed to cancel booking:", err)
-                                          showToast(err.message || "Failed to cancel booking", "error")
-                                        }
-                                      }}>
-                                      <XCircle className="size-3.5" />
+                          {bookings
+                            .filter((b) => {
+                              if (bookingFilter !== "all" && b.status !== bookingFilter) return false
+                              return (
+                                b.guest_name?.toLowerCase().includes(search.toLowerCase()) ||
+                                b.tour_title?.toLowerCase().includes(search.toLowerCase()) ||
+                                b.host_name?.toLowerCase().includes(search.toLowerCase())
+                              )
+                            })
+                            .map((b) => (
+                              <tr key={b.id} className="hover:bg-muted/10 transition-colors">
+                                <td className="px-4 py-3 font-mono text-[10px] text-primary font-semibold">
+                                  BK-{b.id.slice(0, 8).toUpperCase()}
+                                </td>
+                                <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                                  {format(parseISO(b.booking_date), "MMM d, yyyy")}
+                                </td>
+                                <td className="px-4 py-3 text-xs text-foreground">{b.guest_name}</td>
+                                <td className="px-4 py-3 text-xs text-muted-foreground max-w-[130px] truncate">{b.tour_title}</td>
+                                <td className="px-4 py-3 text-xs text-muted-foreground">{b.host_name}</td>
+                                <td className="px-4 py-3 text-xs font-semibold text-foreground whitespace-nowrap">
+                                  KES {Number(b.total_price).toLocaleString()}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <Badge className={`text-[10px] ${
+                                    b.status === "confirmed" || b.status === "completed"
+                                      ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
+                                      : b.status === "cancelled"
+                                      ? "bg-destructive/15 text-destructive border-destructive/20"
+                                      : "bg-amber-500/15 text-amber-400 border-amber-500/20"
+                                  }`} variant="outline">
+                                    {b.status}
+                                  </Badge>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-1">
+                                    {b.status !== "cancelled" && (
+                                      <Button size="icon" variant="ghost" title="Cancel booking"
+                                        className="size-7 rounded-lg hover:bg-destructive/10 hover:text-destructive"
+                                        onClick={async () => {
+                                          try {
+                                            const { error } = await supabase.from("bookings").update({ status: "cancelled" }).eq("id", b.id)
+                                            if (error) throw error
+                                            setBookings((prev) => prev.map((bk) => bk.id === b.id ? { ...bk, status: "cancelled" } : bk))
+                                            showToast("Booking cancelled", "success")
+                                          } catch (err: any) {
+                                            console.error("Failed to cancel booking:", err)
+                                            showToast(err.message || "Failed to cancel booking", "error")
+                                          }
+                                        }}>
+                                        <XCircle className="size-3.5 text-destructive" />
+                                      </Button>
+                                    )}
+                                    <Button size="icon" variant="ghost" title="Refund (placeholder)"
+                                      className="size-7 rounded-lg hover:bg-primary/10 hover:text-primary"
+                                      onClick={() => showToast("Refund initiated (placeholder)", "success")}>
+                                      <RefreshCw className="size-3.5 text-primary" />
                                     </Button>
-                                  )}
-                                  <Button size="icon" variant="ghost" title="Refund (placeholder)"
-                                    className="size-7 rounded-lg hover:bg-primary/10 hover:text-primary"
-                                    onClick={() => showToast("Refund initiated (placeholder)", "success")}>
-                                    <RefreshCw className="size-3.5" />
-                                  </Button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
                         </tbody>
                       </table>
                     </div>
                     {bookings.length === 0 ? (
                       <div className="py-12 text-center text-sm text-muted-foreground">No bookings yet</div>
-                    ) : filteredBookings.length === 0 ? (
+                    ) : bookings.filter((b) => {
+                      if (bookingFilter !== "all" && b.status !== bookingFilter) return false
+                      return (
+                        b.guest_name?.toLowerCase().includes(search.toLowerCase()) ||
+                        b.tour_title?.toLowerCase().includes(search.toLowerCase()) ||
+                        b.host_name?.toLowerCase().includes(search.toLowerCase())
+                      )
+                    }).length === 0 ? (
                       <div className="py-12 text-center text-sm text-muted-foreground">No bookings found.</div>
                     ) : null}
                   </CardContent>
@@ -1222,225 +1473,28 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {/* ── ANALYTICS ───────────────────────────────────────────────── */}
-            {activeTab === "analytics" && (
-              <div className="space-y-8">
-                {/* Summary row */}
-                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                  <StatCard label="Gross Revenue" value={fmt(totalRevenue)} icon={TrendingUp} color="oklch(0.541 0.217 292)" />
-                  <StatCard label="Total Bookings" value={bookings.length} icon={Calendar} color="oklch(0.696 0.17 162)" />
-                  <StatCard label="Total Tours" value={tours.length} icon={MapPin} color="oklch(0.828 0.189 84.429)" />
-                  <StatCard label="Platform Users" value={profiles.length} icon={Users} color="oklch(0.645 0.246 16.439)" />
-                </div>
-
-                {/* 30-day revenue chart */}
+            {/* ── MODERATION ──────────────────────────────────────────────── */}
+            {activeTab === "moderation" && (
+              <div className="space-y-8 animate-in fade-in duration-300">
+                {/* Guide Verification Applications */}
                 <Card className="border-border/60">
                   <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="flex items-center gap-2 text-base">
-                          <span className="size-2 rounded-full bg-primary inline-block" />
-                          Revenue — Last 30 Days
-                        </CardTitle>
-                        <CardDescription>Daily income from paid bookings</CardDescription>
-                      </div>
-                      <Button size="sm" variant="outline" className="rounded-full border-border/60"
-                        onClick={() => downloadCSV(dailyRevenue, "revenue-30d.csv")}>
-                        <Download className="size-3.5 mr-1.5" />Export
-                      </Button>
-                    </div>
+                    <CardTitle className="text-base text-white">Pending Guide Credentials Reviews</CardTitle>
+                    <CardDescription>Verify guide licenses and documentation to grant the Certified Guide badge</CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={260}>
-                      <AreaChart data={dailyRevenue} margin={{ top: 5, right: 10, bottom: 0, left: 0 }}>
-                        <defs>
-                          <linearGradient id="analGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="oklch(0.696 0.17 162)" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="oklch(0.696 0.17 162)" stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.3 0.01 285)" vertical={false} />
-                        <XAxis dataKey="date" tick={{ fontSize: 10, fill: "oklch(0.7 0.02 260)" }}
-                          tickFormatter={(v) => { try { return format(parseISO(v), "d MMM") } catch { return v } }}
-                          axisLine={false} tickLine={false} interval={4} />
-                        <YAxis tick={{ fontSize: 10, fill: "oklch(0.7 0.02 260)" }}
-                          tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
-                          axisLine={false} tickLine={false} width={36} />
-                        <Tooltip content={<ChartTooltip />}
-                          cursor={{ stroke: "oklch(0.696 0.17 162)", strokeWidth: 1, strokeDasharray: "4 4" }} />
-                        <Area type="monotone" dataKey="amount" stroke="oklch(0.696 0.17 162)"
-                          strokeWidth={2.5} fill="url(#analGrad)" dot={false}
-                          activeDot={{ r: 5, fill: "oklch(0.696 0.17 162)", stroke: "#fff", strokeWidth: 2 }} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-
-                {/* Top tours by bookings */}
-                <Card className="border-border/60">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="text-base">Top Tours by Bookings</CardTitle>
-                        <CardDescription>Most booked experiences on the platform</CardDescription>
-                      </div>
-                      <Button size="sm" variant="outline" className="rounded-full border-border/60"
-                        onClick={() => downloadCSV(topTours.map((t) => ({
-                          title: t.title, host: t.host_name, bookings: t.booking_count,
-                          rating: t.rating, price: t.price,
-                        })), "top-tours.csv")}>
-                        <Download className="size-3.5 mr-1.5" />Export
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {topTours.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-8">No tour data yet.</p>
-                    ) : (
-                      <>
-                        <ResponsiveContainer width="100%" height={200}>
-                          <BarChart data={topTours} margin={{ top: 5, right: 10, bottom: 40, left: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.3 0.01 285)" vertical={false} />
-                            <XAxis dataKey="title" tick={{ fontSize: 9, fill: "oklch(0.7 0.02 260)" }}
-                              axisLine={false} tickLine={false}
-                              tickFormatter={(v) => v.length > 14 ? v.slice(0, 14) + "…" : v}
-                              angle={-20} textAnchor="end" />
-                            <YAxis tick={{ fontSize: 10, fill: "oklch(0.7 0.02 260)" }} axisLine={false} tickLine={false} width={28} />
-                            <Tooltip contentStyle={{ background: "oklch(0.195 0.005 285)", border: "1px solid oklch(0.3 0.01 285)", borderRadius: "8px", fontSize: "11px" }} />
-                            <Bar dataKey="booking_count" radius={[4, 4, 0, 0]}>
-                              {topTours.map((_, i) => (
-                                <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                              ))}
-                            </Bar>
-                          </BarChart>
-                        </ResponsiveContainer>
-                        <div className="mt-4 space-y-2">
-                          {topTours.map((t, i) => (
-                            <div key={t.id} className="flex items-center gap-3">
-                              <div className="flex size-6 items-center justify-center rounded-md text-[10px] font-bold text-white"
-                                style={{ background: CHART_COLORS[i % CHART_COLORS.length] }}>
-                                {i + 1}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <p className="text-xs font-medium text-foreground truncate">{t.title}</p>
-                                <p className="text-[10px] text-muted-foreground">{t.host_name}</p>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-xs font-bold text-foreground">{t.booking_count ?? 0}</p>
-                                <p className="text-[10px] text-muted-foreground">bookings</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Booking status distribution */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <Card className="border-border/60">
-                    <CardHeader>
-                      <CardTitle className="text-base">Booking Status</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {(["confirmed", "completed", "pending", "cancelled"] as const).map((s) => {
-                        const count = bookings.filter((b) => b.status === s).length
-                        const pct = bookings.length ? Math.round((count / bookings.length) * 100) : 0
-                        const colors: Record<string, string> = {
-                          confirmed: "oklch(0.696 0.17 162)", completed: "oklch(0.541 0.217 292)",
-                          pending: "oklch(0.828 0.189 84.429)", cancelled: "oklch(0.645 0.246 16.439)",
-                        }
-                        return (
-                          <div key={s}>
-                            <div className="flex justify-between text-xs mb-1">
-                              <span className="capitalize text-foreground">{s}</span>
-                              <span className="text-muted-foreground">{count} ({pct}%)</span>
-                            </div>
-                            <div className="h-1.5 w-full rounded-full bg-muted/40">
-                              <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: colors[s] }} />
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </CardContent>
-                  </Card>
-                  <Card className="border-border/60">
-                    <CardHeader>
-                      <CardTitle className="text-base">User Breakdown</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {(["traveler", "host", "admin"] as const).map((r) => {
-                        const count = profiles.filter((p) => p.role === r).length
-                        const pct = profiles.length ? Math.round((count / profiles.length) * 100) : 0
-                        const colors: Record<string, string> = {
-                          traveler: "oklch(0.541 0.217 292)", host: "oklch(0.696 0.17 162)", admin: "oklch(0.645 0.246 16.439)",
-                        }
-                        return (
-                          <div key={r}>
-                            <div className="flex justify-between text-xs mb-1">
-                              <span className="capitalize text-foreground">{r}s</span>
-                              <span className="text-muted-foreground">{count} ({pct}%)</span>
-                            </div>
-                            <div className="h-1.5 w-full rounded-full bg-muted/40">
-                              <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: colors[r] }} />
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Full CSV export row */}
-                <div className="flex flex-wrap gap-3 pt-2">
-                  <Button variant="outline" className="rounded-full border-border/60"
-                    onClick={() => downloadCSV(bookings.map((b) => ({
-                      id: b.id, guest: b.guest_name, email: b.guest_email, tour: b.tour_title,
-                      host: b.host_name, date: b.booking_date, status: b.status, amount: b.total_price,
-                    })), "all-bookings.csv")}>
-                    <Download className="size-3.5 mr-1.5" />All Bookings CSV
-                  </Button>
-                  <Button variant="outline" className="rounded-full border-border/60"
-                    onClick={() => downloadCSV(profiles.map((p) => ({
-                      name: p.full_name, email: p.email, role: p.role, joined: p.created_at,
-                    })), "all-users.csv")}>
-                    <Download className="size-3.5 mr-1.5" />All Users CSV
-                  </Button>
-                  <Button variant="outline" className="rounded-full border-border/60"
-                    onClick={() => downloadCSV(tours.map((t) => ({
-                      title: t.title, host: t.host_name, price: t.price, bookings: t.booking_count, rating: t.rating,
-                    })), "all-tours.csv")}>
-                    <Download className="size-3.5 mr-1.5" />All Tours CSV
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* ── GUIDE REVIEWS ───────────────────────────────────────────── */}
-            {activeTab === "guide_reviews" && (
-              <div className="space-y-8">
-                {/* Pending guide applications */}
-                <Card className="border-border/60">
-                  <CardHeader>
-                    <CardTitle className="text-base">Pending Guide Applications</CardTitle>
-                    <CardDescription>
-                      Hosts who applied for Certified Guide status and uploaded their certification.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-0">
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-sm">
                         <thead>
                           <tr className="border-b border-border/40 text-muted-foreground font-semibold">
-                            <th className="pb-3 pr-4">Host Name</th>
-                            <th className="pb-3 pr-4">Email</th>
-                            <th className="pb-3 pr-4">Applied Date</th>
-                            <th className="pb-3 pr-4">License Document</th>
-                            <th className="pb-3 text-right">Actions</th>
+                            <th className="pb-3 px-4">Applicant</th>
+                            <th className="pb-3 px-4">Email</th>
+                            <th className="pb-3 px-4">Uploaded Date</th>
+                            <th className="pb-3 px-4">Document Link</th>
+                            <th className="pb-3 px-4 text-right">Actions</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-border/20">
+                        <tbody className="divide-y divide-border/10">
                           {profiles
                             .filter(
                               (p) =>
@@ -1450,37 +1504,28 @@ export default function AdminDashboard() {
                             )
                             .map((p) => (
                               <tr key={p.id} className="hover:bg-muted/10 transition-colors">
-                                <td className="py-3.5 pr-4 font-medium text-foreground">{p.full_name}</td>
-                                <td className="py-3.5 pr-4 text-muted-foreground">{p.email}</td>
-                                <td className="py-3.5 pr-4 text-muted-foreground">
+                                <td className="py-3.5 px-4 font-medium text-foreground">{p.full_name}</td>
+                                <td className="py-3.5 px-4 text-muted-foreground">{p.email}</td>
+                                <td className="py-3.5 px-4 text-muted-foreground">
                                   {p.created_at ? format(parseISO(p.created_at), "yyyy-MM-dd") : "N/A"}
                                 </td>
-                                <td className="py-3.5 pr-4">
+                                <td className="py-3.5 px-4">
                                   {p.license_url ? (
-                                    <button
-                                      onClick={() => handleViewLicense(p.license_url!)}
-                                      className="text-[#7F5AF0] underline hover:text-[#7F5AF0]/80 font-medium"
-                                    >
-                                      View Uploaded License
+                                    <button onClick={() => handleViewLicense(p.license_url!)}
+                                      className="text-[#7F5AF0] underline hover:text-[#7F5AF0]/80 font-medium text-xs">
+                                      View License Document
                                     </button>
                                   ) : (
-                                    <span className="text-muted-foreground/50">No Document</span>
+                                    <span className="text-muted-foreground/50 text-xs">No Document</span>
                                   )}
                                 </td>
-                                <td className="py-3.5 text-right space-x-2">
-                                  <Button
-                                    size="sm"
-                                    onClick={() => handleApproveGuide(p.id)}
-                                    className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-full px-3 py-1 text-xs"
-                                  >
+                                <td className="py-3.5 px-4 text-right space-x-2">
+                                  <Button size="sm" onClick={() => handleApproveGuide(p.id)}
+                                    className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-full px-3 py-1 text-xs">
                                     Approve
                                   </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={() => handleRejectGuide(p.id)}
-                                    className="rounded-full px-3 py-1 text-xs"
-                                  >
+                                  <Button size="sm" variant="destructive" onClick={() => handleRejectGuide(p.id)}
+                                    className="rounded-full px-3 py-1 text-xs">
                                     Reject
                                   </Button>
                                 </td>
@@ -1490,84 +1535,276 @@ export default function AdminDashboard() {
                       </table>
                     </div>
                     {profiles.filter((p) => p.license_status === "pending").length === 0 && (
-                      <div className="py-12 text-center text-sm text-muted-foreground">
-                        No pending guide reviews found.
-                      </div>
+                      <div className="py-8 text-center text-xs text-muted-foreground">No pending guide verification requests.</div>
                     )}
                   </CardContent>
                 </Card>
 
-                {/* History of guide applications */}
+                {/* Content journals review */}
                 <Card className="border-border/60">
                   <CardHeader>
-                    <CardTitle className="text-base">Guide Application History</CardTitle>
-                    <CardDescription>
-                      Review logs of previously approved or rejected guide applications.
-                    </CardDescription>
+                    <CardTitle className="text-base text-white">Platform Journal Feed Moderation</CardTitle>
+                    <CardDescription>Screen or delete community travel journal entries</CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-0">
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-sm">
                         <thead>
                           <tr className="border-b border-border/40 text-muted-foreground font-semibold">
-                            <th className="pb-3 pr-4">Host Name</th>
-                            <th className="pb-3 pr-4">Email</th>
-                            <th className="pb-3 pr-4">Status</th>
-                            <th className="pb-3 pr-4">License Document</th>
-                            <th className="pb-3">Onboarded Tier</th>
+                            <th className="pb-3 px-4">Author</th>
+                            <th className="pb-3 px-4">Title</th>
+                            <th className="pb-3 px-4">Preview</th>
+                            <th className="pb-3 px-4 text-right">Actions</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-border/20">
-                          {profiles
-                            .filter(
-                              (p) =>
-                                (p.license_status === "approved" || p.license_status === "rejected") &&
-                                (p.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-                                  p.email?.toLowerCase().includes(search.toLowerCase()))
-                            )
-                            .map((p) => (
-                              <tr key={p.id} className="hover:bg-muted/10 transition-colors">
-                                <td className="py-3.5 pr-4 font-medium text-foreground">{p.full_name}</td>
-                                <td className="py-3.5 pr-4 text-muted-foreground">{p.email}</td>
-                                <td className="py-3.5 pr-4">
-                                  {p.license_status === "approved" ? (
-                                    <Badge className="bg-emerald-500/10 border-emerald-500/30 text-emerald-400">
-                                      Approved
-                                    </Badge>
-                                  ) : (
-                                    <Badge className="bg-destructive/10 border-destructive/30 text-destructive">
-                                      Rejected
-                                    </Badge>
-                                  )}
-                                </td>
-                                <td className="py-3.5 pr-4">
-                                  {p.license_url ? (
-                                    <button
-                                      onClick={() => handleViewLicense(p.license_url!)}
-                                      className="text-[#7F5AF0] underline hover:text-[#7F5AF0]/80 font-medium"
-                                    >
-                                      View Uploaded License
-                                    </button>
-                                  ) : (
-                                    <span className="text-muted-foreground/50">No Document</span>
-                                  )}
-                                </td>
-                                <td className="py-3.5 capitalize text-muted-foreground font-semibold">
-                                  {p.host_tier?.replace("_", " ")}
+                        <tbody className="divide-y divide-border/10">
+                          {journals
+                            .filter(j => j.title?.toLowerCase().includes(search.toLowerCase()) || j.author_name?.toLowerCase().includes(search.toLowerCase()))
+                            .map((j) => (
+                              <tr key={j.id} className="hover:bg-muted/10 transition-colors">
+                                <td className="py-3.5 px-4 font-semibold text-foreground text-xs">{j.author_name}</td>
+                                <td className="py-3.5 px-4 text-white text-xs">{j.title}</td>
+                                <td className="py-3.5 px-4 text-muted-foreground max-w-sm truncate text-xs">{j.content}</td>
+                                <td className="py-3.5 px-4 text-right">
+                                  <Button size="sm" variant="ghost"
+                                    onClick={async () => {
+                                      if (confirm("Delete this journal entry?")) {
+                                        try {
+                                          const { error } = await supabase.from("journals").delete().eq("id", j.id)
+                                          if (error) throw error
+                                          setJournals(prev => prev.filter(item => item.id !== j.id))
+                                          showToast("Journal entry deleted", "success")
+                                        } catch (e: any) {
+                                          showToast(e.message || "Failed to delete journal", "error")
+                                        }
+                                      }
+                                    }}
+                                    className="text-red-500 hover:bg-red-500/10 rounded-full px-3 py-1 text-xs">
+                                    Delete
+                                  </Button>
                                 </td>
                               </tr>
                             ))}
                         </tbody>
                       </table>
                     </div>
-                    {profiles.filter((p) => p.license_status === "approved" || p.license_status === "rejected")
-                      .length === 0 && (
-                      <div className="py-12 text-center text-sm text-muted-foreground">
-                        No review history found.
-                      </div>
+                    {journals.length === 0 && (
+                      <div className="py-8 text-center text-xs text-muted-foreground">No platform journal entries to show.</div>
                     )}
                   </CardContent>
                 </Card>
+
+                {/* Content posts review */}
+                <Card className="border-border/60">
+                  <CardHeader>
+                    <CardTitle className="text-base text-white">Platform Community Posts Moderation</CardTitle>
+                    <CardDescription>Screen or delete traveler community posts</CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm">
+                        <thead>
+                          <tr className="border-b border-border/40 text-muted-foreground font-semibold">
+                            <th className="pb-3 px-4">Author</th>
+                            <th className="pb-3 px-4">Content Preview</th>
+                            <th className="pb-3 px-4 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border/10">
+                          {posts
+                            .filter(p => p.content?.toLowerCase().includes(search.toLowerCase()) || p.author_name?.toLowerCase().includes(search.toLowerCase()))
+                            .map((p) => (
+                              <tr key={p.id} className="hover:bg-muted/10 transition-colors">
+                                <td className="py-3.5 px-4 font-semibold text-foreground text-xs">{p.author_name}</td>
+                                <td className="py-3.5 px-4 text-white text-xs">{p.content}</td>
+                                <td className="py-3.5 px-4 text-right">
+                                  <Button size="sm" variant="ghost"
+                                    onClick={async () => {
+                                      if (confirm("Delete this community post?")) {
+                                        try {
+                                          const { error } = await supabase.from("posts").delete().eq("id", p.id)
+                                          if (error) throw error
+                                          setPosts(prev => prev.filter(item => item.id !== p.id))
+                                          showToast("Post deleted", "success")
+                                        } catch (e: any) {
+                                          showToast(e.message || "Failed to delete post", "error")
+                                        }
+                                      }
+                                    }}
+                                    className="text-red-500 hover:bg-red-500/10 rounded-full px-3 py-1 text-xs">
+                                    Delete
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {posts.length === 0 && (
+                      <div className="py-8 text-center text-xs text-muted-foreground">No community posts to show.</div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* ── SYSTEM SETTINGS ─────────────────────────────────────────── */}
+            {activeTab === "system" && (
+              <div className="space-y-6 animate-in fade-in duration-300">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* General Configs */}
+                  <Card className="border-border/60 bg-[#121214]/30">
+                    <CardHeader>
+                      <CardTitle className="text-base text-white flex items-center gap-2">
+                        <Settings className="size-4 text-primary" />
+                        Platform Control Center
+                      </CardTitle>
+                      <CardDescription>Adjust commission levels and operational status</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="flex items-center justify-between border-b border-border/10 pb-4">
+                        <div>
+                          <label className="text-sm font-semibold text-white">Maintenance Mode</label>
+                          <p className="text-xs text-muted-foreground">Blocks public access to the platform feed</p>
+                        </div>
+                        <input type="checkbox" checked={maintenanceMode}
+                          onChange={(e) => {
+                            const val = e.target.checked
+                            setMaintenanceMode(val)
+                            localStorage.setItem("system_maintenance_mode", String(val))
+                            showToast(`Maintenance mode ${val ? "enabled" : "disabled"}`, "success")
+                          }}
+                          className="size-5 accent-primary cursor-pointer" />
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <label className="font-semibold text-white">Platform Commission Rate</label>
+                          <span className="text-primary font-bold">{commissionRate}%</span>
+                        </div>
+                        <input type="range" min="0" max="30" value={commissionRate}
+                          onChange={(e) => {
+                            const val = Number(e.target.value)
+                            setCommissionRate(val)
+                            localStorage.setItem("system_commission_rate", String(val))
+                          }}
+                          className="w-full accent-primary cursor-pointer" />
+                        <p className="text-[10px] text-muted-foreground">Cut taken from confirmed booking checkouts</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Integrations settings */}
+                  <Card className="border-border/60 bg-[#121214]/30">
+                    <CardHeader>
+                      <CardTitle className="text-base text-white flex items-center gap-2">
+                        <Shield className="size-4 text-emerald-400" />
+                        3rd Party Integrations Credentials
+                      </CardTitle>
+                      <CardDescription>Setup contract hashes and client gateway configurations</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Stripe Integration Gateway Mode</label>
+                        <select value={stripeMode}
+                          onChange={(e) => {
+                            setStripeMode(e.target.value)
+                            localStorage.setItem("system_stripe_mode", e.target.value)
+                            showToast("Stripe environment updated", "success")
+                          }}
+                          className="w-full bg-card/60 border border-border/60 rounded-xl px-3 py-2 text-xs text-white">
+                          <option value="test">Test Gateway (Simulated Payments)</option>
+                          <option value="production">Production Environment</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Didit Smart Contract Hash</label>
+                        <Input value={diditAddress}
+                          onChange={(e) => {
+                            setDiditAddress(e.target.value)
+                            localStorage.setItem("system_didit_address", e.target.value)
+                          }}
+                          className="font-mono text-xs border-border/70 bg-card/40 text-white" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            )}
+
+            {/* ── DEVELOPER LOGS ─────────────────────────────────────────── */}
+            {activeTab === "logs" && (
+              <div className="space-y-6 animate-in fade-in duration-300">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                      <Terminal className="size-4 text-emerald-400" />
+                      Dev Console & Error Monitoring
+                    </h2>
+                    <p className="text-xs text-muted-foreground">Real-time Sentry and Edge Function log simulator</p>
+                  </div>
+                  <Button size="sm" variant="outline" className="rounded-full border-border/60"
+                    onClick={() => {
+                      setLogs([])
+                      showToast("Developer console logs cleared", "success")
+                    }}>
+                    Clear logs console
+                  </Button>
+                </div>
+
+                <Card className="border-border/60 bg-black/80 font-mono">
+                  <CardContent className="p-4 space-y-2.5 max-h-[420px] overflow-y-auto">
+                    {logs.map((log) => (
+                      <div key={log.id} className="text-xs flex items-start gap-2 border-b border-border/5 pb-2">
+                        <span className="text-muted-foreground/60">[{log.time}]</span>
+                        <span className={`px-2 py-0.5 rounded text-[9px] uppercase font-bold tracking-wide ${
+                          log.type === "error" ? "bg-red-500/20 text-red-400 border border-red-500/30" :
+                          log.type === "warning" ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" :
+                          "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                        }`}>{log.source}</span>
+                        <span className={log.type === "error" ? "text-red-400 font-semibold" : "text-white/80"}>
+                          {log.message}
+                        </span>
+                      </div>
+                    ))}
+                    {logs.length === 0 && (
+                      <div className="py-12 text-center text-xs text-muted-foreground">Logs empty. Try triggering a Sentry warning.</div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Sentry error simulation */}
+                <div className="flex gap-3">
+                  <Button size="sm" variant="outline" className="rounded-full border-red-500/30 text-red-400 hover:bg-red-500/10"
+                    onClick={() => {
+                      const newErr = {
+                        id: Date.now(),
+                        type: "error",
+                        source: "Sentry",
+                        message: "Error: Stripe Payment Intent transaction rejected. Code: 4002",
+                        time: new Date().toLocaleTimeString()
+                      }
+                      setLogs(prev => [newErr, ...prev])
+                      showToast("Test error dispatched to Sentry console simulation", "error")
+                    }}>
+                    Dispatch Mock Sentry Error
+                  </Button>
+                  <Button size="sm" variant="outline" className="rounded-full border-primary/30 text-primary hover:bg-primary/10"
+                    onClick={() => {
+                      const newLog = {
+                        id: Date.now(),
+                        type: "info",
+                        source: "Edge",
+                        message: "Edge Function 'send-welcome-emails' successfully processed queues.",
+                        time: new Date().toLocaleTimeString()
+                      }
+                      setLogs(prev => [newLog, ...prev])
+                      showToast("Edge function mock log added", "success")
+                    }}>
+                    Trigger Edge Function Log
+                  </Button>
+                </div>
               </div>
             )}
           </>

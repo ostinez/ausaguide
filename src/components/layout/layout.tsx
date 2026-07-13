@@ -6,6 +6,37 @@ import { Footer } from "./footer"
 
 export function Layout() {
   const [userId, setUserId] = useState<string | null>(localStorage.getItem("user_id"))
+  const impersonatorId = localStorage.getItem("admin_impersonator_id")
+  const impersonatedUserId = localStorage.getItem("user_id")
+  const [impersonatedName, setImpersonatedName] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchImpersonated() {
+      if (impersonatorId && impersonatedUserId) {
+        try {
+          const { data } = await supabase.from("profiles").select("full_name").eq("id", impersonatedUserId).maybeSingle()
+          if (data?.full_name) setImpersonatedName(data.full_name)
+        } catch (e) {
+          console.error("Error reading impersonated profile:", e)
+        }
+      } else {
+        setImpersonatedName(null)
+      }
+    }
+    fetchImpersonated()
+  }, [impersonatorId, impersonatedUserId])
+
+  function handleStopImpersonation() {
+    const originalId = localStorage.getItem("admin_impersonator_id")
+    const originalRole = localStorage.getItem("admin_impersonator_role")
+    if (originalId && originalRole) {
+      localStorage.setItem("user_id", originalId)
+      localStorage.setItem("user_role", originalRole)
+      localStorage.removeItem("admin_impersonator_id")
+      localStorage.removeItem("admin_impersonator_role")
+      window.location.href = "/admin/dashboard"
+    }
+  }
 
   useEffect(() => {
     // 1. Initial check: bounce already authenticated users away from / or /auth
@@ -15,13 +46,33 @@ export function Layout() {
         try {
           const { data: { session } } = await supabase.auth.getSession()
           if (session?.user) {
-            const { data: profile } = await supabase
+            const { data: profile, error: profileErr } = await supabase
               .from("profiles")
-              .select("role")
+              .select("*")
               .eq("id", session.user.id)
               .maybeSingle()
 
-            const role = profile?.role
+            console.log("[Layout checkRedirect] result:", { profile, error: profileErr })
+
+            let role = profile?.role
+            if (!profile && !profileErr) {
+              console.log("[Layout checkRedirect] Auto-creating missing profile for user...")
+              const { data: newProfile, error: createErr } = await supabase
+                .from("profiles")
+                .insert({
+                  id: session.user.id,
+                  email: session.user.email,
+                  full_name: session.user.user_metadata?.full_name || "New Traveler",
+                  role: "traveler",
+                  languages: ["English"],
+                })
+                .select("*")
+                .maybeSingle()
+              if (!createErr && newProfile) {
+                role = newProfile.role
+              }
+            }
+
             if (role === "admin") {
               window.location.href = "/admin/dashboard"
             } else if (role === "host") {
@@ -46,13 +97,33 @@ export function Layout() {
         localStorage.setItem("user_id", session.user.id)
         
         try {
-          const { data: profile } = await supabase
+          const { data: profile, error: profileErr } = await supabase
             .from("profiles")
-            .select("role")
+            .select("*")
             .eq("id", session.user.id)
             .maybeSingle()
 
-          const role = profile?.role
+          console.log("[Layout onAuthStateChange] SIGNED_IN/CHANGE result:", { profile, error: profileErr })
+
+          let role = profile?.role
+          if (!profile && !profileErr) {
+            console.log("[Layout onAuthStateChange] Auto-creating missing profile for user...")
+            const { data: newProfile, error: createErr } = await supabase
+              .from("profiles")
+              .insert({
+                id: session.user.id,
+                email: session.user.email,
+                full_name: session.user.user_metadata?.full_name || "New Traveler",
+                role: "traveler",
+                languages: ["English"],
+              })
+              .select("*")
+              .maybeSingle()
+            if (!createErr && newProfile) {
+              role = newProfile.role
+            }
+          }
+
           if (role) {
             localStorage.setItem("user_role", role)
           } else {
@@ -136,6 +207,14 @@ export function Layout() {
           Join the waitlist for launch.
         </a>
       </div>
+      {impersonatedName && (
+        <div className="w-full bg-amber-500 text-black text-xs font-bold py-2.5 px-4 text-center z-50 relative flex items-center justify-center gap-2 shadow-md">
+          <span>⚠️ Impersonating user: <strong>{impersonatedName}</strong> (actions will save as this user).</span>
+          <button onClick={handleStopImpersonation} className="underline hover:text-black/80 font-black ml-2 transition duration-200">
+            Stop Impersonation
+          </button>
+        </div>
+      )}
       <StaggeredMenu
         position="right"
         colors={["#000000", "#0A0A0A"]}
