@@ -521,7 +521,7 @@ function SignUpForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
       {error && (
         <div className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs font-semibold text-destructive animate-in fade-in">
           <AlertCircle className="size-4 shrink-0 mt-0.5" />
@@ -540,6 +540,7 @@ function SignUpForm() {
             className="pl-10 border-border/80 text-foreground placeholder:text-muted-foreground/50"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            autoComplete="off"
             required
           />
         </div>
@@ -556,6 +557,7 @@ function SignUpForm() {
             className="pl-7 border-border/80 text-foreground placeholder:text-muted-foreground/50"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
+            autoComplete="off"
             required
             minLength={3}
             maxLength={20}
@@ -574,6 +576,7 @@ function SignUpForm() {
             className="pl-10 border-border/80 text-foreground placeholder:text-muted-foreground/50"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            autoComplete="off"
             required
           />
         </div>

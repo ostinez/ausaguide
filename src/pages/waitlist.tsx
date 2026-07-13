@@ -5,7 +5,7 @@ import { supabase } from "../lib/supabase"
 import { sendGeneralWaitlistEmail } from "@/lib/api/emails"
 import {
   Loader2, CheckCircle2, User, Mail, Sparkles, MapPin,
-  AlignLeft, Share2, RefreshCw, PartyPopper,
+  AlignLeft, Share2, RefreshCw, PartyPopper, Rocket,
 } from "lucide-react"
 import { CountdownTimer } from "@/components/ui/CountdownTimer"
 
@@ -25,7 +25,7 @@ type WaitlistStatus = "loading" | "not_on_list" | "pending" | "confirmed"
 
 // ── Share helpers ────────────────────────────────────────────────────────────
 const SHARE_TEXT = encodeURIComponent(
-  "I just joined the Ausaguide waitlist 🎉 — the platform that connects travellers with authentic local guides in Kenya. Launching October 10, 2026! Join me:"
+  "I just joined the Ausaguide waitlist — the platform that connects travellers with authentic local guides in Kenya. Launching October 10, 2026! Join me:"
 )
 const SHARE_URL = encodeURIComponent("https://ausaguide.com/waitlist")
 
@@ -94,8 +94,9 @@ function CelebrationPanel({ name, email }: { name: string; email: string }) {
         </div>
 
         <div className="space-y-3">
-          <h1 className="text-3xl font-black text-white tracking-tight">
-            🎉 You're on the list!
+          <h1 className="text-3xl font-black text-white tracking-tight flex items-center justify-center gap-3">
+            <Rocket className="size-7 text-[#7F5AF0]" />
+            You're on the list!
           </h1>
           <p className="text-sm text-white/60 leading-relaxed max-w-xs mx-auto">
             {name ? `Hey ${name}! ` : ""}We'll notify{" "}
@@ -200,7 +201,7 @@ export default function WaitlistPage() {
             setStatus("confirmed")
             // Clean URL
             setSearchParams({}, { replace: true })
-            toast.success("🎉 Email confirmed! You're on the list!")
+            toast.success("Email confirmed! You're on the list!")
             return
           }
         } catch (err) {
@@ -338,7 +339,7 @@ export default function WaitlistPage() {
         inserted?.confirm_token ?? undefined
       )
 
-      toast.success("📧 Confirmation email sent! Check your inbox.")
+      toast.success("Confirmation email sent! Check your inbox.")
       localStorage.setItem("waitlist_pending_email", email.trim())
       setPendingEmail(email.trim())
       setPendingName(name.trim())
