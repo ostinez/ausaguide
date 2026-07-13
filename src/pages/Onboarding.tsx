@@ -617,6 +617,32 @@ function StepVerifyID({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId])
 
+  // Check if user is already verified on mount/load
+  useEffect(() => {
+    let active = true
+    async function checkVerification() {
+      if (!userId) return
+      try {
+        const { data, error: err } = await supabase
+          .from("profiles")
+          .select("id_verified, verification_status")
+          .eq("id", userId)
+          .single()
+        if (err) throw err
+        if (active && (data?.id_verified || data?.verification_status === "approved")) {
+          toast.success("Identity already verified!")
+          onComplete()
+        }
+      } catch (e) {
+        console.error("Error during initial verification check:", e)
+      }
+    }
+    checkVerification()
+    return () => {
+      active = false
+    }
+  }, [userId, onComplete])
+
   async function startVerification() {
     setLoading(true)
     setError(null)
@@ -1218,9 +1244,8 @@ export default function OnboardingPage() {
     }
   })
 
-  // Guard: redirect already-authenticated users
+  // Guard and initialization: sync active Supabase user session
   useEffect(() => {
-    // Check if we are handling a Didit callback redirect
     const params = new URLSearchParams(window.location.search)
     if (params.get("didit_done") === "true") {
       const uId = params.get("user_id") || ""
@@ -1232,8 +1257,32 @@ export default function OnboardingPage() {
       return
     }
 
-    const localUserId = localStorage.getItem("user_id")
-    if (localUserId) navigate("/dashboard", { replace: true })
+    async function syncSession() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          setUserId(user.id)
+          // Check if they already have a profile row
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .maybeSingle()
+
+          if (profile) {
+            localStorage.setItem("user_id", user.id)
+            localStorage.setItem("user_role", profile.role || "traveler")
+            navigate(profile.role === "host" ? "/host/dashboard" : "/dashboard", { replace: true })
+          }
+        } else {
+          const localUserId = localStorage.getItem("user_id")
+          if (localUserId) navigate("/dashboard", { replace: true })
+        }
+      } catch (err) {
+        console.error("Error syncing session in onboarding:", err)
+      }
+    }
+    syncSession()
   }, [navigate])
 
   // Prefill from sessionStorage if the auth page passed data

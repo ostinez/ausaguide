@@ -72,11 +72,14 @@ export default function EditTourPage() {
 
   // Pricing
   const [price, setPrice] = useState("3500")
+  const [physicalPrice, setPhysicalPrice] = useState("3500")
+  const [virtualPrice, setVirtualPrice] = useState("1500")
   const [currency, setCurrency] = useState("KES")
   const [groupDiscount, setGroupDiscount] = useState("10")
   const [groupSizeThreshold, setGroupSizeThreshold] = useState("5")
 
   // Availability
+  const [date, setDate] = useState("")
   const [selectedDays, setSelectedDays] = useState<string[]>([])
   const [timeSlots, setTimeSlots] = useState<string[]>([])
   const [newTimeSlot, setNewTimeSlot] = useState("")
@@ -110,6 +113,8 @@ export default function EditTourPage() {
         setDescription(tour.description)
         setImages(tour.images)
         setPrice(tour.price.toString())
+        setPhysicalPrice((tour.physical_price ?? tour.price).toString())
+        setVirtualPrice((tour.virtual_price ?? 1500).toString())
         setCurrency(tour.currency)
         setTags(tour.tags || [])
         setStatus(tour.status || (tour.is_published ? "published" : "draft"))
@@ -120,6 +125,7 @@ export default function EditTourPage() {
         setTimeSlots(avail.times || [])
         setStartDate(avail.startDate || "")
         setEndDate(avail.endDate || "")
+        setDate(avail.date || "")
         
         const disc = avail.discounts || {}
         setGroupDiscount((disc.percentage ?? 10).toString())
@@ -213,8 +219,9 @@ export default function EditTourPage() {
       const availabilityJSON = {
         days: selectedDays,
         times: timeSlots,
-        startDate: startDate || null,
-        endDate: endDate || null,
+        startDate: date || startDate || null,
+        endDate: date || endDate || null,
+        date: date || null,
         discounts: {
           percentage: Number(groupDiscount) || 0,
           threshold: Number(groupSizeThreshold) || 0,
@@ -225,7 +232,9 @@ export default function EditTourPage() {
         title: title.trim(),
         description: description.trim(),
         short_description: description.trim().substring(0, 150),
-        price: Number(price) || 0,
+        price: Number(physicalPrice) || 0,
+        physical_price: Number(physicalPrice) || 0,
+        virtual_price: Number(virtualPrice) || 0,
         currency,
         duration_hours: Number(duration) || 1,
         max_guests: Number(maxGuests) || 10,
@@ -546,15 +555,34 @@ export default function EditTourPage() {
                       </Select>
                     </div>
 
-                    <div className="col-span-2 space-y-2">
-                      <Label htmlFor="edit-price">Base Price</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-physical-price">Physical Price (In-Person)</Label>
                       <div className="relative">
                         <DollarSign className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
-                          id="edit-price"
+                          id="edit-physical-price"
                           type="number"
-                          value={price}
-                          onChange={(e) => setPrice(e.target.value)}
+                          min="0"
+                          value={physicalPrice}
+                          onChange={(e) => {
+                            setPhysicalPrice(e.target.value)
+                            setPrice(e.target.value)
+                          }}
+                          className="pl-9"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-virtual-price">Virtual Price (Virtual Live)</Label>
+                      <div className="relative">
+                        <DollarSign className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          id="edit-virtual-price"
+                          type="number"
+                          min="0"
+                          value={virtualPrice}
+                          onChange={(e) => setVirtualPrice(e.target.value)}
                           className="pl-9"
                         />
                       </div>
@@ -642,6 +670,21 @@ export default function EditTourPage() {
                         <Plus className="size-4 mr-1" /> Add
                       </Button>
                     </div>
+                  </div>
+
+                  {/* Specific Tour Date */}
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-tour-date" className="text-sm font-semibold">Specific Tour Date (Single Event Date)</Label>
+                    <Input
+                      id="edit-tour-date"
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      className="max-w-[200px]"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      If set, travelers will only be able to book this experience on the selected date.
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

@@ -160,6 +160,8 @@ export async function createTour(tourData: Partial<Tour>): Promise<Tour> {
       status: "published",
       availability: tourData.availability || {},
       tags: tourData.tags || [],
+      physical_price: tourData.physical_price,
+      virtual_price: tourData.virtual_price,
     })
     .select(TOUR_SELECT)
     .single()
@@ -184,6 +186,13 @@ export async function updateTour(id: string, tourData: Partial<Tour>): Promise<T
     tour_type: tourData.tour_type,
     images: tourData.images,
     highlights: tourData.highlights,
+  }
+
+  if (tourData.physical_price !== undefined) {
+    updatePayload.physical_price = tourData.physical_price
+  }
+  if (tourData.virtual_price !== undefined) {
+    updatePayload.virtual_price = tourData.virtual_price
   }
 
   if (tourData.status) {

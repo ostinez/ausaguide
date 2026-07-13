@@ -8,9 +8,38 @@ export function Layout() {
   const [userId, setUserId] = useState<string | null>(localStorage.getItem("user_id"))
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       const uId = session?.user?.id || localStorage.getItem("user_id")
       setUserId(uId)
+      
+      if (session?.user) {
+        localStorage.setItem("user_id", session.user.id)
+        
+        try {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", session.user.id)
+            .maybeSingle()
+
+          if (profile) {
+            localStorage.setItem("user_role", profile.role || "traveler")
+          }
+
+          if (event === "SIGNED_IN") {
+            const path = window.location.pathname
+            if (path === "/auth" || path === "/auth/callback") {
+              if (profile) {
+                window.location.href = profile.role === "host" ? "/host/dashboard" : "/dashboard"
+              } else {
+                window.location.href = "/onboarding"
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Error checking profile on auth change:", err)
+        }
+      }
     })
 
     const handleStorage = () => {

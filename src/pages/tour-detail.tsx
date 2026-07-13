@@ -587,9 +587,17 @@ export default function TourDetailPage() {
                     mode="single"
                     selected={selectedDate}
                     onSelect={setSelectedDate}
-                    disabled={(date) =>
-                      date < addDays(new Date(), 0) || getDayStatus(date) === "unavailable"
-                    }
+                    disabled={(date) => {
+                      if (tour.availability?.date) {
+                        // Compare local year/month/day dates
+                        const localYear = date.getFullYear()
+                        const localMonth = String(date.getMonth() + 1).padStart(2, "0")
+                        const localDay = String(date.getDate()).padStart(2, "0")
+                        const dateStr = `${localYear}-${localMonth}-${localDay}`
+                        return dateStr !== tour.availability.date
+                      }
+                      return date < addDays(new Date(), 0) || getDayStatus(date) === "unavailable"
+                    }}
                     modifiers={{
                       booked: (date) => getDayStatus(date) === "fully_booked"
                     }}

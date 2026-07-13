@@ -71,11 +71,14 @@ export default function NewTourPage() {
 
   // Pricing
   const [price, setPrice] = useState("3500")
+  const [physicalPrice, setPhysicalPrice] = useState("3500")
+  const [virtualPrice, setVirtualPrice] = useState("1500")
   const [currency, setCurrency] = useState("KES")
   const [groupDiscount, setGroupDiscount] = useState("10") // % discount for large groups
   const [groupSizeThreshold, setGroupSizeThreshold] = useState("5") // guests threshold for discount
 
   // Availability
+  const [date, setDate] = useState("")
   const [selectedDays, setSelectedDays] = useState<string[]>(["Saturday", "Sunday"])
   const [timeSlots, setTimeSlots] = useState<string[]>(["09:00", "14:00"])
   const [newTimeSlot, setNewTimeSlot] = useState("")
@@ -87,7 +90,7 @@ export default function NewTourPage() {
   const [customTag, setCustomTag] = useState("")
 
   // Visibility / Status
-  const [status, setStatus] = useState<"draft" | "published">("draft")
+  const [status, setStatus] = useState<"draft" | "published">("published")
 
   // Stepper Controls
   const nextStep = () => {
@@ -182,8 +185,9 @@ export default function NewTourPage() {
       const availabilityJSON = {
         days: selectedDays,
         times: timeSlots,
-        startDate: startDate || null,
-        endDate: endDate || null,
+        startDate: date || startDate || null,
+        endDate: date || endDate || null,
+        date: date || null,
         discounts: {
           percentage: Number(groupDiscount) || 0,
           threshold: Number(groupSizeThreshold) || 0,
@@ -194,7 +198,9 @@ export default function NewTourPage() {
         host_id: hostId,
         title: title.trim(),
         description: description.trim(),
-        price: Number(price) || 0,
+        price: Number(physicalPrice) || 0,
+        physical_price: Number(physicalPrice) || 0,
+        virtual_price: Number(virtualPrice) || 0,
         currency,
         duration_hours: Number(duration) || 1,
         max_guests: Number(maxGuests) || 10,
@@ -529,16 +535,34 @@ export default function NewTourPage() {
                       </Select>
                     </div>
 
-                    <div className="col-span-2 space-y-2">
-                      <Label htmlFor="tour-price">Base Price (per guest)</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="tour-physical-price">Physical Price (In-Person)</Label>
                       <div className="relative">
                         <DollarSign className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
-                          id="tour-price"
+                          id="tour-physical-price"
                           type="number"
                           min="0"
-                          value={price}
-                          onChange={(e) => setPrice(e.target.value)}
+                          value={physicalPrice}
+                          onChange={(e) => {
+                            setPhysicalPrice(e.target.value)
+                            setPrice(e.target.value)
+                          }}
+                          className="pl-9"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="tour-virtual-price">Virtual Price (Virtual Live)</Label>
+                      <div className="relative">
+                        <DollarSign className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          id="tour-virtual-price"
+                          type="number"
+                          min="0"
+                          value={virtualPrice}
+                          onChange={(e) => setVirtualPrice(e.target.value)}
                           className="pl-9"
                         />
                       </div>
@@ -646,6 +670,21 @@ export default function NewTourPage() {
                         <Plus className="size-4 mr-1" /> Add Slot
                       </Button>
                     </div>
+                  </div>
+
+                  {/* Specific Tour Date */}
+                  <div className="space-y-2">
+                    <Label htmlFor="tour-date" className="text-sm font-semibold">Specific Tour Date (Single Event Date)</Label>
+                    <Input
+                      id="tour-date"
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      className="max-w-[200px]"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      If set, travelers will only be able to book this experience on the selected date.
+                    </p>
                   </div>
 
                   {/* Date range bounds */}

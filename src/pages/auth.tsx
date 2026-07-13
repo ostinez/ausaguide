@@ -670,17 +670,19 @@ function SignUpForm() {
 }
 
 export default function AuthPage() {
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const becomeHost = searchParams.get("become-host") === "true"
   const defaultTab = becomeHost ? "signup" : (searchParams.get("tab") === "signup" ? "signup" : "signin")
 
   useEffect(() => {
-    if (becomeHost) {
-      sessionStorage.setItem("become_host", "true")
+    if (becomeHost || searchParams.get("tab") === "signup") {
+      if (becomeHost) {
+        sessionStorage.setItem("become_host", "true")
+      }
+      navigate("/onboarding", { replace: true })
     }
-  }, [becomeHost])
-
-
+  }, [becomeHost, searchParams, navigate])
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-24">
@@ -694,11 +696,11 @@ export default function AuthPage() {
         <div className="mb-8 flex flex-col items-center gap-2">
           <Link to="/" className="flex items-center gap-2">
             <img
-              src="/logo-primary.png"
-              alt="Ausaguide"
-              width={160}
-              height={32}
-              className="h-10 w-auto block object-contain"
+               src="/logo-primary.png"
+               alt="Ausaguide"
+               width={160}
+               height={32}
+               className="h-10 w-auto block object-contain"
             />
           </Link>
           <p className="text-sm text-muted-foreground">
@@ -723,7 +725,11 @@ export default function AuthPage() {
                 <TabsTrigger value="signin" className="flex-1">
                   Log In
                 </TabsTrigger>
-                <TabsTrigger value="signup" className="flex-1">
+                <TabsTrigger
+                  value="signup"
+                  className="flex-1"
+                  onClick={() => navigate("/onboarding")}
+                >
                   Sign Up
                 </TabsTrigger>
               </TabsList>

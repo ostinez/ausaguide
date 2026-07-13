@@ -279,7 +279,7 @@ export function Navbar() {
                     Log In
                   </Button>
                 </Link>
-                <Link to="/auth?tab=signup">
+                <Link to="/onboarding">
                   <Button
                     size="sm"
                     className="bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] text-white border-0 hover:opacity-90 hover:shadow-md hover:shadow-[#7F5AF0]/30 transition-all duration-200 font-semibold"
@@ -384,7 +384,7 @@ export function Navbar() {
                       Log In
                     </Button>
                   </Link>
-                  <Link to="/auth?tab=signup" onClick={() => setMobileOpen(false)}>
+                  <Link to="/onboarding" onClick={() => setMobileOpen(false)}>
                     <Button className="w-full mt-2 bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] text-white border-0 hover:opacity-90 font-semibold">
                       Sign Up
                     </Button>

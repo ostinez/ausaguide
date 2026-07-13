@@ -270,7 +270,7 @@ export function GlassmorphismNavbar({ className, ...props }: GlassmorphismNavbar
                     Log In
                   </Button>
                 </Link>
-                <Link to="/auth?tab=signup">
+                <Link to="/onboarding">
                   <Button
                     size="sm"
                     className="bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] text-white border-0 hover:opacity-90 hover:scale-105 transition-all duration-300 font-bold shadow-md shadow-[#7F5AF0]/30 rounded-full px-5"
@@ -384,7 +384,7 @@ export function GlassmorphismNavbar({ className, ...props }: GlassmorphismNavbar
                         Log In
                       </Button>
                     </Link>
-                    <Link to="/auth?tab=signup" onClick={() => setMobileOpen(false)}>
+                    <Link to="/onboarding" onClick={() => setMobileOpen(false)}>
                       <Button className="w-full bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] text-white border-0 hover:opacity-90 font-semibold rounded-full py-5">
                         Sign Up
                       </Button>

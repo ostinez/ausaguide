@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
-import { Star, Search, LayoutGrid, List, Heart, MapPin, ArrowRight, Compass, Globe, Sparkles, Users } from "lucide-react"
+import { Search, LayoutGrid, List, Heart, MapPin, Compass, Globe, Sparkles, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { GradientText } from "@/components/ui/GradientText"
 
@@ -10,13 +10,11 @@ import { PlusSpinner } from "@/components/ui/PlusSpinner"
 import { cn } from "@/lib/utils"
 import { fetchTours, incrementTourViews } from "@/lib/api/tours"
 import { TourCard } from "@/components/ui/TourCard"
-import TiltedCard from "@/components/ui/TiltedCard"
 import type { Tour } from "@/lib/types"
 
 import {
   getTourFilterTags,
   type FilterTag,
-  formatTourPrice,
 } from "@/lib/tour-utils"
 import { fetchWishlist, addToWishlist, removeFromWishlist } from "@/lib/api/wishlist"
 import { supabase } from "@/lib/supabase"
@@ -149,21 +147,20 @@ export default function ToursPage() {
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false))
 
-    // Realtime views updates
+    // Realtime tours update subscription for all events (INSERT, UPDATE, DELETE)
     const channel = supabase
-      .channel("tours-views-realtime")
+      .channel("tours-realtime")
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "tours" },
-        (payload) => {
-          const updated = payload.new as any
-          setTours((prev) =>
-            prev.map((t) =>
-              t.id === updated.id
-                ? { ...t, views: Number(updated.views || 0) }
-                : t
-            )
-          )
+        { event: "*", schema: "public", table: "tours" },
+        async (payload) => {
+          console.log("Realtime tours table change received:", payload)
+          try {
+            const data = await fetchTours()
+            setTours(data)
+          } catch (err) {
+            console.error("Error refreshing tours on realtime update:", err)
+          }
         }
       )
       .subscribe()
@@ -354,96 +351,7 @@ export default function ToursPage() {
                 )}>
                   {displayedTours.map((tour) => {
                     const isWishlisted = wishlist.has(tour.id)
-                    const typeLabel = tour.tour_type === "virtual" ? "Virtual" : "In-Person"
-                    const typeColor = tour.tour_type === "virtual"
-                      ? "bg-[#7F5AF0]/20 text-[#7F5AF0] border-[#7F5AF0]/30"
-                      : "bg-[#2CB67D]/20 text-[#2CB67D] border-[#2CB67D]/30"
-                    
-                    const overlayContent = (
-                      <div className="absolute inset-0 w-full h-full bg-gradient-to-t from-[#16161A] via-[#16161A]/60 to-transparent p-5 flex flex-col justify-between rounded-[15px] border border-border text-white pointer-events-none">
-                        {/* Top: Badges and Wishlist */}
-                        <div className="flex items-center justify-between pointer-events-auto">
-                          <span className={cn("rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm", typeColor)}>
-                            {typeLabel}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              e.preventDefault()
-                              handleToggleWishlist(tour.id, isWishlisted)
-                            }}
-                            className={cn(
-                              "flex size-8 items-center justify-center rounded-full border border-border bg-black/60 backdrop-blur-sm transition-all hover:bg-black/80 cursor-pointer",
-                              isWishlisted ? "text-rose-500 hover:text-rose-600" : "text-white/60 hover:text-white"
-                            )}
-                          >
-                            <Heart className={cn("size-4", isWishlisted && "fill-current")} />
-                          </button>
-                        </div>
-
-                        {/* Bottom Info Section */}
-                        <div className="space-y-2 pointer-events-auto">
-                          <div className="flex items-center gap-1 text-xs text-white/50">
-                            <MapPin className="size-3 text-[#2CB67D]" />
-                            <span className="truncate">{tour.location_name}</span>
-                          </div>
-                          
-                          <h3 className="line-clamp-2 font-bold leading-snug text-white text-base">
-                            {tour.title}
-                          </h3>
-
-                          <div className="flex items-center justify-between pt-2 border-t border-border gap-2">
-                            <div className="flex flex-col gap-0.5">
-                              <div className="flex items-center gap-1.5 flex-wrap text-[10px] text-white/40">
-                                <span className="flex items-center gap-0.5">
-                                  <Star className="size-3.5 fill-[#7F5AF0] text-[#7F5AF0]" />
-                                  <span className="font-bold text-white text-xs">{tour.rating.toFixed(1)}</span>
-                                </span>
-                                <span>({tour.review_count})</span>
-                                <span>·</span>
-                                <span>{tour.duration_hours}h</span>
-                              </div>
-                              <span className="text-sm font-black text-white whitespace-nowrap mt-1">
-                                {formatTourPrice(tour.price, tour.currency)}{" "}
-                                <span className="text-[10px] font-normal text-white/40">/ person</span>
-                              </span>
-                            </div>
-
-                            <Button
-                              size="sm"
-                              className="gap-1 rounded-full bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] text-white border-0 hover:opacity-95 shadow shadow-[#7F5AF0]/10 shrink-0 text-xs px-4 h-8 font-bold"
-                            >
-                              View
-                              <ArrowRight className="size-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    )
-
-                    return viewMode === "grid" ? (
-                      <TiltedCard
-                        key={tour.id}
-                        imageSrc={tour.images?.[0] || "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80"}
-                        altText={tour.title}
-                        captionText={`${tour.title} - ${tour.location_name}`}
-                        containerHeight="400px"
-                        containerWidth="100%"
-                        imageHeight="350px"
-                        imageWidth="100%"
-                        scaleOnHover={1.05}
-                        rotateAmplitude={12}
-                        showMobileWarning={true}
-                        showTooltip={false}
-                        displayOverlayContent={true}
-                        overlayContent={overlayContent}
-                        onClick={() => {
-                          incrementTourViews(tour.id).catch(console.error)
-                          navigate(`/tours/${tour.id}`)
-                        }}
-                      />
-                    ) : (
+                    return (
                       <TourCard
                         key={tour.id}
                         tour={tour}

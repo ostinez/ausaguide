@@ -55,7 +55,8 @@ export default function AuthCallbackPage() {
             navigate("/dashboard", { replace: true })
           }
         } else {
-          // New user, redirect to onboarding page
+          // New user, store user_id so they are authenticated, and redirect to onboarding page
+          localStorage.setItem("user_id", user.id)
           navigate("/onboarding", { replace: true })
         }
       } catch (err: any) {

@@ -132,23 +132,24 @@ VALUES (
 
 
 -- ── 4. Seed Host Profiles & Applications ──
-INSERT INTO public.profiles (id, email, full_name, role, bio, location, languages, host_type, is_verified) VALUES
+INSERT INTO public.profiles (id, email, full_name, role, bio, location, languages, host_type, host_tier, is_verified) VALUES
   ('11111111-1111-1111-1111-111111111101', 'host1@ausaguide.com', 'Grace Mwangi', 'host', 
    'Hi! I am Grace, a passionate home cook and storyteller based in Nairobi. I love welcoming visitors and sharing our rich culinary traditions and hidden local hangouts.', 
-   'Nairobi, Kenya', ARRAY['English', 'Swahili'], 'local_host', true),
+   'Nairobi, Kenya', ARRAY['English', 'Swahili'], 'local_host', 'local_host', true),
    
   ('11111111-1111-1111-1111-111111111102', 'host2@ausaguide.com', 'David Ochieng', 'host', 
    'Hello! I''m David, a certified wildlife and nature guide with over 8 years of experience. I specialize in showing Kenya''s majestic wildlife and guiding treks in the Rift Valley.', 
-   'Nairobi, Kenya', ARRAY['English', 'Swahili', 'German'], 'certified_guide', true),
+   'Nairobi, Kenya', ARRAY['English', 'Swahili', 'German'], 'certified_guide', 'certified_guide', true),
    
   ('11111111-1111-1111-1111-111111111103', 'host3@ausaguide.com', 'Amina Hassan', 'host', 
    'Habari! I am Amina, born and raised in Nairobi. I''m a cultural historian and street-culture enthusiast. I love guiding visitors through our vibrant street markets, historical architecture, and evening venues.', 
-   'Nairobi, Kenya', ARRAY['English', 'Swahili', 'Arabic'], 'local_host', true)
+   'Nairobi, Kenya', ARRAY['English', 'Swahili', 'Arabic'], 'local_host', 'local_host', true)
 ON CONFLICT (id) DO UPDATE SET
   bio = EXCLUDED.bio,
   location = EXCLUDED.location,
   languages = EXCLUDED.languages,
   host_type = EXCLUDED.host_type,
+  host_tier = EXCLUDED.host_tier,
   is_verified = EXCLUDED.is_verified;
 
 INSERT INTO public.hosts (id, user_id, full_name, email, city, host_type, bio, status) VALUES
