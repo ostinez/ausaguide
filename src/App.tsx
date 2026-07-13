@@ -39,6 +39,7 @@ import TermsPage from "@/pages/legal/terms"
 import PrivacyPage from "@/pages/legal/privacy"
 import AuthCallbackPage from "@/pages/AuthCallback"
 import OnboardingPage from "@/pages/Onboarding"
+import ResetPasswordPage from "@/pages/ResetPassword"
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -73,6 +74,7 @@ export default function App() {
           <Route path="/confirmation/:bookingId" element={<ConfirmationPage />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/host/signup" element={<Navigate to="/onboarding?become-host=true" replace />} />
           <Route path="/host/:id" element={<HostProfilePage />} />
