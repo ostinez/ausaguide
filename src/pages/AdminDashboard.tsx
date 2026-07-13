@@ -292,40 +292,63 @@ export default function AdminDashboard() {
 
   async function load() {
     setLoading(true)
+    let profs: any[] = []
+    let hostApps: any[] = []
+    let rawTours: any[] = []
+    let rawBks: any[] = []
+    let rawWaitlists: any[] = []
+
     try {
-      // Run all queries independently — a single table failure won't crash the dashboard
-      const safeQuery = async (promise: PromiseLike<{ data: any; error: any }>, label: string) => {
-        try {
-          const { data, error } = await promise
-          if (error) {
-            console.warn(`[AdminDashboard] ${label} query error (non-fatal):`, error.message)
-            return []
-          }
-          return data ?? []
-        } catch (e: any) {
-          console.warn(`[AdminDashboard] ${label} exception (non-fatal):`, e?.message)
-          return []
-        }
-      }
+      const { data, error } = await supabase.from("profiles").select("*").order("created_at", { ascending: false })
+      if (error) console.error("Error fetching profiles:", error)
+      else profs = data ?? []
+    } catch (e) {
+      console.error("Exception fetching profiles:", e)
+    }
 
-      const [profs, hostApps, rawTours, rawBks, rawWaitlists] = await Promise.all([
-        safeQuery(supabase.from("profiles").select("*").order("created_at", { ascending: false }), "profiles"),
-        safeQuery(supabase.from("hosts").select("*").order("created_at", { ascending: false }), "hosts"),
-        safeQuery(supabase.from("tours").select("*").order("created_at", { ascending: false }), "tours"),
-        safeQuery(supabase.from("bookings").select("*").order("booking_date", { ascending: false }), "bookings"),
-        safeQuery(supabase.from("waitlist").select("*").order("created_at", { ascending: false }), "waitlist"),
-      ])
+    try {
+      const { data, error } = await supabase.from("hosts").select("*").order("created_at", { ascending: false })
+      if (error) console.error("Error fetching hosts:", error)
+      else hostApps = data ?? []
+    } catch (e) {
+      console.error("Exception fetching hosts:", e)
+    }
 
+    try {
+      const { data, error } = await supabase.from("tours").select("*").order("created_at", { ascending: false })
+      if (error) console.error("Error fetching tours:", error)
+      else rawTours = data ?? []
+    } catch (e) {
+      console.error("Exception fetching tours:", e)
+    }
+
+    try {
+      const { data, error } = await supabase.from("bookings").select("*").order("booking_date", { ascending: false })
+      if (error) console.error("Error fetching bookings:", error)
+      else rawBks = data ?? []
+    } catch (e) {
+      console.error("Exception fetching bookings:", e)
+    }
+
+    try {
+      const { data, error } = await supabase.from("waitlist").select("*").order("created_at", { ascending: false })
+      if (error) console.error("Error fetching waitlist:", error)
+      else rawWaitlists = data ?? []
+    } catch (e) {
+      console.error("Exception fetching waitlist:", e)
+    }
+
+    try {
       // Stitch host names onto tours and bookings
       const stitchedTours: TourRow[] = rawTours.map((t: any) => {
-        const hostProf = (profs as any[]).find((p: any) => p.id === t.host_id)
+        const hostProf = profs.find((p: any) => p.id === t.host_id)
         const bkCount = rawBks.filter((b: any) => b.tour_id === t.id).length
         return { ...t, host_name: hostProf?.full_name ?? "Unknown Host", booking_count: bkCount }
       })
 
       const stitchedBks: BookingRow[] = rawBks.map((b: any) => {
         const tour = rawTours.find((t: any) => t.id === b.tour_id)
-        const hostProf = (profs as any[]).find((p: any) => p.id === b.host_id)
+        const hostProf = profs.find((p: any) => p.id === b.host_id)
         return { ...b, tour_title: tour?.title ?? "Unknown Tour", host_name: hostProf?.full_name ?? "Host" }
       })
 
@@ -350,8 +373,7 @@ export default function AdminDashboard() {
       setDailyRevenue(daily)
       setWaitlists(rawWaitlists)
     } catch (e: any) {
-      // Only fatal errors (e.g. auth failure) — log but don't block the UI
-      console.error("[AdminDashboard] Fatal load error:", e?.message)
+      console.error("[AdminDashboard] Error stitching/processing data:", e?.message)
     } finally {
       setCheckingAuth(false)
       setLoading(false)
@@ -732,7 +754,7 @@ export default function AdminDashboard() {
                         </table>
                       </div>
                       {profiles.length === 0 && (
-                        <div className="py-8 text-center text-xs text-muted-foreground">No users registered yet.</div>
+                        <div className="py-8 text-center text-xs text-muted-foreground">No users yet</div>
                       )}
                     </CardContent>
                   </Card>
@@ -777,7 +799,7 @@ export default function AdminDashboard() {
                         </table>
                       </div>
                       {waitlists.length === 0 && (
-                        <div className="py-8 text-center text-xs text-muted-foreground">No waitlist entries yet.</div>
+                        <div className="py-8 text-center text-xs text-muted-foreground">No waitlist entries</div>
                       )}
                     </CardContent>
                   </Card>
@@ -876,9 +898,11 @@ export default function AdminDashboard() {
                         </tbody>
                       </table>
                     </div>
-                    {filteredUsers.length === 0 && (
+                    {profiles.length === 0 ? (
+                      <div className="py-12 text-center text-sm text-muted-foreground">No users yet</div>
+                    ) : filteredUsers.length === 0 ? (
                       <div className="py-12 text-center text-sm text-muted-foreground">No users found.</div>
-                    )}
+                    ) : null}
                   </CardContent>
                 </Card>
 
@@ -1027,9 +1051,11 @@ export default function AdminDashboard() {
                         </tbody>
                       </table>
                     </div>
-                    {filteredTours.length === 0 && (
+                    {tours.length === 0 ? (
+                      <div className="py-12 text-center text-sm text-muted-foreground">No tours available</div>
+                    ) : filteredTours.length === 0 ? (
                       <div className="py-12 text-center text-sm text-muted-foreground">No tours found.</div>
-                    )}
+                    ) : null}
                   </CardContent>
                 </Card>
               </div>
@@ -1104,9 +1130,15 @@ export default function AdminDashboard() {
                                     <Button size="icon" variant="ghost" title="Cancel booking"
                                       className="size-7 rounded-lg hover:bg-destructive/10 hover:text-destructive"
                                       onClick={async () => {
-                                        await supabase.from("bookings").update({ status: "cancelled" }).eq("id", b.id)
-                                        setBookings((prev) => prev.map((bk) => bk.id === b.id ? { ...bk, status: "cancelled" } : bk))
-                                        showToast("Booking cancelled", "success")
+                                        try {
+                                          const { error } = await supabase.from("bookings").update({ status: "cancelled" }).eq("id", b.id)
+                                          if (error) throw error
+                                          setBookings((prev) => prev.map((bk) => bk.id === b.id ? { ...bk, status: "cancelled" } : bk))
+                                          showToast("Booking cancelled", "success")
+                                        } catch (err: any) {
+                                          console.error("Failed to cancel booking:", err)
+                                          showToast(err.message || "Failed to cancel booking", "error")
+                                        }
                                       }}>
                                       <XCircle className="size-3.5" />
                                     </Button>
@@ -1123,9 +1155,11 @@ export default function AdminDashboard() {
                         </tbody>
                       </table>
                     </div>
-                    {filteredBookings.length === 0 && (
+                    {bookings.length === 0 ? (
+                      <div className="py-12 text-center text-sm text-muted-foreground">No bookings yet</div>
+                    ) : filteredBookings.length === 0 ? (
                       <div className="py-12 text-center text-sm text-muted-foreground">No bookings found.</div>
-                    )}
+                    ) : null}
                   </CardContent>
                 </Card>
               </div>
@@ -1181,7 +1215,7 @@ export default function AdminDashboard() {
                       </table>
                     </div>
                     {waitlists.length === 0 && (
-                      <div className="py-12 text-center text-sm text-muted-foreground">No waitlist signups found.</div>
+                      <div className="py-12 text-center text-sm text-muted-foreground">No waitlist entries</div>
                     )}
                   </CardContent>
                 </Card>

@@ -71,6 +71,7 @@ export default function NotificationBell() {
       .subscribe()
 
     return () => {
+      channel.unsubscribe()
       supabase.removeChannel(channel)
     }
   }, [userId])
