@@ -30,7 +30,7 @@ describe("Auth Page Unit Tests", () => {
     // Check tabs and core forms exist
     expect(screen.getByRole("tab", { name: /Log In/i })).toBeInTheDocument()
     expect(screen.getByRole("tab", { name: /Sign Up/i })).toBeInTheDocument()
-    expect(screen.getByPlaceholderText("you@example.com")).toBeInTheDocument()
+    expect(screen.getByPlaceholderText("Email or username")).toBeInTheDocument()
     expect(screen.getByPlaceholderText("Enter your password")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /^Log In$/i })).toBeInTheDocument()
   })

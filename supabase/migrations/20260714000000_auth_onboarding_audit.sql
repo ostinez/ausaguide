@@ -35,23 +35,26 @@ BEGIN
   RAISE LOG '[handle_new_user] Creating profile user_id=% email=% full_name=% role=% username=%',
     NEW.id, _email, _full_name, _role, _username;
 
-  INSERT INTO public.profiles (
-    id, email, full_name, role, username, languages, created_at, updated_at
-  )
-  VALUES (
-    NEW.id, _email, _full_name, _role, _username, ARRAY['English']::text[], NOW(), NOW()
-  )
-  ON CONFLICT (id) DO UPDATE
+  -- Check if a profile with the same email already exists
+  IF EXISTS (SELECT 1 FROM public.profiles WHERE LOWER(email) = LOWER(_email)) THEN
+    -- Update the existing profile ID to match the new auth user ID!
+    UPDATE public.profiles
     SET
-      email      = EXCLUDED.email,
-      full_name  = CASE
-                     WHEN TRIM(public.profiles.full_name) = '' OR public.profiles.full_name IS NULL
-                     THEN EXCLUDED.full_name
-                     ELSE public.profiles.full_name
-                   END,
-      username   = COALESCE(EXCLUDED.username, public.profiles.username),
-      role       = COALESCE(EXCLUDED.role, public.profiles.role),
-      updated_at = NOW();
+      id = NEW.id,
+      full_name = COALESCE(NULLIF(TRIM(_full_name), ''), full_name),
+      username = COALESCE(_username, username),
+      role = COALESCE(_role, role),
+      updated_at = NOW()
+    WHERE LOWER(email) = LOWER(_email);
+  ELSE
+    -- Insert a new profile row
+    INSERT INTO public.profiles (
+      id, email, full_name, role, username, languages, created_at, updated_at
+    )
+    VALUES (
+      NEW.id, _email, _full_name, _role, _username, ARRAY['English']::text[], NOW(), NOW()
+    );
+  END IF;
 
   RAISE LOG '[handle_new_user] Profile upsert done user_id=%', NEW.id;
   RETURN NEW;

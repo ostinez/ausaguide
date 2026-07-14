@@ -197,27 +197,43 @@ function SignInForm() {
       try {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("id, email, role")
+          .select("id, email, role, host_tier")
           .eq("id", authData.user.id)
           .maybeSingle()
 
         if (profile) {
-          role = profile.role ?? "traveler"
-          localStorage.setItem("user_role", role)
-          localStorage.setItem("user_id", profile.id)
-          identifyUser(profile.id, { email: profile.email, role })
+          if (profile.role) {
+            const isHostIncomplete = profile.role === "host" && profile.host_tier === null;
+            if (isHostIncomplete) {
+              localStorage.setItem("user_id", profile.id)
+              localStorage.removeItem("user_role")
+              navigate("/onboarding")
+              return
+            }
+            role = profile.role
+            localStorage.setItem("user_role", role)
+            localStorage.setItem("user_id", profile.id)
+            identifyUser(profile.id, { email: profile.email, role })
+          } else {
+            localStorage.setItem("user_id", profile.id)
+            localStorage.removeItem("user_role")
+            navigate("/onboarding")
+            return
+          }
         } else {
-          // No profile exists yet! Redirect to onboarding to complete profile creation
           localStorage.setItem("user_id", authData.user.id)
+          localStorage.removeItem("user_role")
           navigate("/onboarding")
           return
         }
-      } catch {
-        localStorage.setItem("user_role", "traveler")
+      } catch (err) {
+        console.error("Error loading profile role:", err)
         localStorage.setItem("user_id", authData.user.id)
+        localStorage.removeItem("user_role")
+        navigate("/onboarding")
+        return
       }
 
-      // Redirect based on role
       if (role === "admin") navigate("/admin/dashboard")
       else if (role === "host") navigate("/host/dashboard")
       else navigate("/dashboard")

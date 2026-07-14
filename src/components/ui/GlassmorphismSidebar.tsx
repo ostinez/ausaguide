@@ -19,6 +19,7 @@ import {
 import { cn } from "@/lib/utils"
 import type { Profile } from "@/lib/types"
 import { getHostInitials } from "@/lib/tour-utils"
+import { supabase } from "@/lib/supabase"
 
 // ────────────────────────────────────────────────────────────
 // Types
@@ -119,7 +120,12 @@ export function GlassmorphismSidebar({
     if (isOpen) drawerRef.current?.focus()
   }, [isOpen])
 
-  function handleSignOut() {
+  async function handleSignOut() {
+    try {
+      await supabase.auth.signOut()
+    } catch (e) {
+      console.warn("SignOut failed or session already cleared:", e)
+    }
     localStorage.removeItem("user_id")
     localStorage.removeItem("user_role")
     window.location.href = "/"

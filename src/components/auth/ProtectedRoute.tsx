@@ -31,7 +31,7 @@ export function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) 
         // Fetch user role and banned status from profiles
         const { data: profile } = await supabase
           .from("profiles")
-          .select("role, banned")
+          .select("role, banned, host_tier")
           .eq("id", session.user.id)
           .maybeSingle()
 
@@ -46,7 +46,10 @@ export function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) 
           return
         }
 
-        const role = profile?.role ?? null
+        let role = profile?.role ?? null
+        if (role === "host" && profile?.host_tier === null) {
+          role = null
+        }
 
         if (active) {
           setAuthenticated(true)

@@ -13,16 +13,25 @@ test.describe("Onboarding E2E Flow", () => {
 
     // Intercept profile check / insert / update
     await page.route("**/rest/v1/profiles*", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          id: "new-user-789",
-          email: "newuser@example.com",
-          role: "traveler",
-          full_name: "New traveler",
-        }),
-      });
+      const url = route.request().url();
+      if (url.includes("username=")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([]),
+        });
+      } else {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            id: "new-user-789",
+            email: "newuser@example.com",
+            role: "traveler",
+            full_name: "New traveler",
+          }),
+        });
+      }
     });
 
     // Intercept Supabase Auth signup request
@@ -79,8 +88,7 @@ test.describe("Onboarding E2E Flow", () => {
     // Tell Us About You step
     await expect(page.getByText("Tell Us About You")).toBeVisible();
     await page.locator("#ob-name").fill("Jane Traveler");
-    await page.locator("#ob-email").fill("newuser@example.com");
-    await page.locator("#ob-password").fill("securePassword123");
+    await page.locator("#ob-username").fill("janetraveler");
 
     // Click submit
     await page.locator("#onboarding-profile-submit").click();

@@ -110,7 +110,11 @@ export function Navbar() {
 
 
   async function handleSignOut() {
-    await supabase.auth.signOut()
+    try {
+      await supabase.auth.signOut()
+    } catch (e) {
+      console.warn("SignOut failed or session already cleared:", e)
+    }
     localStorage.removeItem("user_id")
     localStorage.removeItem("user_role")
     window.location.href = "/"

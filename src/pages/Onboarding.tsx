@@ -956,14 +956,26 @@ export default function OnboardingPage() {
           // Check if they already have a profile row
           const { data: profile } = await supabase
             .from("profiles")
-            .select("role")
+            .select("role, host_tier")
             .eq("id", user.id)
             .maybeSingle()
 
           if (profile) {
-            localStorage.setItem("user_id", user.id)
-            localStorage.setItem("user_role", profile.role || "traveler")
-            navigate(profile.role === "host" ? "/host/dashboard" : "/dashboard", { replace: true })
+            const isHostOnboarded = profile.role === "host" && profile.host_tier !== null;
+            const isTravelerOnboarded = profile.role === "traveler";
+            const isAdminOnboarded = profile.role === "admin";
+
+            if (isHostOnboarded || isTravelerOnboarded || isAdminOnboarded) {
+              localStorage.setItem("user_id", user.id)
+              localStorage.setItem("user_role", profile.role)
+              if (profile.role === "admin") {
+                navigate("/admin/dashboard", { replace: true })
+              } else if (profile.role === "host") {
+                navigate("/host/dashboard", { replace: true })
+              } else {
+                navigate("/dashboard", { replace: true })
+              }
+            }
           }
         } else {
           localStorage.removeItem("user_id")

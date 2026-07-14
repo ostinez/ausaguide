@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react"
 import { useSearchParams } from "react-router-dom"
 import { toast } from "sonner"
 import { supabase } from "../lib/supabase"
+import { checkRateLimit } from "@/lib/api/rate-limit"
 import { sendGeneralWaitlistEmail } from "@/lib/api/emails"
 import {
   Loader2, CheckCircle2, User, Mail, Sparkles, MapPin,
@@ -288,6 +289,30 @@ export default function WaitlistPage() {
     }
 
     setSubmitting(true)
+
+    // Rate limit check: max 3 waitlist submissions per hour per IP
+    let ipAddress = "local"
+    try {
+      const res = await fetch("https://api.ipify.org?format=json")
+      if (res.ok) {
+        const data = await res.json()
+        if (data && data.ip) ipAddress = data.ip
+      }
+    } catch (err) {
+      console.warn("IP fetch failed, falling back to local identifier", err)
+    }
+
+    try {
+      const rateLimitKey = `waitlist:${ipAddress}`
+      const limitResult = await checkRateLimit(rateLimitKey, { max: 3, windowMs: 60 * 60 * 1000 })
+      if (!limitResult.allowed) {
+        toast.error("Too many waitlist submissions. Please try again later.")
+        setSubmitting(false)
+        return
+      }
+    } catch (limitErr) {
+      console.error("Rate check failed, proceeding anyway", limitErr)
+    }
     try {
       // Insert row (DB auto-generates confirm_token)
       const { data: inserted, error } = await supabase

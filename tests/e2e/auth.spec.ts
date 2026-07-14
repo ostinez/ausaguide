@@ -4,16 +4,25 @@ test.describe("Authentication E2E Tests", () => {
   test.beforeEach(async ({ page }) => {
     // Intercept Supabase profile checks
     await page.route("**/rest/v1/profiles*", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          id: "mock-user-123",
-          email: "traveler@example.com",
-          role: "traveler",
-          full_name: "Test Traveler",
-        }),
-      });
+      const url = route.request().url();
+      if (url.includes("username=")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([]),
+        });
+      } else {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            id: "mock-user-123",
+            email: "traveler@example.com",
+            role: "traveler",
+            full_name: "Test Traveler",
+          }),
+        });
+      }
     });
 
     // Intercept Supabase Auth token request
@@ -112,13 +121,14 @@ test.describe("Authentication E2E Tests", () => {
 
     // Fill details
     await page.locator("#signup-name").fill("John Doe");
+    await page.locator("#signup-username").fill("johndoe");
     await page.locator("#signup-email").fill("newtraveler@example.com");
     await page.locator("#signup-password").fill("safePassword123");
     await page.locator("#signup-confirm-password").fill("safePassword123");
 
-    // Submit signup triggers onboarding redirect
+    // Submit signup triggers success message
     await page.getByRole("button", { name: /Get Started/i }).click({ force: true });
-    await expect(page).toHaveURL(/.*onboarding/);
+    await expect(page.locator("text=Account created successfully!").first()).toBeVisible();
   });
 
   test("Protected routes redirect traveler to login when unauthenticated", async ({ page }) => {

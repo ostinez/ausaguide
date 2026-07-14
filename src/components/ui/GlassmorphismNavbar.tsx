@@ -111,7 +111,12 @@ export function GlassmorphismNavbar({ className, ...props }: GlassmorphismNavbar
   const userRole = profile?.role || localStorage.getItem("user_role") || "traveler"
   const userInitials = profile?.full_name ? getHostInitials(profile.full_name) : "U"
 
-  function handleSignOut() {
+  async function handleSignOut() {
+    try {
+      await supabase.auth.signOut()
+    } catch (e) {
+      console.warn("SignOut failed or session already cleared:", e)
+    }
     localStorage.removeItem("user_id")
     localStorage.removeItem("user_role")
     window.location.href = "/"
