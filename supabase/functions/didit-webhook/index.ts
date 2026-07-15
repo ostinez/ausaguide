@@ -97,7 +97,10 @@ serve(async (req) => {
       if (sig) {
         const isValid = await verifySignature(webhookSecret, sig, canonical)
         if (!isValid) {
-          console.error("Invalid Didit V2 webhook signature detected")
+          console.error("Invalid Didit V2 webhook signature detected!")
+          console.log(`Received signature (sig): "${sig}"`)
+          console.log(`Calculated canonical string: "${canonical}"`)
+          console.log(`Webhook secret is set: ${!!webhookSecret}`)
           return new Response("bad sig", { status: 401, headers: corsHeaders })
         }
       } else {

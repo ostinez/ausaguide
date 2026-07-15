@@ -534,6 +534,35 @@ function StepVerifyID({
     }
   }
 
+  async function checkStatus() {
+    setLoading(true)
+    setError(null)
+    try {
+      const { data, error: functionErr } = await supabase.functions.invoke("verify-identity", {
+        body: { userId, action: "check-status" }
+      })
+      if (functionErr) throw functionErr
+
+      if (data?.verified || data?.status === "approved") {
+        toast.success("Identity verified successfully!")
+        onComplete()
+      } else if (data?.status === "declined") {
+        setError("Verification was declined. Please re-check your document and try again.")
+      } else if (data?.status === "failed") {
+        setError("Something went wrong during verification. Please contact support.")
+      } else {
+        toast.info("Verification status: " + (data?.status || "started"))
+        pollingStarted.current = false
+        startPolling()
+      }
+    } catch (err: any) {
+      console.error("Manual status check error:", err)
+      setError(err?.message || "Failed to check status. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   async function startPolling() {
     setPolling(true)
     setError(null)
@@ -613,9 +642,11 @@ function StepVerifyID({
               <Button
                 id="onboarding-verify-check-status"
                 size="lg"
-                onClick={() => { pollingStarted.current = false; startPolling() }}
-                className="rounded-full bg-[#2CB67D] hover:bg-[#2CB67D]/90 text-white border-0 font-bold shadow-lg shadow-[#2CB67D]/30 w-full"
+                disabled={loading}
+                onClick={checkStatus}
+                className="rounded-full bg-[#2CB67D] hover:bg-[#2CB67D]/90 text-white border-0 font-bold shadow-lg shadow-[#2CB67D]/30 w-full animate-bounce"
               >
+                {loading ? <Spinner className="size-4 mr-2" /> : null}
                 Check My Status ✓
               </Button>
               <Button
@@ -656,6 +687,16 @@ function StepVerifyID({
             <p className="text-xs text-white/40">
               Verification is processing — this may take a few seconds.
             </p>
+            <Button
+              id="onboarding-verify-force-check"
+              size="sm"
+              variant="outline"
+              disabled={loading}
+              onClick={checkStatus}
+              className="mt-2 rounded-full border-white/20 text-white hover:bg-white/5 font-semibold text-xs py-1"
+            >
+              {loading ? "Checking..." : "Force Check Status 🔍"}
+            </Button>
           </div>
         ) : (
           !error && (

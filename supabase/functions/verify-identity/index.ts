@@ -15,20 +15,120 @@ serve(async (req) => {
   }
 
   try {
-    const { userId, redirectUrl } = await req.json()
+    const body = await req.json()
+    const { userId, redirectUrl, action } = body
 
-    if (!userId) {
-      return new Response(JSON.stringify({ error: "userId is required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      })
-    }
+    // Initialize Supabase Client
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || ""
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
+    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey)
 
     const diditApiKey = Deno.env.get("DIDIT_API_KEY")
     if (!diditApiKey) {
       console.error("DIDIT_API_KEY is not configured in Supabase Edge Function secrets")
       return new Response(JSON.stringify({ error: "Server configuration error" }), {
         status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      })
+    }
+
+    if (action === "check-status") {
+      if (!userId) {
+        return new Response(JSON.stringify({ error: "userId is required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        })
+      }
+
+      // 1. Fetch verification_id from profiles
+      const { data: profile, error: profileErr } = await supabaseClient
+        .from("profiles")
+        .select("verification_id, verification_status")
+        .eq("id", userId)
+        .maybeSingle()
+
+      if (profileErr) {
+        console.error("Database query error:", profileErr)
+        return new Response(JSON.stringify({ error: `Database check failed: ${profileErr.message}` }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        })
+      }
+
+      const sessionId = profile?.verification_id
+      if (!sessionId) {
+        return new Response(JSON.stringify({ status: "not_started", message: "No verification session found for this user." }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        })
+      }
+
+      // 2. Poll Didit API decision endpoint
+      console.log(`Polling Didit decision for session ${sessionId} / user ${userId}...`)
+      const response = await fetch(`https://verification.didit.me/v3/session/${sessionId}/decision/`, {
+        method: "GET",
+        headers: {
+          "Accept": "application/json",
+          "x-api-key": diditApiKey,
+        },
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error("Didit Decision API error:", errorText)
+        return new Response(
+          JSON.stringify({ error: `Didit decision query failed: ${response.statusText} (${errorText})` }),
+          {
+            status: 502,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        )
+      }
+
+      const decisionData = await response.json()
+      const status = decisionData.status // e.g. "Approved", "Declined", "In Review"
+      console.log(`Didit decision result: status=${status}`, JSON.stringify(decisionData))
+
+      const isApproved = status === "Approved"
+      const finalStatus = status ? status.toLowerCase() : "unknown"
+
+      // 3. Update database profiles & users
+      const { error: profilesError } = await supabaseClient
+        .from("profiles")
+        .update({
+          id_verified: isApproved,
+          verification_status: finalStatus,
+          verification_date: new Date().toISOString(),
+        })
+        .eq("id", userId)
+
+      if (profilesError) {
+        console.error("Profiles update error in manual status check:", profilesError)
+      }
+
+      const { error: usersError } = await supabaseClient
+        .from("users")
+        .update({
+          id_verified: isApproved,
+          verification_status: finalStatus,
+          verification_date: new Date().toISOString(),
+          verification_details: decisionData,
+        })
+        .eq("id", userId)
+
+      if (usersError) {
+        console.warn("Users table update error in manual status check (non-fatal):", usersError)
+      }
+
+      return new Response(JSON.stringify({ verified: isApproved, status: finalStatus }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      })
+    }
+
+    if (!userId) {
+      return new Response(JSON.stringify({ error: "userId is required" }), {
+        status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       })
     }
@@ -68,11 +168,6 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       })
     }
-
-    // Initialize Supabase Client
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") || ""
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
-    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey)
 
     // Update user record with verification_id
     const { error: dbError } = await supabaseClient
