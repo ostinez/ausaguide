@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom"
 import {
   Trash2, Edit3, Heart, Rss, Globe, ImageIcon, X, Check, Loader2, ChevronLeft, ChevronRight
 } from "lucide-react"
@@ -242,6 +242,9 @@ function PostCard({ post, currentUserId, onDelete, onImageClick }: { post: Post;
   const [saving, setSaving] = useState(false)
   const [liked, setLiked] = useState(false)
 
+  const authorRole = post.author?.role ?? "traveler"
+  const profileHref = authorRole === "host" ? `/host/${post.user_id}` : `/traveler/${post.user_id}`
+
   const saveEdit = async () => {
     if (!editContent.trim()) return
     setSaving(true)
@@ -271,18 +274,18 @@ function PostCard({ post, currentUserId, onDelete, onImageClick }: { post: Post;
     <div className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur p-4 space-y-3">
       {/* Author */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Avatar className="size-10">
+        <Link to={profileHref} className="flex items-center gap-3 group">
+          <Avatar className="size-10 ring-2 ring-transparent group-hover:ring-primary/40 transition-all">
             <AvatarImage src={post.author?.avatar_url ?? ""} />
             <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
               {initials(post.author?.full_name ?? "U")}
             </AvatarFallback>
           </Avatar>
           <div>
-            <p className="text-sm font-semibold leading-tight">{post.author?.full_name ?? "Unknown"}</p>
+            <p className="text-sm font-semibold leading-tight group-hover:text-primary transition-colors">{post.author?.full_name ?? "Unknown"}</p>
             <p className="text-[11px] text-muted-foreground">{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</p>
           </div>
-        </div>
+        </Link>
         {isOwn && (
           <div className="flex items-center gap-1">
             <button onClick={() => setEditing(!editing)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">

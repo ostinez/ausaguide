@@ -9,7 +9,7 @@ export interface Post {
   image_urls?: string[] | null
   created_at: string
   updated_at: string
-  author?: { full_name: string; avatar_url: string | null }
+  author?: { full_name: string; avatar_url: string | null; role?: string }
 }
 
 export interface Journal {
@@ -27,7 +27,7 @@ export interface Journal {
 export async function fetchPosts(): Promise<Post[]> {
   const { data, error } = await supabase
     .from("posts")
-    .select("*, author:profiles(full_name, avatar_url)")
+    .select("*, author:profiles(full_name, avatar_url, role)")
     .order("created_at", { ascending: false })
   if (error) throw error
   return (data ?? []).map((row: any) => ({
@@ -46,7 +46,7 @@ export async function createPost(userId: string, content: string, imageUrls?: st
       image_urls: imageUrls ?? [],
       image_url: firstImage
     })
-    .select("*, author:profiles(full_name, avatar_url)")
+    .select("*, author:profiles(full_name, avatar_url, role)")
     .single()
   if (error) throw error
   return { ...(data as any), author: Array.isArray((data as any).author) ? (data as any).author[0] : (data as any).author }

@@ -3,6 +3,7 @@ import { Outlet, useLocation } from "react-router-dom"
 import { StaggeredMenu } from "@/components/ui/StaggeredMenu"
 import { supabase } from "@/lib/supabase"
 import { Footer } from "./footer"
+import { ProfileCompletionBanner } from "@/components/ui/ProfileCompletionBanner"
 
 export function Layout() {
   const location = useLocation()
@@ -219,6 +220,7 @@ export function Layout() {
         <Outlet />
       </main>
       {!isAuthOrOnboarding && <Footer />}
+      {!isAuthOrOnboarding && <ProfileCompletionBanner />}
     </div>
   )
 }
