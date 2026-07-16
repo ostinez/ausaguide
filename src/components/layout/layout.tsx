@@ -40,47 +40,27 @@ export function Layout() {
     }
   }
 
+  // 1. Redirect already logged-in users away from auth/landing using fast sync localStorage variables
   useEffect(() => {
-    // 1. Initial check: bounce already authenticated users away from / or /auth
-    async function checkRedirect() {
-      const path = location.pathname
-      if (path === "/" || path === "/auth" || path === "/auth/callback") {
-        try {
-          const { data: { session } } = await supabase.auth.getSession()
-          if (session?.user) {
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("*")
-              .eq("id", session.user.id)
-              .maybeSingle()
-
-            if (profile?.banned) {
-              await supabase.auth.signOut()
-              localStorage.removeItem("user_id")
-              localStorage.removeItem("user_role")
-              window.location.href = "/auth?error=banned"
-              return
-            }
-
-            const role = profile?.role
-            if (role === "admin") {
-              window.location.href = "/admin/dashboard"
-            } else if (role === "host") {
-              window.location.href = "/host/dashboard"
-            } else if (role === "traveler") {
-              window.location.href = "/dashboard"
-            } else {
-              window.location.href = "/onboarding"
-            }
-          }
-        } catch (e) {
-          console.error("Layout mount checkRedirect error:", e)
-        }
+    const path = location.pathname
+    const cachedUserId = localStorage.getItem("user_id")
+    const cachedRole = localStorage.getItem("user_role")
+    
+    if (cachedUserId && (path === "/" || path === "/auth" || path === "/auth/callback")) {
+      if (cachedRole === "admin") {
+        window.location.href = "/admin/dashboard"
+      } else if (cachedRole === "host") {
+        window.location.href = "/host/dashboard"
+      } else if (cachedRole === "traveler") {
+        window.location.href = "/dashboard"
+      } else {
+        window.location.href = "/onboarding"
       }
     }
-    checkRedirect()
+  }, [location.pathname])
 
-    // 2. Listen to active session modifications
+  // 2. Setup auth state and storage synchronization listeners ONCE on mount
+  useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         setUserId(session.user.id)
@@ -109,7 +89,7 @@ export function Layout() {
           }
 
           if (event === "SIGNED_IN") {
-            const path = location.pathname
+            const path = window.location.pathname
             if (path === "/auth" || path === "/auth/callback" || path === "/") {
               if (role === "admin") {
                 window.location.href = "/admin/dashboard"
@@ -143,7 +123,7 @@ export function Layout() {
       window.removeEventListener("storage", handleStorage)
       clearInterval(interval)
     }
-  }, [location.pathname])
+  }, [])
 
   async function handleSignOut() {
     try {

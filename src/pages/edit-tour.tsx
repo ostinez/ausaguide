@@ -217,8 +217,21 @@ export default function EditTourPage() {
       return
     }
 
+    if (targetStatus === "published") {
+      if (!coverImage) {
+        toast.error("Please upload a cover image to publish your tour.")
+        setCurrentStep(2) // Step 3: Images
+        return
+      }
+      if (!description.trim() || description.trim().length < 20) {
+        toast.error("Please add a description (at least 20 characters) to publish your tour.")
+        setCurrentStep(1) // Step 2: Description
+        return
+      }
+    }
+
     setSubmitting(true)
-    const toastId = toast.loading("Updating tour...")
+    const toastId = toast.loading(targetStatus === "published" ? "Publishing updates..." : "Saving draft...")
 
     try {
       const availabilityJSON = {
