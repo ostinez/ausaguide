@@ -92,8 +92,7 @@ export default function Dropzone({
 
     const uploadedUrls: string[] = []
 
-    for (let index = 0; index < filesToUpload.length; index++) {
-      const file = filesToUpload[index]
+    const uploadPromises = filesToUpload.map(async (file, index) => {
       const currentUpload = pendingUploads[index]
 
       // Start simulating progress bar loading animation
@@ -142,19 +141,23 @@ export default function Dropzone({
           .getPublicUrl(filePath)
 
         clearInterval(interval)
-        // Set to 100% completed
         setUploadingFiles((prev) =>
           prev.map((uf) => (uf.id === currentUpload.id ? { ...uf, progress: 100 } : uf))
         )
 
-        uploadedUrls.push(publicUrl)
+        return publicUrl
       } catch (err) {
         clearInterval(interval)
         console.error(err)
         toast.error(`Failed to upload file: ${file.name}`)
         setUploadingFiles((prev) => prev.filter((uf) => uf.id !== currentUpload.id))
+        return null
       }
-    }
+    })
+
+    const results = await Promise.all(uploadPromises)
+    const newUploadedUrls = results.filter((url): url is string => url !== null)
+    uploadedUrls.push(...newUploadedUrls)
 
     // Done uploading
     setTimeout(() => {

@@ -19,6 +19,7 @@ import {
   DollarSign,
   Clock,
   MapPin,
+  TrendingUp,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -498,16 +499,23 @@ export default function NewTourPage() {
             {currentStep === 2 && (
               <Card className="border-border/40 bg-card/80">
                 <CardHeader>
-                  <CardTitle className="text-xl">Upload Images</CardTitle>
-                  <CardDescription>Add multiple photos of the spots you visit. The first image will be the cover image.</CardDescription>
+                  <CardTitle className="text-xl">Upload Tour Photos</CardTitle>
+                  <CardDescription>Add 2–10 high-quality photos. The first image will be the cover shown on the booking page.</CardDescription>
                 </CardHeader>
                  <CardContent className="space-y-6">
                    <Dropzone
                      bucket="tours"
                      multiple={true}
+                     maxSizeMB={20}
                      value={images}
                      onChange={setImages}
                    />
+                   <div className="flex items-start gap-2 text-xs text-muted-foreground bg-primary/5 p-3 rounded-lg border border-primary/10">
+                     <Info className="size-4 text-primary shrink-0 mt-0.5" />
+                     <span>
+                       Upload <strong>at least 2 photos</strong> — a cover shot and an action/detail photo. Tours with multiple high-quality images get <strong>3× more bookings</strong>. Max 20MB per image, full resolution is preserved.
+                     </span>
+                   </div>
                  </CardContent>
               </Card>
             )}
@@ -520,6 +528,39 @@ export default function NewTourPage() {
                   <CardDescription>Determine your base pricing and reward larger groups.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
+
+                  {/* Competitor Benchmarks */}
+                  <div className="rounded-xl border border-[#7F5AF0]/30 bg-[#7F5AF0]/5 p-4 space-y-3">
+                    <h3 className="font-semibold text-sm flex items-center gap-2 text-foreground">
+                      <TrendingUp className="size-4 text-[#7F5AF0]" />
+                      Market Pricing Benchmarks — Kenya Tours
+                    </h3>
+                    <p className="text-xs text-muted-foreground">See what similar experiences charge. Use this to price competitively without undervaluing your time.</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {[
+                        { platform: "Airbnb Experiences", type: "City walks / culture", low: "KES 2,500", high: "KES 6,000", avg: "KES 4,000", color: "#FF5A5F" },
+                        { platform: "GetYourGuide", type: "Safari / nature day trips", low: "KES 5,000", high: "KES 18,000", avg: "KES 9,500", color: "#FF8000" },
+                        { platform: "Viator", type: "Food & cooking tours", low: "KES 3,000", high: "KES 8,500", avg: "KES 5,200", color: "#0B6EFD" },
+                      ].map((b) => (
+                        <div key={b.platform} className="rounded-lg border border-border/50 bg-card/60 p-3 space-y-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="size-2 rounded-full shrink-0" style={{ background: b.color }} />
+                            <span className="text-[11px] font-bold text-foreground">{b.platform}</span>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground">{b.type}</p>
+                          <div className="pt-1 border-t border-border/30">
+                            <p className="text-xs font-semibold text-foreground">{b.avg} <span className="font-normal text-muted-foreground">avg/person</span></p>
+                            <p className="text-[10px] text-muted-foreground">{b.low} – {b.high} range</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-start gap-2 text-[11px] text-muted-foreground bg-[#2CB67D]/5 border border-[#2CB67D]/20 rounded-lg p-2.5">
+                      <Info className="size-3.5 text-[#2CB67D] shrink-0 mt-0.5" />
+                      <span><strong className="text-foreground">Ausaguide advantage:</strong> No platform fees means you keep 100% — so you can price 10–20% below competitors and still earn more.</span>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                     <div className="space-y-2">
                       <Label htmlFor="tour-currency">Currency</Label>
