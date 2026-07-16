@@ -208,7 +208,7 @@ export default function NewTourPage() {
         location_name: locationName.trim(),
         category,
         tour_type: tourType,
-        images: images.length > 0 ? images : ["https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80"],
+        images: images,
         highlights: tags, // Reuse tags/highlights
         status: targetStatus,
         availability: availabilityJSON,
@@ -769,9 +769,14 @@ export default function NewTourPage() {
 
             {/* Navigation buttons */}
             <div className="flex items-center justify-between">
-              <Button variant="ghost" onClick={prevStep} disabled={currentStep === 0}>
-                <ChevronLeft className="size-4 mr-1" /> Previous
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" onClick={prevStep} disabled={currentStep === 0}>
+                  <ChevronLeft className="size-4 mr-1" /> Previous
+                </Button>
+                <Button variant="outline" className="text-muted-foreground" onClick={() => navigate("/dashboard")}>
+                  Cancel
+                </Button>
+              </div>
 
               {currentStep < STEPS.length - 1 ? (
                 <Button onClick={nextStep}>

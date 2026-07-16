@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom"
 import { Clock, Heart, BadgeCheck, MapPin, Star, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { SpotlightCard } from "@/components/ui/SpotlightCard"
 import { BorderGlow } from "./BorderGlow"
 import TiltedCard from "./TiltedCard"
@@ -114,7 +114,8 @@ export function TourCard({ tour, isWishlisted, onToggleWishlist, onClick, viewMo
             }
           />
           <div className={cn("absolute z-10", isList ? "bottom-3 left-4" : "-bottom-5 left-4")}>
-            <Avatar className="size-10 border-2 border-card">
+            <Avatar className="size-10 border-2 border-card shadow-md">
+              <AvatarImage src={tour.host?.avatar_url ?? ""} alt={hostName} />
               <AvatarFallback className="bg-primary text-xs font-bold text-primary-foreground">
                 {hostInitials}
               </AvatarFallback>

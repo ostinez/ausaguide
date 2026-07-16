@@ -14,6 +14,7 @@ import {
   Star,
   BadgeCheck,
   CheckCircle2,
+  Heart,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -55,6 +56,8 @@ export default function CheckoutPage() {
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
   const [notes, setNotes] = useState("")
+  const [tipPercent, setTipPercent] = useState<number | "custom" | null>(null)
+  const [customTip, setCustomTip] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
@@ -114,7 +117,13 @@ export default function CheckoutPage() {
   const bookingDate = new Date(dateParam + "T00:00:00")
   const guests = Math.min(Math.max(1, guestsParam), tour.max_guests)
   const price = typeParam === "virtual" ? (tour.virtual_price ?? 0) : (tour.physical_price ?? tour.price)
-  const total = price * guests
+  const subtotal = price * guests
+  const tipAmount = tipPercent === "custom"
+    ? (Number(customTip) || 0)
+    : tipPercent !== null
+    ? Math.round(subtotal * (tipPercent / 100))
+    : 0
+  const total = subtotal + tipAmount
   const hostName = tour.host?.full_name ?? "Local Host"
   const hostInitials = getHostInitials(hostName)
 
@@ -301,6 +310,70 @@ export default function CheckoutPage() {
               </div>
             </section>
 
+            {/* Tip Jar */}
+            <section className="rounded-2xl border border-border bg-card p-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <Heart className="size-4 text-rose-400" />
+                <h2 className="text-base font-semibold text-foreground">Leave a tip for your host</h2>
+                <span className="ml-auto text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">Optional</span>
+              </div>
+              <p className="text-xs text-muted-foreground">100% of your tip goes directly to your host (after the standard 20% platform fee). Show your appreciation for their time and local knowledge!</p>
+              <div className="flex flex-wrap gap-2">
+                {([5, 10, 15] as number[]).map((pct) => (
+                  <button
+                    key={pct}
+                    type="button"
+                    onClick={() => { setTipPercent(tipPercent === pct ? null : pct); setCustomTip("") }}
+                    className={`rounded-full border px-4 py-1.5 text-sm font-semibold transition-all ${
+                      tipPercent === pct
+                        ? "bg-rose-500/20 border-rose-500 text-rose-400"
+                        : "border-border text-muted-foreground hover:border-rose-400 hover:text-rose-400"
+                    }`}
+                  >
+                    {pct}% · {formatTourPrice(Math.round(subtotal * pct / 100), tour.currency)}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => { setTipPercent("custom"); }}
+                  className={`rounded-full border px-4 py-1.5 text-sm font-semibold transition-all ${
+                    tipPercent === "custom"
+                      ? "bg-rose-500/20 border-rose-500 text-rose-400"
+                      : "border-border text-muted-foreground hover:border-rose-400 hover:text-rose-400"
+                  }`}
+                >
+                  Custom
+                </button>
+                {tipPercent !== null && (
+                  <button
+                    type="button"
+                    onClick={() => { setTipPercent(null); setCustomTip("") }}
+                    className="rounded-full border border-border text-muted-foreground hover:text-foreground px-4 py-1.5 text-sm transition-colors"
+                  >
+                    No tip
+                  </button>
+                )}
+              </div>
+              {tipPercent === "custom" && (
+                <div className="flex items-center gap-2 max-w-[240px]">
+                  <span className="text-sm text-muted-foreground shrink-0">{tour.currency}</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={customTip}
+                    onChange={(e) => setCustomTip(e.target.value)}
+                    placeholder="Enter amount"
+                    className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
+              )}
+              {tipAmount > 0 && (
+                <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
+                  🙏 You're adding <strong className="text-foreground">{formatTourPrice(tipAmount, tour.currency)}</strong> tip. Your host will receive <strong className="text-foreground">{formatTourPrice(Math.round(tipAmount * 0.8), tour.currency)}</strong> after the platform fee.
+                </p>
+              )}
+            </section>
+
             {/* Error banner */}
             {submitError && (
               <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -411,10 +484,16 @@ export default function CheckoutPage() {
               {/* Pricing */}
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between text-muted-foreground">
-                  <span>{formatTourPrice(tour.price, tour.currency)} × {guests} {guests === 1 ? "guest" : "guests"}</span>
-                  <span>{formatTourPrice(total, tour.currency)}</span>
+                  <span>{formatTourPrice(price, tour.currency)} × {guests} {guests === 1 ? "guest" : "guests"}</span>
+                  <span>{formatTourPrice(subtotal, tour.currency)}</span>
                 </div>
-                <div className="flex justify-between font-bold text-base text-foreground">
+                {tipAmount > 0 && (
+                  <div className="flex justify-between text-muted-foreground">
+                    <span className="flex items-center gap-1"><Heart className="size-3 text-rose-400" /> Host tip</span>
+                    <span>+{formatTourPrice(tipAmount, tour.currency)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold text-base text-foreground border-t border-border pt-2">
                   <span>Total</span>
                   <span className="text-primary">{formatTourPrice(total, tour.currency)}</span>
                 </div>
