@@ -15,6 +15,9 @@ import {
   CalendarDays,
   Shield,
   Lock,
+  X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { GlareHover } from "@/components/ui/GlareHover"
@@ -43,6 +46,7 @@ export default function TourDetailPage() {
   const [tour, setTour] = useState<Tour | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [activePhotoIndex, setActivePhotoIndex] = useState<number | null>(null)
 
   // Dynamic SEO — updates as soon as tour loads
   useSEO({
@@ -388,6 +392,43 @@ export default function TourDetailPage() {
             </section>
 
             <Separator />
+
+            {/* Gallery / Checkpoints Section */}
+            {tour.images && tour.images.length > 0 && (
+              <>
+                <section className="space-y-4">
+                  <h2 className="scroll-m-20 text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2">
+                    Tour Gallery & Checkpoints
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Sneak peek of the key stops, landmarks, and experiences included on this tour.
+                  </p>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {tour.images.map((imgUrl, index) => (
+                      <div 
+                        key={imgUrl} 
+                        onClick={() => setActivePhotoIndex(index)}
+                        className="relative group aspect-video cursor-pointer overflow-hidden rounded-xl border border-border bg-[#16161A] transition-all duration-300 hover:border-primary/50"
+                      >
+                        <img 
+                          src={imgUrl} 
+                          alt={`Checkpoint ${index}`} 
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <span className="rounded-full bg-black/60 px-3 py-1 text-xs text-white border border-white/20">
+                            {index === 0 ? "Cover Photo" : `Checkpoint ${index}`}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+                <Separator />
+              </>
+            )}
 
             {tour.highlights.length > 0 && (
               <>
@@ -764,6 +805,67 @@ export default function TourDetailPage() {
           </div>
         </div>
         <ReviewList tourId={tour.id} bookingId={userBooking?.id} bookingStatus={userBooking?.status} />
+      </div>
+
+      {activePhotoIndex !== null && tour.images && (
+        <ImageLightbox
+          urls={tour.images}
+          initialIndex={activePhotoIndex}
+          onClose={() => setActivePhotoIndex(null)}
+        />
+      )}
+    </div>
+  )
+}
+
+function ImageLightbox({ urls, initialIndex, onClose }: { urls: string[], initialIndex: number, onClose: () => void }) {
+  const [currentIndex, setCurrentIndex] = useState(initialIndex)
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+      if (e.key === 'ArrowLeft') setCurrentIndex(prev => (prev > 0 ? prev - 1 : urls.length - 1))
+      if (e.key === 'ArrowRight') setCurrentIndex(prev => (prev < urls.length - 1 ? prev + 1 : 0))
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = ''
+    }
+  }, [urls.length, onClose])
+
+  return (
+    <div className="fixed inset-0 z-[150] bg-black/95 backdrop-blur-md flex flex-col" onClick={onClose}>
+      <div className="flex justify-between items-center p-4">
+        <span className="text-white text-sm font-medium">{currentIndex + 1} / {urls.length}</span>
+        <button onClick={onClose} className="p-2 bg-black/50 hover:bg-white/10 rounded-full text-white transition-colors">
+          <X className="size-5" />
+        </button>
+      </div>
+      <div className="flex-1 relative flex items-center justify-center p-2" onClick={e => e.stopPropagation()}>
+        <img 
+          src={urls[currentIndex]} 
+          alt={`Checkpoint detail ${currentIndex}`} 
+          className="max-w-full max-h-full object-contain rounded-lg"
+        />
+        
+        {urls.length > 1 && (
+          <>
+            <button 
+              className="absolute left-4 p-3 bg-black/50 hover:bg-white/10 rounded-full text-white transition-colors"
+              onClick={(e) => { e.stopPropagation(); setCurrentIndex(prev => (prev > 0 ? prev - 1 : urls.length - 1)) }}
+            >
+              <ChevronLeft className="size-6" />
+            </button>
+            <button 
+              className="absolute right-4 p-3 bg-black/50 hover:bg-white/10 rounded-full text-white transition-colors"
+              onClick={(e) => { e.stopPropagation(); setCurrentIndex(prev => (prev < urls.length - 1 ? prev + 1 : 0)) }}
+            >
+              <ChevronRight className="size-6" />
+            </button>
+          </>
+        )}
       </div>
     </div>
   )

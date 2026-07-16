@@ -28,6 +28,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { fetchTourById, updateTour } from "@/lib/api/tours"
 import type { TourCategory, TourType } from "@/lib/types"
 import Dropzone from "@/components/ui/Dropzone"
+import CoverImageUploader from "@/components/ui/CoverImageUploader"
 
 const STEPS = [
   { id: "basic", label: "Basic Info" },
@@ -67,8 +68,9 @@ export default function EditTourPage() {
   const [description, setDescription] = useState("")
   const descTextareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Images state
-  const [images, setImages] = useState<string[]>([])
+  // Images state — cover is images[0], gallery is images[1..n]
+  const [coverImage, setCoverImage] = useState<string | null>(null)
+  const [galleryImages, setGalleryImages] = useState<string[]>([])
 
   // Pricing
   const [price, setPrice] = useState("3500")
@@ -111,7 +113,10 @@ export default function EditTourPage() {
         setTourType(tour.tour_type)
         setMaxGuests(tour.max_guests.toString())
         setDescription(tour.description)
-        setImages(tour.images)
+        // Split existing images into cover + gallery
+        const existingImages = tour.images ?? []
+        setCoverImage(existingImages[0] ?? null)
+        setGalleryImages(existingImages.slice(1))
         setPrice(tour.price.toString())
         setPhysicalPrice((tour.physical_price ?? tour.price).toString())
         setVirtualPrice((tour.virtual_price ?? 1500).toString())
@@ -241,7 +246,7 @@ export default function EditTourPage() {
         location_name: locationName.trim(),
         category,
         tour_type: tourType,
-        images: images.length > 0 ? images : ["https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80"],
+        images: [coverImage, ...galleryImages].filter(Boolean) as string[],
         status: targetStatus,
         availability: availabilityJSON,
         tags: tags,
@@ -521,15 +526,49 @@ export default function EditTourPage() {
             {currentStep === 2 && (
               <Card className="border-border/40 bg-card/80">
                 <CardHeader>
-                  <CardTitle className="text-xl">Upload Images</CardTitle>
+                  <CardTitle className="text-xl">Tour Photos</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <Dropzone
-                    bucket="tours"
-                    multiple={true}
-                    value={images}
-                    onChange={setImages}
-                  />
+                <CardContent className="space-y-8">
+
+                  {/* Cover photo */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="flex size-6 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">1</span>
+                      <h3 className="text-sm font-semibold text-foreground">Cover Photo <span className="text-destructive">*</span></h3>
+                      <span className="ml-auto text-[10px] text-muted-foreground">Required · shown on tour card</span>
+                    </div>
+                    <CoverImageUploader
+                      bucket="chat-images"
+                      maxSizeMB={20}
+                      value={coverImage}
+                      onChange={setCoverImage}
+                    />
+                  </div>
+
+                  {/* Divider */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Gallery / Checkpoints (optional)</span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+
+                  {/* Gallery photos */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="flex size-6 items-center justify-center rounded-full bg-muted text-[10px] font-bold text-muted-foreground">2</span>
+                      <h3 className="text-sm font-semibold text-foreground">Checkpoint / Gallery Photos</h3>
+                      <span className="ml-auto text-[10px] text-muted-foreground">Optional · up to 10 extra photos</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Add photos of each stop on your tour — markets, viewpoints, restaurants, etc.</p>
+                    <Dropzone
+                      bucket="chat-images"
+                      multiple={true}
+                      maxSizeMB={20}
+                      value={galleryImages}
+                      onChange={setGalleryImages}
+                    />
+                  </div>
+
                 </CardContent>
               </Card>
             )}
@@ -748,8 +787,8 @@ export default function EditTourPage() {
 
             <div className="group overflow-hidden rounded-2xl border border-border bg-card shadow-lg">
               <div className="relative aspect-video bg-muted">
-                {images.length > 0 ? (
-                  <img src={images[0]} alt={title} className="h-full w-full object-cover" />
+                {coverImage ? (
+                  <img src={coverImage} alt={title} className="h-full w-full object-cover" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-muted-foreground">Preview Image</div>
                 )}

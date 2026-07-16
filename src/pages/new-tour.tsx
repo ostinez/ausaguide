@@ -30,6 +30,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { createTour } from "@/lib/api/tours"
 import type { TourCategory, TourType } from "@/lib/types"
 import Dropzone from "@/components/ui/Dropzone"
+import CoverImageUploader from "@/components/ui/CoverImageUploader"
 
 const STEPS = [
   { id: "basic", label: "Basic Info" },
@@ -67,8 +68,9 @@ export default function NewTourPage() {
   const [description, setDescription] = useState("")
   const descTextareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Images state
-  const [images, setImages] = useState<string[]>([])
+  // Images state — cover is always images[0], gallery is images[1..n]
+  const [coverImage, setCoverImage] = useState<string | null>(null)
+  const [galleryImages, setGalleryImages] = useState<string[]>([])
 
   // Pricing
   const [price, setPrice] = useState("3500")
@@ -208,7 +210,7 @@ export default function NewTourPage() {
         location_name: locationName.trim(),
         category,
         tour_type: tourType,
-        images: images,
+        images: [coverImage, ...galleryImages].filter(Boolean) as string[],
         highlights: tags, // Reuse tags/highlights
         status: targetStatus,
         availability: availabilityJSON,
@@ -499,24 +501,51 @@ export default function NewTourPage() {
             {currentStep === 2 && (
               <Card className="border-border/40 bg-card/80">
                 <CardHeader>
-                  <CardTitle className="text-xl">Upload Tour Photos</CardTitle>
-                  <CardDescription>Add 2–10 high-quality photos. The first image will be the cover shown on the booking page.</CardDescription>
+                  <CardTitle className="text-xl">Tour Photos</CardTitle>
+                  <CardDescription>Add a cover photo and optional gallery shots. The cover is shown on the card and booking page.</CardDescription>
                 </CardHeader>
-                 <CardContent className="space-y-6">
-                   <Dropzone
-                     bucket="tours"
-                     multiple={true}
-                     maxSizeMB={20}
-                     value={images}
-                     onChange={setImages}
-                   />
-                   <div className="flex items-start gap-2 text-xs text-muted-foreground bg-primary/5 p-3 rounded-lg border border-primary/10">
-                     <Info className="size-4 text-primary shrink-0 mt-0.5" />
-                     <span>
-                       Upload <strong>at least 2 photos</strong> — a cover shot and an action/detail photo. Tours with multiple high-quality images get <strong>3× more bookings</strong>. Max 20MB per image, full resolution is preserved.
-                     </span>
-                   </div>
-                 </CardContent>
+                <CardContent className="space-y-8">
+
+                  {/* Cover photo */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="flex size-6 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">1</span>
+                      <h3 className="text-sm font-semibold text-foreground">Cover Photo <span className="text-destructive">*</span></h3>
+                      <span className="ml-auto text-[10px] text-muted-foreground">Required · shown on tour card</span>
+                    </div>
+                    <CoverImageUploader
+                      bucket="chat-images"
+                      maxSizeMB={20}
+                      value={coverImage}
+                      onChange={setCoverImage}
+                    />
+                  </div>
+
+                  {/* Divider */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Gallery / Checkpoints (optional)</span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+
+                  {/* Gallery photos */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="flex size-6 items-center justify-center rounded-full bg-muted text-[10px] font-bold text-muted-foreground">2</span>
+                      <h3 className="text-sm font-semibold text-foreground">Checkpoint / Gallery Photos</h3>
+                      <span className="ml-auto text-[10px] text-muted-foreground">Optional · up to 10 extra photos</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Add photos of each stop on your tour — markets, viewpoints, restaurants, etc. Travelers love seeing what they'll experience.</p>
+                    <Dropzone
+                      bucket="chat-images"
+                      multiple={true}
+                      maxSizeMB={20}
+                      value={galleryImages}
+                      onChange={setGalleryImages}
+                    />
+                  </div>
+
+                </CardContent>
               </Card>
             )}
 
@@ -808,8 +837,8 @@ export default function NewTourPage() {
 
             <div className="group overflow-hidden rounded-2xl border border-border/60 bg-card shadow-lg transition-all duration-300 hover:shadow-xl">
               <div className="relative aspect-video overflow-hidden bg-muted">
-                {images.length > 0 ? (
-                  <img src={images[0]} alt={title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                {coverImage ? (
+                  <img src={coverImage} alt={title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
                 ) : (
                   <div className="flex h-full w-full flex-col items-center justify-center text-muted-foreground gap-2 bg-gradient-to-br from-primary/10 to-teal-500/10">
                     <Eye className="size-8 opacity-40 animate-pulse text-primary" />
