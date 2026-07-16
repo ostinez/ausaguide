@@ -55,16 +55,54 @@ function CreatePostCard({ currentUserId, onCreated }: { currentUserId: string; o
     if (!content.trim() && imageFiles.length === 0) return
     setSaving(true)
     try {
-      const imageUrls: string[] = []
-      
-      for (const file of imageFiles) {
-        const ext = file.name.split(".").pop()
-        const path = `${currentUserId}/${Date.now()}_${Math.random().toString(36).slice(2, 6)}.${ext}`
+      const compressImage = (file: File): Promise<File> => {
+        return new Promise((resolve) => {
+          const reader = new FileReader()
+          reader.onload = (e) => {
+            const img = new Image()
+            img.onload = () => {
+              const canvas = document.createElement('canvas')
+              const MAX_SIZE = 1200
+              let width = img.width
+              let height = img.height
+              if (width > height && width > MAX_SIZE) {
+                height = Math.round((height * MAX_SIZE) / width)
+                width = MAX_SIZE
+              } else if (height > MAX_SIZE) {
+                width = Math.round((width * MAX_SIZE) / height)
+                height = MAX_SIZE
+              }
+              canvas.width = width
+              canvas.height = height
+              const ctx = canvas.getContext('2d')
+              ctx?.drawImage(img, 0, 0, width, height)
+              canvas.toBlob((blob) => {
+                if (blob) {
+                  const newName = file.name.replace(/\.[^/.]+$/, "") + ".jpeg"
+                  resolve(new File([blob], newName, { type: 'image/jpeg', lastModified: Date.now() }))
+                } else {
+                  resolve(file)
+                }
+              }, 'image/jpeg', 0.8)
+            }
+            img.onerror = () => resolve(file)
+            img.src = e.target?.result as string
+          }
+          reader.onerror = () => resolve(file)
+          reader.readAsDataURL(file)
+        })
+      }
+
+      const uploadPromises = imageFiles.map(async (rawFile) => {
+        const file = await compressImage(rawFile)
+        const path = `${currentUserId}/${Date.now()}_${Math.random().toString(36).slice(2, 6)}.jpeg`
         const { error: upErr } = await supabase.storage.from("posts").upload(path, file)
         if (upErr) throw upErr
         const { data: { publicUrl } } = supabase.storage.from("posts").getPublicUrl(path)
-        imageUrls.push(publicUrl)
-      }
+        return publicUrl
+      })
+
+      const imageUrls = await Promise.all(uploadPromises)
 
       const post = await createPost(currentUserId, content, imageUrls)
       onCreated(post)
