@@ -320,12 +320,37 @@ export function HeroGlobe() {
   const [isFocused, setIsFocused] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
 
+  // Intersection Observer to track if the hero section is visible in the viewport
+  const sectionRef = useRef<HTMLElement>(null)
+  const [isInViewport, setIsInViewport] = useState(true)
+
   // Track responsive screen size for props
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768)
     handleResize()
     window.addEventListener("resize", handleResize)
     return () => window.removeEventListener("resize", handleResize)
+  }, [])
+
+  useEffect(() => {
+    const section = sectionRef.current
+    if (!section) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsInViewport(entry.isIntersecting)
+      },
+      {
+        root: null,
+        rootMargin: "100px", // pre-load / keep alive 100px offset
+        threshold: 0.01,
+      }
+    )
+
+    observer.observe(section)
+    return () => {
+      if (section) observer.unobserve(section)
+    }
   }, [])
 
   const handleSearch = (e: FormEvent<HTMLFormElement>) => {
@@ -336,12 +361,11 @@ export function HeroGlobe() {
 
   const isSearchActive = searchExpanded || isFocused || query.trim().length > 0
 
-
   return (
-    <section className="relative overflow-hidden bg-[#16161A] w-full" style={{ height: "100svh" }}>
-      {/* Layer 3: Magic Rings background (z-[1]) */}
+    <section ref={sectionRef} className="relative overflow-hidden bg-[#16161A] w-full" style={{ height: "100svh" }}>
+      {/* Layer 3: Magic Rings background (z-[1]) - Only renders when in viewport to save CPU/GPU */}
       <div className="absolute inset-0 z-[1]">
-        {!isMobile && (
+        {isInViewport && (
           <MagicRings
             color="#7F5AF0"
             colorTwo="#2CB67D"
@@ -376,17 +400,17 @@ export function HeroGlobe() {
         }}
       />
 
-      {/* Layer 4: Globe centered in the hero area (z-[2]) */}
+      {/* Layer 4: Globe centered in the hero area (z-[2]) - Only renders when in viewport */}
       <div className="absolute inset-0 z-[2] pointer-events-none flex items-center justify-center">
         <div className="pointer-events-auto w-full h-full">
-          {isMobile ? (
-            <GlobeFallback />
-          ) : (
+          {isInViewport ? (
             <GlobeErrorBoundary fallback={<GlobeFallback />}>
               <Suspense fallback={<GlobeLoading />}>
                 <GlobeVisual />
               </Suspense>
             </GlobeErrorBoundary>
+          ) : (
+            <GlobeFallback />
           )}
         </div>
       </div>
