@@ -194,3 +194,19 @@
     animation: var(--animation-fade-in);
   }
 }
+
+/* Tactile button micro-interactions */
+button, 
+.btn,
+[role="button"],
+.glass-tab {
+  transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.15s ease !important;
+}
+
+button:active:not(:disabled), 
+.btn:active:not(:disabled),
+[role="button"]:active,
+.glass-tab:active {
+  transform: scale(0.96) !important;
+  opacity: 0.9 !important;
+}

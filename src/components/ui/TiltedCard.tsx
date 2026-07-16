@@ -54,9 +54,10 @@ export default function TiltedCard({
     mass: 1
   });
   const [lastY, setLastY] = useState(0);
+  const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
   function handleMouse(e: React.MouseEvent<HTMLElement>) {
-    if (!ref.current) return;
+    if (isTouchDevice || !ref.current) return;
     const rect = ref.current.getBoundingClientRect();
     const offsetX = e.clientX - rect.left - rect.width / 2;
     const offsetY = e.clientY - rect.top - rect.height / 2;
@@ -72,11 +73,13 @@ export default function TiltedCard({
   }
 
   function handleMouseEnter() {
+    if (isTouchDevice) return;
     scale.set(scaleOnHover);
     opacity.set(1);
   }
 
   function handleMouseLeave() {
+    if (isTouchDevice) return;
     opacity.set(0);
     scale.set(1);
     rotateX.set(0);

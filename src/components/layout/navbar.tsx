@@ -58,7 +58,7 @@ export function Navbar() {
       }
     }
     loadProfile()
-  }, [userId, location.pathname])
+  }, [userId])
 
   useEffect(() => {
     if (!userId) {

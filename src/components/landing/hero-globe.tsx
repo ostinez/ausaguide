@@ -341,29 +341,31 @@ export function HeroGlobe() {
     <section className="relative overflow-hidden bg-[#16161A] w-full" style={{ height: "100svh" }}>
       {/* Layer 3: Magic Rings background (z-[1]) */}
       <div className="absolute inset-0 z-[1]">
-        <MagicRings
-          color="#7F5AF0"
-          colorTwo="#2CB67D"
-          ringCount={isMobile ? 4 : 6}
-          speed={0.5}
-          attenuation={10}
-          opacity={isMobile ? 0.5 : 0.7}
-          followMouse={true}
-          mouseInfluence={0.2}
-          clickBurst={true}
-          blur={0}
-          lineThickness={2}
-          baseRadius={0.35}
-          radiusStep={0.17}
-          scaleRate={0.1}
-          noiseAmount={0.05}
-          rotation={0}
-          ringGap={1.5}
-          fadeIn={0.7}
-          fadeOut={0.5}
-          hoverScale={1.2}
-          parallax={0.05}
-        />
+        {!isMobile && (
+          <MagicRings
+            color="#7F5AF0"
+            colorTwo="#2CB67D"
+            ringCount={isMobile ? 4 : 6}
+            speed={0.5}
+            attenuation={10}
+            opacity={isMobile ? 0.5 : 0.7}
+            followMouse={true}
+            mouseInfluence={0.2}
+            clickBurst={true}
+            blur={0}
+            lineThickness={2}
+            baseRadius={0.35}
+            radiusStep={0.17}
+            scaleRate={0.1}
+            noiseAmount={0.05}
+            rotation={0}
+            ringGap={1.5}
+            fadeIn={0.7}
+            fadeOut={0.5}
+            hoverScale={1.2}
+            parallax={0.05}
+          />
+        )}
       </div>
 
       {/* Subtle radial gradient overlay behind the globe for contrast (z-[1]) */}
@@ -377,11 +379,15 @@ export function HeroGlobe() {
       {/* Layer 4: Globe centered in the hero area (z-[2]) */}
       <div className="absolute inset-0 z-[2] pointer-events-none flex items-center justify-center">
         <div className="pointer-events-auto w-full h-full">
-          <GlobeErrorBoundary fallback={<GlobeFallback />}>
-            <Suspense fallback={<GlobeLoading />}>
-              <GlobeVisual />
-            </Suspense>
-          </GlobeErrorBoundary>
+          {isMobile ? (
+            <GlobeFallback />
+          ) : (
+            <GlobeErrorBoundary fallback={<GlobeFallback />}>
+              <Suspense fallback={<GlobeLoading />}>
+                <GlobeVisual />
+              </Suspense>
+            </GlobeErrorBoundary>
+          )}
         </div>
       </div>
 

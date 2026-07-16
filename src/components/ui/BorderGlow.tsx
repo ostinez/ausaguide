@@ -142,8 +142,12 @@ export const BorderGlow: React.FC<BorderGlowProps> = ({
     [getCenterOfElement]
   )
 
+  const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
+      if (isTouchDevice) return
+
       const card = cardRef.current
       if (!card) return
 
@@ -157,7 +161,7 @@ export const BorderGlow: React.FC<BorderGlowProps> = ({
       card.style.setProperty("--edge-proximity", `${(edge * 100).toFixed(3)}`)
       card.style.setProperty("--cursor-angle", `${angle.toFixed(3)}deg`)
     },
-    [getEdgeProximity, getCursorAngle]
+    [getEdgeProximity, getCursorAngle, isTouchDevice]
   )
 
   useEffect(() => {
