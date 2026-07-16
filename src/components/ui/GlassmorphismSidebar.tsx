@@ -15,7 +15,6 @@ import {
   TrendingUp,
   MessageSquare,
   Rss,
-  ArrowLeft,
   Home,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
