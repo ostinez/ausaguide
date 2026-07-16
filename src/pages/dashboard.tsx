@@ -14,6 +14,7 @@ import {
   Eye,
   Clock,
   ArrowRight,
+  ArrowLeft,
   MessageSquare,
   XCircle,
   Lightbulb,
@@ -1388,11 +1389,19 @@ export default function DashboardPage() {
                 <button
                   onClick={() => setSidebarOpen(true)}
                   aria-label="Open navigation"
-                  className="flex size-9 items-center justify-center rounded-xl border border-border bg-accent/ text-white/60 hover:text-white hover:bg-accent/ hover:border-[#7F5AF0]/30 transition-all duration-200"
+                  className="flex size-9 items-center justify-center rounded-xl border border-border bg-[#16161A]/50 text-white/60 hover:text-white hover:border-[#7F5AF0]/40 transition-all duration-200"
                 >
                   <Menu className="size-5" />
                 </button>
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                <Link
+                  to="/"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-card/60 backdrop-blur-md text-xs font-semibold text-muted-foreground hover:text-white hover:border-red-500/40 transition-all duration-250 cursor-pointer shadow-sm"
+                  title="Go Back to Home"
+                >
+                  <ArrowLeft className="size-3.5" />
+                  Exit Dashboard
+                </Link>
+                <h1 className="text-2xl font-bold tracking-tight text-foreground ml-2">
                   Welcome back, {profile?.full_name ? profile.full_name.split(" ")[0] : "there"} 👋
                 </h1>
               </div>

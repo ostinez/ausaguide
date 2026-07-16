@@ -15,6 +15,8 @@ import {
   TrendingUp,
   MessageSquare,
   Rss,
+  ArrowLeft,
+  Home,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Profile } from "@/lib/types"
@@ -64,6 +66,7 @@ function getNavItems(
       { id: "journal", label: "Journal", icon: BookOpen, href: "/journal" },
       { id: "reviews", label: "Reviews", icon: Star },
       { id: "settings", label: "Settings", icon: Settings },
+      { id: "exit", label: "Exit Dashboard", icon: Home, href: "/" },
     ]
   }
   return [
@@ -75,6 +78,7 @@ function getNavItems(
     { id: "profile", label: "Profile", icon: User, href: "/profile/edit" },
     { id: "reviews", label: "Reviews", icon: Star },
     { id: "explore", label: "Explore Tours", icon: TrendingUp, href: "/tours" },
+    { id: "exit", label: "Exit Dashboard", icon: Home, href: "/" },
   ]
 }
 
