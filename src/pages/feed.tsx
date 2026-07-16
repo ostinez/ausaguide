@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import {
-  Image as ImageIcon, Loader2, Trash2, Edit3, X, Check,
-  Heart, Globe, Rss
+  Trash2, Edit3, Heart, Rss, Globe, ImageIcon, X, Check, Loader2, ChevronLeft, ChevronRight
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -179,6 +178,7 @@ function PrivatePostImage({ src, alt, className, onClick }: { src: string; alt?:
   const [signedUrl, setSignedUrl] = useState<string | null>(null)
 
   useEffect(() => {
+    let active = true
     async function load() {
       try {
         let path = src
@@ -189,25 +189,26 @@ function PrivatePostImage({ src, alt, className, onClick }: { src: string; alt?:
         } else if (src.includes("/object/public/chat-images/")) {
           path = src.split("/object/public/chat-images/")[1]
           const { data, error } = await supabase.storage.from("chat-images").createSignedUrl(path, 3600)
-          if (!error && data?.signedUrl) {
+          if (!error && data?.signedUrl && active) {
             setSignedUrl(data.signedUrl)
             return
           }
         }
         const { data, error } = await supabase.storage.from("posts").createSignedUrl(path, 3600)
-        if (!error && data?.signedUrl) {
+        if (!error && data?.signedUrl && active) {
           setSignedUrl(data.signedUrl)
-        } else {
+        } else if (active) {
           setSignedUrl(src)
         }
       } catch {
-        setSignedUrl(src)
+        if (active) setSignedUrl(src)
       }
     }
     if (src) load()
+    return () => { active = false }
   }, [src])
 
-  if (!signedUrl) return <div className={cn("bg-muted/20 animate-pulse rounded-xl w-full h-48", className)} />
+  if (!signedUrl) return <div className={cn("bg-muted/20 animate-pulse rounded-xl w-full h-full min-h-[4rem]", className)} />
 
   return (
     <img
@@ -219,7 +220,60 @@ function PrivatePostImage({ src, alt, className, onClick }: { src: string; alt?:
   )
 }
 
-function PostCard({ post, currentUserId, onDelete }: { post: Post; currentUserId: string | null; onDelete: (id: string) => void }) {
+function ImageLightbox({ urls, initialIndex, onClose }: { urls: string[], initialIndex: number, onClose: () => void }) {
+  const [currentIndex, setCurrentIndex] = useState(initialIndex)
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+      if (e.key === 'ArrowLeft') setCurrentIndex(prev => (prev > 0 ? prev - 1 : urls.length - 1))
+      if (e.key === 'ArrowRight') setCurrentIndex(prev => (prev < urls.length - 1 ? prev + 1 : 0))
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = ''
+    }
+  }, [urls.length, onClose])
+
+  return (
+    <div className="fixed inset-0 z-[150] bg-black/95 backdrop-blur-md flex flex-col" onClick={onClose}>
+      <div className="flex justify-between items-center p-4">
+        <span className="text-white text-sm font-medium">{currentIndex + 1} / {urls.length}</span>
+        <button onClick={onClose} className="p-2 bg-black/50 hover:bg-white/10 rounded-full text-white transition-colors">
+          <X className="size-5" />
+        </button>
+      </div>
+      <div className="flex-1 relative flex items-center justify-center p-2" onClick={e => e.stopPropagation()}>
+        <PrivatePostImage 
+          src={urls[currentIndex]} 
+          alt="Expanded view" 
+          className="max-w-full max-h-full object-contain"
+        />
+        
+        {urls.length > 1 && (
+          <>
+            <button 
+              className="absolute left-4 p-3 bg-black/50 hover:bg-white/10 rounded-full text-white transition-colors"
+              onClick={(e) => { e.stopPropagation(); setCurrentIndex(prev => (prev > 0 ? prev - 1 : urls.length - 1)) }}
+            >
+              <ChevronLeft className="size-6" />
+            </button>
+            <button 
+              className="absolute right-4 p-3 bg-black/50 hover:bg-white/10 rounded-full text-white transition-colors"
+              onClick={(e) => { e.stopPropagation(); setCurrentIndex(prev => (prev < urls.length - 1 ? prev + 1 : 0)) }}
+            >
+              <ChevronRight className="size-6" />
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function PostCard({ post, currentUserId, onDelete, onImageClick }: { post: Post; currentUserId: string | null; onDelete: (id: string) => void; onImageClick: (urls: string[], index: number) => void }) {
   const isOwn = post.user_id === currentUserId
   const [editing, setEditing] = useState(false)
   const [editContent, setEditContent] = useState(post.content)
@@ -313,7 +367,7 @@ function PostCard({ post, currentUserId, onDelete }: { post: Post; currentUserId
               src={urls[0]} 
               alt="Post media" 
               className="w-full rounded-xl max-h-80 object-cover cursor-pointer border border-border/40" 
-              onClick={() => window.open(urls[0], "_blank")} 
+              onClick={() => onImageClick(urls, 0)} 
             />
           )
         }
@@ -321,10 +375,10 @@ function PostCard({ post, currentUserId, onDelete }: { post: Post; currentUserId
         if (urls.length === 2) {
           return (
             <div className="grid grid-cols-2 gap-2 rounded-xl overflow-hidden border border-border/40 aspect-[2/1]">
-              <div className="relative cursor-pointer h-full" onClick={() => window.open(urls[0], "_blank")}>
+              <div className="relative cursor-pointer h-full" onClick={() => onImageClick(urls, 0)}>
                 <PrivatePostImage src={urls[0]} alt="Post media 0" className="w-full h-full object-cover" />
               </div>
-              <div className="relative cursor-pointer h-full" onClick={() => window.open(urls[1], "_blank")}>
+              <div className="relative cursor-pointer h-full" onClick={() => onImageClick(urls, 1)}>
                 <PrivatePostImage src={urls[1]} alt="Post media 1" className="w-full h-full object-cover" />
               </div>
             </div>
@@ -334,13 +388,13 @@ function PostCard({ post, currentUserId, onDelete }: { post: Post; currentUserId
         if (urls.length === 3) {
           return (
             <div className="grid grid-cols-2 gap-2 rounded-xl overflow-hidden border border-border/40 aspect-[4/3]">
-              <div className="row-span-2 relative cursor-pointer h-full" onClick={() => window.open(urls[0], "_blank")}>
+              <div className="row-span-2 relative cursor-pointer h-full" onClick={() => onImageClick(urls, 0)}>
                 <PrivatePostImage src={urls[0]} alt="Post media 0" className="w-full h-full object-cover" />
               </div>
-              <div className="relative cursor-pointer h-full" onClick={() => window.open(urls[1], "_blank")}>
+              <div className="relative cursor-pointer h-full" onClick={() => onImageClick(urls, 1)}>
                 <PrivatePostImage src={urls[1]} alt="Post media 1" className="w-full h-full object-cover" />
               </div>
-              <div className="relative cursor-pointer h-full" onClick={() => window.open(urls[2], "_blank")}>
+              <div className="relative cursor-pointer h-full" onClick={() => onImageClick(urls, 2)}>
                 <PrivatePostImage src={urls[2]} alt="Post media 2" className="w-full h-full object-cover" />
               </div>
             </div>
@@ -352,7 +406,7 @@ function PostCard({ post, currentUserId, onDelete }: { post: Post; currentUserId
             {urls.slice(0, 4).map((url, index) => {
               const isLast = index === 3 && urls.length > 4
               return (
-                <div key={url} className="relative w-full h-full group overflow-hidden cursor-pointer" onClick={() => window.open(url, "_blank")}>
+                <div key={url} className="relative w-full h-full group overflow-hidden cursor-pointer" onClick={() => onImageClick(urls, index)}>
                   <PrivatePostImage 
                     src={url} 
                     alt={`Post media ${index}`} 
@@ -394,6 +448,7 @@ export default function FeedPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
+  const [lightboxData, setLightboxData] = useState<{ urls: string[], index: number } | null>(null)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null))
@@ -449,10 +504,19 @@ export default function FeedPage() {
               post={post}
               currentUserId={currentUserId}
               onDelete={id => setPosts(prev => prev.filter(p => p.id !== id))}
+              onImageClick={(urls, index) => setLightboxData({ urls, index })}
             />
           ))
         )}
       </div>
+
+      {lightboxData && (
+        <ImageLightbox 
+          urls={lightboxData.urls} 
+          initialIndex={lightboxData.index} 
+          onClose={() => setLightboxData(null)} 
+        />
+      )}
     </div>
   )
 }
