@@ -10,6 +10,7 @@ import { toast } from "sonner"
 import { format } from "date-fns"
 import { useSEO } from "@/hooks/useSEO"
 import { useNavigate } from "react-router-dom"
+import { BackButton } from "@/components/ui/BackButton"
 
 function PrivateJournalImage({ src, alt, className, onClick }: { src: string; alt?: string; className?: string; onClick?: () => void }) {
   const [signedUrl, setSignedUrl] = useState<string | null>(null)
@@ -293,61 +294,87 @@ export default function JournalPage() {
 
   // ─── List view ────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-background pt-24 pb-20">
-      <div className="mx-auto max-w-2xl px-4 space-y-5">
+    <div className="min-h-screen bg-background pt-24 pb-20 relative">
+      {/* Soft warm gold background ambient light */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
+        <div className="absolute -top-40 right-1/4 h-[500px] w-[500px] rounded-full bg-amber-500/5 blur-[120px]" />
+      </div>
+
+      <div className="mx-auto max-w-2xl px-4 space-y-6 relative z-10">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center">
-              <BookOpen className="size-4 text-primary" />
+            <BackButton fallback="/dashboard" label="" className="p-2 border-amber-500/10 hover:border-amber-500/20 text-amber-500/60 hover:text-amber-500" />
+            <div className="size-9 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+              <BookOpen className="size-4 text-amber-500" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight">My Journals</h1>
-              <p className="text-xs text-muted-foreground">{journals.length} {journals.length === 1 ? "entry" : "entries"}</p>
+              <h1 className="text-xl font-bold tracking-tight text-white font-accent">Personal Travel Diary</h1>
+              <p className="text-xs text-amber-500/60 flex items-center gap-1">
+                <span>🔒 Private memoirs</span>
+                <span>·</span>
+                <span>{journals.length} {journals.length === 1 ? "entry" : "entries"}</span>
+              </p>
             </div>
           </div>
-          <Button id="new-journal-btn" size="sm" className="rounded-full gap-1.5 bg-[#7F5AF0] hover:bg-[#6b47d6] text-white" onClick={openCreate}>
+          <Button
+            id="new-journal-btn"
+            size="sm"
+            className="rounded-full gap-1.5 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white font-bold shadow-md shadow-amber-950/20 border border-amber-500/20"
+            onClick={openCreate}
+          >
             <Plus className="size-4" /> New Entry
           </Button>
         </div>
 
         {/* Journal list */}
         {loading ? (
-          <div className="flex justify-center py-16"><Spinner className="size-6 text-primary" /></div>
+          <div className="flex justify-center py-16"><Spinner className="size-6 text-amber-500" /></div>
         ) : journals.length === 0 ? (
-          <div className="flex flex-col items-center gap-4 py-16 text-center rounded-2xl border border-dashed border-border/60 p-8">
-            <BookOpen className="size-12 text-muted-foreground/40" />
-            <p className="text-sm text-muted-foreground">Your journal is empty. Start writing your first entry!</p>
-            <Button className="rounded-full bg-[#7F5AF0] hover:bg-[#6b47d6] text-white" onClick={openCreate}>
+          <div className="flex flex-col items-center gap-4 py-16 text-center rounded-2xl border border-dashed border-amber-500/20 bg-[#1d1b18]/25 p-8">
+            <BookOpen className="size-12 text-amber-500/30" />
+            <div>
+              <h3 className="font-semibold text-white text-sm">Your Personal Diary is Empty</h3>
+              <p className="text-xs text-muted-foreground mt-1 max-w-xs mx-auto">
+                Write down private travel thoughts, itineraries, or memories that only you can see.
+              </p>
+            </div>
+            <Button
+              className="rounded-full bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white font-bold"
+              onClick={openCreate}
+            >
               <Plus className="size-4 mr-1" /> Write First Entry
             </Button>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {journals.map(j => (
               <div
                 key={j.id}
-                className="group rounded-2xl border border-border/60 bg-card/60 backdrop-blur overflow-hidden hover:border-primary/30 transition-colors"
+                className="group relative rounded-2xl border border-amber-500/10 bg-[#1d1b18]/45 backdrop-blur-md overflow-hidden hover:border-amber-500/30 transition-all duration-300 shadow-md shadow-amber-950/20"
               >
                 <div className="flex items-stretch">
                   {j.image_url && (
-                    <PrivateJournalImage src={j.image_url} alt="Cover" className="w-20 object-cover flex-shrink-0" />
+                    <PrivateJournalImage src={j.image_url} alt="Cover" className="w-24 object-cover flex-shrink-0" />
                   )}
-                  <div className="flex flex-1 items-center px-4 py-3.5 gap-3 min-w-0">
-                    <button className="flex-1 text-left min-w-0" onClick={() => openView(j)}>
-                      <p className="font-semibold text-sm truncate">{j.title}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{j.content}</p>
-                      <p className="text-[11px] text-muted-foreground mt-1">{format(new Date(j.created_at), "MMM d, yyyy")}</p>
+                  <div className="flex flex-1 items-center px-5 py-4 gap-3 min-w-0">
+                    <button className="flex-1 text-left min-w-0 pr-16" onClick={() => openView(j)}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-bold text-amber-500/70 bg-amber-500/10 border border-amber-500/20 rounded-full px-2 py-0.5">🔒 Private Memo</span>
+                      </div>
+                      <p className="font-semibold text-base text-amber-100 group-hover:text-amber-300 transition-colors font-accent mt-1.5 truncate">{j.title}</p>
+                      <p className="text-xs text-amber-100/60 mt-1 line-clamp-2 leading-relaxed">{j.content}</p>
+                      <p className="text-[10px] text-amber-500/50 mt-2 font-mono">{format(new Date(j.created_at), "MMMM d, yyyy")}</p>
                     </button>
-                    <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => openEdit(j)} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+                    <div className="absolute right-4 bottom-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => openEdit(j)} className="p-1.5 rounded-lg hover:bg-white/5 text-amber-500/60 hover:text-amber-400 transition-colors">
                         <Edit3 className="size-3.5" />
                       </button>
-                      <button onClick={() => handleDelete(j.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                      <button onClick={() => handleDelete(j.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-amber-500/60 hover:text-destructive transition-colors">
                         <Trash2 className="size-3.5" />
                       </button>
                     </div>
-                    <ChevronRight className="size-4 text-muted-foreground/40 flex-shrink-0" />
+                    <ChevronRight className="size-4 text-amber-500/30 absolute right-4 top-1/2 -translate-y-1/2 group-hover:translate-x-0.5 transition-transform" />
                   </div>
                 </div>
               </div>

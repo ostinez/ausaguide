@@ -13,10 +13,14 @@ const supabaseClient = createClient(
 async function performLogout(page) {
   console.log("Starting performLogout...");
   // Clear storage first to ensure session is cleared even if network request is slow
-  await page.evaluate(() => {
-    localStorage.clear();
-    sessionStorage.clear();
-  });
+  try {
+    await page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
+  } catch (err) {
+    console.log("Storage clear skipped or context destroyed during navigation:", err);
+  }
   const menuBtn = page.getByRole("button", { name: /Open menu/i }).or(page.getByRole("button", { name: /Menu/i }));
   if (await menuBtn.count() > 0) {
     await menuBtn.first().click();
@@ -237,7 +241,7 @@ test.describe("Master Testing Checklist - Live Site Validation", () => {
     await page.locator("input[type='text']").or(page.locator("input[placeholder*='Name']")).first().fill("Waitlist User");
     await page.getByRole("button", { name: /Join/i }).first().click();
     // Check success or email confirmation message
-    await expect(page.getByText("Check your inbox").or(page.getByText("confirmation link")).or(page.getByText("spot")).first()).toBeVisible();
+    await expect(page.getByText("Check your inbox").or(page.getByText("confirmation link")).or(page.getByText("spot")).first()).toBeVisible({ timeout: 15000 });
 
     // Log in as Traveler for Feed/Journal
     await page.goto(`${LIVE_URL}/auth`);

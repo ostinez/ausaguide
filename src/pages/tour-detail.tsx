@@ -324,13 +324,13 @@ export default function TourDetailPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
 
         <div className="absolute left-0 right-0 top-0 mx-auto max-w-6xl px-6 pt-6">
-          <Link
-            to="/tours"
-            className="inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-background/60 px-3 py-1.5 text-sm text-foreground backdrop-blur-sm transition-colors hover:bg-background/80"
+          <button
+            onClick={() => window.history.length > 1 ? navigate(-1) : navigate("/tours")}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-background/60 px-3 py-2 text-sm text-foreground backdrop-blur-sm transition-colors hover:bg-background/80 min-h-[44px] active:scale-95"
           >
             <ArrowLeft className="size-3.5" />
-            Back to Tours
-          </Link>
+            Back
+          </button>
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-6xl px-6 pb-7">

@@ -210,3 +210,126 @@ button:active:not(:disabled),
   transform: scale(0.96) !important;
   opacity: 0.9 !important;
 }
+
+/* ── Mobile & Platform Optimizations ──────────────────────────────────────── */
+
+/**
+ * Use dynamic viewport height to fix the iOS "100vh includes the hidden
+ * browser toolbar" problem. Falls back to 100svh then 100vh.
+ */
+.min-h-screen {
+  min-height: 100dvh;
+  min-height: 100svh;
+}
+
+.h-screen {
+  height: 100dvh;
+  height: 100svh;
+}
+
+/* ── iOS safe-area insets (notch / Dynamic Island / home bar) ── */
+:root {
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+}
+
+/* Apply safe-area padding to fixed bottom navigation / footers */
+.safe-bottom {
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* ── iOS momentum scrolling ── */
+.scroll-smooth,
+[data-scroll],
+.overflow-y-auto,
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Minimum touch target size (44×44px) for iOS/Android HIG compliance ── */
+button,
+[role="button"],
+a,
+input[type="checkbox"],
+input[type="radio"],
+select,
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Override for purely icon buttons to keep them compact but still tappable via padding */
+button.icon-btn {
+  min-height: unset;
+  min-width: unset;
+  padding: 10px;
+}
+
+/* ── Prevent iOS text size inflation after orientation change ── */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* ── Prevent double-tap-to-zoom on interactive elements ── */
+button,
+[role="button"],
+a,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+/* ── Reduced motion: respect user OS accessibility setting ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Disable backdrop blur on low-end/reduced-motion to prevent GPU overload */
+  [style*="backdrop-filter"],
+  [style*="-webkit-backdrop-filter"] {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(22, 22, 26, 0.98) !important;
+  }
+}
+
+/* ── Android Chrome address bar resize compensation ── */
+@supports (height: 100dvh) {
+  .full-page {
+    height: 100dvh;
+  }
+}
+
+/* ── PWA standalone mode: remove extra top padding (no browser chrome) ── */
+@media (display-mode: standalone) {
+  .has-beta-banner ~ main,
+  .safe-top {
+    padding-top: 0;
+  }
+}
+
+/* ── Low-end device: reduce complex shadows and transforms ── */
+.low-end-device .tour-card:hover {
+  transform: none;
+  box-shadow: var(--shadow-2);
+}
+
+.low-end-device [data-slot="glassmorphism-sidebar"] {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: rgba(16, 16, 20, 0.99);
+}

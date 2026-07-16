@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import {
-  Trash2, Edit3, Heart, Rss, Globe, ImageIcon, X, Check, Loader2, ChevronLeft, ChevronRight
+  Trash2, Edit3, Heart, Rss, Globe, ImageIcon, X, Check, Loader2, ChevronLeft, ChevronRight, ArrowLeft
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -281,9 +281,28 @@ function PostCard({ post, currentUserId, onDelete, onImageClick }: { post: Post;
               {initials(post.author?.full_name ?? "U")}
             </AvatarFallback>
           </Avatar>
-          <div>
-            <p className="text-sm font-semibold leading-tight group-hover:text-primary transition-colors">{post.author?.full_name ?? "Unknown"}</p>
-            <p className="text-[11px] text-muted-foreground">{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</p>
+          <div className="text-left">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-sm font-semibold leading-tight group-hover:text-primary transition-colors text-white">
+                {post.author?.full_name ?? "Unknown"}
+              </span>
+              {authorRole === "host" && (
+                <span className="text-[8px] font-bold text-[#2CB67D] bg-[#2CB67D]/10 border border-[#2CB67D]/30 rounded-full px-1.5 py-0.25 tracking-wide">
+                  🟢 LOCAL HOST
+                </span>
+              )}
+              {authorRole === "admin" && (
+                <span className="text-[8px] font-bold text-amber-500 bg-amber-500/10 border border-amber-500/30 rounded-full px-1.5 py-0.25 tracking-wide">
+                  🛡️ ADMIN
+                </span>
+              )}
+              {authorRole === "traveler" && (
+                <span className="text-[8px] font-bold text-[#7F5AF0] bg-[#7F5AF0]/10 border border-[#7F5AF0]/30 rounded-full px-1.5 py-0.25 tracking-wide">
+                  ✈️ TRAVELER
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-0.5">{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</p>
           </div>
         </Link>
         {isOwn && (
@@ -431,12 +450,24 @@ export default function FeedPage() {
       <div className="mx-auto max-w-xl px-4 space-y-5">
         {/* Header */}
         <div className="flex items-center gap-3 mb-2">
-          <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center">
-            <Rss className="size-4 text-primary" />
+          <button
+            onClick={() => window.history.length > 1 ? navigate(-1) : navigate("/dashboard")}
+            aria-label="Go back"
+            className="p-2.5 hover:bg-muted/40 rounded-xl transition-all min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95"
+            title="Back"
+          >
+            <ArrowLeft className="size-5" />
+          </button>
+          <div className="size-9 rounded-full bg-[#7F5AF0]/10 border border-[#7F5AF0]/20 flex items-center justify-center">
+            <Rss className="size-4 text-[#7F5AF0]" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">Community Feed</h1>
-            <p className="text-xs text-muted-foreground">Stories & tips from the Ausaguide community</p>
+            <h1 className="text-xl font-bold tracking-tight text-white">Community Feed</h1>
+            <p className="text-xs text-[#7F5AF0] font-semibold flex items-center gap-1.5 mt-0.5">
+              <span>🌐 Public Shared Space</span>
+              <span>·</span>
+              <span>Stories & tips from the community</span>
+            </p>
           </div>
         </div>
 

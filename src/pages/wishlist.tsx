@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
-import { Heart, Trash2, ArrowRight, MapPin, Clock, Star, AlertCircle } from "lucide-react"
+import { Heart, Trash2, ArrowRight, MapPin, Clock, Star, AlertCircle, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -56,6 +56,9 @@ export default function WishlistPage() {
 
       <div className="relative z-10 mx-auto max-w-5xl px-4">
         <div className="mb-10 flex items-center gap-4">
+          <Link to="/dashboard" className="p-2 hover:bg-muted/40 rounded-xl transition-all" title="Back to Dashboard">
+            <ArrowLeft className="size-5" />
+          </Link>
           <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/10">
             <Heart className="size-6 text-primary fill-primary" />
           </div>

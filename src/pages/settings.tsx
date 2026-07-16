@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { User, Bell, Lock, Tag, CheckCircle2, Settings, Shield, DollarSign, MapPin, Check, ExternalLink } from "lucide-react"
+import { useNavigate, Link } from "react-router-dom"
+import { User, Bell, Lock, Tag, CheckCircle2, Settings, Shield, DollarSign, MapPin, Check, ExternalLink, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -383,6 +383,9 @@ export default function SettingsPage() {
       <div className="relative z-10 mx-auto max-w-4xl px-4">
         {/* Header */}
         <div className="mb-8 flex items-center gap-4">
+          <Link to="/dashboard" className="p-2 hover:bg-muted/40 rounded-xl transition-all" title="Back to Dashboard">
+            <ArrowLeft className="size-5" />
+          </Link>
           <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/10">
             <Settings className="size-6 text-primary" />
           </div>
@@ -447,7 +450,19 @@ export default function SettingsPage() {
                       bucket="avatars"
                       multiple={false}
                       value={avatarUrl ? [avatarUrl] : []}
-                      onChange={(urls) => setAvatarUrl(urls[0] || null)}
+                      onChange={async (urls) => {
+                        const newUrl = urls[0] || null
+                        setAvatarUrl(newUrl)
+                        if (userId) {
+                          try {
+                            await updateProfile(userId, { avatar_url: newUrl })
+                            toast.success("Profile photo updated!")
+                          } catch (err) {
+                            console.error("Auto-save avatar failed:", err)
+                            toast.error("Failed to auto-save profile photo.")
+                          }
+                        }
+                      }}
                       onUploadingChange={setUploadingAvatar}
                       aspectRatio="square"
                     />

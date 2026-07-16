@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useParams, Link, useNavigate } from "react-router-dom"
-import { MapPin, AlertCircle, MessageSquare } from "lucide-react"
+import { MapPin, AlertCircle, MessageSquare, ArrowLeft } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,6 +11,7 @@ import { fetchHostSettings } from "@/lib/api/availability"
 import type { Profile, Tour } from "@/lib/types"
 import { HostCardCarousel } from "@/components/ui/HostCardCarousel"
 import { TourCard } from "@/components/ui/TourCard"
+import { fetchToursByHostId } from "@/lib/api/tours"
 import { fetchWishlist, addToWishlist, removeFromWishlist } from "@/lib/api/wishlist"
 import { toast } from "sonner"
 
@@ -130,16 +131,11 @@ export default function HostProfilePage() {
           throw new Error("Host not found")
         }
 
-        const { data: toursData, error: toursErr } = await supabase
-          .from("tours")
-          .select("id, host_id, title, description, price, currency, duration_hours, max_guests, location_name, category, tour_type, rating, review_count, is_published, views")
-          .eq("host_id", id)
-          .eq("is_published", true)
-
-        if (toursErr) throw toursErr
+        const toursData = await fetchToursByHostId(id)
+        const publishedTours = toursData.filter((t) => t.is_published || t.status === "published")
 
         setProfile(profileData as unknown as Profile)
-        setTours((toursData ?? []) as unknown as Tour[])
+        setTours(publishedTours)
         
         const settings = await fetchHostSettings(id)
         if (settings) {
@@ -189,7 +185,18 @@ export default function HostProfilePage() {
       </div>
 
       <div className="relative z-10 mx-auto max-w-4xl px-4 space-y-8">
-        
+        {/* Back navigation */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => window.history.length > 1 ? navigate(-1) : navigate("/tours")}
+            aria-label="Go back"
+            className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-white/60 hover:text-white hover:bg-white/6 border border-transparent hover:border-white/10 transition-all duration-200 active:scale-95 min-h-[44px]"
+          >
+            <ArrowLeft className="size-4" />
+            <span className="hidden sm:inline">Back</span>
+          </button>
+        </div>
+
         {/* Profile Header */}
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
           <div className="flex flex-col items-center gap-6 md:flex-row md:items-start">

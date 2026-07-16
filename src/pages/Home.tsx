@@ -106,7 +106,7 @@ export default function Home() {
           }
         }}
       />
-      <div className="dark-section">
+      <div id="hero" className="dark-section">
         <HeroGlobe />
       </div>
 

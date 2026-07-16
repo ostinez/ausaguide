@@ -14,7 +14,6 @@ import {
   Eye,
   Clock,
   ArrowRight,
-  ArrowLeft,
   MessageSquare,
   XCircle,
   Lightbulb,
@@ -54,6 +53,7 @@ import { LocationToggle } from "@/components/host/LocationToggle"
 import { GlassmorphismSidebar } from "@/components/ui/GlassmorphismSidebar"
 import { BorderGlow } from "@/components/ui/BorderGlow"
 import { GlareHover } from "@/components/ui/GlareHover"
+import { usePlatform } from "@/hooks/use-platform"
 
 
 function statusColorClass(status: BookingStatus) {
@@ -1165,6 +1165,7 @@ function TravelerDashboard({ bookings = [], onChat }: { bookings?: Booking[]; on
 export default function DashboardPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams()
+  const platform = usePlatform()
   const [userRoleState, setUserRoleState] = useState<string>(() => localStorage.getItem("user_role") || "traveler");
   const userId = localStorage.getItem("user_id");
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -1362,7 +1363,15 @@ export default function DashboardPage() {
 
 
   return (
-    <div className="min-h-screen bg-background">
+    <div
+      className={cn(
+        "min-h-screen bg-background",
+        platform.isLowEndDevice && "low-end-device",
+        platform.isIOS && "is-ios",
+        platform.isAndroid && "is-android"
+      )}
+      style={{ paddingBottom: platform.isIOS ? "env(safe-area-inset-bottom, 0px)" : undefined }}
+    >
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-40 left-1/2 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-primary/8 blur-3xl" />
       </div>
@@ -1386,30 +1395,13 @@ export default function DashboardPage() {
           <div className="mb-8 flex flex-col gap-1">
             <div className="flex items-center justify-between gap-3 mb-2 flex-wrap sm:flex-nowrap">
               <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setSidebarOpen(true)}
-                  aria-label="Open navigation"
-                  className="flex size-9 items-center justify-center rounded-xl border border-border bg-[#16161A]/50 text-white/60 hover:text-white hover:border-[#7F5AF0]/40 transition-all duration-200"
-                >
-                  <Menu className="size-5" />
-                </button>
-                <Link
-                  to="/"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-card/60 backdrop-blur-md text-xs font-semibold text-muted-foreground hover:text-white hover:border-red-500/40 transition-all duration-250 cursor-pointer shadow-sm"
-                  title="Go Back to Home"
-                >
-                  <ArrowLeft className="size-3.5" />
-                  Exit Dashboard
-                </Link>
-                <h1 className="text-2xl font-bold tracking-tight text-foreground ml-2">
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">
                   Welcome back, {profile?.full_name ? profile.full_name.split(" ")[0] : "there"} 👋
                 </h1>
               </div>
 
-              {/* Top-Right Header Actions (Bell + Role Switch + Avatar) */}
+              {/* Top-Right Header Actions (Bell + Role Switch + Avatar + Menu) */}
               <div className="flex items-center gap-3 ml-auto sm:ml-0">
-
-
                 {userId && <NotificationBell />}
 
                 {profile?.avatar_url && (
@@ -1421,6 +1413,14 @@ export default function DashboardPage() {
                     />
                   </Link>
                 )}
+
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  aria-label="Open navigation"
+                  className="flex size-9 items-center justify-center rounded-xl border border-border bg-[#16161A]/50 text-white/60 hover:text-white hover:border-[#7F5AF0]/40 transition-all duration-200"
+                >
+                  <Menu className="size-5" />
+                </button>
               </div>
             </div>
             <p className="text-sm text-muted-foreground">

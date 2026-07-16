@@ -16,6 +16,7 @@ import {
   MessageSquare,
   Rss,
   Home,
+  X,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Profile } from "@/lib/types"
@@ -157,9 +158,11 @@ export function GlassmorphismSidebar({
         style={{
           position: "fixed",
           inset: 0,
-          zIndex: 49,
+          /* Sit above most content but below the sidebar itself */
+          zIndex: 54,
           background: "rgba(0,0,0,0.55)",
           backdropFilter: "blur(2px)",
+          WebkitBackdropFilter: "blur(2px)",
           opacity: isOpen ? 1 : 0,
           pointerEvents: isOpen ? "auto" : "none",
           transition: "opacity 0.25s ease",
@@ -177,27 +180,87 @@ export function GlassmorphismSidebar({
         style={{
           position: "fixed",
           top: 0,
-          left: 0,
-          height: "100vh",
-          width: "280px",
-          zIndex: 50,
-          transform: isOpen ? "translateX(0)" : "translateX(-100%)",
+          right: 0,
+          /* Full viewport height including safe-area on iOS */
+          height: "100dvh",
+          width: "min(280px, 85vw)",
+          /* Above the fixed navbar (z-50 = 50) and its overlay */
+          zIndex: 55,
+          transform: isOpen ? "translateX(0)" : "translateX(100%)",
           transition: "transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
-          background: "rgba(22, 22, 26, 0.92)",
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
-          borderRight: "1px solid rgba(127, 90, 240, 0.15)",
-          boxShadow: "4px 0 32px rgba(0,0,0,0.5)",
+          background: "rgba(22, 22, 26, 0.96)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          borderLeft: "1px solid rgba(127, 90, 240, 0.18)",
+          boxShadow: "-4px 0 40px rgba(0,0,0,0.6), -1px 0 0 rgba(127,90,240,0.08)",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
           outline: "none",
+          /* Respect iOS notch at top */
+          paddingTop: "env(safe-area-inset-top, 0px)",
         }}
       >
         <div className="flex h-full flex-col">
+          {/* ── Sidebar Header: Logo + Close button ── */}
+          <div
+            style={{
+              minHeight: "64px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "0 12px",
+              borderBottom: "1px solid rgba(255,255,255,0.06)",
+              flexShrink: 0,
+            }}
+          >
+            <img
+              src="/logo-primary.png"
+              alt="Ausaguide"
+              style={{ height: "28px", width: "auto", objectFit: "contain" }}
+              onError={(e) => { e.currentTarget.style.display = "none" }}
+            />
+            <button
+              onClick={onClose}
+              aria-label="Close navigation"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "40px",
+                height: "40px",
+                borderRadius: "10px",
+                background: "transparent",
+                border: "1px solid rgba(255,255,255,0.08)",
+                color: "rgba(255,255,255,0.5)",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+                flexShrink: 0,
+              }}
+              onMouseEnter={e => {
+                const el = e.currentTarget as HTMLButtonElement
+                el.style.background = "rgba(255,255,255,0.06)"
+                el.style.color = "rgba(255,255,255,0.9)"
+              }}
+              onMouseLeave={e => {
+                const el = e.currentTarget as HTMLButtonElement
+                el.style.background = "transparent"
+                el.style.color = "rgba(255,255,255,0.5)"
+              }}
+            >
+              <X size={18} />
+            </button>
+          </div>
           {/* Nav Items */}
-          <nav className="flex-1 overflow-y-auto px-3 py-4 flex flex-col justify-start min-h-0" aria-label="Main navigation">
-            <div className="my-auto w-full space-y-4">
+          <nav
+            className="flex-1 px-3 py-3 flex flex-col justify-start min-h-0"
+            aria-label="Main navigation"
+            style={{
+              overflowY: "auto",
+              WebkitOverflowScrolling: "touch",
+            }}
+          >
+            <div className="w-full space-y-1">
               <p className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest text-white/25">
                 Navigation
               </p>
@@ -242,10 +305,13 @@ export function GlassmorphismSidebar({
           </nav>
 
           {/* Divider */}
-          <div className="mx-4 h-px bg-white/8" />
+          <div className="mx-4 h-px" style={{ background: "rgba(255,255,255,0.07)" }} />
 
           {/* User card + sign out */}
-          <div className="p-4 space-y-2">
+          <div
+            className="p-4 space-y-2"
+            style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom, 16px))" }}
+          >
             {profile && (
               <div 
                 onClick={() => {

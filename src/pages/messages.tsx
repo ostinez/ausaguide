@@ -10,6 +10,7 @@ import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { createGeneralDailyRoom } from "@/lib/api/daily"
+import { BackButton } from "@/components/ui/BackButton"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Participant {
@@ -495,7 +496,10 @@ export default function MessagesPage() {
         )}
       >
         <div className="px-4 pt-5 pb-3 border-b border-white/5 space-y-3">
-          <h1 className="text-xl font-black tracking-tight text-white">Direct Messages</h1>
+          <div className="flex items-center gap-2">
+            <BackButton fallback="/dashboard" label="" className="p-1 min-h-[36px] min-w-[36px]" />
+            <h1 className="text-xl font-black tracking-tight text-white">Direct Messages</h1>
+          </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-white/40" />
             <Input
