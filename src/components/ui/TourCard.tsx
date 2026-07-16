@@ -113,17 +113,31 @@ export function TourCard({ tour, isWishlisted, onToggleWishlist, onClick, viewMo
               </>
             }
           />
-          <div className={cn("absolute z-10", isList ? "bottom-3 left-4" : "-bottom-5 left-4")}>
-            <Avatar className="size-10 border-2 border-card shadow-md">
-              <AvatarImage src={tour.host?.avatar_url ?? ""} alt={hostName} />
-              <AvatarFallback className="bg-primary text-xs font-bold text-primary-foreground">
-                {hostInitials}
-              </AvatarFallback>
-            </Avatar>
-          </div>
+          {/* Only render avatar here in List mode where it is fully inside */}
+          {isList && (
+            <div className="absolute z-10 bottom-3 left-4">
+              <Avatar className="size-10 border-2 border-[#16161A] shadow-md">
+                <AvatarImage src={tour.host?.avatar_url ?? ""} alt={hostName} className="object-cover" />
+                <AvatarFallback className="bg-primary text-xs font-bold text-primary-foreground">
+                  {hostInitials}
+                </AvatarFallback>
+              </Avatar>
+            </div>
+          )}
         </div>
 
-        <div className={cn("flex flex-1 flex-col gap-3 px-4 pb-4", isList ? "pt-4" : "pt-8")}>
+        <div className={cn("flex flex-1 flex-col gap-3 px-4 pb-4 relative", isList ? "pt-4" : "pt-8")}>
+          {/* Grid mode avatar: placed outside the overflow-hidden image wrapper, overlapping it perfectly */}
+          {!isList && (
+            <div className="absolute -top-7 left-4 z-20">
+              <Avatar className="size-12 border-2 border-[#16161A] shadow-md hover:scale-105 transition-transform duration-200">
+                <AvatarImage src={tour.host?.avatar_url ?? ""} alt={hostName} className="object-cover" />
+                <AvatarFallback className="bg-primary text-xs font-bold text-primary-foreground">
+                  {hostInitials}
+                </AvatarFallback>
+              </Avatar>
+            </div>
+          )}
           <div className="flex items-center flex-wrap gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">{hostName}</span>
             {tour.host?.is_verified && (
