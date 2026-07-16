@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button"
 import { GlareHover } from "@/components/ui/GlareHover"
 import { StarBorder } from "@/components/ui/StarBorder"
 import ReviewList from "@/components/ui/ReviewList"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { Calendar } from "@/components/ui/calendar"
 import { PlusSpinner } from "@/components/ui/PlusSpinner"
@@ -458,6 +458,7 @@ export default function TourDetailPage() {
               </h2>
               <div className="mt-5 flex items-start gap-4">
                 <Avatar className="size-16 shrink-0">
+                  <AvatarImage src={tour.host?.avatar_url ?? ""} alt={hostName} className="object-cover" />
                   <AvatarFallback className="bg-primary text-lg font-bold text-primary-foreground">
                     {hostInitials}
                   </AvatarFallback>

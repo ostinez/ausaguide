@@ -4,7 +4,7 @@ import { MapPin, AlertCircle, MessageSquare } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Spinner } from "@/components/ui/spinner"
 import { supabase } from "@/lib/supabase"
 import { fetchHostSettings } from "@/lib/api/availability"
@@ -194,6 +194,7 @@ export default function HostProfilePage() {
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
           <div className="flex flex-col items-center gap-6 md:flex-row md:items-start">
             <Avatar className="size-24 border-2 border-border/50 shadow-xl md:size-32">
+              <AvatarImage src={profile.avatar_url ?? ""} alt={profile.full_name} className="object-cover" />
               <AvatarFallback className="bg-primary/10 text-3xl font-bold text-primary md:text-4xl">
                 {profile.full_name.split(" ").map(n => n[0]).join("")}
               </AvatarFallback>

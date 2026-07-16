@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { useParams, Link } from "react-router-dom"
 import { MapPin, Star, Calendar, ArrowLeft, Globe, User, BookOpen, Quote } from "lucide-react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
@@ -172,6 +172,7 @@ export default function TravelerProfilePage() {
             <Card className="border-border/60 bg-card/40 backdrop-blur-md text-center p-6">
               <CardContent className="space-y-4 pt-4 flex flex-col items-center">
                 <Avatar className="size-20 border-2 border-primary/20">
+                  <AvatarImage src={profile.avatar_url ?? ""} alt={profile.full_name} className="object-cover" />
                   <AvatarFallback className="bg-primary/20 text-2xl font-bold text-primary">
                     {initials}
                   </AvatarFallback>
