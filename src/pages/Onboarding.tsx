@@ -11,7 +11,23 @@ import { validateName, validateUsername } from "@/lib/validation"
 import { identifyUser, trackEvent } from "@/lib/posthog"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import { AlertCircle, Loader2 } from "lucide-react"
+import { 
+  AlertCircle, 
+  Loader2, 
+  Globe, 
+  Sparkles, 
+  Shield, 
+  UserCheck, 
+  RefreshCw, 
+  Search, 
+  Compass, 
+  Home, 
+  Award, 
+  ArrowRight,
+  PartyPopper,
+  Check,
+  FileCheck
+} from "lucide-react"
 
 
 // ── Types ──────────────────────────────────────────────
@@ -52,15 +68,15 @@ function useConfetti(active: boolean): Particle[] {
 function StepWelcome({ onNext }: { onNext: () => void }) {
   return (
     <div className="flex flex-col items-center text-center gap-6 py-4 px-2 w-full">
-      {/* Animated emoji globe */}
+      {/* Animated Lucide globe */}
       <motion.div
         initial={{ scale: 0.5, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 200, damping: 14 }}
-        className="text-7xl select-none"
+        className="select-none text-[#2CB67D]"
         aria-hidden
       >
-        🌍
+        <Globe className="size-16 animate-pulse" />
       </motion.div>
 
       <motion.div
@@ -69,8 +85,9 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
         transition={{ delay: 0.15, duration: 0.5 }}
         className="space-y-3"
       >
-        <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-          Welcome to Ausaguide! 🎉
+        <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight flex items-center justify-center gap-2">
+          Welcome to Ausaguide!
+          <Sparkles className="size-6 text-[#2CB67D] shrink-0 animate-bounce" />
         </h1>
         <p className="text-base sm:text-lg text-[#2CB67D] font-semibold tracking-wide">
           Be a Local. Share Your World.
@@ -89,9 +106,10 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
           id="onboarding-welcome-next"
           size="lg"
           onClick={onNext}
-          className="rounded-full px-10 bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 transition-all duration-300"
+          className="rounded-full px-10 bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 transition-all duration-300 flex items-center gap-2"
         >
-          Let's get started →
+          Let's get started
+          <ArrowRight className="size-4" />
         </Button>
       </motion.div>
     </div>
@@ -101,7 +119,6 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
 // ── Step 2: Choose Role ──────────────────────────────────
 interface RoleCard {
   id: Role
-  emoji: string
   title: string
   subtitle: string
   description: string
@@ -112,7 +129,6 @@ interface RoleCard {
 const ROLE_CARDS: RoleCard[] = [
   {
     id: "traveler",
-    emoji: "🧭",
     title: "Traveler",
     subtitle: "Explore Kenya live with locals",
     description: "Book immersive tours, meet real locals, and experience authentic culture.",
@@ -121,7 +137,6 @@ const ROLE_CARDS: RoleCard[] = [
   },
   {
     id: "host",
-    emoji: "🏡",
     title: "Host",
     subtitle: "Share your world and earn",
     description: "Turn your local knowledge into income. Share Kenya's hidden gems.",
@@ -163,7 +178,11 @@ function StepRole({
               )}
               style={isSelected ? { boxShadow: card.shadow } : {}}
             >
-              <span className="text-4xl" aria-hidden>{card.emoji}</span>
+              {card.id === "traveler" ? (
+                <Compass className="size-10 text-[#2CB67D]" />
+              ) : (
+                <Home className="size-10 text-[#7F5AF0]" />
+              )}
               <div className="text-center space-y-1">
                 <p className="text-lg font-black text-white">{card.title}</p>
                 <p className={cn("text-xs font-semibold", isSelected ? "text-white/80" : "text-white/50")}>
@@ -174,14 +193,14 @@ function StepRole({
                 </p>
               </div>
               {isSelected && (
-                <motion.span
+                <motion.div
                   layoutId="role-check"
-                  className="text-lg"
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
+                  className="flex items-center justify-center size-6 rounded-full bg-white/10"
                 >
-                  ✓
-                </motion.span>
+                  <Check className="size-4 text-white" />
+                </motion.div>
               )}
             </button>
           )
@@ -194,13 +213,14 @@ function StepRole({
         disabled={!selectedRole}
         onClick={onNext}
         className={cn(
-          "rounded-full px-10 font-bold transition-all duration-300",
+          "rounded-full px-10 font-bold transition-all duration-300 flex items-center gap-2",
           selectedRole
             ? "bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] text-white border-0 shadow-lg shadow-[#7F5AF0]/30 hover:opacity-90"
             : "bg-accent/ text-white/30 border border-border cursor-not-allowed"
         )}
       >
-        Continue →
+        Continue
+        <ArrowRight className="size-4" />
       </Button>
     </div>
   )
@@ -399,6 +419,9 @@ function StepProfile({
             disabled
             className="bg-[#16161A]/60 border-border text-white placeholder:text-white/30 focus:border-[#7F5AF0]/60 rounded-xl disabled:opacity-70"
           />
+          <p className="text-[11px] text-white/40 mt-1">
+            Your email is verified and linked to your account.
+          </p>
         </div>
 
         {role === "host" && (
@@ -619,9 +642,9 @@ function StepVerifyID({
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 200, damping: 14 }}
-        className="flex size-20 items-center justify-center rounded-full bg-[#7F5AF0]/10 border border-[#7F5AF0]/30 shadow-lg shadow-[#7F5AF0]/10"
+        className="flex size-20 items-center justify-center rounded-full bg-[#7F5AF0]/10 border border-[#7F5AF0]/30 shadow-lg shadow-[#7F5AF0]/10 text-white"
       >
-        <span className="text-4xl text-[#7F5AF0]">🛡️</span>
+        <Shield className="size-10 text-[#7F5AF0]" />
       </motion.div>
 
       <div className="space-y-2">
@@ -644,19 +667,19 @@ function StepVerifyID({
                 size="lg"
                 disabled={loading}
                 onClick={checkStatus}
-                className="rounded-full bg-[#2CB67D] hover:bg-[#2CB67D]/90 text-white border-0 font-bold shadow-lg shadow-[#2CB67D]/30 w-full animate-bounce"
+                className="rounded-full bg-[#2CB67D] hover:bg-[#2CB67D]/90 text-white border-0 font-bold shadow-lg shadow-[#2CB67D]/30 w-full animate-bounce flex items-center justify-center gap-2"
               >
-                {loading ? <Spinner className="size-4 mr-2" /> : null}
-                Check My Status ✓
+                {loading ? <Spinner className="size-4" /> : <Check className="size-4" />}
+                Check My Status
               </Button>
               <Button
                 id="onboarding-verify-retry"
                 size="lg"
                 variant="ghost"
                 onClick={startVerification}
-                className="rounded-full text-white/60 hover:text-white hover:bg-white/5 font-semibold w-full"
+                className="rounded-full text-white/60 hover:text-white hover:bg-white/5 font-semibold w-full flex items-center justify-center gap-2"
               >
-                Restart Verification 🔄
+                Restart Verification <RefreshCw className="size-4" />
               </Button>
             </>
           ) : (
@@ -668,9 +691,9 @@ function StepVerifyID({
                 id="onboarding-verify-retry"
                 size="lg"
                 onClick={startVerification}
-                className="rounded-full bg-[#7F5AF0] hover:bg-[#7F5AF0]/90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 w-full"
+                className="rounded-full bg-[#7F5AF0] hover:bg-[#7F5AF0]/90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 w-full flex items-center justify-center gap-2"
               >
-                Retry Verification 🔄
+                Retry Verification <RefreshCw className="size-4" />
               </Button>
             </>
           )}
@@ -693,9 +716,9 @@ function StepVerifyID({
               variant="outline"
               disabled={loading}
               onClick={checkStatus}
-              className="mt-2 rounded-full border-white/20 text-white hover:bg-white/5 font-semibold text-xs py-1"
+              className="mt-2 rounded-full border-white/20 text-white hover:bg-white/5 font-semibold text-xs py-1 flex items-center justify-center gap-1.5"
             >
-              {loading ? "Checking..." : "Force Check Status 🔍"}
+              {loading ? "Checking..." : "Force Check Status"} <Search className="size-3.5" />
             </Button>
           </div>
         ) : (
@@ -705,9 +728,9 @@ function StepVerifyID({
               size="lg"
               disabled={loading}
               onClick={startVerification}
-              className="rounded-full bg-[#7F5AF0] hover:bg-[#7F5AF0]/90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30"
+              className="rounded-full bg-[#7F5AF0] hover:bg-[#7F5AF0]/90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 flex items-center justify-center gap-2"
             >
-              {loading ? <Spinner className="size-4" /> : "Verify with Didit 🪪"}
+              {loading ? <Spinner className="size-4" /> : "Verify with Didit"} <UserCheck className="size-4" />
             </Button>
           )
         )}
@@ -764,9 +787,9 @@ function StepDone({ name, role }: { name: string; role: Role }) {
         initial={{ scale: 0, rotate: -30 }}
         animate={{ scale: 1, rotate: 0 }}
         transition={{ type: "spring", stiffness: 220, damping: 12, delay: 0.2 }}
-        className="flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-[#7F5AF0] to-[#2CB67D] shadow-2xl shadow-[#7F5AF0]/40"
+        className="flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-[#7F5AF0] to-[#2CB67D] shadow-2xl shadow-[#7F5AF0]/40 text-white"
       >
-        <span className="text-4xl">🎊</span>
+        <PartyPopper className="size-10" />
       </motion.div>
 
       <motion.div
@@ -797,9 +820,9 @@ function StepDone({ name, role }: { name: string; role: Role }) {
               id="onboarding-done-primary"
               size="lg"
               onClick={() => navigate("/tours")}
-              className="rounded-full px-8 bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30"
+              className="rounded-full px-8 bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 flex items-center justify-center gap-2"
             >
-              Start Exploring 🧭
+              Start Exploring <Compass className="size-4" />
             </Button>
             <Button
               id="onboarding-done-secondary"
@@ -817,9 +840,9 @@ function StepDone({ name, role }: { name: string; role: Role }) {
               id="onboarding-done-primary"
               size="lg"
               onClick={() => navigate("/host/dashboard")}
-              className="rounded-full px-8 bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30"
+              className="rounded-full px-8 bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 flex items-center justify-center gap-2"
             >
-              Start Hosting 🏡
+              Start Hosting <Home className="size-4" />
             </Button>
             <Button
               id="onboarding-done-secondary"
@@ -874,7 +897,7 @@ function StepHostTier({
       await supabase
         .from("profiles")
         .update({
-          host_tier: "local_host", // Initially set as local_host until guide review approves
+          host_tier: "local_host",
           license_url: licenseUrl,
           license_status: licenseStatus,
         } as any)
@@ -890,16 +913,16 @@ function StepHostTier({
   return (
     <div className="flex flex-col gap-6 py-4 w-full">
       <div className="text-center space-y-2">
-        <div className="text-4xl">🏅</div>
+        <Award className="size-12 mx-auto text-[#FFD700] animate-bounce" />
         <h2 className="text-2xl font-black text-white">What kind of host are you?</h2>
         <p className="text-sm text-white/60">This helps travelers find the right experience for them.</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {([
-          { value: "certified_guide" as const, emoji: "🏅", label: "Certified Guide", desc: "I hold a government-issued tour guide license or certification.", color: "border-[#7F5AF0]" },
-          { value: "local_host" as const, emoji: "🏡", label: "Local Host", desc: "I'm a passionate local sharing my knowledge and hidden gems.", color: "border-[#2CB67D]" },
-        ]).map(({ value, emoji, label, desc, color }) => (
+          { value: "certified_guide" as const, label: "Certified Guide", desc: "I hold a government-issued tour guide license or certification.", color: "border-[#7F5AF0]", icon: <Award className="size-8 text-[#7F5AF0] mb-2" /> },
+          { value: "local_host" as const, label: "Local Host", desc: "I'm a passionate local sharing my knowledge and hidden gems.", color: "border-[#2CB67D]", icon: <Home className="size-8 text-[#2CB67D] mb-2" /> },
+        ]).map(({ value, label, desc, color, icon }) => (
           <button
             key={value}
             type="button"
@@ -908,7 +931,7 @@ function StepHostTier({
               tier === value ? `${color} bg-white/5` : "border-white/10 bg-white/2 hover:border-white/20"
             }`}
           >
-            <span className="text-3xl block mb-2">{emoji}</span>
+            {icon}
             <p className="font-bold text-white text-base">{label}</p>
             <p className="text-xs text-white/50 mt-1 leading-relaxed">{desc}</p>
           </button>
@@ -925,7 +948,15 @@ function StepHostTier({
             onClick={() => fileRef.current?.click()}
             className="w-full py-3 rounded-xl border border-dashed border-[#7F5AF0]/40 text-sm text-[#a78bfa] hover:border-[#7F5AF0] hover:bg-[#7F5AF0]/5 transition-colors"
           >
-            {licenseFile ? `✅ ${licenseFile.name}` : "Click to upload license / certificate"}
+            <span className="flex items-center justify-center gap-2">
+              {licenseFile ? (
+                <>
+                  <FileCheck className="size-4 text-[#2CB67D]" /> {licenseFile.name}
+                </>
+              ) : (
+                "Click to upload license / certificate"
+              )}
+            </span>
           </button>
           <p className="text-[11px] text-white/30">PDF or image (JPG/PNG). This will be reviewed by our team.</p>
         </div>
@@ -935,10 +966,11 @@ function StepHostTier({
         size="lg"
         disabled={!tier || uploading}
         onClick={handleContinue}
-        className="w-full rounded-full bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 transition-all duration-300"
+        className="w-full rounded-full bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 transition-all duration-300 flex items-center justify-center gap-2"
       >
         {uploading ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
-        Continue →
+        Continue
+        <ArrowRight className="size-4" />
       </Button>
     </div>
   )
@@ -985,7 +1017,7 @@ export default function OnboardingPage() {
       
       setUserId(uId)
       setRole(r)
-      setStep(3) // Directly resume at StepVerifyID (Verify ID is now step 3 for Host)
+      setStep(3)
       return
     }
 
@@ -994,7 +1026,6 @@ export default function OnboardingPage() {
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
           setUserId(user.id)
-          // Check if they already have a profile row
           const { data: profile } = await supabase
             .from("profiles")
             .select("role, host_tier")

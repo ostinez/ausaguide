@@ -82,13 +82,17 @@ serve(async (req) => {
     const sig = req.headers.get("x-signature-v2") ?? ""
     const ts = Number(req.headers.get("x-timestamp"))
 
-    // 1. Freshness Check (replay protection)
-    if (webhookSecret) {
+    const isTestWebhook = req.headers.get("x-didit-test-webhook") === "true"
+
+    // 1. Freshness Check (replay protection) — skip for Didit test webhooks
+    if (webhookSecret && !isTestWebhook) {
       if (!ts || Math.abs(Date.now() / 1000 - ts) > 300) {
         console.error("Stale webhook request or missing timestamp")
         return new Response("stale", { status: 401, headers: corsHeaders })
       }
+    }
 
+    if (webhookSecret) {
       // 2. Canonicalisation
       const parsed = JSON.parse(bodyText)
       const canonical = JSON.stringify(sortKeys(shortenFloats(parsed)))
@@ -119,6 +123,13 @@ serve(async (req) => {
     if (!userId) {
       console.error("Missing vendor_data in webhook payload")
       return new Response("missing vendor_data", { status: 400, headers: corsHeaders })
+    }
+
+    // Validate vendor_data is a real UUID — test webhooks use "test-vendor-data-123" etc.
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!UUID_REGEX.test(userId)) {
+      console.log(`Skipping DB update — vendor_data "${userId}" is not a valid UUID (likely a test webhook).`)
+      return new Response("ok (test payload ignored)", { status: 200, headers: corsHeaders })
     }
 
     // Initialize Supabase client
