@@ -6,6 +6,7 @@ export interface Post {
   user_id: string
   content: string
   image_url: string | null
+  image_urls?: string[] | null
   created_at: string
   updated_at: string
   author?: { full_name: string; avatar_url: string | null }
@@ -35,10 +36,16 @@ export async function fetchPosts(): Promise<Post[]> {
   }))
 }
 
-export async function createPost(userId: string, content: string, imageUrl?: string): Promise<Post> {
+export async function createPost(userId: string, content: string, imageUrls?: string[]): Promise<Post> {
+  const firstImage = imageUrls && imageUrls.length > 0 ? imageUrls[0] : null
   const { data, error } = await supabase
     .from("posts")
-    .insert({ user_id: userId, content, image_url: imageUrl ?? null })
+    .insert({ 
+      user_id: userId, 
+      content, 
+      image_urls: imageUrls ?? [],
+      image_url: firstImage
+    })
     .select("*, author:profiles(full_name, avatar_url)")
     .single()
   if (error) throw error

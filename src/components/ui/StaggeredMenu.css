@@ -36,19 +36,26 @@
 }
 
 .staggered-menu-header {
-  position: absolute;
-  top: 2rem;
-  right: 2rem;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4.5rem; /* 72px navbar height */
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: calc(100% - 4rem);
+  padding: 0 1.5rem;
+  background-color: rgba(22, 22, 26, 0.75); /* Translucent dark background */
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   z-index: 30;
   pointer-events: auto;
+  transition: top 0.2s ease;
 }
 
 .staggered-menu-wrapper[data-position="left"] .staggered-menu-header {
-  left: 2rem;
+  left: 0;
   right: auto;
   flex-direction: row-reverse;
 }
@@ -308,11 +315,15 @@
 
 /* Push down menu header on screens that show the beta banner */
 .staggered-menu-wrapper.has-beta-banner .staggered-menu-header {
-  top: 4.5rem;
+  top: 40px;
 }
 
-@media (max-width: 640px) {
-  .staggered-menu-wrapper.has-beta-banner .staggered-menu-header {
-    top: 5rem;
-  }
+/* Push down menu header when impersonating */
+.staggered-menu-wrapper.has-impersonation-banner .staggered-menu-header {
+  top: 40px;
+}
+
+/* Push down menu header when both are shown */
+.staggered-menu-wrapper.has-beta-banner.has-impersonation-banner .staggered-menu-header {
+  top: 80px;
 }

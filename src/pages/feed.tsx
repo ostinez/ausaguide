@@ -20,34 +20,57 @@ function initials(name: string) {
 
 function CreatePostCard({ currentUserId, onCreated }: { currentUserId: string; onCreated: (p: Post) => void }) {
   const [content, setContent] = useState("")
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [imageFiles, setImageFiles] = useState<File[]>([])
+  const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const handleImage = (file: File) => {
-    setImageFile(file)
-    setImagePreview(URL.createObjectURL(file))
+  const handleImages = (files: FileList) => {
+    const validFiles: File[] = []
+    const previews: string[] = []
+
+    const remainingSlots = 4 - imageFiles.length
+    const count = Math.min(files.length, remainingSlots)
+
+    for (let i = 0; i < count; i++) {
+      const file = files[i]
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(`${file.name} is too large (max 5MB)`)
+        continue
+      }
+      validFiles.push(file)
+      previews.push(URL.createObjectURL(file))
+    }
+
+    setImageFiles(prev => [...prev, ...validFiles])
+    setImagePreviews(prev => [...prev, ...previews])
+  }
+
+  const removeImage = (index: number) => {
+    setImageFiles(prev => prev.filter((_, i) => i !== index))
+    setImagePreviews(prev => prev.filter((_, i) => i !== index))
   }
 
   const handleSubmit = async () => {
-    if (!content.trim() && !imageFile) return
+    if (!content.trim() && imageFiles.length === 0) return
     setSaving(true)
     try {
-      let imageUrl: string | undefined
-      if (imageFile) {
-        const ext = imageFile.name.split(".").pop()
-        const path = `${currentUserId}/${Date.now()}.${ext}`
-        const { error: upErr } = await supabase.storage.from("posts").upload(path, imageFile)
+      const imageUrls: string[] = []
+      
+      for (const file of imageFiles) {
+        const ext = file.name.split(".").pop()
+        const path = `${currentUserId}/${Date.now()}_${Math.random().toString(36).slice(2, 6)}.${ext}`
+        const { error: upErr } = await supabase.storage.from("posts").upload(path, file)
         if (upErr) throw upErr
         const { data: { publicUrl } } = supabase.storage.from("posts").getPublicUrl(path)
-        imageUrl = publicUrl
+        imageUrls.push(publicUrl)
       }
-      const post = await createPost(currentUserId, content, imageUrl)
+
+      const post = await createPost(currentUserId, content, imageUrls)
       onCreated(post)
       setContent("")
-      setImageFile(null)
-      setImagePreview(null)
+      setImageFiles([])
+      setImagePreviews([])
       toast.success("Post shared!")
     } catch (err: any) {
       toast.error(err.message ?? "Failed to post.")
@@ -66,22 +89,38 @@ function CreatePostCard({ currentUserId, onCreated }: { currentUserId: string; o
         rows={3}
         className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/60 resize-none focus:outline-none"
       />
-      {imagePreview && (
-        <div className="relative w-fit">
-          <img src={imagePreview} alt="Preview" className="max-h-48 rounded-xl" />
-          <button
-            className="absolute top-1 right-1 size-6 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80"
-            onClick={() => { setImageFile(null); setImagePreview(null) }}
-          >
-            <X className="size-3 text-white" />
-          </button>
+      {imagePreviews.length > 0 && (
+        <div className="grid grid-cols-2 gap-2 w-full max-w-md">
+          {imagePreviews.map((preview, index) => (
+            <div className="relative aspect-video rounded-xl overflow-hidden border border-border/40 group" key={index}>
+              <img src={preview} alt={`Preview ${index}`} className="w-full h-full object-cover" />
+              <button
+                type="button"
+                className="absolute top-1.5 right-1.5 size-6 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 transition-colors z-10"
+                onClick={() => removeImage(index)}
+              >
+                <X className="size-3.5 text-white" />
+              </button>
+            </div>
+          ))}
         </div>
       )}
       <div className="flex items-center justify-between border-t border-border/40 pt-3">
         <div className="flex items-center gap-2">
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) handleImage(e.target.files[0]); e.target.value = "" }} />
-          <button onClick={() => fileRef.current?.click()} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors">
-            <ImageIcon className="size-4" /> Photo
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={e => { if (e.target.files) handleImages(e.target.files); e.target.value = "" }}
+          />
+          <button
+            onClick={() => fileRef.current?.click()}
+            disabled={imageFiles.length >= 4}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ImageIcon className="size-4" /> Photo ({imageFiles.length}/4)
           </button>
         </div>
         <Button
@@ -89,7 +128,7 @@ function CreatePostCard({ currentUserId, onCreated }: { currentUserId: string; o
           size="sm"
           className="rounded-full px-5 bg-[#7F5AF0] hover:bg-[#6b47d6] text-white text-xs font-semibold"
           onClick={handleSubmit}
-          disabled={saving || (!content.trim() && !imageFile)}
+          disabled={saving || (!content.trim() && imageFiles.length === 0)}
         >
           {saving ? <Loader2 className="size-3 animate-spin" /> : "Post"}
         </Button>
@@ -222,9 +261,76 @@ function PostCard({ post, currentUserId, onDelete }: { post: Post; currentUserId
         <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{post.content}</p>
       )}
 
-      {post.image_url && (
-        <PrivatePostImage src={post.image_url} alt="Post media" className="w-full rounded-xl max-h-80 object-cover cursor-pointer" onClick={() => window.open(post.image_url!, "_blank")} />
-      )}
+      {/* Images Grid */}
+      {(() => {
+        const urls = post.image_urls && post.image_urls.length > 0 
+          ? post.image_urls 
+          : (post.image_url ? [post.image_url] : [])
+
+        if (urls.length === 0) return null
+
+        if (urls.length === 1) {
+          return (
+            <PrivatePostImage 
+              src={urls[0]} 
+              alt="Post media" 
+              className="w-full rounded-xl max-h-80 object-cover cursor-pointer border border-border/40" 
+              onClick={() => window.open(urls[0], "_blank")} 
+            />
+          )
+        }
+
+        if (urls.length === 2) {
+          return (
+            <div className="grid grid-cols-2 gap-2 rounded-xl overflow-hidden border border-border/40 aspect-[2/1]">
+              <div className="relative cursor-pointer h-full" onClick={() => window.open(urls[0], "_blank")}>
+                <PrivatePostImage src={urls[0]} alt="Post media 0" className="w-full h-full object-cover" />
+              </div>
+              <div className="relative cursor-pointer h-full" onClick={() => window.open(urls[1], "_blank")}>
+                <PrivatePostImage src={urls[1]} alt="Post media 1" className="w-full h-full object-cover" />
+              </div>
+            </div>
+          )
+        }
+
+        if (urls.length === 3) {
+          return (
+            <div className="grid grid-cols-2 gap-2 rounded-xl overflow-hidden border border-border/40 aspect-[4/3]">
+              <div className="row-span-2 relative cursor-pointer h-full" onClick={() => window.open(urls[0], "_blank")}>
+                <PrivatePostImage src={urls[0]} alt="Post media 0" className="w-full h-full object-cover" />
+              </div>
+              <div className="relative cursor-pointer h-full" onClick={() => window.open(urls[1], "_blank")}>
+                <PrivatePostImage src={urls[1]} alt="Post media 1" className="w-full h-full object-cover" />
+              </div>
+              <div className="relative cursor-pointer h-full" onClick={() => window.open(urls[2], "_blank")}>
+                <PrivatePostImage src={urls[2]} alt="Post media 2" className="w-full h-full object-cover" />
+              </div>
+            </div>
+          )
+        }
+
+        return (
+          <div className="grid grid-cols-2 gap-2 rounded-xl overflow-hidden border border-border/40 aspect-[4/3]">
+            {urls.slice(0, 4).map((url, index) => {
+              const isLast = index === 3 && urls.length > 4
+              return (
+                <div key={url} className="relative w-full h-full group overflow-hidden cursor-pointer" onClick={() => window.open(url, "_blank")}>
+                  <PrivatePostImage 
+                    src={url} 
+                    alt={`Post media ${index}`} 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                  />
+                  {isLast && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-black text-lg select-none">
+                      +{urls.length - 4}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )
+      })()}
 
       {/* Actions */}
       <div className="flex items-center gap-4 pt-1 border-t border-border/30">

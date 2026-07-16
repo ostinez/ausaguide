@@ -213,7 +213,7 @@ export function Layout() {
         items={menuItems}
         socialItems={socialItems}
         logoUrl="/logo-primary.png"
-        className={!isAuthOrOnboarding ? "has-beta-banner" : ""}
+        className={`${!isAuthOrOnboarding ? "has-beta-banner" : ""} ${impersonatedName ? "has-impersonation-banner" : ""}`.trim()}
       />
       <main className="flex-1">
         <Outlet />
