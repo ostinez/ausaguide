@@ -40,10 +40,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 1.5rem;
-  background-color: rgba(22, 22, 26, 0.75); /* Translucent dark background */
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: transparent; /* Completely transparent */
+  border-bottom: none; /* Remove border line */
   z-index: 30;
   pointer-events: auto;
 }

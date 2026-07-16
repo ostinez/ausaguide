@@ -26,20 +26,11 @@ import { getHostInitials } from "@/lib/tour-utils"
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [scrolled, setScrolled] = useState(false)
   const location = useLocation()
-  const isLanding = location.pathname === "/"
 
   const userId = localStorage.getItem("user_id")
   const [profile, setProfile] = useState<Profile | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
-
-  // Scroll-aware glass intensification
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20)
-    window.addEventListener("scroll", onScroll, { passive: true })
-    return () => window.removeEventListener("scroll", onScroll)
-  }, [])
 
   useEffect(() => {
     if (!userId) {
@@ -161,13 +152,7 @@ export function Navbar() {
 
   return (
     <header
-      className={cn(
-        "fixed top-0 right-0 left-0 z-50 transition-all duration-500 border-b",
-        scrolled || !isLanding
-          ? "bg-background/80 border-border shadow-lg shadow-black/20"
-          : "bg-background/5 border-border/20"
-      )}
-      style={{ backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
+      className="fixed top-0 right-0 left-0 z-50 transition-all duration-500 bg-transparent border-0"
     >
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
 
