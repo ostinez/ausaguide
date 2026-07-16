@@ -466,6 +466,7 @@ function StepVerifyID({
   const [polling, setPolling] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [dots, setDots] = useState("")
+  const [verificationUrl, setVerificationUrl] = useState<string | null>(null)
   const pollingStarted = useRef(false)
 
   useEffect(() => {
@@ -527,33 +528,19 @@ function StepVerifyID({
       if (functionErr) throw functionErr
       if (!data?.url) throw new Error("Verification URL was not returned.")
 
-      const { DiditSdk } = await import("@didit-protocol/sdk-web")
+      setVerificationUrl(data.url)
       
-      DiditSdk.shared.onComplete = (result: any) => {
-        console.log("flow finished client-side:", result.status)
-        if (result.status === "completed") {
-          startPolling()
-        } else if (result.status === "failed") {
-          setError("Verification failed client-side. Please try again.")
-        }
+      // Open in a new tab to avoid iframe blocking and support standard browser camera access
+      const newWindow = window.open(data.url, "_blank")
+      if (!newWindow || newWindow.closed || typeof newWindow.closed === "undefined") {
+        console.warn("Popup blocked, showing direct link button...")
       }
-      
-      DiditSdk.shared.startVerification({ url: data.url })
+
       setLoading(false)
+      startPolling()
     } catch (err: any) {
-      console.warn("Didit Web SDK modal failed, falling back to direct redirect...", err)
-      const redirectUrl = `${window.location.origin}/onboarding?didit_done=true&role=host&user_id=${userId}`
-      try {
-        const { data, error: functionErr } = await supabase.functions.invoke("verify-identity", {
-          body: { userId, redirectUrl }
-        })
-        if (functionErr) throw functionErr
-        if (!data?.url) throw new Error("Verification URL was not returned.")
-        window.location.href = data.url
-      } catch (innerErr: any) {
-        setError(innerErr?.message || "Failed to start identity verification. Please try again.")
-        setLoading(false)
-      }
+      setError(err?.message || "Failed to start identity verification. Please try again.")
+      setLoading(false)
     }
   }
 
@@ -590,7 +577,7 @@ function StepVerifyID({
     setPolling(true)
     setError(null)
     let attempts = 0
-    const maxAttempts = 10
+    const maxAttempts = 120 // 120 * 3s = 360s = 6 minutes
 
     const interval = setInterval(async () => {
       attempts++
@@ -702,14 +689,24 @@ function StepVerifyID({
 
       <div className="flex flex-col gap-3 w-full max-w-xs">
         {polling ? (
-          <div className="flex flex-col items-center gap-3">
+          <div className="flex flex-col items-center gap-3 w-full">
             <Spinner className="size-6 text-[#7F5AF0]" />
             <p className="text-sm font-semibold text-[#7F5AF0] animate-pulse">
               Verifying your details{dots}
             </p>
-            <p className="text-xs text-white/40">
-              Verification is processing — this may take a few seconds.
+            <p className="text-xs text-white/40 max-w-xs mx-auto">
+              Please complete verification in the opened window. This page will update automatically when done.
             </p>
+            {verificationUrl && (
+              <a
+                href={verificationUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-[#a78bfa] hover:text-[#7F5AF0] underline font-semibold transition-colors mt-1"
+              >
+                Verification page did not open? Click here ↗
+              </a>
+            )}
             <Button
               id="onboarding-verify-force-check"
               size="sm"

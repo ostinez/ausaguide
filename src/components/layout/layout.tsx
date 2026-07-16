@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react"
-import { Outlet } from "react-router-dom"
+import { Outlet, useLocation } from "react-router-dom"
 import { StaggeredMenu } from "@/components/ui/StaggeredMenu"
 import { supabase } from "@/lib/supabase"
 import { Footer } from "./footer"
 
 export function Layout() {
+  const location = useLocation()
   const [userId, setUserId] = useState<string | null>(localStorage.getItem("user_id"))
   const impersonatorId = localStorage.getItem("admin_impersonator_id")
   const impersonatedUserId = localStorage.getItem("user_id")
@@ -41,7 +42,7 @@ export function Layout() {
   useEffect(() => {
     // 1. Initial check: bounce already authenticated users away from / or /auth
     async function checkRedirect() {
-      const path = window.location.pathname
+      const path = location.pathname
       if (path === "/" || path === "/auth" || path === "/auth/callback") {
         try {
           const { data: { session } } = await supabase.auth.getSession()
@@ -107,7 +108,7 @@ export function Layout() {
           }
 
           if (event === "SIGNED_IN") {
-            const path = window.location.pathname
+            const path = location.pathname
             if (path === "/auth" || path === "/auth/callback" || path === "/") {
               if (role === "admin") {
                 window.location.href = "/admin/dashboard"
@@ -141,7 +142,7 @@ export function Layout() {
       window.removeEventListener("storage", handleStorage)
       clearInterval(interval)
     }
-  }, [])
+  }, [location.pathname])
 
   async function handleSignOut() {
     try {
@@ -167,7 +168,7 @@ export function Layout() {
         ]
       : [
           { label: "Login", ariaLabel: "Login to your account", link: "/auth" },
-          { label: "Sign Up", ariaLabel: "Create a new account", link: "/onboarding" },
+          { label: "Sign Up", ariaLabel: "Create a new account", link: "/auth?tab=signup" },
         ]),
   ]
 
@@ -178,15 +179,19 @@ export function Layout() {
     { label: "TikTok", link: "https://tiktok.com/@ausaguide" },
   ]
 
+  const isAuthOrOnboarding = location.pathname === "/auth" || location.pathname === "/onboarding"
+
   return (
     <div className="flex min-h-svh flex-col bg-[#16161A]">
-      {/* Beta Banner */}
-      <div className="w-full bg-[#7F5AF0] text-white text-xs sm:text-sm font-semibold py-2.5 px-4 text-center z-50 relative flex flex-wrap items-center justify-center gap-1.5 shadow-md">
-        <span>🚀 Early Access — We're testing with real users.</span>
-        <a href="/waitlist" className="underline hover:text-white/80 font-bold transition duration-200">
-          Join the waitlist for launch.
-        </a>
-      </div>
+      {/* Beta Banner (hidden on Auth/Onboarding) */}
+      {!isAuthOrOnboarding && (
+        <div className="w-full bg-[#7F5AF0] text-white text-xs sm:text-sm font-semibold py-2.5 px-4 text-center z-50 relative flex flex-wrap items-center justify-center gap-1.5 shadow-md">
+          <span>🚀 Early Access — We're testing with real users.</span>
+          <a href="/waitlist" className="underline hover:text-white/80 font-bold transition duration-200">
+            Join the waitlist for launch.
+          </a>
+        </div>
+      )}
       {impersonatedName && (
         <div className="w-full bg-amber-500 text-black text-xs font-bold py-2.5 px-4 text-center z-50 relative flex items-center justify-center gap-2 shadow-md">
           <span>⚠️ Impersonating user: <strong>{impersonatedName}</strong> (actions will save as this user).</span>
@@ -208,11 +213,12 @@ export function Layout() {
         items={menuItems}
         socialItems={socialItems}
         logoUrl="/logo-primary.png"
+        className={!isAuthOrOnboarding ? "has-beta-banner" : ""}
       />
       <main className="flex-1">
         <Outlet />
       </main>
-      <Footer />
+      {!isAuthOrOnboarding && <Footer />}
     </div>
   )
 }

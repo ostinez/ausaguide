@@ -305,3 +305,14 @@
     right: -2.5rem;
   }
 }
+
+/* Push down menu header on screens that show the beta banner */
+.staggered-menu-wrapper.has-beta-banner .staggered-menu-header {
+  top: 4.5rem;
+}
+
+@media (max-width: 640px) {
+  .staggered-menu-wrapper.has-beta-banner .staggered-menu-header {
+    top: 5rem;
+  }
+}
