@@ -531,7 +531,7 @@ export default function SettingsPage() {
                           <Label htmlFor={id} className="text-xs text-muted-foreground">{label}</Label>
                           <Input
                             id={id}
-                            type="url"
+                            type="text"
                             placeholder={placeholder}
                             value={value}
                             onChange={(e) => set(e.target.value)}

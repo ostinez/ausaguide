@@ -8,10 +8,38 @@ import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { supabase } from "@/lib/supabase"
 import { fetchPosts, createPost, updatePost, deletePost, type Post } from "@/lib/api/content"
-import { cn } from "@/lib/utils"
+import { cn, formatSocialLink } from "@/lib/utils"
 import { toast } from "sonner"
 import { useSEO } from "@/hooks/useSEO"
 import { formatDistanceToNow } from "date-fns"
+
+const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+  </svg>
+)
+
+const FacebookIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+  </svg>
+)
+
+const TikTokIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
+  </svg>
+)
+
+const RedditIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M12 8v8" />
+    <path d="M8 12h8" />
+  </svg>
+)
 
 function initials(name: string) {
   return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
@@ -22,6 +50,11 @@ function CreatePostCard({ currentUserId, onCreated }: { currentUserId: string; o
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
+  const [showSocials, setShowSocials] = useState(false)
+  const [instagram, setInstagram] = useState("")
+  const [tiktok, setTiktok] = useState("")
+  const [facebook, setFacebook] = useState("")
+  const [reddit, setReddit] = useState("")
   const fileRef = useRef<HTMLInputElement>(null)
 
   const handleImages = (files: FileList) => {
@@ -65,11 +98,21 @@ function CreatePostCard({ currentUserId, onCreated }: { currentUserId: string; o
 
       const imageUrls = await Promise.all(uploadPromises)
 
-      const post = await createPost(currentUserId, content, imageUrls)
+      const post = await createPost(currentUserId, content, imageUrls, {
+        instagram: instagram.trim() || null,
+        tiktok: tiktok.trim() || null,
+        facebook: facebook.trim() || null,
+        reddit: reddit.trim() || null,
+      })
       onCreated(post)
       setContent("")
       setImageFiles([])
       setImagePreviews([])
+      setInstagram("")
+      setTiktok("")
+      setFacebook("")
+      setReddit("")
+      setShowSocials(false)
       toast.success("Post shared!")
     } catch (err: any) {
       toast.error(err.message ?? "Failed to post.")
@@ -104,6 +147,39 @@ function CreatePostCard({ currentUserId, onCreated }: { currentUserId: string; o
           ))}
         </div>
       )}
+      {/* Social Links Expandable Section */}
+      <div className="space-y-2 border-t border-border/20 pt-2">
+        <button
+          type="button"
+          onClick={() => setShowSocials(!showSocials)}
+          className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 font-semibold"
+        >
+          <span>🔗</span> {showSocials ? "Hide Social Links" : "Add Social Links"}
+        </button>
+        {showSocials && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-white/3 rounded-xl border border-white/5 animate-in fade-in duration-200">
+            {[
+              { id: "post-instagram", label: "Instagram", placeholder: "@handle or URL", value: instagram, set: setInstagram },
+              { id: "post-tiktok", label: "TikTok", placeholder: "@handle or URL", value: tiktok, set: setTiktok },
+              { id: "post-facebook", label: "Facebook", placeholder: "handle or URL", value: facebook, set: setFacebook },
+              { id: "post-reddit", label: "Reddit", placeholder: "username or URL", value: reddit, set: setReddit },
+            ].map(({ id, label, placeholder, value, set }) => (
+              <div key={id} className="space-y-1">
+                <label htmlFor={id} className="text-[10px] font-bold text-muted-foreground uppercase">{label}</label>
+                <input
+                  id={id}
+                  type="text"
+                  placeholder={placeholder}
+                  value={value}
+                  onChange={e => set(e.target.value)}
+                  className="w-full rounded-lg border border-border/60 bg-background/50 px-2.5 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/45 focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="flex items-center justify-between border-t border-border/40 pt-3">
         <div className="flex items-center gap-2">
           <input
@@ -242,6 +318,12 @@ function PostCard({ post, currentUserId, onDelete, onImageClick }: { post: Post;
   const [saving, setSaving] = useState(false)
   const [liked, setLiked] = useState(false)
 
+  const [editInstagram, setEditInstagram] = useState(post.instagram || "")
+  const [editTiktok, setEditTiktok] = useState(post.tiktok || "")
+  const [editFacebook, setEditFacebook] = useState(post.facebook || "")
+  const [editReddit, setEditReddit] = useState(post.reddit || "")
+  const [showEditSocials, setShowEditSocials] = useState(false)
+
   const authorRole = post.author?.role ?? "traveler"
   const profileHref = authorRole === "host" ? `/host/${post.user_id}` : `/traveler/${post.user_id}`
 
@@ -249,8 +331,18 @@ function PostCard({ post, currentUserId, onDelete, onImageClick }: { post: Post;
     if (!editContent.trim()) return
     setSaving(true)
     try {
-      await updatePost(post.id, editContent)
+      const socialsObj = {
+        instagram: editInstagram.trim() || null,
+        tiktok: editTiktok.trim() || null,
+        facebook: editFacebook.trim() || null,
+        reddit: editReddit.trim() || null,
+      }
+      await updatePost(post.id, editContent, null, socialsObj)
       post.content = editContent
+      post.instagram = socialsObj.instagram
+      post.tiktok = socialsObj.tiktok
+      post.facebook = socialsObj.facebook
+      post.reddit = socialsObj.reddit
       setEditing(false)
     } catch (err: any) {
       toast.error(err.message)
@@ -319,13 +411,47 @@ function PostCard({ post, currentUserId, onDelete, onImageClick }: { post: Post;
 
       {/* Content */}
       {editing ? (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <textarea
             value={editContent}
             onChange={e => setEditContent(e.target.value)}
             rows={3}
             className="w-full text-sm bg-muted/40 rounded-xl px-3 py-2 text-foreground resize-none focus:outline-none border border-border/60"
           />
+
+          {/* Edit social links */}
+          <div className="space-y-2 border-t border-border/20 pt-2">
+            <button
+              type="button"
+              onClick={() => setShowEditSocials(!showEditSocials)}
+              className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 font-semibold"
+            >
+              <span>🔗</span> {showEditSocials ? "Hide Social Links" : "Edit Social Links"}
+            </button>
+            {showEditSocials && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-white/3 rounded-xl border border-white/5 animate-in fade-in duration-200">
+                {[
+                  { id: "edit-instagram", label: "Instagram", placeholder: "@handle or URL", value: editInstagram, set: setEditInstagram },
+                  { id: "edit-tiktok", label: "TikTok", placeholder: "@handle or URL", value: editTiktok, set: setEditTiktok },
+                  { id: "edit-facebook", label: "Facebook", placeholder: "handle or URL", value: editFacebook, set: setEditFacebook },
+                  { id: "edit-reddit", label: "Reddit", placeholder: "username or URL", value: editReddit, set: setEditReddit },
+                ].map(({ id, label, placeholder, value, set }) => (
+                  <div key={id} className="space-y-1">
+                    <label htmlFor={id} className="text-[10px] font-bold text-muted-foreground uppercase">{label}</label>
+                    <input
+                      id={id}
+                      type="text"
+                      placeholder={placeholder}
+                      value={value}
+                      onChange={e => set(e.target.value)}
+                      className="w-full rounded-lg border border-border/60 bg-background/50 px-2.5 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/45 focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="flex justify-end gap-2">
             <Button size="sm" variant="ghost" onClick={() => setEditing(false)} className="text-xs rounded-full">Cancel</Button>
             <Button size="sm" className="text-xs rounded-full bg-[#7F5AF0] hover:bg-[#6b47d6] text-white" onClick={saveEdit} disabled={saving}>
@@ -407,6 +533,60 @@ function PostCard({ post, currentUserId, onDelete, onImageClick }: { post: Post;
           </div>
         )
       })()}
+
+      {/* Social Links Badge Row */}
+      {(post.instagram || post.tiktok || post.facebook || post.reddit) && (
+        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/20">
+          {post.instagram && (
+            <a
+              href={formatSocialLink("instagram", post.instagram)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-border/40 hover:border-[#7F5AF0] text-[10px] text-muted-foreground hover:text-white transition-colors"
+              title="Instagram"
+            >
+              <InstagramIcon className="size-3" />
+              <span>Instagram</span>
+            </a>
+          )}
+          {post.tiktok && (
+            <a
+              href={formatSocialLink("tiktok", post.tiktok)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-border/40 hover:border-[#7F5AF0] text-[10px] text-muted-foreground hover:text-white transition-colors"
+              title="TikTok"
+            >
+              <TikTokIcon className="size-3" />
+              <span>TikTok</span>
+            </a>
+          )}
+          {post.facebook && (
+            <a
+              href={formatSocialLink("facebook", post.facebook)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-border/40 hover:border-[#7F5AF0] text-[10px] text-muted-foreground hover:text-white transition-colors"
+              title="Facebook"
+            >
+              <FacebookIcon className="size-3" />
+              <span>Facebook</span>
+            </a>
+          )}
+          {post.reddit && (
+            <a
+              href={formatSocialLink("reddit", post.reddit)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-border/40 hover:border-[#7F5AF0] text-[10px] text-muted-foreground hover:text-white transition-colors"
+              title="Reddit"
+            >
+              <RedditIcon className="size-3" />
+              <span>Reddit</span>
+            </a>
+          )}
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex items-center gap-4 pt-1 border-t border-border/30">

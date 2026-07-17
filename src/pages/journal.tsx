@@ -11,6 +11,35 @@ import { format } from "date-fns"
 import { useSEO } from "@/hooks/useSEO"
 import { useNavigate } from "react-router-dom"
 import { BackButton } from "@/components/ui/BackButton"
+import { formatSocialLink } from "@/lib/utils"
+
+const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+  </svg>
+)
+
+const FacebookIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+  </svg>
+)
+
+const TikTokIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
+  </svg>
+)
+
+const RedditIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M12 8v8" />
+    <path d="M8 12h8" />
+  </svg>
+)
 
 function PrivateJournalImage({ src, alt, className, onClick }: { src: string; alt?: string; className?: string; onClick?: () => void }) {
   const [signedUrl, setSignedUrl] = useState<string | null>(null)
@@ -77,6 +106,10 @@ export default function JournalPage() {
   const [formContent, setFormContent] = useState("")
   const [formImageFile, setFormImageFile] = useState<File | null>(null)
   const [formImagePreview, setFormImagePreview] = useState<string | null>(null)
+  const [instagram, setInstagram] = useState("")
+  const [tiktok, setTiktok] = useState("")
+  const [facebook, setFacebook] = useState("")
+  const [reddit, setReddit] = useState("")
   const fileRef = useRef<HTMLInputElement>(null)
 
   // Load user
@@ -99,6 +132,10 @@ export default function JournalPage() {
     setFormImageFile(null)
     setFormImagePreview(null)
     setSelected(null)
+    setInstagram("")
+    setTiktok("")
+    setFacebook("")
+    setReddit("")
   }
 
   const openCreate = () => {
@@ -112,6 +149,10 @@ export default function JournalPage() {
     setFormContent(j.content)
     setFormImagePreview(j.image_url ?? null)
     setFormImageFile(null)
+    setInstagram(j.instagram || "")
+    setTiktok(j.tiktok || "")
+    setFacebook(j.facebook || "")
+    setReddit(j.reddit || "")
     setMode("edit")
   }
 
@@ -139,13 +180,28 @@ export default function JournalPage() {
     setSaving(true)
     try {
       const imageUrl = await uploadImage(currentUserId)
+      const socialsObj = {
+        instagram: instagram.trim() || null,
+        tiktok: tiktok.trim() || null,
+        facebook: facebook.trim() || null,
+        reddit: reddit.trim() || null,
+      }
       if (mode === "create") {
-        const j = await createJournal(currentUserId, formTitle, formContent, imageUrl)
+        const j = await createJournal(currentUserId, formTitle, formContent, imageUrl, socialsObj)
         setJournals(prev => [j, ...prev])
         toast.success("Journal entry created!")
       } else if (mode === "edit" && selected) {
-        await updateJournal(selected.id, formTitle, formContent, imageUrl ?? formImagePreview)
-        setJournals(prev => prev.map(jj => jj.id === selected.id ? { ...jj, title: formTitle, content: formContent, image_url: imageUrl ?? formImagePreview ?? null } : jj))
+        await updateJournal(selected.id, formTitle, formContent, imageUrl ?? formImagePreview, socialsObj)
+        setJournals(prev => prev.map(jj => jj.id === selected.id ? { 
+          ...jj, 
+          title: formTitle, 
+          content: formContent, 
+          image_url: imageUrl ?? formImagePreview ?? null,
+          instagram: socialsObj.instagram,
+          tiktok: socialsObj.tiktok,
+          facebook: socialsObj.facebook,
+          reddit: socialsObj.reddit
+        } : jj))
         toast.success("Journal entry updated!")
       }
       resetForm()
@@ -247,6 +303,32 @@ export default function JournalPage() {
               </Button>
             </div>
 
+            {/* Social Links Section */}
+            <div className="space-y-3 pt-3 border-t border-border/40">
+              <Label className="text-sm font-semibold">Social Links (optional)</Label>
+              <p className="text-[11px] text-muted-foreground -mt-1.5">Attach social handles or links to this journal entry.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {[
+                  { id: "journal-instagram", label: "Instagram", placeholder: "@handle or URL", value: instagram, set: setInstagram },
+                  { id: "journal-tiktok", label: "TikTok", placeholder: "@handle or URL", value: tiktok, set: setTiktok },
+                  { id: "journal-facebook", label: "Facebook", placeholder: "handle or URL", value: facebook, set: setFacebook },
+                  { id: "journal-reddit", label: "Reddit", placeholder: "username or URL", value: reddit, set: setReddit },
+                ].map(({ id, label, placeholder, value, set }) => (
+                  <div key={id} className="space-y-1">
+                    <Label htmlFor={id} className="text-xs text-muted-foreground">{label}</Label>
+                    <Input
+                      id={id}
+                      type="text"
+                      placeholder={placeholder}
+                      value={value}
+                      onChange={e => set(e.target.value)}
+                      className="border-border/80 text-foreground placeholder:text-muted-foreground/50 text-sm"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <Button
               className="w-full rounded-full bg-[#7F5AF0] hover:bg-[#6b47d6] text-white font-semibold"
               onClick={handleSave}
@@ -278,6 +360,61 @@ export default function JournalPage() {
             <h1 className="text-3xl font-bold tracking-tight">{selected.title}</h1>
             <p className="text-xs text-muted-foreground">{format(new Date(selected.created_at), "MMMM d, yyyy")}</p>
           </div>
+
+          {/* Social Links Badge Row */}
+          {(selected.instagram || selected.tiktok || selected.facebook || selected.reddit) && (
+            <div className="flex flex-wrap items-center gap-2 py-3 border-t border-b border-border/20">
+              {selected.instagram && (
+                <a
+                  href={formatSocialLink("instagram", selected.instagram)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-border/40 hover:border-[#7F5AF0] text-[10px] text-muted-foreground hover:text-white transition-colors"
+                  title="Instagram"
+                >
+                  <InstagramIcon className="size-3" />
+                  <span>Instagram</span>
+                </a>
+              )}
+              {selected.tiktok && (
+                <a
+                  href={formatSocialLink("tiktok", selected.tiktok)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-border/40 hover:border-[#7F5AF0] text-[10px] text-muted-foreground hover:text-white transition-colors"
+                  title="TikTok"
+                >
+                  <TikTokIcon className="size-3" />
+                  <span>TikTok</span>
+                </a>
+              )}
+              {selected.facebook && (
+                <a
+                  href={formatSocialLink("facebook", selected.facebook)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-border/40 hover:border-[#7F5AF0] text-[10px] text-muted-foreground hover:text-white transition-colors"
+                  title="Facebook"
+                >
+                  <FacebookIcon className="size-3" />
+                  <span>Facebook</span>
+                </a>
+              )}
+              {selected.reddit && (
+                <a
+                  href={formatSocialLink("reddit", selected.reddit)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-border/40 hover:border-[#7F5AF0] text-[10px] text-muted-foreground hover:text-white transition-colors"
+                  title="Reddit"
+                >
+                  <RedditIcon className="size-3" />
+                  <span>Reddit</span>
+                </a>
+              )}
+            </div>
+          )}
+
           <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground">{selected.content}</p>
           <div className="flex gap-2 pt-2">
             <Button size="sm" variant="outline" className="rounded-full gap-1.5" onClick={() => openEdit(selected)}>
