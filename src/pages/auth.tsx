@@ -227,9 +227,8 @@ function SignInForm() {
 
       // Fetch role from profiles table
       let role = "traveler"
-      // ADMIN BYPASS: ostinez48@gmail.com is the super-admin but has role='host' in DB
-      // due to a trigger that prevents role changes. Force admin role for this user.
-      const ADMIN_USER_ID = 'f5db8b1b-8380-49dc-850e-1d2048cc05b1'
+      // ADMIN BYPASS: check by email (UUID differs between email/password and Google OAuth)
+      const ADMIN_EMAIL = 'ostinez48@gmail.com'
       try {
         const { data: profile } = await supabase
           .from("profiles")
@@ -237,8 +236,8 @@ function SignInForm() {
           .eq("id", authData.user.id)
           .maybeSingle()
 
-        // Force admin role for the super-admin user
-        if (authData.user.id === ADMIN_USER_ID) {
+        // Force admin role for the super-admin email regardless of login method
+        if (authData.user.email === ADMIN_EMAIL) {
           role = "admin"
           localStorage.setItem("user_role", "admin")
           localStorage.setItem("user_id", authData.user.id)

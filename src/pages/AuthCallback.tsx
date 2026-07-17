@@ -68,14 +68,15 @@ export default function AuthCallbackPage() {
           return
         }
 
+        // ADMIN BYPASS: check by email (UUID differs between email/password and Google OAuth)
+        const ADMIN_EMAIL = 'ostinez48@gmail.com'
+        const isAdmin = user.email === ADMIN_EMAIL
+
         if (profile) {
-          // ADMIN BYPASS: ostinez48@gmail.com user ID - force admin role
-          const ADMIN_USER_ID = 'f5db8b1b-8380-49dc-850e-1d2048cc05b1'
-          const role = user.id === ADMIN_USER_ID ? 'admin' : (profile.role ?? "traveler")
+          const role = isAdmin ? 'admin' : (profile.role ?? "traveler")
           localStorage.setItem("user_role", role)
           localStorage.setItem("user_id", profile.id)
 
-          // Redirect to appropriate dashboard based on role
           if (role === "admin") {
             navigate("/admin/dashboard", { replace: true })
           } else if (role === "host") {
@@ -83,8 +84,13 @@ export default function AuthCallbackPage() {
           } else {
             navigate("/dashboard", { replace: true })
           }
+        } else if (isAdmin) {
+          // Admin logged in via Google but no profile yet — send to admin dashboard anyway
+          localStorage.setItem("user_id", user.id)
+          localStorage.setItem("user_role", "admin")
+          navigate("/admin/dashboard", { replace: true })
         } else {
-          // New user, store user_id so they are authenticated, and redirect to onboarding page
+          // New user, redirect to onboarding
           localStorage.setItem("user_id", user.id)
           navigate("/onboarding", { replace: true })
         }

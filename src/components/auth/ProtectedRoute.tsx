@@ -46,12 +46,11 @@ export function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) 
           return
         }
 
-        // ADMIN BYPASS: ostinez48@gmail.com is the super-admin but has role='host' in DB
-        // due to a trigger that prevents role changes. Force admin role for this user.
-        const ADMIN_USER_ID = 'f5db8b1b-8380-49dc-850e-1d2048cc05b1'
+        // ADMIN BYPASS: check by email (UUID differs between email/password and Google OAuth)
+        const ADMIN_EMAIL = 'ostinez48@gmail.com'
 
         let role = profile?.role ?? null
-        if (session.user.id === ADMIN_USER_ID) {
+        if (session.user.email === ADMIN_EMAIL) {
           role = 'admin'
         } else if (role === "host" && profile?.host_tier === null) {
           role = null
