@@ -45,7 +45,7 @@ export default function AdminDashboard() {
         supabase.from("profiles").select("*", { count: "exact", head: true }),
         supabase.from("tours").select("*", { count: "exact", head: true }),
         supabase.from("bookings").select("*", { count: "exact", head: true }),
-        supabase.from("waitlist").select("*", { count: "exact", head: true }).catch(() => ({ count: 0, error: null })),
+        supabase.from("waitlist").select("*", { count: "exact", head: true }).then(res => res, () => ({ count: 0, error: null as any, data: null })),
         supabase.from("profiles")
           .select("*", { count: "exact", head: true })
           .eq("license_status", "pending"),

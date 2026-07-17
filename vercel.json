@@ -4,7 +4,7 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/((?!api/|assets/|sw\\.js|favicon\\.ico|logo-mark\\.png|offline\\.html).*)", "destination": "/index.html" }
   ],
   "headers": [
     {
