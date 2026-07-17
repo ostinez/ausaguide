@@ -13,6 +13,7 @@ import AuthPage from "@/pages/auth"
 import DashboardPage from "@/pages/dashboard"
 import EarningsDashboard from "@/pages/earnings"
 import AdminDashboard from "@/pages/AdminDashboard"
+import AdminDashboardTest from "@/pages/AdminDashboardTest"
 import HostProfilePage from "@/pages/host-profile"
 import NewTourPage from "@/pages/new-tour"
 import EditTourPage from "@/pages/edit-tour"
@@ -83,6 +84,7 @@ export default function App() {
           <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/dashboard-test" element={<AdminDashboardTest />} />
             <Route path="/admin/hosts" element={<AdminHostsPage />} />
             <Route path="/admin/settings" element={<AdminSettingsPage />} />
           </Route>
