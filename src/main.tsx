@@ -40,14 +40,20 @@ document.documentElement.classList.add("dark")
   }
 })()
 
-// Register Service Worker for Offline Mode
-if ("serviceWorker" in navigator && import.meta.env.PROD) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("/sw.js")
-      .then((reg) => console.log("Service Worker registered on scope:", reg.scope))
-      .catch((err) => console.error("Service Worker registration failed:", err))
-  })
+// Purge any registered service workers and clear browser caches to load updated app bundles
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const registration of registrations) {
+      registration.unregister();
+    }
+  });
+}
+if ("caches" in window) {
+  caches.keys().then((names) => {
+    for (const name of names) {
+      caches.delete(name);
+    }
+  });
 }
 
 createRoot(document.getElementById("root")!).render(
