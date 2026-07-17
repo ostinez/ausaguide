@@ -4,21 +4,58 @@ import { supabase } from "@/lib/supabase"
 /**
  * Admin Setup Page - TEMPORARY, for initial admin account setup only.
  * Access at: /admin-setup
- * 
- * This page helps ostinez48@gmail.com gain admin access without needing a service role key.
  */
 export default function AdminSetup() {
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle")
-  const [message, setMessage] = useState("")
   const [signInStatus, setSignInStatus] = useState<"idle" | "loading" | "success" | "error">("idle")
   const [signInMessage, setSignInMessage] = useState("")
   const [tryLoginStatus, setTryLoginStatus] = useState<"idle" | "loading" | "success" | "error">("idle")
   const [tryLoginMessage, setTryLoginMessage] = useState("")
+  const [copied, setCopied] = useState(false)
 
   const ADMIN_EMAIL = "ostinez48@gmail.com"
   const ADMIN_PASSWORD = "Mbomati.may23"
+  const SQL_EDITOR_URL = "https://supabase.com/dashboard/project/sdbvvcjnlergsmcsorrv/sql/new"
 
-  // Try direct login with the provided credentials
+  const FIX_SQL = `-- Fix Admin Role - Run in Supabase SQL Editor
+DROP TRIGGER IF EXISTS before_profile_role_update ON public.profiles;
+
+UPDATE public.profiles 
+SET role = 'admin', username = 'ausaguide', full_name = 'Super Admin', is_verified = true
+WHERE email = 'ostinez48@gmail.com';
+
+UPDATE public.profiles 
+SET role = 'admin', username = 'ausaguide', full_name = 'Super Admin', is_verified = true
+WHERE id = 'f5db8b1b-8380-49dc-850e-1d2048cc05b1';
+
+CREATE OR REPLACE FUNCTION public.prevent_profile_role_change()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  IF OLD.role IS DISTINCT FROM NEW.role THEN
+    RAISE EXCEPTION 'User role cannot be changed once set.';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER before_profile_role_update
+  BEFORE UPDATE ON public.profiles
+  FOR EACH ROW
+  EXECUTE FUNCTION public.prevent_profile_role_change();
+
+-- Verify:
+SELECT id, email, role, username FROM public.profiles WHERE email = 'ostinez48@gmail.com';`
+
+  const copySQL = async () => {
+    try {
+      await navigator.clipboard.writeText(FIX_SQL)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 3000)
+    } catch {
+      // fallback
+    }
+  }
+
+  // Try direct login
   const tryDirectLogin = async () => {
     setTryLoginStatus("loading")
     setTryLoginMessage("")
@@ -29,22 +66,26 @@ export default function AdminSetup() {
       })
       if (error) {
         setTryLoginStatus("error")
-        setTryLoginMessage(`❌ Login failed: ${error.message}. Use one of the options below to set up the admin account.`)
+        setTryLoginMessage(`❌ Login failed: ${error.message}`)
         return
       }
       if (data.user) {
-        // Check profile
         const { data: profile } = await supabase
           .from("profiles")
-          .select("role")
+          .select("role, id")
           .eq("id", data.user.id)
           .maybeSingle()
 
-        localStorage.setItem("user_id", data.user.id)
-        localStorage.setItem("user_role", profile?.role || "admin")
-        setTryLoginStatus("success")
-        setTryLoginMessage("✅ Login successful! Redirecting to admin dashboard...")
-        setTimeout(() => { window.location.href = "/admin/dashboard" }, 1500)
+        if (profile?.role === "admin") {
+          localStorage.setItem("user_id", data.user.id)
+          localStorage.setItem("user_role", "admin")
+          setTryLoginStatus("success")
+          setTryLoginMessage("✅ Login successful with admin role! Redirecting...")
+          setTimeout(() => { window.location.href = "/admin/dashboard" }, 1500)
+        } else {
+          setTryLoginStatus("error")
+          setTryLoginMessage(`⚠️ Login works but profile role is '${profile?.role || "unknown"}' (not admin). Run the SQL fix below to update the role to admin.`)
+        }
       }
     } catch (err: any) {
       setTryLoginStatus("error")
@@ -59,166 +100,135 @@ export default function AdminSetup() {
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email: ADMIN_EMAIL,
-        options: {
-          emailRedirectTo: window.location.origin + "/auth/callback",
-        }
+        options: { emailRedirectTo: window.location.origin + "/auth/callback" }
       })
       if (error) throw error
       setSignInStatus("success")
-      setSignInMessage(`✅ Magic link sent to ${ADMIN_EMAIL}! Check your email inbox and click the link to log in. After clicking, you'll be redirected to the admin dashboard.`)
+      setSignInMessage(`✅ Magic link sent to ${ADMIN_EMAIL}! Check your email and click the link.`)
     } catch (err: any) {
       setSignInStatus("error")
-      setSignInMessage(`❌ Failed to send magic link: ${err.message}`)
+      setSignInMessage(`❌ Failed: ${err.message}`)
     }
   }
 
-  // Send password reset
-  const sendPasswordReset = async () => {
-    setStatus("loading")
-    setMessage("")
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(ADMIN_EMAIL, {
-        redirectTo: window.location.origin + "/reset-password",
-      })
-      if (error) throw error
-      setStatus("success")
-      setMessage(`✅ Password reset email sent to ${ADMIN_EMAIL}! Click the link in the email to set a new password.`)
-    } catch (err: any) {
-      setStatus("error")
-      setMessage(`❌ Failed: ${err.message}`)
-    }
-  }
+  const card = (accent: string) => ({
+    background: `rgba(${accent},0.06)`,
+    border: `1px solid rgba(${accent},0.2)`,
+    borderRadius: "14px", padding: "1.4rem", marginBottom: "1.2rem"
+  })
 
-  const cardStyle = (color: string) => ({
-    background: `rgba(${color}, 0.08)`,
-    border: `1px solid rgba(${color}, 0.25)`,
-    borderRadius: "14px",
-    padding: "1.5rem",
-    marginBottom: "1.25rem"
+  const btn = (bg: string, disabled?: boolean) => ({
+    background: bg, color: "white", border: "none",
+    borderRadius: "8px", padding: "0.7rem 1.2rem",
+    fontSize: "0.875rem", fontWeight: 600,
+    cursor: disabled ? "not-allowed" : "pointer",
+    opacity: disabled ? 0.6 : 1, width: "100%"
+  })
+
+  const msg = (type: "success" | "error" | "idle") => ({
+    marginTop: "0.75rem", padding: "0.8rem", borderRadius: "8px",
+    background: type === "success" ? "rgba(34,197,94,0.08)" : "rgba(239,68,68,0.08)",
+    color: type === "success" ? "#4ade80" : "#f87171",
+    fontSize: "0.82rem", lineHeight: 1.5
   })
 
   return (
     <div style={{
-      minHeight: "100vh",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
-      fontFamily: "'Inter', system-ui, sans-serif",
-      padding: "2rem"
+      minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
+      background: "linear-gradient(135deg,#0f172a 0%,#1e293b 100%)",
+      fontFamily: "system-ui,sans-serif", padding: "2rem"
     }}>
       <div style={{
-        background: "rgba(255,255,255,0.04)",
+        background: "rgba(255,255,255,0.03)",
         border: "1px solid rgba(255,255,255,0.08)",
-        borderRadius: "20px",
-        padding: "2.5rem",
-        maxWidth: "540px",
-        width: "100%",
+        borderRadius: "20px", padding: "2.5rem",
+        maxWidth: "560px", width: "100%",
         backdropFilter: "blur(24px)",
-        boxShadow: "0 25px 50px rgba(0,0,0,0.4)"
+        boxShadow: "0 25px 60px rgba(0,0,0,0.5)"
       }}>
-        <div style={{ marginBottom: "2rem" }}>
-          <h1 style={{ color: "#f8fafc", fontSize: "1.6rem", fontWeight: 700, margin: 0 }}>
-            🔧 Ausaguide Admin Setup
-          </h1>
-          <p style={{ color: "#64748b", fontSize: "0.875rem", margin: "0.5rem 0 0" }}>
-            Setting up access for <strong style={{ color: "#94a3b8" }}>{ADMIN_EMAIL}</strong>
-          </p>
-        </div>
+        <h1 style={{ color: "#f1f5f9", fontSize: "1.5rem", fontWeight: 700, margin: "0 0 0.4rem" }}>
+          🛠️ Admin Account Setup
+        </h1>
+        <p style={{ color: "#64748b", fontSize: "0.82rem", margin: "0 0 1.8rem" }}>
+          Fixing admin access for <strong style={{ color: "#94a3b8" }}>{ADMIN_EMAIL}</strong>
+        </p>
 
-        {/* Step 1: Try Direct Login */}
-        <div style={cardStyle("250,204,21")}>
-          <h2 style={{ color: "#fbbf24", fontSize: "0.95rem", fontWeight: 700, margin: "0 0 0.5rem" }}>
-            Step 1: Try Direct Login
+        {/* Card 1: Test Login */}
+        <div style={card("250,204,21")}>
+          <h2 style={{ color: "#fbbf24", fontSize: "0.9rem", fontWeight: 700, margin: "0 0 0.4rem" }}>
+            1. Test Current Login
           </h2>
-          <p style={{ color: "#94a3b8", fontSize: "0.82rem", margin: "0 0 1rem" }}>
-            Test if the admin account already works with password <code style={{background:"rgba(255,255,255,0.05)",padding:"1px 6px",borderRadius:"4px"}}>Mbomati.may23</code>
+          <p style={{ color: "#94a3b8", fontSize: "0.8rem", margin: "0 0 1rem" }}>
+            Checks if credentials work and what the current profile role is.
           </p>
-          <button onClick={tryDirectLogin} disabled={tryLoginStatus === "loading"}
-            style={{
-              background: "#d97706", color: "white", border: "none",
-              borderRadius: "8px", padding: "0.7rem 1.25rem",
-              fontSize: "0.875rem", fontWeight: 600, cursor: "pointer",
-              opacity: tryLoginStatus === "loading" ? 0.6 : 1, width: "100%"
-            }}>
-            {tryLoginStatus === "loading" ? "Testing login..." : "🔐 Try Login Now"}
+          <button onClick={tryDirectLogin} disabled={tryLoginStatus === "loading"} style={btn("#b45309", tryLoginStatus === "loading")}>
+            {tryLoginStatus === "loading" ? "Testing..." : "🔐 Test Login"}
           </button>
           {tryLoginMessage && (
-            <div style={{
-              marginTop: "0.75rem", padding: "0.75rem",
-              borderRadius: "8px",
-              background: tryLoginStatus === "success" ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.08)",
-              color: tryLoginStatus === "success" ? "#4ade80" : "#f87171",
-              fontSize: "0.82rem", lineHeight: 1.5
-            }}>
-              {tryLoginMessage}
-            </div>
+            <div style={msg(tryLoginStatus === "success" ? "success" : "error")}>{tryLoginMessage}</div>
           )}
         </div>
 
-        {/* Step 2: Magic Link */}
-        <div style={cardStyle("59,130,246")}>
-          <h2 style={{ color: "#60a5fa", fontSize: "0.95rem", fontWeight: 700, margin: "0 0 0.5rem" }}>
-            Step 2: Send Magic Login Link
+        {/* Card 2: SQL Fix (Primary) */}
+        <div style={{ ...card("239,68,68"), border: "1px solid rgba(239,68,68,0.4)" }}>
+          <h2 style={{ color: "#f87171", fontSize: "0.9rem", fontWeight: 700, margin: "0 0 0.4rem" }}>
+            2. ⭐ Fix Role via Supabase SQL Editor (Required)
           </h2>
-          <p style={{ color: "#94a3b8", fontSize: "0.82rem", margin: "0 0 1rem" }}>
-            Sends a one-click login email. Open the email on your phone or computer and click the link — no password needed.
+          <p style={{ color: "#94a3b8", fontSize: "0.8rem", margin: "0 0 0.8rem" }}>
+            The account exists but the role is <strong style={{ color: "#fca5a5" }}>'host'</strong> not <strong style={{ color: "#86efac" }}>'admin'</strong>. 
+            Copy this SQL and run it in Supabase:
           </p>
-          <button onClick={sendMagicLink} disabled={signInStatus === "loading"}
-            style={{
-              background: "#2563eb", color: "white", border: "none",
-              borderRadius: "8px", padding: "0.7rem 1.25rem",
-              fontSize: "0.875rem", fontWeight: 600, cursor: "pointer",
-              opacity: signInStatus === "loading" ? 0.6 : 1, width: "100%"
+          <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.8rem", flexWrap: "wrap" }}>
+            <button onClick={copySQL} style={{ ...btn("#dc2626"), flex: 1, minWidth: "140px" }}>
+              {copied ? "✅ Copied!" : "📋 Copy SQL"}
+            </button>
+            <a href={SQL_EDITOR_URL} target="_blank" rel="noopener noreferrer" style={{
+              ...btn("#7f1d1d"), flex: 1, minWidth: "140px",
+              textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center"
             }}>
-            {signInStatus === "loading" ? "Sending..." : "📧 Send Magic Login Link"}
+              🔗 Open SQL Editor
+            </a>
+          </div>
+          <pre style={{
+            background: "rgba(0,0,0,0.4)", borderRadius: "8px",
+            padding: "0.8rem", fontSize: "0.65rem", color: "#94a3b8",
+            overflow: "auto", maxHeight: "180px", lineHeight: 1.5,
+            whiteSpace: "pre-wrap", wordBreak: "break-all"
+          }}>
+            {FIX_SQL}
+          </pre>
+          <p style={{ color: "#ef4444", fontSize: "0.75rem", marginTop: "0.7rem" }}>
+            ↑ Copy the SQL above → Open SQL Editor → Paste → Run
+          </p>
+        </div>
+
+        {/* Card 3: Magic Link */}
+        <div style={card("59,130,246")}>
+          <h2 style={{ color: "#60a5fa", fontSize: "0.9rem", fontWeight: 700, margin: "0 0 0.4rem" }}>
+            3. Send Magic Login Link (Alternative)
+          </h2>
+          <p style={{ color: "#94a3b8", fontSize: "0.8rem", margin: "0 0 1rem" }}>
+            After fixing the role above, you can also use a magic link to log in without password.
+          </p>
+          <button onClick={sendMagicLink} disabled={signInStatus === "loading"} style={btn("#1d4ed8", signInStatus === "loading")}>
+            {signInStatus === "loading" ? "Sending..." : "📧 Send Magic Link"}
           </button>
           {signInMessage && (
-            <div style={{
-              marginTop: "0.75rem", padding: "0.75rem",
-              borderRadius: "8px",
-              background: signInStatus === "success" ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.08)",
-              color: signInStatus === "success" ? "#4ade80" : "#f87171",
-              fontSize: "0.82rem", lineHeight: 1.5
-            }}>
-              {signInMessage}
-            </div>
+            <div style={msg(signInStatus === "success" ? "success" : "error")}>{signInMessage}</div>
           )}
         </div>
 
-        {/* Step 3: Password Reset */}
-        <div style={cardStyle("168,85,247")}>
-          <h2 style={{ color: "#a855f7", fontSize: "0.95rem", fontWeight: 700, margin: "0 0 0.5rem" }}>
-            Step 3: Reset Password via Email
-          </h2>
-          <p style={{ color: "#94a3b8", fontSize: "0.82rem", margin: "0 0 1rem" }}>
-            Sends a password reset email so you can set a new password for the admin account.
+        <div style={{
+          background: "rgba(15,23,42,0.6)", borderRadius: "10px",
+          padding: "1rem", marginTop: "0.5rem"
+        }}>
+          <p style={{ color: "#475569", fontSize: "0.75rem", margin: 0 }}>
+            <strong style={{ color: "#64748b" }}>Summary of the issue:</strong><br/>
+            The Supabase auth user exists with email <code>ostinez48@gmail.com</code> and password <code>Mbomati.may23</code>. 
+            However, the profile in the database has <code>role='host'</code> and a trigger prevents changing it via the API. 
+            Run the SQL script above in Supabase to fix it.
           </p>
-          <button onClick={sendPasswordReset} disabled={status === "loading"}
-            style={{
-              background: "#9333ea", color: "white", border: "none",
-              borderRadius: "8px", padding: "0.7rem 1.25rem",
-              fontSize: "0.875rem", fontWeight: 600, cursor: "pointer",
-              opacity: status === "loading" ? 0.6 : 1, width: "100%"
-            }}>
-            {status === "loading" ? "Sending..." : "🔑 Send Password Reset Email"}
-          </button>
-          {message && (
-            <div style={{
-              marginTop: "0.75rem", padding: "0.75rem",
-              borderRadius: "8px",
-              background: status === "success" ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.08)",
-              color: status === "success" ? "#4ade80" : "#f87171",
-              fontSize: "0.82rem", lineHeight: 1.5
-            }}>
-              {message}
-            </div>
-          )}
         </div>
-
-        <p style={{ color: "#334155", fontSize: "0.72rem", marginTop: "0.5rem", textAlign: "center" }}>
-          ⚠️ Remove or protect /admin-setup before production launch.
-        </p>
       </div>
     </div>
   )
