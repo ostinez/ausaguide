@@ -52,7 +52,6 @@ import { HostCardCarousel } from "@/components/ui/HostCardCarousel"
 import { LocationToggle } from "@/components/host/LocationToggle"
 import { GlassmorphismSidebar } from "@/components/ui/GlassmorphismSidebar"
 import { BorderGlow } from "@/components/ui/BorderGlow"
-import { GlareHover } from "@/components/ui/GlareHover"
 import { usePlatform } from "@/hooks/use-platform"
 
 
@@ -1735,28 +1734,7 @@ export default function DashboardPage() {
             </div>
           )
         ) : (
-          <>
-            {userRoleState !== "host" && (
-              <div className="mb-6 rounded-xl border border-teal-500/20 bg-teal-500/10 p-4 text-center">
-                <p className="text-sm font-medium text-teal-400">Want to earn as a host? Apply now.</p>
-                <Link to="/host/signup">
-                  <GlareHover
-                    glareColor="#FFFFFF"
-                    glareOpacity={0.2}
-                    glareAngle={-30}
-                    glareSize={200}
-                    transitionDuration={800}
-                    style={{ borderRadius: "9999px", display: "inline-block" }}
-                  >
-                    <Button size="sm" variant="outline" className="mt-3 rounded-full border-teal-500/30 text-teal-400 hover:bg-teal-500/20">
-                      Become a Host
-                    </Button>
-                  </GlareHover>
-                </Link>
-              </div>
-            )}
-            <TravelerDashboard bookings={travelerBookings} onChat={handleChatClick} />
-          </>
+          <TravelerDashboard bookings={travelerBookings} onChat={handleChatClick} />
         )}
 
         {chatBooking && (() => {
