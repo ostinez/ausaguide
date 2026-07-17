@@ -48,8 +48,7 @@ export default function AdminDashboard() {
         supabase.from("waitlist").select("*", { count: "exact", head: true }),
         supabase.from("profiles")
           .select("*", { count: "exact", head: true })
-          .eq("verified_guide", false)
-          .not("certificate_url", "is", null),
+          .eq("license_status", "pending"),
         supabase.from("profiles")
           .select("id, full_name, email, role, created_at")
           .order("created_at", { ascending: false })
