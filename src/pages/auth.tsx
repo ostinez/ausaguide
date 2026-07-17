@@ -523,11 +523,62 @@ function SignUpForm() {
   const [error, setError] = useState<string | null>(null)
   const [infoMessage, setInfoMessage] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [resendLoading, setResendLoading] = useState(false)
+  const [resendCountdown, setResendCountdown] = useState(0)
+
+  // Resend Countdown Timer Effect
+  useEffect(() => {
+    if (resendCountdown <= 0) return
+    const timer = setInterval(() => {
+      setResendCountdown((prev) => prev - 1)
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [resendCountdown])
+
+  const handleResendVerification = async () => {
+    setError(null)
+    setInfoMessage(null)
+    const emailToResend = email.trim()
+    if (!emailToResend) {
+      setError("Please enter your email address to resend the verification email.")
+      return
+    }
+    const emailErr = validateEmail(emailToResend)
+    if (emailErr) {
+      setError(emailErr)
+      return
+    }
+
+    setResendLoading(true)
+    try {
+      const { error: resendError } = await supabase.auth.resend({
+        type: 'signup',
+        email: emailToResend,
+        options: {
+          emailRedirectTo: window.location.origin + "/auth/callback",
+        }
+      })
+      if (resendError) throw resendError
+      toast.success("Verification email resent. Please check your inbox.")
+      setInfoMessage("Verification email resent. Please check your inbox.")
+      setResendCountdown(30)
+    } catch (err: any) {
+      setError(friendlyAuthError(err.message))
+    } finally {
+      setResendLoading(false)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setInfoMessage(null)
+
+    // Form validation: ensure all fields are filled
+    if (!name.trim() || !email.trim() || !username.trim() || !password || !confirmPassword) {
+      setError("All fields are required.")
+      return
+    }
 
     const nameErr = validateName(name)
     if (nameErr) { setError(nameErr); return }
@@ -541,6 +592,13 @@ function SignUpForm() {
     if (confirmErr) { setError(confirmErr); return }
 
     setLoading(true)
+
+    // Safety Timeout: re-enable button after 20 seconds to prevent getting stuck
+    const safetyTimeoutId = setTimeout(() => {
+      setLoading(false)
+      setError("The signup request timed out. Please check your network and try again.")
+    }, 20000)
+
     try {
       // Check if email already exists in profiles
       const { data: existingEmail, error: emailCheckError } = await supabase
@@ -552,6 +610,7 @@ function SignUpForm() {
       if (emailCheckError) throw emailCheckError
 
       if (existingEmail) {
+        clearTimeout(safetyTimeoutId)
         setError("This email is already registered. Please log in instead.")
         setLoading(false)
         return
@@ -566,6 +625,7 @@ function SignUpForm() {
       if (checkError) throw checkError
 
       if (existingUser) {
+        clearTimeout(safetyTimeoutId)
         setError("This username is already taken.")
         setLoading(false)
         return
@@ -600,10 +660,11 @@ function SignUpForm() {
             if (!prefErr) break
           }
         }
+        clearTimeout(safetyTimeoutId)
         toast.success("Account created successfully! Please confirm your email.")
-        setInfoMessage(`We've sent a verification email to ${email.trim()}. Please click the link inside it to verify your account and proceed to onboarding.`)
+        setInfoMessage(`We've sent a verification email to ${email.trim()}. It may take up to 2 minutes to arrive. Please check your spam folder if you don't see it.`)
+        // Preserve email for easy resending, clear other fields
         setName("")
-        setEmail("")
         setUsername("")
         setPassword("")
         setConfirmPassword("")
@@ -611,8 +672,11 @@ function SignUpForm() {
         throw new Error("Registration failed — no user returned.")
       }
     } catch (err: any) {
-      setError(friendlyAuthError(err.message))
+      clearTimeout(safetyTimeoutId)
+      console.error("SignUp error details:", err)
+      setError("We couldn't send the email. Please check your email address and try again.")
     } finally {
+      clearTimeout(safetyTimeoutId)
       setLoading(false)
     }
   }
@@ -765,14 +829,28 @@ function SignUpForm() {
 
       <Button type="submit" className="w-full rounded-full py-5 text-sm font-semibold gap-2" disabled={loading}>
         {loading ? (
-          <Spinner className="size-4 text-white animate-spin" />
+          <span className="flex items-center gap-2">
+            <Spinner className="size-4 text-white animate-spin" />
+            Sending verification email...
+          </span>
         ) : (
           <>
-            Get Started
+            Continue
             <ArrowRight className="size-4" />
           </>
         )}
       </Button>
+
+      <div className="text-center mt-2">
+        <button
+          type="button"
+          disabled={resendLoading || resendCountdown > 0}
+          onClick={handleResendVerification}
+          className="text-xs text-muted-foreground hover:text-[#7F5AF0] transition-colors underline focus:outline-none cursor-pointer disabled:opacity-50 disabled:no-underline disabled:cursor-not-allowed"
+        >
+          {resendCountdown > 0 ? `Resend email in ${resendCountdown}s` : "Didn't receive the verification email? Resend"}
+        </button>
+      </div>
 
       <p className="text-center text-xs text-muted-foreground">
         By signing up, you agree to our{" "}

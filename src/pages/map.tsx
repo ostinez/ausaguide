@@ -71,20 +71,17 @@ export default function MapPage() {
         const mapped: HostMarker[] = []
         profiles.forEach((h) => {
           if (h.last_location_lat !== null && h.last_location_lng !== null) {
-            // Check if the update is recent (within 5 minutes / 300s to avoid stale locations showing up)
             const isLive = h.last_location_updated && (new Date().getTime() - new Date(h.last_location_updated).getTime()) / 1000 < 300
 
-            if (isLive) {
-              mapped.push({
-                id: h.id,
-                name: h.full_name,
-                bio: h.bio,
-                location: h.location,
-                lat: Number(h.last_location_lat),
-                lng: Number(h.last_location_lng),
-                isLive: true
-              })
-            }
+            mapped.push({
+              id: h.id,
+              name: h.full_name,
+              bio: h.bio,
+              location: h.location,
+              lat: Number(h.last_location_lat),
+              lng: Number(h.last_location_lng),
+              isLive: !!isLive
+            })
           }
         })
         setHosts(mapped)
