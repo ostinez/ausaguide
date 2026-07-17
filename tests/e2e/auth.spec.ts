@@ -5,7 +5,7 @@ test.describe("Authentication E2E Tests", () => {
     // Intercept Supabase profile checks
     await page.route("**/rest/v1/profiles*", async (route) => {
       const url = route.request().url();
-      if (url.includes("username=")) {
+      if (url.includes("username=") || url.includes("email=")) {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -127,7 +127,7 @@ test.describe("Authentication E2E Tests", () => {
     await page.locator("#signup-confirm-password").fill("safePassword123");
 
     // Submit signup triggers success message
-    await page.getByRole("button", { name: /Get Started/i }).click({ force: true });
+    await page.getByRole("button", { name: /Continue/i }).click({ force: true });
     await expect(page.locator("text=Account created successfully!").first()).toBeVisible();
   });
 

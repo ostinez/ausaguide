@@ -123,10 +123,10 @@ export function Navbar() {
     ]
   } else if (userRole === "admin") {
     navLinks = [
-      { href: "/admin", label: "Dashboard" },
-      { href: "/admin?tab=users", label: "Users" },
-      { href: "/admin?tab=tours", label: "Tours" },
-      { href: "/admin?tab=bookings", label: "Bookings" },
+      { href: "/admin/dashboard", label: "Dashboard" },
+      { href: "/admin/users", label: "Users" },
+      { href: "/admin/tours", label: "Tours" },
+      { href: "/admin/bookings", label: "Bookings" },
       { href: "/admin/settings", label: "Settings" },
     ]
   } else if (userRole === "host") {

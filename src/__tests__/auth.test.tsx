@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, it, expect, vi } from "vitest"
-import { BrowserRouter } from "react-router-dom"
+import { MemoryRouter } from "react-router-dom"
 import AuthPage from "@/pages/auth"
 
 // Mock Supabase using our local mock
@@ -22,9 +22,9 @@ vi.mock("@/lib/api/rate-limit", () => ({
 describe("Auth Page Unit Tests", () => {
   it("renders login form successfully", () => {
     render(
-      <BrowserRouter>
+      <MemoryRouter>
         <AuthPage />
-      </BrowserRouter>
+      </MemoryRouter>
     )
 
     // Check tabs and core forms exist
@@ -37,9 +37,9 @@ describe("Auth Page Unit Tests", () => {
 
   it("renders signup form when signup tab is clicked", async () => {
     render(
-      <BrowserRouter>
+      <MemoryRouter>
         <AuthPage />
-      </BrowserRouter>
+      </MemoryRouter>
     )
 
     const signUpTab = screen.getByRole("tab", { name: /Sign Up/i })
@@ -49,14 +49,14 @@ describe("Auth Page Unit Tests", () => {
     expect(screen.getByPlaceholderText("Your name")).toBeInTheDocument()
     expect(screen.getByPlaceholderText("you@example.com")).toBeInTheDocument()
     expect(screen.getByPlaceholderText("Min 8 characters")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /Get Started/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /Continue/i })).toBeInTheDocument()
   })
 
   it("Google OAuth button exists", () => {
     render(
-      <BrowserRouter>
+      <MemoryRouter>
         <AuthPage />
-      </BrowserRouter>
+      </MemoryRouter>
     )
 
     const googleBtn = screen.getByRole("button", { name: /Google/i })

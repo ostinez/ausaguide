@@ -69,7 +69,7 @@ export default function AuthCallbackPage() {
         }
 
         // ADMIN BYPASS: check by email (UUID differs between email/password and Google OAuth)
-        const ADMIN_EMAIL = 'ostinez48@gmail.com'
+        const ADMIN_EMAIL = 'ausaguides@gmail.com'
         const isAdmin = user.email === ADMIN_EMAIL
 
         if (profile) {

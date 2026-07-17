@@ -228,7 +228,7 @@ function SignInForm() {
       // Fetch role from profiles table
       let role = "traveler"
       // ADMIN BYPASS: check by email (UUID differs between email/password and Google OAuth)
-      const ADMIN_EMAIL = 'ostinez48@gmail.com'
+      const ADMIN_EMAIL = 'ausaguides@gmail.com'
       try {
         const { data: profile } = await supabase
           .from("profiles")

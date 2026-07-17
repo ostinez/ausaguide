@@ -911,6 +911,7 @@ function StepHostTier({
           certificate_url: publicUrl,
           verified_guide: false,
           rejected_as_guide: false,
+          license_status: "pending",
           host_tier: "local_host", // Save as local_host (temporarily)
         }
         if (licenseExpiry) updateData.license_expiry = licenseExpiry

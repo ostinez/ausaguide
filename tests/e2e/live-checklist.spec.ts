@@ -70,7 +70,7 @@ test.describe("Master Testing Checklist - Live Site Validation", () => {
     await page.locator("#signup-email").fill("weakpass@example.com");
     await page.locator("#signup-password").fill("123");
     await page.locator("#signup-confirm-password").fill("123");
-    await page.getByRole("button", { name: /Get Started/i }).click();
+    await page.getByRole("button", { name: /Continue/i }).click();
     // Expect error toast or validation error
     await expect(page.locator("text=Password must be at least 8 characters").first()).toBeVisible();
 
@@ -82,7 +82,7 @@ test.describe("Master Testing Checklist - Live Site Validation", () => {
     await page.locator("#signup-email").fill("ostinez23@gmail.com"); // existing email
     await page.locator("#signup-password").fill("Test12345!");
     await page.locator("#signup-confirm-password").fill("Test12345!");
-    await page.getByRole("button", { name: /Get Started/i }).click();
+    await page.getByRole("button", { name: /Continue/i }).click();
     // Expect signup error toast or success (Supabase email confirmation returns fake success to prevent email enumeration)
     await expect(page.locator("text=User already registered").or(page.locator("text=already exists")).or(page.locator("text=sent a verification email")).first()).toBeVisible();
 
@@ -94,7 +94,7 @@ test.describe("Master Testing Checklist - Live Site Validation", () => {
     await page.locator("#signup-email").fill(`rand_${Math.floor(Math.random()*100000)}@example.com`);
     await page.locator("#signup-password").fill("Test12345!");
     await page.locator("#signup-confirm-password").fill("Test12345!");
-    await page.getByRole("button", { name: /Get Started/i }).click();
+    await page.getByRole("button", { name: /Continue/i }).click();
     // Expect username taken error
     await expect(page.locator("text=username is already taken").first()).toBeVisible();
   });

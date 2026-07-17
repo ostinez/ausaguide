@@ -11,6 +11,7 @@ export function Layout() {
   const impersonatorId = localStorage.getItem("admin_impersonator_id")
   const impersonatedUserId = localStorage.getItem("user_id")
   const [impersonatedName, setImpersonatedName] = useState<string | null>(null)
+  const [authInitialized, setAuthInitialized] = useState(false)
 
   useEffect(() => {
     async function fetchImpersonated() {
@@ -42,11 +43,13 @@ export function Layout() {
 
   // 1. Redirect already logged-in users away from auth/landing using fast sync localStorage variables
   useEffect(() => {
+    if (!authInitialized) return
+
     const path = location.pathname
     const cachedUserId = localStorage.getItem("user_id")
     const cachedRole = localStorage.getItem("user_role")
     
-    if (cachedUserId && (path === "/" || path === "/auth" || path === "/auth/callback")) {
+    if (cachedUserId && (path === "/auth" || path === "/auth/callback")) {
       if (cachedRole === "admin") {
         window.location.href = "/admin/dashboard"
       } else if (cachedRole === "host") {
@@ -57,16 +60,16 @@ export function Layout() {
         window.location.href = "/onboarding"
       }
     }
-  }, [location.pathname])
+  }, [location.pathname, authInitialized])
 
   // 2. Setup auth state and storage synchronization listeners ONCE on mount
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        setUserId(session.user.id)
-        localStorage.setItem("user_id", session.user.id)
-        
-        try {
+      try {
+        if (session?.user) {
+          setUserId(session.user.id)
+          localStorage.setItem("user_id", session.user.id)
+          
           const { data: profile } = await supabase
             .from("profiles")
             .select("*")
@@ -102,13 +105,15 @@ export function Layout() {
               }
             }
           }
-        } catch (err) {
-          console.error("Error checking profile on auth change:", err)
+        } else {
+          setUserId(null)
+          localStorage.removeItem("user_id")
+          localStorage.removeItem("user_role")
         }
-      } else {
-        setUserId(null)
-        localStorage.removeItem("user_id")
-        localStorage.removeItem("user_role")
+      } catch (err) {
+        console.error("Error checking profile on auth change:", err)
+      } finally {
+        setAuthInitialized(true)
       }
     })
 
@@ -118,8 +123,47 @@ export function Layout() {
     window.addEventListener("storage", handleStorage)
     const interval = setInterval(handleStorage, 1000)
 
+    // Track active presence on site
+    const anonId = "anon-" + Math.random().toString(36).substring(2, 9)
+    
+    try {
+      const existing = supabase.getChannels()
+      const existingPresence = existing.find((ch) => ch.name === "site-presence")
+      if (existingPresence) {
+        supabase.removeChannel(existingPresence)
+      }
+    } catch (e) {
+      console.warn("Error cleaning up existing realtime channel:", e)
+    }
+
+    const presenceChannel = supabase.channel("site-presence", {
+      config: {
+        presence: {
+          key: localStorage.getItem("user_id") || anonId,
+        },
+      },
+    })
+
+    presenceChannel
+      .on("presence", { event: "sync" }, () => {
+        const state = presenceChannel.presenceState()
+        const count = Object.keys(state).length
+        ;(window as any).__liveVisitors = count
+        window.dispatchEvent(new CustomEvent("presence-sync", { detail: count }))
+      })
+      .subscribe(async (status: string) => {
+        if (status === "SUBSCRIBED") {
+          await presenceChannel.track({
+            online_at: new Date().toISOString(),
+            role: localStorage.getItem("user_role") || "traveler",
+          })
+        }
+      })
+
     return () => {
       subscription.unsubscribe()
+      presenceChannel.unsubscribe()
+      supabase.removeChannel(presenceChannel)
       window.removeEventListener("storage", handleStorage)
       clearInterval(interval)
     }

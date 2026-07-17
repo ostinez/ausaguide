@@ -191,6 +191,7 @@ export default function AdminDashboard() {
   const [bookings, setBookings] = useState<BookingRow[]>([])
   const [dailyRevenue, setDailyRevenue] = useState<DailyRevenue[]>([])
   const [waitlists, setWaitlists] = useState<any[]>([])
+  const [liveVisitors, setLiveVisitors] = useState<number>(0)
 
   // Moderation state
   const [journals, setJournals] = useState<any[]>([])
@@ -373,6 +374,25 @@ export default function AdminDashboard() {
 
     return () => {
       clearInterval(interval)
+    }
+  }, [isAdmin])
+
+  // Synchronize live visitors count from the layout's presence tracking
+  useEffect(() => {
+    if (!isAdmin) return
+
+    if ((window as any).__liveVisitors) {
+      setLiveVisitors((window as any).__liveVisitors)
+    }
+
+    const handleSync = (e: Event) => {
+      const customEvent = e as CustomEvent
+      setLiveVisitors(customEvent.detail || 0)
+    }
+
+    window.addEventListener("presence-sync", handleSync)
+    return () => {
+      window.removeEventListener("presence-sync", handleSync)
     }
   }, [isAdmin])
 
@@ -687,6 +707,12 @@ export default function AdminDashboard() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl font-bold tracking-tight">Ausaguide Admin</h1>
+                {liveVisitors > 0 && (
+                  <span className="flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-medium rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 animate-pulse">
+                    <span className="size-1.5 rounded-full bg-emerald-400" />
+                    {liveVisitors} online
+                  </span>
+                )}
               </div>
               <p className="text-xs text-muted-foreground">Platform management console</p>
             </div>
@@ -759,7 +785,7 @@ export default function AdminDashboard() {
                   <StatCard label="Total Bookings" value={bookings.length} icon={Calendar}
                     color="oklch(0.696 0.17 162)" sub={`${bookings.filter(b => b.status === "completed").length} Completed`} />
                   <StatCard label="Platform Users" value={profiles.length} icon={Users}
-                    color="oklch(0.828 0.189 84.429)" sub={`${profiles.filter(p => p.role === "traveler").length} Travelers | ${profiles.filter(p => p.role === "host").length} Hosts`} />
+                    color="oklch(0.828 0.189 84.429)" sub={`${profiles.filter(p => p.role === "traveler").length} Travelers | ${profiles.filter(p => p.role === "host").length} Hosts | ${liveVisitors} Online`} />
                   <StatCard label="Active Hosts" value={profiles.filter(p => p.role === "host").length} icon={UserCheck}
                     color="oklch(0.627 0.265 303.9)" sub="Approved guides" />
                   <StatCard label="Total Tours" value={tours.length} icon={MapPin}
