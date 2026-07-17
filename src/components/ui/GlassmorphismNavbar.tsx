@@ -97,6 +97,7 @@ export function GlassmorphismNavbar({ className, ...props }: GlassmorphismNavbar
 
     const interval = setInterval(fetchUnreadCount, 4000)
 
+    /*
     const channelName = `navbar-messages-unread-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
     const channel = supabase
       .channel(channelName)
@@ -108,11 +109,12 @@ export function GlassmorphismNavbar({ className, ...props }: GlassmorphismNavbar
         }
       )
       .subscribe()
+    */
 
     return () => {
       clearInterval(interval)
-      channel.unsubscribe()
-      supabase.removeChannel(channel)
+      // channel.unsubscribe()
+      // supabase.removeChannel(channel)
     }
   }, [userId])
 

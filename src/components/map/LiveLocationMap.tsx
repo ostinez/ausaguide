@@ -109,6 +109,8 @@ export function LiveLocationMap({
     loadInitialLocation()
 
     // Subscribe to realtime location updates
+    const interval = setInterval(loadInitialLocation, 10000)
+    /*
     const channel = supabase
       .channel(`host-location-${hostId}`)
       .on(
@@ -133,9 +135,11 @@ export function LiveLocationMap({
         }
       )
       .subscribe()
+    */
 
     return () => {
-      supabase.removeChannel(channel)
+      clearInterval(interval)
+      // supabase.removeChannel(channel)
     }
   }, [hostId])
 

@@ -1281,6 +1281,7 @@ export default function DashboardPage() {
     loadDashboard()
 
     // Subscribe to bookings updates
+    /*
     const bookingChannel = supabase
       .channel(`bookings-updates-${userId || "anon"}-${Date.now()}`)
       .on(
@@ -1305,12 +1306,13 @@ export default function DashboardPage() {
         }
       )
       .subscribe()
+    */
 
     return () => {
-      bookingChannel.unsubscribe()
-      notifChannel.unsubscribe()
-      supabase.removeChannel(bookingChannel)
-      supabase.removeChannel(notifChannel)
+      // bookingChannel.unsubscribe()
+      // notifChannel.unsubscribe()
+      // supabase.removeChannel(bookingChannel)
+      // supabase.removeChannel(notifChannel)
     }
   }, [userRoleState, navigate, loadDashboard])
 

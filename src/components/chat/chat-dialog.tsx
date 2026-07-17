@@ -229,6 +229,14 @@ export function ChatDialog({
   useEffect(() => {
     if (!isOpen) return
 
+    const interval = setInterval(() => {
+      loadThreads()
+      if (selectedThreadId) {
+        loadThreadMessages(selectedThreadId)
+      }
+    }, 10000)
+
+    /*
     const channel = supabase
       .channel("inbox-updates")
       .on(
@@ -279,9 +287,11 @@ export function ChatDialog({
         }
       )
       .subscribe()
+    */
 
     return () => {
-      supabase.removeChannel(channel)
+      clearInterval(interval)
+      // supabase.removeChannel(channel)
     }
   }, [isOpen, selectedThreadId])
 

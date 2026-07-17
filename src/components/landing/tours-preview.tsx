@@ -6,7 +6,6 @@ import { SkeletonTourGrid } from "@/components/ui/SkeletonCard"
 import { ArrowRight } from "lucide-react"
 import { fetchFeaturedTours } from "@/lib/api/tours"
 import type { Tour } from "@/lib/types"
-import { supabase } from "@/lib/supabase"
 import { TourCard } from "@/components/ui/TourCard"
 import { fetchWishlist, addToWishlist, removeFromWishlist } from "@/lib/api/wishlist"
 import { toast } from "sonner"
@@ -25,6 +24,7 @@ export function ToursPreview() {
       .finally(() => setLoading(false))
 
     // Realtime views updates
+    /*
     const channel = supabase
       .channel("featured-tours-views-realtime")
       .on(
@@ -42,9 +42,10 @@ export function ToursPreview() {
         }
       )
       .subscribe()
+    */
 
     return () => {
-      supabase.removeChannel(channel)
+      // supabase.removeChannel(channel)
     }
   }, [])
 

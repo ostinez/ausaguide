@@ -17,7 +17,6 @@ import {
   type FilterTag,
 } from "@/lib/tour-utils"
 import { fetchWishlist, addToWishlist, removeFromWishlist } from "@/lib/api/wishlist"
-import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 import {
   Pagination,
@@ -148,6 +147,7 @@ export default function ToursPage() {
       .finally(() => setLoading(false))
 
     // Realtime tours update subscription for all events (INSERT, UPDATE, DELETE)
+    /*
     const channel = supabase
       .channel("tours-realtime")
       .on(
@@ -164,9 +164,10 @@ export default function ToursPage() {
         }
       )
       .subscribe()
+    */
 
     return () => {
-      supabase.removeChannel(channel)
+      // supabase.removeChannel(channel)
     }
   }, [])
 

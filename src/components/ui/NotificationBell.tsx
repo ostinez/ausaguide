@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from "react"
 import { Bell, BellDot, Clock, Check, Loader2 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import { supabase } from "@/lib/supabase"
 import {
   fetchNotifications,
   markAsRead,
@@ -43,6 +42,9 @@ export default function NotificationBell() {
 
     if (!userId) return
 
+    const interval = setInterval(loadNotifications, 10000)
+
+    /*
     // Use a unique channel name per mount to avoid the Supabase channel-reuse
     // error: "cannot add postgres_changes callbacks after subscribe()".
     // The timestamp suffix ensures a fresh channel even on strict-mode double-mount.
@@ -69,10 +71,12 @@ export default function NotificationBell() {
         }
       )
       .subscribe()
+    */
 
     return () => {
-      channel.unsubscribe()
-      supabase.removeChannel(channel)
+      clearInterval(interval)
+      // channel.unsubscribe()
+      // supabase.removeChannel(channel)
     }
   }, [userId])
 

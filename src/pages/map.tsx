@@ -97,6 +97,7 @@ export default function MapPage() {
     fetchHostsAndLocations()
 
     // Subscribe to realtime profiles updates
+    /*
     const channel = supabase
       .channel("public-profiles-locations")
       .on(
@@ -107,6 +108,7 @@ export default function MapPage() {
         }
       )
       .subscribe()
+    */
 
     // VPN detection check
     if (navigator.geolocation) {
@@ -151,7 +153,7 @@ export default function MapPage() {
     return () => {
       document.head.removeChild(script)
       document.head.removeChild(link)
-      supabase.removeChannel(channel)
+      // supabase.removeChannel(channel)
     }
   }, [])
 

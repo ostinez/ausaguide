@@ -235,7 +235,7 @@ export default function MessagesPage() {
   const [messages, setMessages] = useState<DirectMessage[]>([])
   const [inputValue, setInputValue] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
-  const [otherTyping, setOtherTyping] = useState(false)
+  const [otherTyping] = useState(false)
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [mobileView, setMobileView] = useState<"list" | "chat">(preselectedConvId ? "chat" : "list")
@@ -336,6 +336,7 @@ export default function MessagesPage() {
   useEffect(() => {
     if (!selectedConvId || !currentUserId) return
 
+    /*
     const channel = supabase
       .channel(`conv:${selectedConvId}`)
       .on(
@@ -365,8 +366,9 @@ export default function MessagesPage() {
       .subscribe()
 
     channelRef.current = channel
+    */
     return () => {
-      supabase.removeChannel(channel)
+      // supabase.removeChannel(channel)
     }
   }, [selectedConvId, currentUserId, loadConversations])
 

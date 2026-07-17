@@ -77,6 +77,7 @@ export function Navbar() {
 
     const interval = setInterval(fetchUnreadCount, 30000)
 
+    /*
     const channelName = `navbar-messages-unread-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
     const channel = supabase
       .channel(channelName)
@@ -88,11 +89,12 @@ export function Navbar() {
         }
       )
       .subscribe()
+    */
 
     return () => {
       clearInterval(interval)
-      channel.unsubscribe()
-      supabase.removeChannel(channel)
+      // channel.unsubscribe()
+      // supabase.removeChannel(channel)
     }
   }, [userId])
 

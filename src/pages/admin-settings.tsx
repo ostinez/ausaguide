@@ -121,6 +121,7 @@ export default function AdminSettingsPage() {
   useEffect(() => {
     if (activeTab !== "logs") return
 
+    /*
     const channel = supabase
       .channel("audit-logs-realtime")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "audit_logs" }, async (payload) => {
@@ -138,9 +139,10 @@ export default function AdminSettingsPage() {
         setLogs((prev) => [newLog, ...prev.slice(0, 49)])
       })
       .subscribe()
+    */
 
     return () => {
-      supabase.removeChannel(channel)
+      // supabase.removeChannel(channel)
     }
   }, [activeTab])
 
