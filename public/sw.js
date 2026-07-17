@@ -1,5 +1,5 @@
 // Service Worker for Ausaguide
-const CACHE_NAME = "ausaguide-cache-v2";
+const CACHE_NAME = "ausaguide-cache-v3";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
