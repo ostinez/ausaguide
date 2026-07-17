@@ -46,6 +46,7 @@ import AuthCallbackPage from "@/pages/AuthCallback"
 import OnboardingPage from "@/pages/Onboarding"
 import ResetPasswordPage from "@/pages/ResetPassword"
 import EmailPreferencesPage from "@/pages/email-preferences"
+import AdminSetupPage from "@/pages/AdminSetup"
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -123,6 +124,8 @@ export default function App() {
           <Route path="/waitlist" element={<WaitlistPage />} />
           <Route path="/email-preferences" element={<EmailPreferencesPage />} />
 
+          {/* Temporary admin setup page - remove after first login */}
+          <Route path="/admin-setup" element={<AdminSetupPage />} />
           <Route path="/feed" element={<FeedPage />} />
           <Route path="/traveler/:id" element={<TravelerProfilePage />} />
           <Route path="/terms" element={<TermsPage />} />
