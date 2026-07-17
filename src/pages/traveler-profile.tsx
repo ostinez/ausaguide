@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Spinner } from "@/components/ui/spinner"
 import { supabase } from "@/lib/supabase"
 import { getHostInitials } from "@/lib/tour-utils"
+import { formatSocialLink } from "@/lib/utils"
 
 const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -205,7 +206,7 @@ export default function TravelerProfilePage() {
                     <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-white/5 mt-3">
                       {profile.instagram && (
                         <a
-                          href={profile.instagram}
+                          href={formatSocialLink("instagram", profile.instagram)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="p-1 rounded-full bg-white/5 border border-border/40 hover:border-[#7F5AF0] text-muted-foreground hover:text-white transition-colors"
@@ -216,7 +217,7 @@ export default function TravelerProfilePage() {
                       )}
                       {profile.facebook && (
                         <a
-                          href={profile.facebook}
+                          href={formatSocialLink("facebook", profile.facebook)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="p-1 rounded-full bg-white/5 border border-border/40 hover:border-[#7F5AF0] text-muted-foreground hover:text-white transition-colors"
@@ -227,7 +228,7 @@ export default function TravelerProfilePage() {
                       )}
                       {profile.tiktok && (
                         <a
-                          href={profile.tiktok}
+                          href={formatSocialLink("tiktok", profile.tiktok)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="px-2 py-0.5 rounded-full bg-white/5 border border-border/40 hover:border-[#7F5AF0] text-[9px] font-bold text-muted-foreground hover:text-white transition-colors font-mono tracking-tighter"
@@ -238,7 +239,7 @@ export default function TravelerProfilePage() {
                       )}
                       {profile.reddit && (
                         <a
-                          href={profile.reddit}
+                          href={formatSocialLink("reddit", profile.reddit)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="px-2 py-0.5 rounded-full bg-white/5 border border-border/40 hover:border-[#7F5AF0] text-[9px] font-bold text-muted-foreground hover:text-white transition-colors font-mono tracking-tighter"
