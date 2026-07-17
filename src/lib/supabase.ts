@@ -16,6 +16,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient<any>(supabaseUrl, supabaseAnonKey)
 
+// Disable real-time globally (temporary)
+if ((supabase as any).realtime?.setConfig) {
+  ;(supabase as any).realtime.setConfig({
+    subscriptions: { enable: false }
+  })
+}
+
 if (typeof window !== "undefined") {
   ;(window as any).supabase = supabase
 }
