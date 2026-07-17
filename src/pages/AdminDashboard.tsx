@@ -361,34 +361,18 @@ export default function AdminDashboard() {
     checkAdminAuth()
   }, [navigate])
 
-  // Realtime updates & Initial Load once admin authenticated
+  // Initial Load once admin authenticated & 60s auto-refresh polling
   useEffect(() => {
     if (!isAdmin) return
 
     load()
 
-    const channel = supabase
-      .channel(`admin-dashboard-realtime-${Date.now()}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => {
-        load()
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "tours" }, () => {
-        load()
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, () => {
-        load()
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "waitlist" }, () => {
-        load()
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "hosts" }, () => {
-        load()
-      })
-      .subscribe()
+    const interval = setInterval(() => {
+      load()
+    }, 60000)
 
     return () => {
-      channel.unsubscribe()
-      supabase.removeChannel(channel)
+      clearInterval(interval)
     }
   }, [isAdmin])
 
