@@ -21,6 +21,7 @@ import {
   Settings,
   Video,
   Menu,
+  BadgeCheck,
 } from "lucide-react"
 import { ChatDialog } from "@/components/chat/chat-dialog"
 import NotificationBell from "@/components/ui/NotificationBell"
@@ -1480,6 +1481,49 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
                   {/* Left Column: stats, notifications, bookings */}
                   <div className="space-y-8 lg:col-span-2">
+                    {profile?.host_tier === "certified_guide" && (
+                      <div className="space-y-4">
+                        {!profile.verified_guide && !profile.rejected_as_guide && (
+                          <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 flex items-start gap-3">
+                            <Clock className="size-5 text-amber-500 shrink-0 mt-0.5" />
+                            <div>
+                              <h4 className="font-semibold text-sm text-amber-400">⏳ Certified Guide Application Under Review</h4>
+                              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                                We are currently verifying your TRA/KPSGA license details. You can host tours as a Local Host in the meantime. We'll email you within 48 hours.
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                        {profile.verified_guide && (
+                          <div className="rounded-xl border border-blue-500/30 bg-blue-500/5 p-4 flex items-start gap-3">
+                            <BadgeCheck className="size-5 text-blue-500 shrink-0 mt-0.5" />
+                            <div>
+                              <h4 className="font-semibold text-sm text-blue-400">✅ Verified Guide Status Active</h4>
+                              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                                Your credentials have been verified. You now hold the blue Verified Guide badge, which is visible on all your tours and profile.
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                        {profile.rejected_as_guide && (
+                          <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4 flex items-start gap-3">
+                            <XCircle className="size-5 text-red-500 shrink-0 mt-0.5" />
+                            <div>
+                              <h4 className="font-semibold text-sm text-red-400">Your Certified Guide Application was not approved</h4>
+                              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                                Our team was unable to verify your guide license details. If you'd like to apply again with different details, click below. Otherwise, you can host as a Local Host.
+                              </p>
+                              <button
+                                onClick={() => navigate("/onboarding?become-host=true")}
+                                className="mt-2.5 text-xs text-red-400 underline font-semibold hover:text-red-300"
+                              >
+                                Re-apply for Guide Status
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <HostGamificationTips />
                     <div className="grid grid-cols-2 gap-4">
                       <StatCard icon={MapPin} label="Total Tours" value={hostTours.length.toString()} />

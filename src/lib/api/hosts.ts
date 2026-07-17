@@ -32,6 +32,7 @@ export interface HostRecord {
 function mapProfile(row: ProfileRow): Profile {
   const now = new Date().toISOString()
   return {
+    ...(row as any),
     id: row.id,
     email: row.email,
     full_name: row.full_name,

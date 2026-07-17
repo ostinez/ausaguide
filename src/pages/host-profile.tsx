@@ -123,7 +123,7 @@ export default function HostProfilePage() {
       try {
         const { data: profileData, error: profileErr } = await supabase
           .from("profiles")
-          .select("id, role, full_name, avatar_url, bio, location, languages, host_type, is_verified, host_tier, tiktok, instagram, facebook, reddit")
+          .select("id, role, full_name, avatar_url, bio, location, languages, host_type, is_verified, host_tier, verified_guide, rejected_as_guide, tiktok, instagram, facebook, reddit")
           .eq("id", id)
           .maybeSingle()
 
@@ -213,17 +213,21 @@ export default function HostProfilePage() {
                 <Badge variant="secondary" className="capitalize">
                   {profile.host_type?.replace("_", " ")}
                 </Badge>
-                {/* Host tier badge */}
-                {(profile as any).host_tier === "certified_guide" && (
-                  <Badge className="bg-[#7F5AF0]/15 border border-[#7F5AF0]/40 text-[#a78bfa] hover:bg-[#7F5AF0]/25 gap-1">
-                    🏅 Certified Guide
+                 {((profile as any).verified_guide) && (
+                  <Badge className="bg-blue-500/15 border border-blue-500/40 text-blue-400 hover:bg-blue-500/25 gap-1">
+                    ✅ Verified Guide
                   </Badge>
-                )}
-                {(profile as any).host_tier === "local_host" && (
-                  <Badge className="bg-[#2CB67D]/15 border border-[#2CB67D]/40 text-[#2CB67D] hover:bg-[#2CB67D]/25">
-                    Local Host
-                  </Badge>
-                )}
+                 )}
+                 {(!(profile as any).verified_guide && (profile as any).host_tier === "certified_guide") && (
+                   <Badge className="bg-[#7F5AF0]/15 border border-[#7F5AF0]/40 text-[#a78bfa] hover:bg-[#7F5AF0]/25 gap-1">
+                     🏅 Certified Guide
+                   </Badge>
+                 )}
+                 {(((profile as any).host_tier === "local_host" || (profile as any).rejected_as_guide) && !(profile as any).verified_guide) && (
+                   <Badge className="bg-[#2CB67D]/15 border border-[#2CB67D]/40 text-[#2CB67D] hover:bg-[#2CB67D]/25">
+                     Local Host
+                   </Badge>
+                 )}
                 {profile.is_verified && (
                   <Badge variant="outline" className="border-teal/30 bg-teal/10 text-teal">
                     Verified Host

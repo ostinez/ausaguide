@@ -29,6 +29,15 @@ export interface Profile {
   host_tier?: "certified_guide" | "local_host" | null
   license_url?: string | null
   license_status?: "pending" | "approved" | "rejected" | null
+  // Guide verification fields
+  tra_number?: string | null
+  kpsga_number?: string | null
+  license_expiry?: string | null
+  verified_guide?: boolean
+  verification_date?: string | null
+  verification_notes?: string | null
+  rejected_as_guide?: boolean
+  certificate_url?: string | null
   tiktok?: string | null
   instagram?: string | null
   facebook?: string | null

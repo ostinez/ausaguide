@@ -9,7 +9,7 @@ import {
   Shield, Users, Calendar, DollarSign, Search, ArrowLeft,
   XCircle, CheckCircle2, MapPin,
   Eye, Trash2, Ban, UserCheck, Download, RefreshCw,
-  ClipboardList, Settings, Terminal,
+  ClipboardList, Settings, Terminal, BadgeCheck, ExternalLink, FileText, StickyNote
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -24,7 +24,7 @@ import { supabase } from "@/lib/supabase"
 import { approveHost, rejectHost } from "@/lib/api/hosts"
 import type { HostRecord } from "@/lib/api/hosts"
 import type { Profile } from "@/lib/types"
-import { sendTourApprovalEmail } from "@/lib/api/emails"
+import { sendTourApprovalEmail, sendGuideApprovedEmail, sendGuideRejectedEmail } from "@/lib/api/emails"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -165,7 +165,7 @@ export default function AdminDashboard() {
   const [checkingAuth, setCheckingAuth] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<"overview" | "users" | "tours" | "bookings" | "waitlist" | "moderation" | "system" | "logs">("overview")
+  const [activeTab, setActiveTab] = useState<"overview" | "users" | "tours" | "bookings" | "waitlist" | "moderation" | "guides" | "system" | "logs">("overview")
 
   useEffect(() => {
     const tab = searchParams.get("tab")
@@ -176,6 +176,7 @@ export default function AdminDashboard() {
       tab === "bookings" ||
       tab === "waitlist" ||
       tab === "moderation" ||
+      tab === "guides" ||
       tab === "system" ||
       tab === "logs"
     ) {
@@ -228,38 +229,62 @@ export default function AdminDashboard() {
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [rejectLoading, setRejectLoading] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null)
+  const [guideNotes, setGuideNotes] = useState<Record<string, string>>({})
 
-  const handleApproveGuide = async (userId: string) => {
+  const handleApproveGuide = async (userId: string, hostEmail: string, hostName: string) => {
     try {
       const { error } = await supabase
         .from("profiles")
         .update({
           host_tier: "certified_guide",
-          license_status: "approved"
+          verified_guide: true,
+          verification_date: new Date().toISOString(),
+          rejected_as_guide: false,
+          license_status: "approved",
         } as any)
         .eq("id", userId)
       if (error) throw error
-      showToast("Guide application approved successfully!", "success")
+      sendGuideApprovedEmail(hostEmail, hostName).catch(console.error)
+      await logAdminAction("Approve Guide", "profile", userId, { email: hostEmail, name: hostName })
+      showToast("Guide application approved! Email sent to host.", "success")
       load()
     } catch (err: any) {
       showToast(err.message || "Failed to approve guide", "error")
     }
   }
 
-  const handleRejectGuide = async (userId: string) => {
+  const handleRejectGuide = async (userId: string, hostEmail: string, hostName: string) => {
     try {
       const { error } = await supabase
         .from("profiles")
         .update({
           host_tier: "local_host",
-          license_status: "rejected"
+          rejected_as_guide: true,
+          verified_guide: false,
+          license_status: "rejected",
         } as any)
         .eq("id", userId)
       if (error) throw error
-      showToast("Guide application rejected.", "success")
+      sendGuideRejectedEmail(hostEmail, hostName).catch(console.error)
+      await logAdminAction("Reject Guide", "profile", userId, { email: hostEmail, name: hostName })
+      showToast("Guide application rejected. Email sent to host.", "success")
       load()
     } catch (err: any) {
       showToast(err.message || "Failed to reject guide", "error")
+    }
+  }
+
+  const handleSaveGuideNote = async (userId: string, note: string) => {
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ verification_notes: note } as any)
+        .eq("id", userId)
+      if (error) throw error
+      showToast("Note saved.", "success")
+      load()
+    } catch (err: any) {
+      showToast("Failed to save note", "error")
     }
   }
 
@@ -693,13 +718,21 @@ export default function AdminDashboard() {
           setSearchParams({ tab: v })
           setSearch("")
         }}>
-          <TabsList className="grid w-full grid-cols-8 h-auto bg-card/60 backdrop-blur-md border border-border/40">
+          <TabsList className="grid w-full grid-cols-9 h-auto bg-card/60 backdrop-blur-md border border-border/40">
             <TabsTrigger value="overview" className="text-xs py-2.5">Overview</TabsTrigger>
             <TabsTrigger value="users" className="text-xs py-2.5">Users</TabsTrigger>
             <TabsTrigger value="tours" className="text-xs py-2.5">Tours</TabsTrigger>
             <TabsTrigger value="bookings" className="text-xs py-2.5">Bookings</TabsTrigger>
             <TabsTrigger value="waitlist" className="text-xs py-2.5">Waitlist</TabsTrigger>
             <TabsTrigger value="moderation" className="text-xs py-2.5">Moderation</TabsTrigger>
+            <TabsTrigger value="guides" className="text-xs py-2.5 relative">
+              Guide Verif.
+              {profiles.filter((p: any) => p.tra_number && !p.verified_guide && !p.rejected_as_guide).length > 0 && (
+                <span className="absolute -top-1 -right-1 size-4 rounded-full bg-amber-500 text-[9px] font-bold text-white flex items-center justify-center">
+                  {profiles.filter((p: any) => p.tra_number && !p.verified_guide && !p.rejected_as_guide).length}
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="system" className="text-xs py-2.5">System</TabsTrigger>
             <TabsTrigger value="logs" className="text-xs py-2.5">Logs</TabsTrigger>
           </TabsList>
@@ -1513,11 +1546,11 @@ export default function AdminDashboard() {
                                   )}
                                 </td>
                                 <td className="py-3.5 px-4 text-right space-x-2">
-                                  <Button size="sm" onClick={() => handleApproveGuide(p.id)}
+                                  <Button size="sm" onClick={() => handleApproveGuide(p.id, p.email, p.full_name)}
                                     className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-full px-3 py-1 text-xs">
                                     Approve
                                   </Button>
-                                  <Button size="sm" variant="destructive" onClick={() => handleRejectGuide(p.id)}
+                                  <Button size="sm" variant="destructive" onClick={() => handleRejectGuide(p.id, p.email, p.full_name)}
                                     className="rounded-full px-3 py-1 text-xs">
                                     Reject
                                   </Button>
@@ -1635,6 +1668,212 @@ export default function AdminDashboard() {
                     </div>
                     {posts.length === 0 && (
                       <div className="py-8 text-center text-xs text-muted-foreground">No community posts to show.</div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* ── GUIDE VERIFICATIONS ──────────────────────────────────────── */}
+            {activeTab === "guides" && (
+              <div className="space-y-8 animate-in fade-in duration-300">
+                {/* Pending reviews */}
+                <Card className="border-border/60">
+                  <CardHeader>
+                    <CardTitle className="text-base text-white flex items-center gap-2">
+                      <BadgeCheck className="size-5 text-[#7F5AF0]" />
+                      Pending Guide Verification Applications
+                    </CardTitle>
+                    <CardDescription>
+                      Verify host guide licenses manually using the official databases and TRA portal.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm">
+                        <thead>
+                          <tr className="border-b border-border/40 text-muted-foreground font-semibold">
+                            <th className="pb-3 px-4">Applicant</th>
+                            <th className="pb-3 px-4">License Details</th>
+                            <th className="pb-3 px-4">Certificate</th>
+                            <th className="pb-3 px-4">Verification Notes</th>
+                            <th className="pb-3 px-4 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border/10">
+                          {profiles
+                            .filter(
+                              (p) =>
+                                p.tra_number &&
+                                !p.verified_guide &&
+                                !p.rejected_as_guide &&
+                                (p.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+                                  p.email?.toLowerCase().includes(search.toLowerCase()))
+                            )
+                            .map((p) => (
+                              <tr key={p.id} className="hover:bg-muted/10 transition-colors align-top">
+                                <td className="py-4 px-4">
+                                  <div className="font-semibold text-foreground">{p.full_name}</div>
+                                  <div className="text-xs text-muted-foreground">{p.email}</div>
+                                  <div className="text-[10px] text-muted-foreground/60 mt-1">
+                                    Joined: {p.created_at ? format(parseISO(p.created_at), "MMM d, yyyy") : "N/A"}
+                                  </div>
+                                </td>
+                                <td className="py-4 px-4 space-y-1 text-xs">
+                                  <div>
+                                    <span className="text-muted-foreground">TRA: </span>
+                                    <code className="text-[#7F5AF0] font-mono font-semibold">{p.tra_number}</code>
+                                  </div>
+                                  {p.kpsga_number && (
+                                    <div>
+                                      <span className="text-muted-foreground">KPSGA: </span>
+                                      <code className="text-[#2CB67D] font-mono font-semibold">{p.kpsga_number}</code>
+                                    </div>
+                                  )}
+                                  {p.license_expiry && (
+                                    <div className="text-[10px] text-muted-foreground/80">
+                                      Expiry: {format(parseISO(p.license_expiry), "MMM d, yyyy")}
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="py-4 px-4">
+                                  {p.certificate_url ? (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleViewLicense(p.certificate_url!)}
+                                      className="rounded-full border-border/80 text-xs flex items-center gap-1.5"
+                                    >
+                                      <FileText className="size-3.5" />
+                                      View Certificate
+                                    </Button>
+                                  ) : (
+                                    <span className="text-xs text-muted-foreground/50 italic">No upload</span>
+                                  )}
+                                </td>
+                                <td className="py-4 px-4 space-y-2">
+                                  <textarea
+                                    placeholder="Add notes (e.g. verified on portal, issue with certificate...)"
+                                    value={guideNotes[p.id] ?? p.verification_notes ?? ""}
+                                    onChange={(e) =>
+                                      setGuideNotes((prev) => ({ ...prev, [p.id]: e.target.value }))
+                                    }
+                                    className="w-full min-w-[200px] max-w-xs text-xs rounded-xl bg-card border border-border/60 p-2 text-foreground focus:outline-none focus:border-primary/50 resize-none h-16"
+                                  />
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleSaveGuideNote(p.id, guideNotes[p.id] ?? "")}
+                                    className="text-[10px] text-[#7F5AF0] hover:bg-[#7F5AF0]/10 h-7 px-2.5 rounded-full flex items-center gap-1"
+                                  >
+                                    <StickyNote className="size-3" />
+                                    Save Note
+                                  </Button>
+                                </td>
+                                <td className="py-4 px-4 text-right space-y-2">
+                                  <div className="flex flex-col gap-1.5 items-end">
+                                    <Button
+                                      size="sm"
+                                      onClick={() => window.open("https://verify.tra.go.ke", "_blank")}
+                                      className="bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 rounded-full px-3 text-xs flex items-center gap-1"
+                                    >
+                                      <ExternalLink className="size-3" />
+                                      Verify on TRA Portal
+                                    </Button>
+                                    <div className="flex gap-1.5">
+                                      <Button
+                                        size="sm"
+                                        onClick={() => handleApproveGuide(p.id, p.email, p.full_name)}
+                                        className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-full px-3 py-1 text-xs"
+                                      >
+                                        Approve
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        onClick={() => handleRejectGuide(p.id, p.email, p.full_name)}
+                                        className="rounded-full px-3 py-1 text-xs"
+                                      >
+                                        Reject
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {profiles.filter((p) => p.tra_number && !p.verified_guide && !p.rejected_as_guide).length === 0 && (
+                      <div className="py-12 text-center text-sm text-muted-foreground">
+                        No pending guide verification applications.
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* History panel */}
+                <Card className="border-border/60">
+                  <CardHeader>
+                    <CardTitle className="text-base text-white">Verification History</CardTitle>
+                    <CardDescription>Records of past approvals and rejections.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm">
+                        <thead>
+                          <tr className="border-b border-border/40 text-muted-foreground font-semibold">
+                            <th className="pb-3 px-4">Host</th>
+                            <th className="pb-3 px-4">TRA License</th>
+                            <th className="pb-3 px-4">Verification Outcome</th>
+                            <th className="pb-3 px-4">Date Reviewed</th>
+                            <th className="pb-3 px-4">Notes</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border/10">
+                          {profiles
+                            .filter(
+                              (p) =>
+                                p.tra_number &&
+                                (p.verified_guide || p.rejected_as_guide) &&
+                                (p.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+                                  p.email?.toLowerCase().includes(search.toLowerCase()))
+                            )
+                            .map((p) => (
+                              <tr key={p.id} className="hover:bg-muted/10 transition-colors">
+                                <td className="py-3 px-4">
+                                  <div className="font-semibold text-foreground text-xs">{p.full_name}</div>
+                                  <div className="text-[10px] text-muted-foreground">{p.email}</div>
+                                </td>
+                                <td className="py-3 px-4 text-xs">
+                                  <code className="text-[#7F5AF0] font-mono font-semibold">{p.tra_number}</code>
+                                </td>
+                                <td className="py-3 px-4">
+                                  {p.verified_guide ? (
+                                    <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] uppercase font-bold tracking-wider">
+                                      Approved (Verified Guide)
+                                    </Badge>
+                                  ) : (
+                                    <Badge className="bg-red-500/10 text-red-400 border border-red-500/20 text-[10px] uppercase font-bold tracking-wider">
+                                      Rejected (Local Host)
+                                    </Badge>
+                                  )}
+                                </td>
+                                <td className="py-3 px-4 text-xs text-muted-foreground">
+                                  {p.verification_date ? format(parseISO(p.verification_date), "MMM d, yyyy HH:mm") : "—"}
+                                </td>
+                                <td className="py-3 px-4 text-xs text-muted-foreground max-w-xs truncate" title={p.verification_notes ?? ""}>
+                                  {p.verification_notes || <span className="text-muted-foreground/30 italic">No notes</span>}
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {profiles.filter((p) => p.tra_number && (p.verified_guide || p.rejected_as_guide)).length === 0 && (
+                      <div className="py-8 text-center text-xs text-muted-foreground">
+                        No verification records found.
+                      </div>
                     )}
                   </CardContent>
                 </Card>
