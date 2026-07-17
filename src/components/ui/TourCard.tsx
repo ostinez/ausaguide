@@ -148,15 +148,11 @@ export const TourCard = memo(function TourCard({ tour, isWishlisted, onToggleWis
               <span className="text-[10px] bg-blue-500/10 border border-blue-500/30 text-blue-400 rounded-full px-2 py-0.5 font-bold flex items-center gap-0.5">
                 ✅ Verified Guide
               </span>
-            ) : tour.host?.host_tier === "certified_guide" ? (
-              <span className="text-[10px] bg-purple-500/10 border border-purple-500/30 text-purple-400 rounded-full px-2 py-0.5 font-bold flex items-center gap-0.5">
-                🏅 Certified Guide
-              </span>
-            ) : (tour.host?.host_tier === "local_host" || tour.host?.rejected_as_guide) ? (
+            ) : (
               <span className="text-[10px] bg-teal-500/10 border border-teal-500/30 text-teal-400 rounded-full px-2 py-0.5 font-bold">
                 Local Host
               </span>
-            ) : null}
+            )}
           </div>
 
           <h3 className={cn("line-clamp-2 font-semibold leading-snug text-foreground transition-colors group-hover:text-primary", isList ? "text-lg" : "text-base")}>

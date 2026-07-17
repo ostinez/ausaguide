@@ -213,17 +213,11 @@ export default function HostProfilePage() {
                 <Badge variant="secondary" className="capitalize">
                   {profile.host_type?.replace("_", " ")}
                 </Badge>
-                 {((profile as any).verified_guide) && (
+                 {((profile as any).verified_guide) ? (
                   <Badge className="bg-blue-500/15 border border-blue-500/40 text-blue-400 hover:bg-blue-500/25 gap-1">
                     ✅ Verified Guide
                   </Badge>
-                 )}
-                 {(!(profile as any).verified_guide && (profile as any).host_tier === "certified_guide") && (
-                   <Badge className="bg-[#7F5AF0]/15 border border-[#7F5AF0]/40 text-[#a78bfa] hover:bg-[#7F5AF0]/25 gap-1">
-                     🏅 Certified Guide
-                   </Badge>
-                 )}
-                 {(((profile as any).host_tier === "local_host" || (profile as any).rejected_as_guide) && !(profile as any).verified_guide) && (
+                 ) : (
                    <Badge className="bg-[#2CB67D]/15 border border-[#2CB67D]/40 text-[#2CB67D] hover:bg-[#2CB67D]/25">
                      Local Host
                    </Badge>

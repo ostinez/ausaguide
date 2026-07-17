@@ -1481,7 +1481,7 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
                   {/* Left Column: stats, notifications, bookings */}
                   <div className="space-y-8 lg:col-span-2">
-                    {profile?.host_tier === "certified_guide" && (
+                    {profile?.tra_number && (
                       <div className="space-y-4">
                         {!profile.verified_guide && !profile.rejected_as_guide && (
                           <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 flex items-start gap-3">
@@ -1489,7 +1489,7 @@ export default function DashboardPage() {
                             <div>
                               <h4 className="font-semibold text-sm text-amber-400">⏳ Certified Guide Application Under Review</h4>
                               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                                We are currently verifying your TRA/KPSGA license details. You can host tours as a Local Host in the meantime. We'll email you within 48 hours.
+                                Your Certified Guide application is under review. You are currently a Local Host.
                               </p>
                             </div>
                           </div>
@@ -1500,7 +1500,7 @@ export default function DashboardPage() {
                             <div>
                               <h4 className="font-semibold text-sm text-blue-400">✅ Verified Guide Status Active</h4>
                               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                                Your credentials have been verified. You now hold the blue Verified Guide badge, which is visible on all your tours and profile.
+                                You are a Verified Guide ✅
                               </p>
                             </div>
                           </div>
@@ -1511,7 +1511,7 @@ export default function DashboardPage() {
                             <div>
                               <h4 className="font-semibold text-sm text-red-400">Your Certified Guide Application was not approved</h4>
                               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                                Our team was unable to verify your guide license details. If you'd like to apply again with different details, click below. Otherwise, you can host as a Local Host.
+                                Your Certified Guide application was not approved. You are a Local Host.
                               </p>
                               <button
                                 onClick={() => navigate("/onboarding?become-host=true")}

@@ -749,7 +749,7 @@ function StepVerifyID({
 }
 
 // ── Step 4: Done ─────────────────────────────────────────
-function StepDone({ name, role }: { name: string; role: Role }) {
+function StepDone({ name, role, hostTier }: { name: string; role: Role; hostTier?: string | null }) {
   const navigate = useNavigate()
   const particles = useConfetti(true)
 
@@ -801,9 +801,11 @@ function StepDone({ name, role }: { name: string; role: Role }) {
         <h2 className="text-2xl sm:text-3xl font-black text-white">
           Welcome to Ausaguide, {name}!
         </h2>
-        <p className="text-sm text-white/60 max-w-xs mx-auto">
+        <p className="text-sm text-white/60 max-w-md mx-auto leading-relaxed">
           {role === "host"
-            ? "Your host profile is being reviewed. You can start exploring tours in the meantime."
+            ? hostTier === "certified_guide"
+              ? "Your Certified Guide application is under review. You can start hosting now as a Local Host. Once approved, you'll be upgraded to a Certified Guide with a blue Verified Guide badge."
+              : "Your host profile is being reviewed. You can start exploring tours in the meantime."
             : "Your adventure starts now. Discover authentic local experiences in Kenya."}
         </p>
       </motion.div>
@@ -1014,7 +1016,7 @@ function StepGuideVerification({
         certificate_url: publicUrl,
         verified_guide: false,
         rejected_as_guide: false,
-        host_tier: "certified_guide",
+        host_tier: "local_host",
       }
       if (licenseExpiry) updateData.license_expiry = licenseExpiry
 
@@ -1030,7 +1032,8 @@ function StepGuideVerification({
         userName,
         userEmail,
         traNumber.trim(),
-        kpsga.trim() || null
+        kpsga.trim() || null,
+        publicUrl
       ).catch(console.error)
 
       toast.success("Application submitted! We'll review your license within 48 hours.")
@@ -1329,6 +1332,7 @@ export default function OnboardingPage() {
                   <StepDone
                     name={completedName || "Explorer"}
                     role={role}
+                    hostTier={hostTierSelected}
                   />
                 )}
               </>

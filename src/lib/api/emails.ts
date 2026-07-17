@@ -262,27 +262,33 @@ export async function sendGuideApplicationNotification(
   hostName: string,
   hostEmail: string,
   traNumber: string,
-  kpsga?: string | null
+  kpsga: string | null,
+  certificateUrl: string
 ): Promise<boolean> {
-  const subject = `🆕 New Certified Guide Application — ${hostName}`
+  const subject = `New Certified Guide Application – ${hostName}`
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 24px; background-color: #16161A; color: #fffffe; line-height: 1.6;">
       <div style="text-align: center; margin-bottom: 32px;">
         <img src="https://ausaguide.com/logo-primary.png" alt="Ausaguide" style="height: 36px; width: auto; display: inline-block;" />
       </div>
       <div style="background: rgba(127,90,240,0.08); border: 1px solid rgba(127,90,240,0.3); border-radius: 16px; padding: 20px; margin-bottom: 24px;">
-        <p style="font-size: 18px; font-weight: 700; color: #7F5AF0; margin: 0 0 4px;">New Guide Verification Request</p>
-        <p style="font-size: 13px; color: #a7a9be; margin: 0;">Action required — please verify using the TRA portal.</p>
+        <p style="font-size: 18px; font-weight: 700; color: #7F5AF0; margin: 0 0 4px;">New Certified Guide Application</p>
+        <p style="font-size: 13px; color: #a7a9be; margin: 0;">A new host has applied for Certified Guide verification.</p>
       </div>
       <table style="width: 100%; border-collapse: collapse; font-size: 14px; color: #a7a9be; margin-bottom: 24px;">
-        <tr><td style="padding: 8px 0; font-weight: 600; color: #fffffe;">Host Name:</td><td style="padding: 8px 0;">${hostName}</td></tr>
-        <tr><td style="padding: 8px 0; font-weight: 600; color: #fffffe;">Email:</td><td style="padding: 8px 0;">${hostEmail}</td></tr>
+        <tr><td style="padding: 8px 0; font-weight: 600; color: #fffffe; width: 140px;">Host Name:</td><td style="padding: 8px 0; color: #fffffe;">${hostName}</td></tr>
+        <tr><td style="padding: 8px 0; font-weight: 600; color: #fffffe;">Email:</td><td style="padding: 8px 0; color: #fffffe;">${hostEmail}</td></tr>
         <tr><td style="padding: 8px 0; font-weight: 600; color: #fffffe;">TRA Number:</td><td style="padding: 8px 0; color: #7F5AF0; font-weight: 700;">${traNumber}</td></tr>
-        ${kpsga ? `<tr><td style="padding: 8px 0; font-weight: 600; color: #fffffe;">KPSGA Number:</td><td style="padding: 8px 0;">${kpsga}</td></tr>` : ''}
+        ${kpsga ? `<tr><td style="padding: 8px 0; font-weight: 600; color: #fffffe;">KPSGA Number:</td><td style="padding: 8px 0; color: #fffffe;">${kpsga}</td></tr>` : ''}
+        <tr>
+          <td style="padding: 8px 0; font-weight: 600; color: #fffffe;">Certificate:</td>
+          <td style="padding: 8px 0;">
+            <a href="${certificateUrl}" target="_blank" style="color: #3b82f6; text-decoration: underline;">View Uploaded Certificate Document</a>
+          </td>
+        </tr>
       </table>
-      <div style="text-align: center; margin-bottom: 24px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-        <a href="https://verify.tra.go.ke" target="_blank" style="background-color: #7F5AF0; color: #ffffff; padding: 12px 24px; border-radius: 9999px; text-decoration: none; font-weight: bold; display: inline-block; font-size: 14px;">Verify on TRA Portal →</a>
-        <a href="https://ausaguide.com/admin/dashboard?tab=guides" style="background-color: rgba(44,182,125,0.15); border: 1px solid #2CB67D; color: #2CB67D; padding: 12px 24px; border-radius: 9999px; text-decoration: none; font-weight: bold; display: inline-block; font-size: 14px;">Open Admin Dashboard →</a>
+      <div style="text-align: center; margin-bottom: 24px;">
+        <a href="https://ausaguide.com/admin/dashboard?tab=guides" style="background-color: #7F5AF0; color: #ffffff; padding: 12px 28px; border-radius: 9999px; text-decoration: none; font-weight: bold; display: inline-block; font-size: 14px; box-shadow: 0 4px 12px rgba(127, 90, 240, 0.3);">Open Admin Dashboard → Guide Verifications</a>
       </div>
       <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 32px 0;" />
       <p style="font-size: 13px; color: #2CB67D; font-weight: 700; text-align: center; margin-bottom: 4px;">Ausaguide — Be a Local. Share Your World.</p>
