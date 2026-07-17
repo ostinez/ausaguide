@@ -525,6 +525,7 @@ function SignUpForm() {
   const [loading, setLoading] = useState(false)
   const [resendLoading, setResendLoading] = useState(false)
   const [resendCountdown, setResendCountdown] = useState(0)
+  const [showResendButton, setShowResendButton] = useState(false)
 
   // Resend Countdown Timer Effect
   useEffect(() => {
@@ -563,7 +564,8 @@ function SignUpForm() {
       setInfoMessage("Verification email resent. Please check your inbox.")
       setResendCountdown(30)
     } catch (err: any) {
-      setError(friendlyAuthError(err.message))
+      console.error("Resend error:", err)
+      setError("We couldn't send the email. Please check your email address and try again.")
     } finally {
       setResendLoading(false)
     }
@@ -573,6 +575,7 @@ function SignUpForm() {
     e.preventDefault()
     setError(null)
     setInfoMessage(null)
+    setShowResendButton(false)
 
     // Form validation: ensure all fields are filled
     if (!name.trim() || !email.trim() || !username.trim() || !password || !confirmPassword) {
@@ -663,6 +666,12 @@ function SignUpForm() {
         clearTimeout(safetyTimeoutId)
         toast.success("Account created successfully! Please confirm your email.")
         setInfoMessage(`We've sent a verification email to ${email.trim()}. It may take up to 2 minutes to arrive. Please check your spam folder if you don't see it.`)
+        
+        // Start 2 minute timer before showing the resend button
+        setTimeout(() => {
+          setShowResendButton(true)
+        }, 120000)
+
         // Preserve email for easy resending, clear other fields
         setName("")
         setUsername("")
@@ -703,9 +712,23 @@ function SignUpForm() {
       )}
 
       {infoMessage && (
-        <div className="flex items-start gap-2 rounded-xl border border-[#2CB67D]/30 bg-[#2CB67D]/10 p-3 text-xs font-semibold text-[#2CB67D] animate-in fade-in">
-          <CheckCircle2 className="size-4 shrink-0 mt-0.5" />
-          <span>{infoMessage}</span>
+        <div className="space-y-2 animate-in fade-in">
+          <div className="flex items-start gap-2 rounded-xl border border-[#2CB67D]/30 bg-[#2CB67D]/10 p-3 text-xs font-semibold text-[#2CB67D]">
+            <CheckCircle2 className="size-4 shrink-0 mt-0.5" />
+            <span>{infoMessage}</span>
+          </div>
+          {showResendButton && (
+            <div className="flex justify-start px-1">
+              <button
+                type="button"
+                disabled={resendLoading || resendCountdown > 0}
+                onClick={handleResendVerification}
+                className="text-xs font-bold text-[#2CB67D] hover:underline cursor-pointer flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline"
+              >
+                {resendCountdown > 0 ? `Resend in ${resendCountdown}s` : "Didn't receive the email? Resend Email"}
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -841,16 +864,6 @@ function SignUpForm() {
         )}
       </Button>
 
-      <div className="text-center mt-2">
-        <button
-          type="button"
-          disabled={resendLoading || resendCountdown > 0}
-          onClick={handleResendVerification}
-          className="text-xs text-muted-foreground hover:text-[#7F5AF0] transition-colors underline focus:outline-none cursor-pointer disabled:opacity-50 disabled:no-underline disabled:cursor-not-allowed"
-        >
-          {resendCountdown > 0 ? `Resend email in ${resendCountdown}s` : "Didn't receive the verification email? Resend"}
-        </button>
-      </div>
 
       <p className="text-center text-xs text-muted-foreground">
         By signing up, you agree to our{" "}

@@ -27,9 +27,7 @@ import {
   ArrowRight,
   PartyPopper,
   Check,
-  FileCheck,
-  Upload,
-  BadgeCheck
+  FileCheck
 } from "lucide-react"
 
 
@@ -864,51 +862,124 @@ function StepDone({ name, role, hostTier }: { name: string; role: Role; hostTier
 
 
 
-// ── Step: Host Tier ────────────────────────────────────
+// ── Step: Host Tier & Verification ──────────────────
 function StepHostTier({
   userId,
+  userEmail,
+  userName,
   onComplete,
 }: {
   userId: string
+  userEmail: string
+  userName: string
   onComplete: (tier: "certified_guide" | "local_host") => void
 }) {
   const [tier, setTier] = useState<"certified_guide" | "local_host" | null>(null)
+  const [traNumber, setTraNumber] = useState("")
+  const [kpsga, setKpsga] = useState("")
+  const [licenseExpiry, setLicenseExpiry] = useState("")
   const [licenseFile, setLicenseFile] = useState<File | null>(null)
+  const [agreed, setAgreed] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [uploadProgressMsg, setUploadProgressMsg] = useState("")
   const fileRef = useRef<HTMLInputElement>(null)
 
   const handleContinue = async () => {
     if (!tier) return
-    setUploading(true)
-    try {
-      let licenseUrl: string | null = null
-      let licenseStatus: string | null = null
 
-      if (tier === "certified_guide") {
-        licenseStatus = "pending"
-        if (licenseFile) {
-          const ext = licenseFile.name.split(".").pop()
-          const path = `${userId}/${Date.now()}.${ext}`
-          const { error: upErr } = await supabase.storage.from("licenses").upload(path, licenseFile)
-          if (upErr) throw upErr
-          const { data: { publicUrl } } = supabase.storage.from("licenses").getPublicUrl(path)
-          licenseUrl = publicUrl
-        }
+    if (tier === "certified_guide") {
+      // Validate Guide fields
+      if (!traNumber.trim() || !licenseFile || !agreed) {
+        toast.error("Please complete all required fields and wait for the file to upload.")
+        return
       }
 
-      await supabase
-        .from("profiles")
-        .update({
-          host_tier: tier, // Fix: was always saving 'local_host'
-          license_url: licenseUrl,
-          license_status: licenseStatus,
-        } as any)
-        .eq("id", userId)
-      onComplete(tier) // pass tier back to parent
-    } catch (err: any) {
-      console.error(err)
-    } finally {
-      setUploading(false)
+      setUploading(true)
+      setUploadProgressMsg("Uploading your file... Please wait.")
+      try {
+        // Upload certificate to Supabase Storage
+        const ext = licenseFile.name.split(".").pop()
+        const path = `${userId}/cert-${Date.now()}.${ext}`
+        const { error: upErr } = await supabase.storage.from("licenses").upload(path, licenseFile)
+        if (upErr) throw upErr
+        const { data: { publicUrl } } = supabase.storage.from("licenses").getPublicUrl(path)
+
+        // Save to profile
+        const updateData: any = {
+          tra_number: traNumber.trim(),
+          kpsga_number: kpsga.trim() || null,
+          certificate_url: publicUrl,
+          verified_guide: false,
+          rejected_as_guide: false,
+          host_tier: "local_host", // Save as local_host (temporarily)
+        }
+        if (licenseExpiry) updateData.license_expiry = licenseExpiry
+
+        const { error: updateErr } = await supabase
+          .from("profiles")
+          .update(updateData)
+          .eq("id", userId)
+        if (updateErr) throw updateErr
+
+        // Create Admin Notification (In-App)
+        try {
+          const { data: admins } = await supabase
+            .from("profiles")
+            .select("id")
+            .eq("role", "admin")
+          if (admins && admins.length > 0) {
+            const notificationsToInsert = admins.map((admin) => ({
+              user_id: admin.id,
+              message: `New Certified Guide Application from ${userName} (TRA: ${traNumber})`,
+              type: "guide_application",
+              read: false,
+            }))
+            await supabase.from("notifications").insert(notificationsToInsert)
+          }
+        } catch (notifErr) {
+          console.error("Failed to create admin in-app notification:", notifErr)
+        }
+
+        // Notify admin via Email
+        sendGuideApplicationNotification(
+          "ausaguides@gmail.com",
+          userName,
+          userEmail,
+          traNumber.trim(),
+          kpsga.trim() || null,
+          publicUrl
+        ).catch(console.error)
+
+        toast.success("Your Certified Guide application has been submitted for review. You can now start hosting as a Local Host.")
+        onComplete(tier)
+      } catch (err: any) {
+        console.error(err)
+        toast.error("Please complete all required fields and wait for the file to upload.")
+      } finally {
+        setUploading(false)
+        setUploadProgressMsg("")
+      }
+    } else {
+      // Local Host chosen
+      setUploading(true)
+      try {
+        const { error } = await supabase
+          .from("profiles")
+          .update({
+            host_tier: "local_host",
+            verified_guide: false,
+          } as any)
+          .eq("id", userId)
+        if (error) error
+
+        toast.success("Host tier updated successfully.")
+        onComplete(tier)
+      } catch (err: any) {
+        console.error(err)
+        toast.error("Failed to update host tier.")
+      } finally {
+        setUploading(false)
+      }
     }
   }
 
@@ -941,26 +1012,79 @@ function StepHostTier({
       </div>
 
       {tier === "certified_guide" && (
-        <div className="space-y-2 animate-in fade-in duration-300">
-          <p className="text-sm font-semibold text-white/80">Upload your tour guide license / certification</p>
-          <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden"
-            onChange={e => { if (e.target.files?.[0]) setLicenseFile(e.target.files[0]); e.target.value = "" }} />
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            className="w-full py-3 rounded-xl border border-dashed border-[#7F5AF0]/40 text-sm text-[#a78bfa] hover:border-[#7F5AF0] hover:bg-[#7F5AF0]/5 transition-colors"
-          >
-            <span className="flex items-center justify-center gap-2">
-              {licenseFile ? (
-                <>
-                  <FileCheck className="size-4 text-[#2CB67D]" /> {licenseFile.name}
-                </>
-              ) : (
-                "Click to upload license / certificate"
+        <div className="space-y-4 animate-in fade-in duration-300">
+          <div className="space-y-1.5">
+            <Label htmlFor="tra-number" className="text-white/85 text-xs font-semibold">TRA Number (required)</Label>
+            <Input
+              id="tra-number"
+              type="text"
+              placeholder="Tourism Regulatory Authority license number"
+              value={traNumber}
+              onChange={(e) => setTraNumber(e.target.value)}
+              className="border-white/20 bg-white/5 text-white placeholder:text-white/30 h-10 text-xs rounded-xl"
+              required
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="kpsga-number" className="text-white/85 text-xs font-semibold">KPSGA Number (optional)</Label>
+            <Input
+              id="kpsga-number"
+              type="text"
+              placeholder="Kenya Professional Safari Guides Association number"
+              value={kpsga}
+              onChange={(e) => setKpsga(e.target.value)}
+              className="border-white/20 bg-white/5 text-white placeholder:text-white/30 h-10 text-xs rounded-xl"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="license-expiry" className="text-white/85 text-xs font-semibold">License Expiry Date (optional)</Label>
+            <Input
+              id="license-expiry"
+              type="date"
+              value={licenseExpiry}
+              onChange={(e) => setLicenseExpiry(e.target.value)}
+              className="border-white/20 bg-white/5 text-white placeholder:text-white/30 h-10 text-xs rounded-xl [color-scheme:dark]"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-white/85 text-xs font-semibold">Upload your tour guide license / certification (required)</Label>
+            <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden"
+              onChange={e => { if (e.target.files?.[0]) setLicenseFile(e.target.files[0]); e.target.value = "" }} />
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="w-full py-3 rounded-xl border border-dashed border-[#7F5AF0]/40 text-sm text-[#a78bfa] hover:border-[#7F5AF0] hover:bg-[#7F5AF0]/5 transition-colors"
+            >
+              <span className="flex items-center justify-center gap-2">
+                {licenseFile ? (
+                  <>
+                    <FileCheck className="size-4 text-[#2CB67D]" /> {licenseFile.name}
+                  </>
+                ) : (
+                  "Click to upload license / certificate"
+                )}
+              </span>
+            </button>
+            <p className="text-[11px] text-white/30">PDF or image (JPG/PNG). This will be reviewed by our team.</p>
+          </div>
+
+          <label className="flex items-start gap-3 cursor-pointer group pt-2 select-none">
+            <div
+              onClick={() => setAgreed(!agreed)}
+              className={cn(
+                "mt-0.5 size-5 shrink-0 rounded border-2 flex items-center justify-center transition-all",
+                agreed ? "bg-[#7F5AF0] border-[#7F5AF0]" : "border-white/20 hover:border-[#7F5AF0]/50"
               )}
-            </span>
-          </button>
-          <p className="text-[11px] text-white/30">PDF or image (JPG/PNG). This will be reviewed by our team.</p>
+            >
+              {agreed && <Check className="size-3 text-white" />}
+            </div>
+            <p className="text-xs text-white/60 leading-relaxed">
+              I confirm that the information provided is accurate and I am a licensed tour guide under Kenyan law. I understand that providing false information may result in account suspension.
+            </p>
+          </label>
         </div>
       )}
 
@@ -970,186 +1094,17 @@ function StepHostTier({
         onClick={handleContinue}
         className="w-full rounded-full bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 transition-all duration-300 flex items-center justify-center gap-2"
       >
-        {uploading ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
-        Continue
-        <ArrowRight className="size-4" />
-      </Button>
-    </div>
-  )
-}
-
-// ── Step: Guide License Verification ──────────────────
-function StepGuideVerification({
-  userId,
-  userEmail,
-  userName,
-  onComplete,
-}: {
-  userId: string
-  userEmail: string
-  userName: string
-  onComplete: () => void
-}) {
-  const [traNumber, setTraNumber] = useState("")
-  const [kpsga, setKpsga] = useState("")
-  const [licenseExpiry, setLicenseExpiry] = useState("")
-  const [certFile, setCertFile] = useState<File | null>(null)
-  const [agreed, setAgreed] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const fileRef = useRef<HTMLInputElement>(null)
-
-  const handleSubmit = async () => {
-    if (!traNumber.trim() || !certFile || !agreed) return
-    setUploading(true)
-    try {
-      // Upload certificate to Supabase Storage
-      const ext = certFile.name.split(".").pop()
-      const path = `${userId}/cert-${Date.now()}.${ext}`
-      const { error: upErr } = await supabase.storage.from("licenses").upload(path, certFile)
-      if (upErr) throw upErr
-      const { data: { publicUrl } } = supabase.storage.from("licenses").getPublicUrl(path)
-
-      // Save to profile
-      const updateData: any = {
-        tra_number: traNumber.trim(),
-        kpsga_number: kpsga.trim() || null,
-        certificate_url: publicUrl,
-        verified_guide: false,
-        rejected_as_guide: false,
-        host_tier: "local_host",
-      }
-      if (licenseExpiry) updateData.license_expiry = licenseExpiry
-
-      const { error: updateErr } = await supabase
-        .from("profiles")
-        .update(updateData)
-        .eq("id", userId)
-      if (updateErr) throw updateErr
-
-      // Notify admin
-      sendGuideApplicationNotification(
-        "ausaguides@gmail.com",
-        userName,
-        userEmail,
-        traNumber.trim(),
-        kpsga.trim() || null,
-        publicUrl
-      ).catch(console.error)
-
-      toast.success("Application submitted! We'll review your license within 48 hours.")
-      onComplete()
-    } catch (err: any) {
-      console.error(err)
-      toast.error(err.message || "Failed to submit application. Please try again.")
-    } finally {
-      setUploading(false)
-    }
-  }
-
-  const isValid = traNumber.trim().length > 0 && certFile !== null && agreed
-
-  return (
-    <div className="flex flex-col gap-5 py-4 w-full">
-      <div className="text-center space-y-2">
-        <BadgeCheck className="size-12 mx-auto text-[#7F5AF0] animate-pulse" />
-        <h2 className="text-2xl font-black text-white">License Verification</h2>
-        <p className="text-sm text-white/60">Submit your TRA details for admin review.</p>
-      </div>
-
-      {/* Info box */}
-      <div className="rounded-2xl border border-[#7F5AF0]/20 bg-[#7F5AF0]/5 p-4 space-y-1">
-        <p className="text-xs font-semibold text-[#7F5AF0]">How it works</p>
-        <p className="text-xs text-white/60 leading-relaxed">
-          Your license will be verified by our admin team using the official TRA portal (<span className="text-[#7F5AF0] font-semibold">verify.tra.go.ke</span>). Once approved, you will receive a <strong className="text-white">Verified Guide ✅</strong> badge. If rejected, you can still host as a Local Host.
-        </p>
-      </div>
-
-      {/* TRA Number */}
-      <div className="space-y-1.5">
-        <Label className="text-white/80 text-sm font-semibold">
-          TRA License Number <span className="text-red-400">*</span>
-        </Label>
-        <Input
-          placeholder="e.g. TRA/TG/2024/001234"
-          value={traNumber}
-          onChange={e => setTraNumber(e.target.value)}
-          className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-[#7F5AF0]/60"
-        />
-        <p className="text-[11px] text-white/30">Found on your TRA certificate (required).</p>
-      </div>
-
-      {/* KPSGA Number */}
-      <div className="space-y-1.5">
-        <Label className="text-white/80 text-sm font-semibold">KPSGA Number <span className="text-white/30 font-normal">(optional)</span></Label>
-        <Input
-          placeholder="e.g. KPSGA-2024-5678"
-          value={kpsga}
-          onChange={e => setKpsga(e.target.value)}
-          className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-[#7F5AF0]/60"
-        />
-      </div>
-
-      {/* License Expiry */}
-      <div className="space-y-1.5">
-        <Label className="text-white/80 text-sm font-semibold">License Expiry Date <span className="text-white/30 font-normal">(optional)</span></Label>
-        <Input
-          type="date"
-          value={licenseExpiry}
-          onChange={e => setLicenseExpiry(e.target.value)}
-          className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-[#7F5AF0]/60 [color-scheme:dark]"
-        />
-      </div>
-
-      {/* Certificate Upload */}
-      <div className="space-y-1.5">
-        <Label className="text-white/80 text-sm font-semibold">
-          Upload TRA Certificate <span className="text-red-400">*</span>
-        </Label>
-        <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden"
-          onChange={e => { if (e.target.files?.[0]) setCertFile(e.target.files[0]); e.target.value = "" }} />
-        <button
-          type="button"
-          onClick={() => fileRef.current?.click()}
-          className={cn(
-            "w-full py-4 rounded-xl border border-dashed text-sm transition-colors flex flex-col items-center gap-2",
-            certFile
-              ? "border-[#2CB67D]/60 bg-[#2CB67D]/5 text-[#2CB67D]"
-              : "border-[#7F5AF0]/30 text-[#a78bfa] hover:border-[#7F5AF0] hover:bg-[#7F5AF0]/5"
-          )}
-        >
-          {certFile ? (
-            <><FileCheck className="size-5" /><span className="font-semibold">{certFile.name}</span></>
-          ) : (
-            <><Upload className="size-5" /><span>Click to upload certificate (PDF or image)</span></>
-          )}
-        </button>
-        <p className="text-[11px] text-white/30">PDF, JPG, or PNG — will only be seen by our admin team.</p>
-      </div>
-
-      {/* Agreement */}
-      <label className="flex items-start gap-3 cursor-pointer group">
-        <div
-          onClick={() => setAgreed(!agreed)}
-          className={cn(
-            "mt-0.5 size-5 shrink-0 rounded border-2 flex items-center justify-center transition-all",
-            agreed ? "bg-[#7F5AF0] border-[#7F5AF0]" : "border-white/20 hover:border-[#7F5AF0]/50"
-          )}
-        >
-          {agreed && <Check className="size-3 text-white" />}
-        </div>
-        <p className="text-xs text-white/60 leading-relaxed">
-          I confirm that the information provided is accurate and I am a licensed tour guide under Kenyan law. I understand that providing false information may result in account suspension.
-        </p>
-      </label>
-
-      <Button
-        size="lg"
-        disabled={!isValid || uploading}
-        onClick={handleSubmit}
-        className="w-full rounded-full bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 transition-all duration-300 flex items-center justify-center gap-2"
-      >
-        {uploading ? <Loader2 className="size-4 animate-spin" /> : <BadgeCheck className="size-4" />}
-        Submit for Verification
+        {uploading ? (
+          <>
+            <Loader2 className="size-4 animate-spin mr-2" />
+            {uploadProgressMsg || "Processing..."}
+          </>
+        ) : (
+          <>
+            Continue
+            <ArrowRight className="size-4" />
+          </>
+        )}
       </Button>
     </div>
   )
@@ -1259,7 +1214,6 @@ export default function OnboardingPage() {
       ? [
           { label: "Verify ID" },
           { label: "Host Type" },
-          ...(hostTierSelected === "certified_guide" ? [{ label: "License" }] : []),
         ]
       : []),
     { label: "Done" },
@@ -1310,25 +1264,15 @@ export default function OnboardingPage() {
                 {step === 4 && (
                   <StepHostTier
                     userId={userId}
+                    userEmail={userEmail}
+                    userName={completedName || "Guide"}
                     onComplete={(tier) => {
                       setHostTierSelected(tier)
-                      if (tier === "certified_guide") {
-                        setStep(5) // go to license step
-                      } else {
-                        setStep(6) // skip to done
-                      }
+                      setStep(5) // go directly to done
                     }}
                   />
                 )}
-                {step === 5 && hostTierSelected === "certified_guide" && (
-                  <StepGuideVerification
-                    userId={userId}
-                    userEmail={userEmail}
-                    userName={completedName || "Guide"}
-                    onComplete={() => setStep(6)}
-                  />
-                )}
-                {step === 6 && (
+                {step === 5 && (
                   <StepDone
                     name={completedName || "Explorer"}
                     role={role}

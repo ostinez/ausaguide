@@ -9,7 +9,7 @@ import {
   Shield, Users, Calendar, DollarSign, Search, ArrowLeft,
   XCircle, CheckCircle2, MapPin,
   Eye, Trash2, Ban, UserCheck, Download, RefreshCw,
-  ClipboardList, Settings, Terminal, BadgeCheck, ExternalLink, FileText, StickyNote
+  ClipboardList, Settings, Terminal, BadgeCheck, ExternalLink, FileText, StickyNote, Bell
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -220,6 +220,9 @@ export default function AdminDashboard() {
     { id: 5, type: "info", source: "Realtime", message: "Subscribed to postgres_changes public.tours", time: "19:05:00" },
   ])
 
+  // Admin System Notifications
+  const [adminNotifications, setAdminNotifications] = useState<any[]>([])
+
   // UI
   const [search, setSearch] = useState("")
   const adminId = localStorage.getItem("user_id")
@@ -384,19 +387,20 @@ export default function AdminDashboard() {
       })
       .subscribe()
 
-    const presenceChannel = supabase.channel("site-presence")
-    
-    presenceChannel
-      .on("presence", { event: "sync" }, () => {
-        const state = presenceChannel.presenceState()
-        setLiveVisitors(Object.keys(state).length)
-      })
-      .subscribe()
+    // Listen to custom presence-sync event from layout
+    if ((window as any).__liveVisitors) {
+      setLiveVisitors((window as any).__liveVisitors)
+    }
+    const handleSync = (e: Event) => {
+      const customEvent = e as CustomEvent
+      setLiveVisitors(customEvent.detail || 1)
+    }
+    window.addEventListener("presence-sync", handleSync)
 
     return () => {
       channel.unsubscribe()
       supabase.removeChannel(channel)
-      presenceChannel.unsubscribe()
+      window.removeEventListener("presence-sync", handleSync)
     }
   }, [isAdmin])
 
@@ -431,6 +435,7 @@ export default function AdminDashboard() {
     let rawWaitlists: any[] = []
     let rawJournals: any[] = []
     let rawPosts: any[] = []
+    let rawNotifs: any[] = []
 
     try {
       const { data, error } = await supabase.from("profiles").select("*").order("created_at", { ascending: false })
@@ -489,6 +494,18 @@ export default function AdminDashboard() {
     }
 
     try {
+      const { data, error } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("type", "guide_application")
+        .order("created_at", { ascending: false })
+      if (error) console.error("Error fetching notifications:", error)
+      else rawNotifs = data ?? []
+    } catch (e) {
+      console.error("Exception fetching notifications:", e)
+    }
+
+    try {
       // Stitch host names onto tours and bookings
       const stitchedTours: TourRow[] = rawTours.map((t: any) => {
         const hostProf = profs.find((p: any) => p.id === t.host_id)
@@ -535,6 +552,7 @@ export default function AdminDashboard() {
       setWaitlists(rawWaitlists)
       setJournals(stitchedJournals)
       setPosts(stitchedPosts)
+      setAdminNotifications(rawNotifs)
     } catch (e: any) {
       console.error("[AdminDashboard] Error stitching/processing data:", e?.message)
     } finally {
@@ -927,8 +945,8 @@ export default function AdminDashboard() {
                   </Card>
                 </div>
 
-                {/* Recent Signups and Waitlist side-by-side */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Recent Signups, Waitlist and Notifications side-by-side */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Recent Signups */}
                   <Card className="border-border/60 bg-gradient-to-br from-card to-card/40">
                     <CardHeader>
@@ -1019,6 +1037,36 @@ export default function AdminDashboard() {
                       </div>
                       {waitlists.length === 0 && (
                         <div className="py-8 text-center text-xs text-muted-foreground">No waitlist entries</div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* System Notifications */}
+                  <Card className="border-border/60 bg-gradient-to-br from-card to-card/40">
+                    <CardHeader>
+                      <CardTitle className="text-base font-bold flex items-center gap-2 text-white">
+                        <Bell className="size-4 text-amber-500" />
+                        In-App Admin Notifications
+                      </CardTitle>
+                      <CardDescription>Alerts and updates from guide submissions</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-4 space-y-3 max-h-[300px] overflow-y-auto">
+                      {adminNotifications.length === 0 ? (
+                        <p className="text-xs text-muted-foreground text-center py-10">No notifications yet.</p>
+                      ) : (
+                        adminNotifications.map((notif) => (
+                          <div key={notif.id} className="p-3 rounded-xl bg-muted/10 border border-border/30 flex items-start gap-2.5 justify-between">
+                            <div>
+                              <p className="text-xs text-white/90 font-medium leading-relaxed">{notif.message}</p>
+                              <p className="text-[10px] text-muted-foreground mt-1.5">
+                                {format(new Date(notif.created_at), "MMM d, yyyy h:mm a")}
+                              </p>
+                            </div>
+                            {!notif.read && (
+                              <span className="size-2 rounded-full bg-amber-500 shrink-0 mt-1" />
+                            )}
+                          </div>
+                        ))
                       )}
                     </CardContent>
                   </Card>

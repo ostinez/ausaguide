@@ -128,18 +128,26 @@ export function Layout() {
       },
     })
 
-    presenceChannel.subscribe(async (status) => {
-      if (status === "SUBSCRIBED") {
-        await presenceChannel.track({
-          online_at: new Date().toISOString(),
-          role: localStorage.getItem("user_role") || "traveler",
-        })
-      }
-    })
+    presenceChannel
+      .on("presence", { event: "sync" }, () => {
+        const state = presenceChannel.presenceState()
+        const count = Object.keys(state).length
+        ;(window as any).__liveVisitors = count
+        window.dispatchEvent(new CustomEvent("presence-sync", { detail: count }))
+      })
+      .subscribe(async (status: string) => {
+        if (status === "SUBSCRIBED") {
+          await presenceChannel.track({
+            online_at: new Date().toISOString(),
+            role: localStorage.getItem("user_role") || "traveler",
+          })
+        }
+      })
 
     return () => {
       subscription.unsubscribe()
       presenceChannel.unsubscribe()
+      supabase.removeChannel(presenceChannel)
       window.removeEventListener("storage", handleStorage)
       clearInterval(interval)
     }
