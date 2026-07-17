@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { GradientText } from "@/components/ui/GradientText"
-import { Spinner } from "@/components/ui/spinner"
+import { SkeletonTourGrid } from "@/components/ui/SkeletonCard"
 import { ArrowRight } from "lucide-react"
 import { fetchFeaturedTours } from "@/lib/api/tours"
 import type { Tour } from "@/lib/types"
@@ -112,9 +112,7 @@ export function ToursPreview() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-16">
-            <Spinner className="size-8 text-primary" />
-          </div>
+          <SkeletonTourGrid count={3} />
         ) : tours.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {tours.map((tour) => (

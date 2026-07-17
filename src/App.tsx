@@ -40,6 +40,7 @@ import PrivacyPage from "@/pages/legal/privacy"
 import AuthCallbackPage from "@/pages/AuthCallback"
 import OnboardingPage from "@/pages/Onboarding"
 import ResetPasswordPage from "@/pages/ResetPassword"
+import EmailPreferencesPage from "@/pages/email-preferences"
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -110,6 +111,7 @@ export default function App() {
           <Route path="/map" element={<MapPage />} />
           <Route path="/host-waitlist" element={<HostWaitlistPage />} />
           <Route path="/waitlist" element={<WaitlistPage />} />
+          <Route path="/email-preferences" element={<EmailPreferencesPage />} />
 
           <Route path="/feed" element={<FeedPage />} />
           <Route path="/traveler/:id" element={<TravelerProfilePage />} />

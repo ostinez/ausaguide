@@ -210,11 +210,21 @@ export default function Home() {
         </div>
       </section>
 
-      <ToursPreview />
-      <DiscoverToursStack />
-      <HowItWorks />
-      <ImpactPreview />
-      <CTASection />
+      <div className="defer-render">
+        <ToursPreview />
+      </div>
+      <div className="defer-render">
+        <DiscoverToursStack />
+      </div>
+      <div className="defer-render">
+        <HowItWorks />
+      </div>
+      <div className="defer-render">
+        <ImpactPreview />
+      </div>
+      <div className="defer-render">
+        <CTASection />
+      </div>
 
       {/* Founder Section */}
       <section className="bg-[#16161A] py-20 px-6 border-t border-white/5 relative overflow-hidden flex flex-col items-center">

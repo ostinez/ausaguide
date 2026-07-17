@@ -333,3 +333,29 @@ textarea {
   -webkit-backdrop-filter: none;
   background: rgba(16, 16, 20, 0.99);
 }
+
+/* ── Performance: defer off-screen section rendering ── */
+/* Apply to heavy sections below the fold */
+.defer-render {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 600px; /* estimated height so layout doesn't jump */
+}
+
+/* ── Image performance defaults ── */
+img {
+  /* Lazy load by default — override per-image with loading="eager" for LCP images */
+  content-visibility: auto;
+}
+
+/* ── Reduce animations for users who prefer reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+

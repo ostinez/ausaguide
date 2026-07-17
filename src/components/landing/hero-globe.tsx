@@ -174,21 +174,25 @@ function GlobeVisual() {
     return () => controller.abort()
   }, [])
 
-  // Measure container and set globe size
+  // Measure container and set globe size (debounced)
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
 
+    let rafId: number
     const measure = () => {
-      const rect = container.getBoundingClientRect()
-      const size = Math.max(400, Math.min(rect.width, rect.height, 900))
-      setGlobeSize(size)
+      cancelAnimationFrame(rafId)
+      rafId = requestAnimationFrame(() => {
+        const rect = container.getBoundingClientRect()
+        const size = Math.max(400, Math.min(rect.width, rect.height, 900))
+        setGlobeSize(size)
+      })
     }
 
     measure()
     const ro = new ResizeObserver(measure)
     ro.observe(container)
-    return () => ro.disconnect()
+    return () => { ro.disconnect(); cancelAnimationFrame(rafId) }
   }, [])
 
   // Start auto-rotate once the globe is ready
@@ -401,9 +405,10 @@ export function HeroGlobe() {
       />
 
       {/* Layer 4: Globe centered in the hero area (z-[2]) - Only renders when in viewport */}
+      {/* On mobile we skip the heavy WebGL globe for performance */}
       <div className="absolute inset-0 z-[2] pointer-events-none flex items-center justify-center">
         <div className="pointer-events-auto w-full h-full">
-          {isInViewport ? (
+          {isInViewport && !isMobile ? (
             <GlobeErrorBoundary fallback={<GlobeFallback />}>
               <Suspense fallback={<GlobeLoading />}>
                 <GlobeVisual />
@@ -416,19 +421,34 @@ export function HeroGlobe() {
       </div>
 
       {/* Layer 5: Foreground - Bottom (z-20) */}
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 w-full max-w-[600px] px-6 flex flex-col items-center text-center pointer-events-auto gap-4">
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 z-20 w-full max-w-[640px] px-5 flex flex-col items-center text-center pointer-events-auto gap-3 pb-8 sm:pb-10">
+        {/* Typewriter tagline – sits above everything on mobile */}
+        <div className="w-full text-left sm:text-left">
+          <TextType
+            text={["Be a Local.", "Share Your World.", "Explore Kenya live."]}
+            typingSpeed={60}
+            pauseDuration={2000}
+            deletingSpeed={30}
+            loop={true}
+            textColors={["#7F5AF0", "#2CB67D", "#FFFFFE"]}
+            showCursor={true}
+            cursorCharacter="|"
+            className="text-xs sm:text-sm md:text-base font-medium opacity-70 text-white select-none pointer-events-none"
+          />
+        </div>
+
         {/* Expandable Search Bar */}
-        <form 
-          onSubmit={handleSearch} 
-          className="relative w-full flex justify-center py-2 h-14 items-center"
+        <form
+          onSubmit={handleSearch}
+          className="relative w-full flex justify-center py-1 h-14 items-center"
         >
-          <div 
+          <div
             className={cn(
               "flex items-center rounded-full border border-border bg-[#16161A]/40 backdrop-blur-xl shadow-2xl transition-all duration-300 ease-in-out overflow-hidden cursor-pointer",
-              isSearchActive 
-                ? "w-[250px] px-4 h-12" 
-                : isMobile 
-                  ? "w-14 h-14 justify-center px-0 hover:border-[#7F5AF0]/40" 
+              isSearchActive
+                ? "w-[250px] px-4 h-12"
+                : isMobile
+                  ? "w-14 h-14 justify-center px-0 hover:border-[#7F5AF0]/40"
                   : "w-12 h-12 justify-center px-0 hover:border-[#7F5AF0]/40"
             )}
             onMouseEnter={() => setSearchExpanded(true)}
@@ -465,24 +485,11 @@ export function HeroGlobe() {
 
         {/* Subtitles & Tagline */}
         <div className="flex flex-col gap-1 select-none">
-          <p className="text-[#2CB67D] text-sm md:text-base font-bold tracking-wide uppercase">
+          <p className="text-[#2CB67D] text-xs sm:text-sm md:text-base font-bold tracking-wide uppercase">
             your window into their world
           </p>
         </div>
       </div>
-
-      {/* Subtle bottom-left typewriter overlay */}
-      <TextType
-        text={["Be a Local.", "Share Your World.", "Explore Kenya live."]}
-        typingSpeed={60}
-        pauseDuration={2000}
-        deletingSpeed={30}
-        loop={true}
-        textColors={["#7F5AF0", "#2CB67D", "#FFFFFE"]}
-        showCursor={true}
-        cursorCharacter="|"
-        className="absolute bottom-[2rem] left-[2rem] z-20 text-sm md:text-base font-medium opacity-70 text-white select-none pointer-events-none"
-      />
     </section>
   )
 }

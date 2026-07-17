@@ -108,8 +108,11 @@ export function validateUsername(username: string): string | null {
   if (clean.length < 3 || clean.length > 20) {
     return "Username must be between 3 and 20 characters"
   }
-  if (!/^[a-zA-Z0-9_]+$/.test(clean)) {
-    return "Username can only contain letters, numbers, and underscores"
+  if (/[A-Z]/.test(clean)) {
+    return "Username must be lowercase (letters, numbers, underscores only)"
+  }
+  if (!/^[a-z0-9_]+$/.test(clean)) {
+    return "Username can only contain lowercase letters, numbers, and underscores"
   }
   return null
 }

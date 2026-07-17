@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { Link, useSearchParams, useNavigate } from "react-router-dom"
-import { Mail, Lock, User, Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle2 } from "lucide-react"
+import { Mail, Lock, User, Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle2, ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -47,6 +47,39 @@ function GoogleIcon() {
 }
 
 
+// ── Password strength bar ──────────────────────────────────────────────────
+function PasswordStrengthBar({ password }: { password: string }) {
+  const score = [
+    password.length >= 8,
+    /[A-Z]/.test(password),
+    /[0-9]/.test(password),
+    /[^A-Za-z0-9]/.test(password),
+  ].filter(Boolean).length
+
+  const labels = ["", "Weak", "Fair", "Good", "Strong"]
+  const colors = ["", "bg-red-500", "bg-orange-400", "bg-yellow-400", "bg-green-500"]
+  const textColors = ["", "text-red-400", "text-orange-400", "text-yellow-400", "text-green-400"]
+  const widths = ["w-0", "w-1/4", "w-2/4", "w-3/4", "w-full"]
+
+  if (!password) return null
+
+  return (
+    <div className="space-y-1 mt-1.5">
+      <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-300 ${colors[score]} ${widths[score]}`}
+        />
+      </div>
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] text-muted-foreground/60 flex items-center gap-1">
+          <ShieldCheck className="size-3" />
+          8+ chars, uppercase, numbers &amp; symbols
+        </p>
+        <p className={`text-[10px] font-semibold ${textColors[score]}`}>{labels[score]}</p>
+      </div>
+    </div>
+  )
+}
 
 /** Map Supabase / network error messages to user-friendly strings */
 function friendlyAuthError(message: string): string {
@@ -281,8 +314,12 @@ function SignInForm() {
           }
           setResetLoading(true)
           try {
+            const prodResetUrl =
+              import.meta.env.PROD
+                ? "https://ausaguide.com/reset-password"
+                : window.location.origin + "/reset-password"
             const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-              redirectTo: window.location.origin + "/reset-password",
+              redirectTo: prodResetUrl,
             })
             if (resetErr) throw resetErr
             setInfoMessage("Check your inbox for the reset link.")
@@ -550,10 +587,18 @@ function SignUpForm() {
       if (authError) throw authError
 
       if (signUpData.user) {
+        // Update newsletter_opt_in on the profiles row (created by DB trigger)
+        // We do this in a short loop since the trigger may not have run yet
         if (subscribeNewsletter) {
-          await supabase
-            .from("newsletter_subscribers")
-            .insert({ email: email.trim(), name: name.trim() })
+          let retries = 3
+          while (retries-- > 0) {
+            await new Promise((r) => setTimeout(r, 600))
+            const { error: prefErr } = await supabase
+              .from("profiles")
+              .update({ newsletter_opt_in: true })
+              .eq("id", signUpData.user.id)
+            if (!prefErr) break
+          }
         }
         toast.success("Account created successfully! Please confirm your email.")
         setInfoMessage(`We've sent a verification email to ${email.trim()}. Please click the link inside it to verify your account and proceed to onboarding.`)
@@ -627,13 +672,16 @@ function SignUpForm() {
             placeholder="username"
             className="pl-7 border-border/80 text-foreground placeholder:text-muted-foreground/50"
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            onChange={(e) => setUsername(e.target.value.toLowerCase())}
             autoComplete="off"
             required
             minLength={3}
             maxLength={20}
           />
         </div>
+        <p className="text-[10px] text-muted-foreground/60">
+          Lowercase letters, numbers, and underscores only (e.g. john_doe)
+        </p>
       </div>
 
       <div className="space-y-2">
@@ -675,6 +723,7 @@ function SignUpForm() {
             {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
           </button>
         </div>
+        <PasswordStrengthBar password={password} />
       </div>
 
       <div className="space-y-2">

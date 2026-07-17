@@ -25,6 +25,7 @@ const footerLinks = {
   legal: [
     { href: "/privacy", label: "Privacy Policy" },
     { href: "/terms", label: "Terms of Use" },
+    { href: "/email-preferences", label: "Email Preferences" },
   ],
 }
 
@@ -175,6 +176,12 @@ export function Footer() {
             &copy; {new Date().getFullYear()} Ausaguide. All rights reserved.
           </p>
           <div className="flex items-center gap-3">
+            <Link
+              to="/email-preferences"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Manage Email Preferences
+            </Link>
             {import.meta.env.DEV && (
               <button
                 onClick={() => { throw new Error('Test error for Sentry'); }}
