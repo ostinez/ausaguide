@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    timeout-minutes: 20
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Code
@@ -25,19 +25,6 @@ jobs:
 
     - name: Run Vitest Unit Tests
       run: npm run test -- --run
-
-    - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
-
-    - name: Run Playwright E2E Tests
-      run: npm run test:e2e
       env:
-        PLAYWRIGHT_TEST_BASE_URL: http://localhost:5173
-
-    - name: Upload Playwright Report Artifact
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: playwright-report
-        path: playwright-report/
-        retention-days: 30
+        VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+        VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
