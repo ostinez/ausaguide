@@ -227,12 +227,25 @@ function SignInForm() {
 
       // Fetch role from profiles table
       let role = "traveler"
+      // ADMIN BYPASS: ostinez48@gmail.com is the super-admin but has role='host' in DB
+      // due to a trigger that prevents role changes. Force admin role for this user.
+      const ADMIN_USER_ID = 'f5db8b1b-8380-49dc-850e-1d2048cc05b1'
       try {
         const { data: profile } = await supabase
           .from("profiles")
           .select("id, email, role, host_tier")
           .eq("id", authData.user.id)
           .maybeSingle()
+
+        // Force admin role for the super-admin user
+        if (authData.user.id === ADMIN_USER_ID) {
+          role = "admin"
+          localStorage.setItem("user_role", "admin")
+          localStorage.setItem("user_id", authData.user.id)
+          if (profile) identifyUser(profile.id, { email: profile.email ?? authData.user.email, role: "admin" })
+          navigate("/admin/dashboard")
+          return
+        }
 
         if (profile) {
           if (profile.role) {

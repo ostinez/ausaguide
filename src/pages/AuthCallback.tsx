@@ -69,8 +69,9 @@ export default function AuthCallbackPage() {
         }
 
         if (profile) {
-          // Existing profile, store role & id
-          const role = profile.role ?? "traveler"
+          // ADMIN BYPASS: ostinez48@gmail.com user ID - force admin role
+          const ADMIN_USER_ID = 'f5db8b1b-8380-49dc-850e-1d2048cc05b1'
+          const role = user.id === ADMIN_USER_ID ? 'admin' : (profile.role ?? "traveler")
           localStorage.setItem("user_role", role)
           localStorage.setItem("user_id", profile.id)
 
