@@ -1,3 +1,4 @@
+import { memo } from "react"
 import { useNavigate } from "react-router-dom"
 import { Clock, Heart, BadgeCheck, MapPin, Star, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -23,7 +24,7 @@ interface TourCardProps {
   viewMode?: "grid" | "list"
 }
 
-export function TourCard({ tour, isWishlisted, onToggleWishlist, onClick, viewMode = "grid" }: TourCardProps) {
+export const TourCard = memo(function TourCard({ tour, isWishlisted, onToggleWishlist, onClick, viewMode = "grid" }: TourCardProps) {
   const navigate = useNavigate()
   const typeLabel = tour.tour_type === "virtual" ? "Virtual" : "In-Person"
   const typeColor =
@@ -221,4 +222,4 @@ export function TourCard({ tour, isWishlisted, onToggleWishlist, onClick, viewMo
       </SpotlightCard>
     </BorderGlow>
   )
-}
+})

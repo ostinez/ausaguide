@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Outlet, useLocation } from "react-router-dom"
+import { Outlet, useLocation, Link } from "react-router-dom"
 import { StaggeredMenu } from "@/components/ui/StaggeredMenu"
 import { supabase } from "@/lib/supabase"
 import { Footer } from "./footer"
@@ -188,9 +188,9 @@ export function Layout() {
       {!isAuthOrOnboarding && (
         <div className="w-full bg-[#7F5AF0] text-white text-xs sm:text-sm font-semibold py-2.5 px-4 text-center z-50 relative flex flex-wrap items-center justify-center gap-1.5 shadow-md">
           <span>🚀 Early Access — We're testing with real users.</span>
-          <a href="/waitlist" className="underline hover:text-white/80 font-bold transition duration-200">
+          <Link to="/waitlist" className="underline hover:text-white/80 font-bold transition duration-200">
             Join the waitlist for launch.
-          </a>
+          </Link>
         </div>
       )}
       {impersonatedName && (

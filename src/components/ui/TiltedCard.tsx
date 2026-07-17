@@ -109,6 +109,7 @@ export default function TiltedCard({
           alt={altText}
           className="tilted-card-img"
           style={{ width: imageWidth, height: imageHeight }}
+          loading="lazy"
         />
         {displayOverlayContent && overlayContent && (
           <motion.div className="tilted-card-overlay w-full h-full">{overlayContent}</motion.div>

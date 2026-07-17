@@ -308,7 +308,12 @@ function GlobeVisual() {
           polygonsTransitionDuration={300}
           onGlobeReady={handleGlobeReady}
           atmosphereColor={PURPLE}
-          atmosphereAltitude={0.18}
+          atmosphereAltitude={0.15}
+          rendererConfig={{
+            precision: "mediump",
+            antialias: false,
+            powerPreference: "high-performance"
+          }}
         />
       </div>
     </div>

@@ -359,3 +359,9 @@ img {
   }
 }
 
+/* Sparingly apply will-change for performance optimizations */
+.accelerated-animating-panel {
+  will-change: transform, opacity;
+}
+
+

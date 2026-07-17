@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { Timer, Rocket } from "lucide-react"
+import { Link } from "react-router-dom"
 
 interface CountdownTimerProps {
   targetDate: Date
@@ -43,12 +44,12 @@ export function CountdownTimer({ targetDate }: CountdownTimerProps) {
           <Rocket className="size-6" />
         </div>
         <p className="text-xl font-black text-white tracking-tight">🎉 Ausaguide is now live!</p>
-        <a
-          href="/auth"
+        <Link
+          to="/auth"
           className="mt-1 text-sm font-semibold text-[#2CB67D] underline hover:text-[#2CB67D]/80 transition-colors"
         >
           Sign in now →
-        </a>
+        </Link>
       </div>
     )
   }

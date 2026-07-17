@@ -254,6 +254,7 @@ function PrivatePostImage({ src, alt, className, onClick }: { src: string; alt?:
       alt={alt}
       className={className}
       onClick={onClick}
+      loading="lazy"
     />
   )
 }
