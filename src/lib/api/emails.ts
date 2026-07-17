@@ -175,7 +175,7 @@ export async function sendGeneralWaitlistEmail(
 ): Promise<boolean> {
   const subject = "You're on the Ausaguide Waitlist! 🎉"
   const confirmUrl = confirmToken
-    ? `https://ausaguide.com/waitlist?token=${confirmToken}`
+    ? `https://ausaguide.com/waitlist?confirmed=true&token=${confirmToken}`
     : "https://ausaguide.com/waitlist"
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid rgba(127,90,240,0.3); border-radius: 24px; background-color: #16161A; color: #fffffe; line-height: 1.6;">

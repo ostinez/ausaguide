@@ -111,13 +111,6 @@ function CelebrationPanel({ name, email }: { name: string; email: string }) {
         <div className="h-px bg-gradient-to-r from-transparent via-[#7F5AF0]/30 to-transparent" />
 
         <ShareButtons />
-
-        <a
-          href="/"
-          className="block w-full py-3 rounded-full bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] text-white text-sm font-bold shadow-lg hover:shadow-[0_4px_20px_rgba(127,90,240,0.4)] transition duration-300"
-        >
-          Return Home
-        </a>
       </div>
     </div>
   )
@@ -179,7 +172,6 @@ export default function WaitlistPage() {
   useEffect(() => {
     async function init() {
       const token = searchParams.get("token")
-      const statusParam = searchParams.get("status")
 
       // 1. Token in URL → confirm in DB
       if (token) {
@@ -200,8 +192,8 @@ export default function WaitlistPage() {
             setConfirmedEmail(confirmedEmailResult)
             setConfirmedName(row?.name ?? "")
             setStatus("confirmed")
-            // Clean URL
-            setSearchParams({}, { replace: true })
+            // Clean URL parameters but keep ?confirmed=true so they are on confirmation route
+            setSearchParams({ confirmed: "true" }, { replace: true })
             toast.success("Email confirmed! You're on the list!")
             return
           }
@@ -214,18 +206,7 @@ export default function WaitlistPage() {
         return
       }
 
-      // 2. ?status=confirmed (legacy / redirect from token flow)
-      if (statusParam === "confirmed") {
-        const savedEmail = localStorage.getItem(LS_KEY) ?? ""
-        const savedName  = localStorage.getItem(LS_NAME_KEY) ?? ""
-        setConfirmedEmail(savedEmail)
-        setConfirmedName(savedName)
-        setStatus("confirmed")
-        setSearchParams({}, { replace: true })
-        return
-      }
-
-      // 3. Check localStorage for a previously confirmed email
+      // 2. If confirmedParam is true or standard page view, check if they are already confirmed via localStorage
       const savedEmail = localStorage.getItem(LS_KEY)
       if (savedEmail) {
         // Quick DB verify
@@ -249,7 +230,7 @@ export default function WaitlistPage() {
         }
       }
 
-      // 4. Check if logged-in user's email is on the waitlist
+      // 3. Check if logged-in user's email is on the waitlist
       const { data: { user } } = await supabase.auth.getUser()
       if (user?.email) {
         const { data: row } = await supabase
@@ -273,6 +254,7 @@ export default function WaitlistPage() {
         }
       }
 
+      // 4. Default: New visitor. (If URL contains confirmed=true via sharing, they still see form)
       setStatus("not_on_list")
     }
 

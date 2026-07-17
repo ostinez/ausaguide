@@ -505,6 +505,21 @@ function SignUpForm() {
 
     setLoading(true)
     try {
+      // Check if email already exists in profiles
+      const { data: existingEmail, error: emailCheckError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", email.trim().toLowerCase())
+        .maybeSingle()
+
+      if (emailCheckError) throw emailCheckError
+
+      if (existingEmail) {
+        setError("This email is already registered. Please log in instead.")
+        setLoading(false)
+        return
+      }
+
       const { data: existingUser, error: checkError } = await supabase
         .from("profiles")
         .select("id")
@@ -515,6 +530,7 @@ function SignUpForm() {
 
       if (existingUser) {
         setError("This username is already taken.")
+        setLoading(false)
         return
       }
 
@@ -561,7 +577,19 @@ function SignUpForm() {
       {error && (
         <div className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs font-semibold text-destructive animate-in fade-in">
           <AlertCircle className="size-4 shrink-0 mt-0.5" />
-          <span>{error}</span>
+          <span>
+            {error === "This email is already registered. Please log in instead." ? (
+              <>
+                This email is already registered. Please{" "}
+                <Link to="/auth?tab=signin" className="underline font-bold text-white hover:text-white/80">
+                  log in instead
+                </Link>
+                .
+              </>
+            ) : (
+              error
+            )}
+          </span>
         </div>
       )}
 
@@ -714,9 +742,13 @@ function SignUpForm() {
 
 export default function AuthPage() {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const becomeHost = searchParams.get("become-host") === "true"
-  const defaultTab = becomeHost ? "signup" : (searchParams.get("tab") === "signup" ? "signup" : "signin")
+  const activeTab = becomeHost || searchParams.get("tab") === "signup" ? "signup" : "signin"
+
+  const handleTabChange = (val: string) => {
+    setSearchParams(becomeHost ? { tab: val, "become-host": "true" } : { tab: val }, { replace: true })
+  }
 
   // Fix 1 — Bounce already-authenticated users to their role-correct dashboard.
   // This prevents a logged-in user from seeing the login form and stops the
@@ -783,7 +815,7 @@ export default function AuthPage() {
         </div>
 
         <Card className="border-border/60 shadow-[var(--shadow-3)]">
-          <Tabs defaultValue={defaultTab}>
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
             <CardHeader className="pb-4">
               {becomeHost && (
                 <div className="mb-4 rounded-xl border border-primary/20 bg-primary/10 p-4 text-center animate-in fade-in">
