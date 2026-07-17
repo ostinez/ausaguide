@@ -118,36 +118,8 @@ export function Layout() {
     window.addEventListener("storage", handleStorage)
     const interval = setInterval(handleStorage, 1000)
 
-    // Track active presence on site
-    const anonId = "anon-" + Math.random().toString(36).substring(2, 9)
-    const presenceChannel = supabase.channel("site-presence", {
-      config: {
-        presence: {
-          key: localStorage.getItem("user_id") || anonId,
-        },
-      },
-    })
-
-    presenceChannel
-      .on("presence", { event: "sync" }, () => {
-        const state = presenceChannel.presenceState()
-        const count = Object.keys(state).length
-        ;(window as any).__liveVisitors = count
-        window.dispatchEvent(new CustomEvent("presence-sync", { detail: count }))
-      })
-      .subscribe(async (status: string) => {
-        if (status === "SUBSCRIBED") {
-          await presenceChannel.track({
-            online_at: new Date().toISOString(),
-            role: localStorage.getItem("user_role") || "traveler",
-          })
-        }
-      })
-
     return () => {
       subscription.unsubscribe()
-      presenceChannel.unsubscribe()
-      supabase.removeChannel(presenceChannel)
       window.removeEventListener("storage", handleStorage)
       clearInterval(interval)
     }
