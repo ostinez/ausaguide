@@ -12,8 +12,14 @@ import ConfirmationPage from "@/pages/confirmation"
 import AuthPage from "@/pages/auth"
 import DashboardPage from "@/pages/dashboard"
 import EarningsDashboard from "@/pages/earnings"
-import AdminDashboard from "@/pages/AdminDashboard"
-import AdminDashboardTest from "@/pages/AdminDashboardTest"
+import { AdminLayout } from "@/components/layout/AdminLayout"
+import AdminDashboard from "@/pages/admin/AdminDashboard"
+import AdminTours from "@/pages/admin/AdminTours"
+import AdminUsers from "@/pages/admin/AdminUsers"
+import AdminBookings from "@/pages/admin/AdminBookings"
+import AdminWaitlist from "@/pages/admin/AdminWaitlist"
+import AdminVerifications from "@/pages/admin/AdminVerifications"
+import AdminSettings from "@/pages/admin/AdminSettings"
 import HostProfilePage from "@/pages/host-profile"
 import NewTourPage from "@/pages/new-tour"
 import EditTourPage from "@/pages/edit-tour"
@@ -34,8 +40,6 @@ import AboutPage from "@/pages/about"
 import JournalPage from "@/pages/journal"
 import FeedPage from "@/pages/feed"
 import TravelerProfilePage from "@/pages/traveler-profile"
-import AdminSettingsPage from "@/pages/admin-settings"
-import AdminHostsPage from "@/pages/admin-hosts"
 import TermsPage from "@/pages/legal/terms"
 import PrivacyPage from "@/pages/legal/privacy"
 import AuthCallbackPage from "@/pages/AuthCallback"
@@ -80,13 +84,17 @@ export default function App() {
           <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/host/signup" element={<Navigate to="/onboarding?become-host=true" replace />} />
           <Route path="/host/:id" element={<HostProfilePage />} />
-          {/* Admin routes */}
-          <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            <Route path="/admin/dashboard-test" element={<AdminDashboardTest />} />
-            <Route path="/admin/hosts" element={<AdminHostsPage />} />
-            <Route path="/admin/settings" element={<AdminSettingsPage />} />
+          <Route path="/admin" element={<ProtectedRoute allowedRoles={["admin"]} />}>
+            <Route element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="tours" element={<AdminTours />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="bookings" element={<AdminBookings />} />
+              <Route path="waitlist" element={<AdminWaitlist />} />
+              <Route path="verifications" element={<AdminVerifications />} />
+              <Route path="settings" element={<AdminSettings />} />
+            </Route>
           </Route>
 
           {/* Host routes */}
