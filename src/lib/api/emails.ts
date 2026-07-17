@@ -334,23 +334,33 @@ export async function sendGuideApprovedEmail(
 
 export async function sendGuideRejectedEmail(
   to: string,
-  hostName: string
+  hostName: string,
+  rejectionReason: string
 ): Promise<boolean> {
-  const subject = `Your Certified Guide Application — Ausaguide`
+  const subject = `Update on Your Certified Guide Application`
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 24px; background-color: #16161A; color: #fffffe; line-height: 1.6;">
       <div style="text-align: center; margin-bottom: 32px;">
         <img src="https://ausaguide.com/logo-primary.png" alt="Ausaguide" style="height: 36px; width: auto; display: inline-block;" />
       </div>
-      <p style="font-size: 16px; margin-bottom: 20px; color: #fffffe;">Hi ${hostName},</p>
-      <p style="font-size: 16px; color: #a7a9be; margin-bottom: 20px;">Thank you for applying to become a Certified Guide on Ausaguide. After reviewing your application, we were unable to verify your tour guide license through the TRA portal at this time.</p>
+      <p style="font-size: 16px; color: #fffffe; margin-bottom: 20px;">Dear ${hostName},</p>
+      <p style="font-size: 16px; color: #a7a9be; margin-bottom: 20px;">Thank you for applying to become a Certified Guide on Ausaguide.</p>
+      <p style="font-size: 16px; color: #a7a9be; margin-bottom: 20px;">After careful review, we are unable to approve your application at this time.</p>
+      
       <div style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.3); border-radius: 16px; padding: 20px; margin-bottom: 24px;">
-        <p style="font-size: 14px; color: #fca5a5; margin: 0;">This could be due to the license number not matching our records, an expired license, or a temporary issue with the verification system. Please double-check your license details and contact us if you believe this is an error.</p>
+        <p style="font-size: 14px; font-weight: 600; color: #fca5a5; margin: 0 0 6px;">Reason provided by our admin team:</p>
+        <p style="font-size: 14px; color: #a7a9be; margin: 0; font-style: italic;">"${rejectionReason}"</p>
       </div>
-      <p style="font-size: 16px; color: #a7a9be; margin-bottom: 24px;">You can still join Ausaguide as a <strong style="color: #2CB67D;">Local Host</strong> — sharing your knowledge of Kenya and creating authentic experiences for travelers worldwide.</p>
+      
+      <p style="font-size: 16px; color: #a7a9be; margin-bottom: 24px;">You can continue as a Local Host. Click the link below to confirm your Local Host status.</p>
+      
       <div style="text-align: center; margin-bottom: 28px;">
-        <a href="https://ausaguide.com/host/dashboard" style="background-color: #2CB67D; color: #ffffff; padding: 14px 32px; border-radius: 9999px; text-decoration: none; font-weight: bold; display: inline-block; font-size: 15px; box-shadow: 0 4px 14px rgba(44, 182, 125, 0.4);">Continue as Local Host →</a>
+        <a href="https://ausaguide.com/dashboard" style="background-color: #2CB67D; color: #ffffff; padding: 14px 32px; border-radius: 9999px; text-decoration: none; font-weight: bold; display: inline-block; font-size: 15px; box-shadow: 0 4px 14px rgba(44, 182, 125, 0.4);">Continue as Local Host</a>
       </div>
+      
+      <p style="font-size: 14px; color: #a7a9be; margin-bottom: 24px;">If you have any questions, reply to this email.</p>
+      
+      <p style="font-size: 15px; color: #fffffe; margin-bottom: 0; font-weight: 600;">– The Ausaguide Team</p>
       <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 32px 0;" />
       <p style="font-size: 13px; color: #2CB67D; font-weight: 700; text-align: center; margin-bottom: 4px;">Ausaguide — Be a Local. Share Your World.</p>
       <p style="font-size: 11px; color: #5f6368; text-align: center; margin: 0;">© 2026 Ausaguide. Nairobi, Kenya.</p>

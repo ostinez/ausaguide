@@ -1511,8 +1511,13 @@ export default function DashboardPage() {
                             <div>
                               <h4 className="font-semibold text-sm text-red-400">Your Certified Guide Application was not approved</h4>
                               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                                Your Certified Guide application was not approved. You are a Local Host.
+                                Your Certified Guide application was not approved. You are currently a Local Host.
                               </p>
+                              {profile.verification_notes && (
+                                <div className="mt-2 text-xs border-l-2 border-red-500/50 pl-2 text-red-300 italic">
+                                  Reason: "{profile.verification_notes}"
+                                </div>
+                              )}
                               <button
                                 onClick={() => navigate("/onboarding?become-host=true")}
                                 className="mt-2.5 text-xs text-red-400 underline font-semibold hover:text-red-300"

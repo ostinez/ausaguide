@@ -230,6 +230,9 @@ export default function AdminDashboard() {
   const [rejectLoading, setRejectLoading] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null)
   const [guideNotes, setGuideNotes] = useState<Record<string, string>>({})
+  const [rejectingGuideHost, setRejectingGuideHost] = useState<{ id: string; email: string; name: string } | null>(null)
+  const [guideRejectionReason, setGuideRejectionReason] = useState("")
+  const [rejectGuideLoading, setRejectGuideLoading] = useState(false)
 
   const handleApproveGuide = async (userId: string, hostEmail: string, hostName: string) => {
     try {
@@ -253,7 +256,15 @@ export default function AdminDashboard() {
     }
   }
 
-  const handleRejectGuide = async (userId: string, hostEmail: string, hostName: string) => {
+  const handleRejectGuide = (userId: string, hostEmail: string, hostName: string) => {
+    setRejectingGuideHost({ id: userId, email: hostEmail, name: hostName })
+    setGuideRejectionReason("")
+  }
+
+  const submitGuideRejection = async () => {
+    if (!rejectingGuideHost) return
+    setRejectGuideLoading(true)
+    const reasonToSend = guideRejectionReason.trim() || "Your Certified Guide application was not approved. You can continue as a Local Host."
     try {
       const { error } = await supabase
         .from("profiles")
@@ -262,15 +273,25 @@ export default function AdminDashboard() {
           rejected_as_guide: true,
           verified_guide: false,
           license_status: "rejected",
+          verification_notes: reasonToSend,
         } as any)
-        .eq("id", userId)
+        .eq("id", rejectingGuideHost.id)
       if (error) throw error
-      sendGuideRejectedEmail(hostEmail, hostName).catch(console.error)
-      await logAdminAction("Reject Guide", "profile", userId, { email: hostEmail, name: hostName })
+
+      sendGuideRejectedEmail(rejectingGuideHost.email, rejectingGuideHost.name, reasonToSend).catch(console.error)
+      await logAdminAction("Reject Guide", "profile", rejectingGuideHost.id, { 
+        email: rejectingGuideHost.email, 
+        name: rejectingGuideHost.name, 
+        reason: reasonToSend 
+      })
       showToast("Guide application rejected. Email sent to host.", "success")
+      setRejectingGuideHost(null)
+      setGuideRejectionReason("")
       load()
     } catch (err: any) {
       showToast(err.message || "Failed to reject guide", "error")
+    } finally {
+      setRejectGuideLoading(false)
     }
   }
 
@@ -2051,6 +2072,55 @@ export default function AdminDashboard() {
           onCancel={() => setRejectingId(null)}
           loading={rejectLoading}
         />
+      )}
+
+      {/* Reject Certified Guide Application Modal */}
+      {rejectingGuideHost && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-[#16161A] border border-border/80 rounded-2xl w-full max-w-md shadow-2xl p-6 space-y-4 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-white">Reject Certified Guide Application</h3>
+              <button 
+                onClick={() => { setRejectingGuideHost(null); setGuideRejectionReason(""); }}
+                className="text-muted-foreground hover:text-white transition-colors"
+              >
+                <XCircle className="size-5" />
+              </button>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs text-muted-foreground font-medium">
+                Reason for rejection (optional) — this will be sent to the host.
+              </label>
+              <textarea
+                placeholder="e.g. TRA number not found, license expired..."
+                value={guideRejectionReason}
+                onChange={(e) => setGuideRejectionReason(e.target.value)}
+                className="w-full text-sm rounded-xl bg-card border border-border/60 p-3 text-white focus:outline-none focus:border-primary/50 min-h-[100px] resize-y"
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setRejectingGuideHost(null); setGuideRejectionReason(""); }}
+                disabled={rejectGuideLoading}
+                className="rounded-full px-5 text-sm"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={rejectGuideLoading}
+                onClick={submitGuideRejection}
+                className="rounded-full px-5 text-sm flex items-center gap-1.5"
+              >
+                {rejectGuideLoading && <Spinner className="size-3.5 animate-spin" />}
+                Send Rejection
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Toast */}
