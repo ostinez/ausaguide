@@ -929,7 +929,7 @@ export default function AuthPage() {
           localStorage.removeItem("user_role")
         }
 
-        if (role === "admin") navigate("/admin/dashboard", { replace: true })
+        if (role === "admin") navigate("/admin2", { replace: true })
         else if (role === "host") navigate("/host/dashboard", { replace: true })
         else if (role === "traveler") navigate("/dashboard", { replace: true })
         else navigate("/onboarding", { replace: true })

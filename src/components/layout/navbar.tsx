@@ -123,11 +123,11 @@ export function Navbar() {
     ]
   } else if (userRole === "admin") {
     navLinks = [
-      { href: "/admin/dashboard", label: "Dashboard" },
-      { href: "/admin/users", label: "Users" },
-      { href: "/admin/tours", label: "Tours" },
-      { href: "/admin/bookings", label: "Bookings" },
-      { href: "/admin/settings", label: "Settings" },
+      { href: "/admin2", label: "Dashboard" },
+      { href: "/admin2?tab=users", label: "Users" },
+      { href: "/admin2?tab=tours", label: "Tours" },
+      { href: "/admin2?tab=bookings", label: "Bookings" },
+      { href: "/admin2?tab=settings", label: "Settings" },
     ]
   } else if (userRole === "host") {
     navLinks = [

@@ -12,14 +12,6 @@ import ConfirmationPage from "@/pages/confirmation"
 import AuthPage from "@/pages/auth"
 import DashboardPage from "@/pages/dashboard"
 import EarningsDashboard from "@/pages/earnings"
-import { AdminLayout } from "@/components/layout/AdminLayout"
-import AdminDashboard from "@/pages/admin/AdminDashboard"
-import AdminTours from "@/pages/admin/AdminTours"
-import AdminUsers from "@/pages/admin/AdminUsers"
-import AdminBookings from "@/pages/admin/AdminBookings"
-import AdminWaitlist from "@/pages/admin/AdminWaitlist"
-import AdminVerifications from "@/pages/admin/AdminVerifications"
-import AdminSettings from "@/pages/admin/AdminSettings"
 
 import Admin2Layout from "@/components/admin2/Admin2Layout"
 import Admin2Overview from "@/pages/admin2/Admin2Overview"
@@ -96,18 +88,7 @@ export default function App() {
           <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/host/signup" element={<Navigate to="/onboarding?become-host=true" replace />} />
           <Route path="/host/:id" element={<HostProfilePage />} />
-          <Route path="/admin" element={<ProtectedRoute allowedRoles={["admin"]} />}>
-            <Route element={<AdminLayout />}>
-              <Route index element={<AdminDashboard />} />
-              <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="tours" element={<AdminTours />} />
-              <Route path="users" element={<AdminUsers />} />
-              <Route path="bookings" element={<AdminBookings />} />
-              <Route path="waitlist" element={<AdminWaitlist />} />
-              <Route path="verifications" element={<AdminVerifications />} />
-              <Route path="settings" element={<AdminSettings />} />
-            </Route>
-          </Route>
+          <Route path="/admin/*" element={<Navigate to="/admin2" replace />} />
 
           {/* Host routes */}
           <Route element={<ProtectedRoute allowedRoles={["host"]} />}>

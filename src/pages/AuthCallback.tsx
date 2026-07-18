@@ -78,7 +78,7 @@ export default function AuthCallbackPage() {
           localStorage.setItem("user_id", profile.id)
 
           if (role === "admin") {
-            navigate("/admin/dashboard", { replace: true })
+            navigate("/admin2", { replace: true })
           } else if (role === "host") {
             navigate("/host/dashboard", { replace: true })
           } else {
@@ -88,7 +88,7 @@ export default function AuthCallbackPage() {
           // Admin logged in via Google but no profile yet — send to admin dashboard anyway
           localStorage.setItem("user_id", user.id)
           localStorage.setItem("user_role", "admin")
-          navigate("/admin/dashboard", { replace: true })
+          navigate("/admin2", { replace: true })
         } else {
           // New user, redirect to onboarding
           localStorage.setItem("user_id", user.id)

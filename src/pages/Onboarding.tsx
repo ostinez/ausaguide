@@ -1176,7 +1176,7 @@ export default function OnboardingPage() {
               localStorage.setItem("user_id", user.id)
               localStorage.setItem("user_role", profile.role)
               if (profile.role === "admin") {
-                navigate("/admin/dashboard", { replace: true })
+                navigate("/admin2", { replace: true })
               } else if (profile.role === "host") {
                 navigate("/host/dashboard", { replace: true })
               } else {

@@ -288,7 +288,7 @@ export async function sendGuideApplicationNotification(
         </tr>
       </table>
       <div style="text-align: center; margin-bottom: 24px;">
-        <a href="https://ausaguide.com/admin/dashboard?tab=guides" style="background-color: #7F5AF0; color: #ffffff; padding: 12px 28px; border-radius: 9999px; text-decoration: none; font-weight: bold; display: inline-block; font-size: 14px; box-shadow: 0 4px 12px rgba(127, 90, 240, 0.3);">Open Admin Dashboard → Guide Verifications</a>
+        <a href="https://ausaguide.com/admin2?tab=guides" style="background-color: #7F5AF0; color: #ffffff; padding: 12px 28px; border-radius: 9999px; text-decoration: none; font-weight: bold; display: inline-block; font-size: 14px; box-shadow: 0 4px 12px rgba(127, 90, 240, 0.3);">Open Admin Dashboard → Guide Verifications</a>
       </div>
       <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 32px 0;" />
       <p style="font-size: 13px; color: #2CB67D; font-weight: 700; text-align: center; margin-bottom: 4px;">Ausaguide — Be a Local. Share Your World.</p>

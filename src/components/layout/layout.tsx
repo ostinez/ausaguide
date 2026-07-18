@@ -37,7 +37,7 @@ export function Layout() {
       localStorage.setItem("user_role", originalRole)
       localStorage.removeItem("admin_impersonator_id")
       localStorage.removeItem("admin_impersonator_role")
-      window.location.href = "/admin/dashboard"
+      window.location.href = "/admin2"
     }
   }
 
@@ -51,7 +51,7 @@ export function Layout() {
     
     if (cachedUserId && (path === "/auth" || path === "/auth/callback")) {
       if (cachedRole === "admin") {
-        window.location.href = "/admin/dashboard"
+        window.location.href = "/admin2"
       } else if (cachedRole === "host") {
         window.location.href = "/host/dashboard"
       } else if (cachedRole === "traveler") {
@@ -95,7 +95,7 @@ export function Layout() {
             const path = window.location.pathname
             if (path === "/auth" || path === "/auth/callback" || path === "/") {
               if (role === "admin") {
-                window.location.href = "/admin/dashboard"
+                window.location.href = "/admin2"
               } else if (role === "host") {
                 window.location.href = "/host/dashboard"
               } else if (role === "traveler") {

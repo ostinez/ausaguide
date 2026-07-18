@@ -94,7 +94,7 @@ export function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) 
     if (!allowedRoles.includes(role)) {
       // Redirect to appropriate dashboard based on role
       if (role === "admin") {
-        return <Navigate to="/admin/dashboard" replace />
+        return <Navigate to="/admin2" replace />
       } else if (role === "host") {
         return <Navigate to="/host/dashboard" replace />
       } else if (role === "traveler") {
