@@ -118,7 +118,7 @@ export default function AuthCallbackPage() {
             <p className="text-sm text-gray-400">{error}</p>
             <button
               onClick={() => navigate("/auth", { replace: true })}
-              className="mt-2 w-full py-2.5 rounded-xl bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] text-white text-xs font-bold shadow-lg"
+              className="mt-2 w-full py-2.5 rounded-xl bg-linear-to-r from-[#7F5AF0] to-[#2CB67D] text-white text-xs font-bold shadow-lg"
             >
               Back to Log In
             </button>

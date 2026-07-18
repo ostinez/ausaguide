@@ -168,7 +168,7 @@ export default function AdminSettings() {
             <select
               value={stripeMode}
               onChange={(e) => setStripeMode(e.target.value)}
-              className="w-full border border-white/5 bg-white/5 focus:border-purple-500/30 text-white rounded-xl text-xs h-10 px-3 bg-[#0F0F12]"
+              className="w-full border border-white/5 bg-white/5 focus:border-purple-500/30 text-white rounded-xl text-xs h-10 px-3"
             >
               <option value="test">Test Mode (Mock Transactions)</option>
               <option value="live">Live Production Mode</option>

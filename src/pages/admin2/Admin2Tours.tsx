@@ -96,7 +96,7 @@ export default function Admin2Tours() {
                 </tr>
               ) : (
                 filteredTours.map(tour => (
-                  <tr key={tour.id} className="hover:bg-white/[0.02] transition-colors">
+                  <tr key={tour.id} className="hover:bg-white/2 transition-colors">
                     <td className="px-6 py-4 font-medium text-gray-200">
                       {tour.title}
                     </td>

@@ -969,7 +969,7 @@ export default function AuthPage() {
           </div>
         </div>
 
-        <Card className="border-border/60 shadow-[var(--shadow-3)]">
+        <Card className="border-border/60 shadow-(--shadow-3)">
           <Tabs value={activeTab} onValueChange={handleTabChange}>
             <CardHeader className="pb-4">
               {becomeHost && (

@@ -144,7 +144,7 @@ export default function Admin2Overview() {
               </thead>
               <tbody className="divide-y divide-white/5">
                 {recentUsers.map(user => (
-                  <tr key={user.id} className="hover:bg-white/[0.02]">
+                  <tr key={user.id} className="hover:bg-white/2">
                     <td className="px-4 py-3 text-gray-200">
                       <div className="font-medium">{user.full_name}</div>
                       <div className="text-xs text-gray-500">{user.email}</div>
@@ -184,7 +184,7 @@ export default function Admin2Overview() {
               </thead>
               <tbody className="divide-y divide-white/5">
                 {recentBookings.map(booking => (
-                  <tr key={booking.id} className="hover:bg-white/[0.02]">
+                  <tr key={booking.id} className="hover:bg-white/2">
                     <td className="px-4 py-3 text-gray-200 font-medium truncate max-w-[150px]">
                       {booking.tours?.title || 'Unknown Tour'}
                     </td>
@@ -227,7 +227,7 @@ function StatCard({ title, value, icon, subtext }: { title: string, value: strin
         <p className="text-3xl font-bold text-white tracking-tight">{value}</p>
         {subtext && <p className="text-xs text-gray-500 mt-2 font-medium">{subtext}</p>}
       </div>
-      <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/0 to-white/[0.02] pointer-events-none" />
+      <div className="absolute inset-0 bg-linear-to-tr from-white/0 via-white/0 to-white/2 pointer-events-none" />
     </div>
   )
 }

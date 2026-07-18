@@ -128,7 +128,7 @@ export function Layout() {
     
     try {
       const existing = supabase.getChannels()
-      const existingPresence = existing.find((ch) => ch.name === "site-presence")
+      const existingPresence = existing.find((ch) => ch.topic === "realtime:site-presence")
       if (existingPresence) {
         supabase.removeChannel(existingPresence)
       }

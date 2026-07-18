@@ -107,7 +107,7 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
           id="onboarding-welcome-next"
           size="lg"
           onClick={onNext}
-          className="rounded-full px-10 bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 transition-all duration-300 flex items-center gap-2"
+          className="rounded-full px-10 bg-linear-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 transition-all duration-300 flex items-center gap-2"
         >
           Let's get started
           <ArrowRight className="size-4" />
@@ -216,7 +216,7 @@ function StepRole({
         className={cn(
           "rounded-full px-10 font-bold transition-all duration-300 flex items-center gap-2",
           selectedRole
-            ? "bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] text-white border-0 shadow-lg shadow-[#7F5AF0]/30 hover:opacity-90"
+            ? "bg-linear-to-r from-[#7F5AF0] to-[#2CB67D] text-white border-0 shadow-lg shadow-[#7F5AF0]/30 hover:opacity-90"
             : "bg-accent/ text-white/30 border border-border cursor-not-allowed"
         )}
       >
@@ -446,7 +446,7 @@ function StepProfile({
           type="submit"
           size="lg"
           disabled={loading}
-          className="w-full rounded-full bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 transition-all duration-300"
+          className="w-full rounded-full bg-linear-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 transition-all duration-300"
         >
           {loading ? <Spinner className="size-4 animate-spin" /> : "Save Profile & Continue"}
         </Button>
@@ -785,7 +785,7 @@ function StepDone({ name, role, hostTier }: { name: string; role: Role; hostTier
         initial={{ scale: 0, rotate: -30 }}
         animate={{ scale: 1, rotate: 0 }}
         transition={{ type: "spring", stiffness: 220, damping: 12, delay: 0.2 }}
-        className="flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-[#7F5AF0] to-[#2CB67D] shadow-2xl shadow-[#7F5AF0]/40 text-white"
+        className="flex size-20 items-center justify-center rounded-full bg-linear-to-br from-[#7F5AF0] to-[#2CB67D] shadow-2xl shadow-[#7F5AF0]/40 text-white"
       >
         <PartyPopper className="size-10" />
       </motion.div>
@@ -820,7 +820,7 @@ function StepDone({ name, role, hostTier }: { name: string; role: Role; hostTier
               id="onboarding-done-primary"
               size="lg"
               onClick={() => navigate("/tours")}
-              className="rounded-full px-8 bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 flex items-center justify-center gap-2"
+              className="rounded-full px-8 bg-linear-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 flex items-center justify-center gap-2"
             >
               Start Exploring <Compass className="size-4" />
             </Button>
@@ -840,7 +840,7 @@ function StepDone({ name, role, hostTier }: { name: string; role: Role; hostTier
               id="onboarding-done-primary"
               size="lg"
               onClick={() => navigate("/host/dashboard")}
-              className="rounded-full px-8 bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 flex items-center justify-center gap-2"
+              className="rounded-full px-8 bg-linear-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 flex items-center justify-center gap-2"
             >
               Start Hosting <Home className="size-4" />
             </Button>
@@ -1046,7 +1046,7 @@ function StepHostTier({
               type="date"
               value={licenseExpiry}
               onChange={(e) => setLicenseExpiry(e.target.value)}
-              className="border-white/20 bg-white/5 text-white placeholder:text-white/30 h-10 text-xs rounded-xl [color-scheme:dark]"
+              className="border-white/20 bg-white/5 text-white placeholder:text-white/30 h-10 text-xs rounded-xl scheme-dark"
             />
           </div>
 

@@ -97,7 +97,7 @@ function StatCard({
   label, value, icon: Icon, color, sub,
 }: { label: string; value: string | number; icon: React.ElementType; color: string; sub?: string }) {
   return (
-    <Card className="border-border/60 bg-gradient-to-br from-card to-card/60 transition-all hover:shadow-lg hover:shadow-primary/5">
+    <Card className="border-border/60 bg-linear-to-br from-card to-card/60 transition-all hover:shadow-lg hover:shadow-primary/5">
       <CardContent className="flex items-start gap-4 pt-6">
         <div className="flex size-11 shrink-0 items-center justify-center rounded-xl" style={{ background: color + "15" }}>
           <Icon className="size-5" style={{ color }} />
@@ -940,7 +940,7 @@ export default function AdminDashboard() {
                 {/* Recent Signups, Waitlist and Notifications side-by-side */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Recent Signups */}
-                  <Card className="border-border/60 bg-gradient-to-br from-card to-card/40">
+                  <Card className="border-border/60 bg-linear-to-br from-card to-card/40">
                     <CardHeader>
                       <CardTitle className="text-base font-bold flex items-center gap-2 text-white">
                         <Users className="size-4 text-primary" />
@@ -989,7 +989,7 @@ export default function AdminDashboard() {
                   </Card>
 
                   {/* Recent Waitlist */}
-                  <Card className="border-border/60 bg-gradient-to-br from-card to-card/40">
+                  <Card className="border-border/60 bg-linear-to-br from-card to-card/40">
                     <CardHeader>
                       <CardTitle className="text-base font-bold flex items-center gap-2 text-white">
                         <ClipboardList className="size-4 text-[#2CB67D]" />
@@ -1034,7 +1034,7 @@ export default function AdminDashboard() {
                   </Card>
 
                   {/* System Notifications */}
-                  <Card className="border-border/60 bg-gradient-to-br from-card to-card/40">
+                  <Card className="border-border/60 bg-linear-to-br from-card to-card/40">
                     <CardHeader>
                       <CardTitle className="text-base font-bold flex items-center gap-2 text-white">
                         <Bell className="size-4 text-amber-500" />

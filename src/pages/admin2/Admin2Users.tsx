@@ -92,7 +92,7 @@ export default function Admin2Users() {
                 </tr>
               ) : (
                 filteredUsers.map(user => (
-                  <tr key={user.id} className="hover:bg-white/[0.02] transition-colors">
+                  <tr key={user.id} className="hover:bg-white/2 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-primary font-bold border border-white/10">

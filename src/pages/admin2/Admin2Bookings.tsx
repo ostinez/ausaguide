@@ -88,7 +88,7 @@ export default function Admin2Bookings() {
                 </tr>
               ) : (
                 filteredBookings.map(booking => (
-                  <tr key={booking.id} className="hover:bg-white/[0.02] transition-colors">
+                  <tr key={booking.id} className="hover:bg-white/2 transition-colors">
                     <td className="px-6 py-4 font-medium text-gray-200 max-w-[200px] truncate" title={booking.tours?.title}>
                       {booking.tours?.title || 'Unknown Tour'}
                     </td>

@@ -132,7 +132,7 @@ export default function Admin2Verifications() {
                 </tr>
               ) : (
                 profiles.map(user => (
-                  <tr key={user.id} className="hover:bg-white/[0.02] transition-colors">
+                  <tr key={user.id} className="hover:bg-white/2 transition-colors">
                     <td className="px-6 py-4">
                       <div className="font-medium text-gray-200">{user.full_name}</div>
                       <div className="text-xs text-gray-500">{user.email}</div>

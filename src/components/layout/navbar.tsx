@@ -174,7 +174,7 @@ export function Navbar() {
           />
           <div id="navbar-brand-fallback" className="items-center gap-2" style={{ display: "none" }}>
             <Globe className="size-6 text-[#2CB67D]" />
-            <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] bg-clip-text text-transparent">
+            <span className="text-xl font-bold tracking-tight bg-linear-to-r from-[#7F5AF0] to-[#2CB67D] bg-clip-text text-transparent">
               Ausaguide
             </span>
           </div>
@@ -195,7 +195,7 @@ export function Navbar() {
                 {link.label}
                 {/* Active indicator — gradient underline pill */}
                 {isActive(link.href) && (
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-4/5 rounded-full bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D]" />
+                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-4/5 rounded-full bg-linear-to-r from-[#7F5AF0] to-[#2CB67D]" />
                 )}
               </span>
             </Link>
@@ -219,7 +219,7 @@ export function Navbar() {
                   <DropdownMenuTrigger asChild>
                     <button className="flex items-center gap-2 rounded-xl border border-border bg-accent/ px-3 py-1.5 hover:bg-accent/ hover:border-[#7F5AF0]/40 transition-all duration-200 group">
                       {/* Avatar circle */}
-                      <span className="flex size-7 items-center justify-center rounded-full bg-gradient-to-br from-[#7F5AF0] to-[#2CB67D] text-xs font-bold text-white shrink-0">
+                      <span className="flex size-7 items-center justify-center rounded-full bg-linear-to-br from-[#7F5AF0] to-[#2CB67D] text-xs font-bold text-white shrink-0">
                         {userInitials}
                       </span>
                       <span className="text-sm font-medium text-white/80 group-hover:text-white max-w-[100px] truncate">
@@ -275,7 +275,7 @@ export function Navbar() {
                 <Link to="/onboarding">
                   <Button
                     size="sm"
-                    className="bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] text-white border-0 hover:opacity-90 hover:shadow-md hover:shadow-[#7F5AF0]/30 transition-all duration-200 font-semibold"
+                    className="bg-linear-to-r from-[#7F5AF0] to-[#2CB67D] text-white border-0 hover:opacity-90 hover:shadow-md hover:shadow-[#7F5AF0]/30 transition-all duration-200 font-semibold"
                   >
                     Sign Up
                   </Button>
@@ -309,7 +309,7 @@ export function Navbar() {
                 />
                 <div id="navbar-brand-fallback-mobile" className="items-center gap-2" style={{ display: "none" }}>
                   <Globe className="size-5 text-[#2CB67D]" />
-                  <span className="font-bold bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] bg-clip-text text-transparent">Ausaguide</span>
+                  <span className="font-bold bg-linear-to-r from-[#7F5AF0] to-[#2CB67D] bg-clip-text text-transparent">Ausaguide</span>
                 </div>
               </SheetTitle>
             </SheetHeader>
@@ -325,7 +325,7 @@ export function Navbar() {
                     className={cn(
                       "flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
                       isActive(link.href)
-                        ? "bg-gradient-to-r from-[#7F5AF0]/20 to-[#2CB67D]/20 text-white border border-[#7F5AF0]/20"
+                        ? "bg-linear-to-r from-[#7F5AF0]/20 to-[#2CB67D]/20 text-white border border-[#7F5AF0]/20"
                         : "text-white/60 hover:text-white hover:bg-accent/"
                     )}
                   >
@@ -341,7 +341,7 @@ export function Navbar() {
                   {/* Mobile profile card */}
                   {profile && (
                     <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-accent/ border border-border mb-2">
-                      <span className="flex size-9 items-center justify-center rounded-full bg-gradient-to-br from-[#7F5AF0] to-[#2CB67D] text-sm font-bold text-white shrink-0">
+                      <span className="flex size-9 items-center justify-center rounded-full bg-linear-to-br from-[#7F5AF0] to-[#2CB67D] text-sm font-bold text-white shrink-0">
                         {userInitials}
                       </span>
                       <div className="min-w-0">
@@ -378,7 +378,7 @@ export function Navbar() {
                     </Button>
                   </Link>
                   <Link to="/onboarding" onClick={() => setMobileOpen(false)}>
-                    <Button className="w-full mt-2 bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] text-white border-0 hover:opacity-90 font-semibold">
+                    <Button className="w-full mt-2 bg-linear-to-r from-[#7F5AF0] to-[#2CB67D] text-white border-0 hover:opacity-90 font-semibold">
                       Sign Up
                     </Button>
                   </Link>
