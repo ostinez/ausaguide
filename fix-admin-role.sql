@@ -30,7 +30,7 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
-  IF OLD.role IS DISTINCT FROM NEW.role THEN
+  IF OLD.role IS NOT NULL AND OLD.role IS DISTINCT FROM NEW.role THEN
     RAISE EXCEPTION 'User role cannot be changed once set.';
   END IF;
   RETURN NEW;
