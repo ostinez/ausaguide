@@ -242,7 +242,7 @@ function SignInForm() {
           localStorage.setItem("user_role", "admin")
           localStorage.setItem("user_id", authData.user.id)
           if (profile) identifyUser(profile.id, { email: profile.email ?? authData.user.email, role: "admin" })
-          navigate("/admin/dashboard")
+          navigate("/admin2")
           return
         }
 
@@ -279,7 +279,7 @@ function SignInForm() {
         return
       }
 
-      if (role === "admin") navigate("/admin/dashboard")
+      if (role === "admin") navigate("/admin2")
       else if (role === "host") navigate("/host/dashboard")
       else navigate("/dashboard")
 
