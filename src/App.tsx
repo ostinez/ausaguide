@@ -20,6 +20,16 @@ import AdminBookings from "@/pages/admin/AdminBookings"
 import AdminWaitlist from "@/pages/admin/AdminWaitlist"
 import AdminVerifications from "@/pages/admin/AdminVerifications"
 import AdminSettings from "@/pages/admin/AdminSettings"
+
+import Admin2Layout from "@/components/admin2/Admin2Layout"
+import Admin2Overview from "@/pages/admin2/Admin2Overview"
+import Admin2Users from "@/pages/admin2/Admin2Users"
+import Admin2Tours from "@/pages/admin2/Admin2Tours"
+import Admin2Bookings from "@/pages/admin2/Admin2Bookings"
+import Admin2Waitlist from "@/pages/admin2/Admin2Waitlist"
+import Admin2Verifications from "@/pages/admin2/Admin2Verifications"
+import Admin2Settings from "@/pages/admin2/Admin2Settings"
+
 import HostProfilePage from "@/pages/host-profile"
 import NewTourPage from "@/pages/new-tour"
 import EditTourPage from "@/pages/edit-tour"
@@ -138,6 +148,19 @@ export default function App() {
           <Route path="/travel-commitment-thank-you" element={<TravelCommitmentThankYouPage />} />
           <Route path="/thank-you" element={<ThankYouPage />} />
           <Route path="*" element={<NotFound />} />
+        </Route>
+
+        {/* Admin v2 Dashboard (Standalone Layout) */}
+        <Route path="/admin2" element={<ProtectedRoute allowedRoles={["admin"]} />}>
+          <Route element={<Admin2Layout />}>
+            <Route index element={<Admin2Overview />} />
+            <Route path="users" element={<Admin2Users />} />
+            <Route path="tours" element={<Admin2Tours />} />
+            <Route path="bookings" element={<Admin2Bookings />} />
+            <Route path="waitlist" element={<Admin2Waitlist />} />
+            <Route path="verifications" element={<Admin2Verifications />} />
+            <Route path="settings" element={<Admin2Settings />} />
+          </Route>
         </Route>
       </Routes>
       <CookieConsent />
