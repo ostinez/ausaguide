@@ -20,7 +20,7 @@ export default function AdminSettings() {
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [dbActive, setDbActive] = useState(false)
+
   const [notice, setNotice] = useState<string | null>(null)
 
   useEffect(() => {

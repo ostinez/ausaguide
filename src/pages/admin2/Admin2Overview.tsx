@@ -19,7 +19,6 @@ export default function Admin2Overview() {
   })
   
   const [recentUsers, setRecentUsers] = useState<any[]>([])
-  const [recentTours, setRecentTours] = useState<any[]>([])
   const [recentBookings, setRecentBookings] = useState<any[]>([])
 
   const fetchDashboardData = async () => {
@@ -62,7 +61,6 @@ export default function Admin2Overview() {
       })
 
       setRecentUsers(users.slice(0, 5))
-      setRecentTours(tours.slice(0, 5))
       setRecentBookings(bookings.slice(0, 5))
       
     } catch (error) {
