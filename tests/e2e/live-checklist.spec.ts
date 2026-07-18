@@ -1,13 +1,15 @@
 import { test, expect } from "@playwright/test";
-import { createClient } from "@supabase/supabase-js";
+import * as supabaseJS from "@supabase/supabase-js";
 
-// We run this checklist against the live production site
-const LIVE_URL = "https://www.ausaguide.com";
+const createClientFn = (supabaseJS.createClient || (supabaseJS as any).default?.createClient || supabaseJS);
 
-const supabaseClient = createClient(
+const supabaseClient = (createClientFn as any)(
   "https://sdbvvcjnlergsmcsorrv.supabase.co",
   "sb_publishable_NyfTrWiQmV7NG6FUS17GGw_qyik8qVo"
 );
+
+// We run this checklist against the live production site
+const LIVE_URL = "https://www.ausaguide.com";
 
 // Helper function to log out via the sliding StaggeredMenu
 async function performLogout(page) {
@@ -107,13 +109,13 @@ test.describe("Master Testing Checklist - Live Site Validation", () => {
     await page.locator("#signin-email").fill("ausaguides@gmail.com");
     await page.locator("#signin-password").fill("ynwmelly2");
     await page.getByRole("button", { name: /^Log In$/i }).click();
-    await page.waitForURL("**/admin/dashboard", { timeout: 15000 });
-    expect(page.url()).toContain("/admin/dashboard");
+    await page.waitForURL("**/admin2", { timeout: 15000 });
+    expect(page.url()).toContain("/admin2");
 
     // 2.8 Already logged in – visit /auth should redirect to admin dashboard
     await page.goto(`${LIVE_URL}/auth`);
-    await page.waitForURL("**/admin/dashboard", { timeout: 15000 });
-    expect(page.url()).toContain("/admin/dashboard");
+    await page.waitForURL("**/admin2", { timeout: 15000 });
+    expect(page.url()).toContain("/admin2");
 
     // 2.9 Logout
     await performLogout(page);
@@ -124,8 +126,8 @@ test.describe("Master Testing Checklist - Live Site Validation", () => {
     await page.locator("#signin-email").fill("admin");
     await page.locator("#signin-password").fill("ynwmelly2");
     await page.getByRole("button", { name: /^Log In$/i }).click();
-    await page.waitForURL("**/admin/dashboard", { timeout: 15000 });
-    expect(page.url()).toContain("/admin/dashboard");
+    await page.waitForURL("**/admin2", { timeout: 15000 });
+    expect(page.url()).toContain("/admin2");
 
     // Logout
     await performLogout(page);
@@ -276,7 +278,7 @@ test.describe("Master Testing Checklist - Live Site Validation", () => {
     await page.locator("#signin-email").fill("ausaguides@gmail.com");
     await page.locator("#signin-password").fill("ynwmelly2");
     await page.getByRole("button", { name: /^Log In$/i }).click();
-    await page.waitForURL("**/admin/dashboard", { timeout: 15000 });
+    await page.waitForURL("**/admin2", { timeout: 15000 });
 
     // Wait for system loading to clear
     await expect(page.locator("text=Loading")).not.toBeVisible({ timeout: 15000 });

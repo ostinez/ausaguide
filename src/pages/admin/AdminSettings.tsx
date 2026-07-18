@@ -33,7 +33,6 @@ export default function AdminSettings() {
         if (error) throw error
 
         if (data && data.length > 0) {
-          setDbActive(true)
           setNotice(null)
           data.forEach((row) => {
             if (row.key === "system_maintenance_mode") {
@@ -86,7 +85,6 @@ export default function AdminSettings() {
         throw error
       }
 
-      setDbActive(true)
       setNotice(null)
       alert("Settings updated successfully in database and local cache.")
     } catch (err: any) {
