@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { Loader2, CheckSquare, XCircle, ExternalLink } from "lucide-react"
-import { sendGuideApprovedEmail, sendGuideRejectedEmail } from "@/lib/api/email"
+import { sendGuideApprovedEmail, sendGuideRejectedEmail } from "@/lib/api/emails"
 
 export default function Admin2Verifications() {
   const [profiles, setProfiles] = useState<any[]>([])

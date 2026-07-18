@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Save, AlertTriangle } from "lucide-react"
+import { Save, AlertTriangle, Loader2 } from "lucide-react"
 
 export default function Admin2Settings() {
   const [loading, setLoading] = useState(false)
