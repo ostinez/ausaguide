@@ -22,6 +22,7 @@ import {
   Video,
   Menu,
   BadgeCheck,
+  Loader2,
 } from "lucide-react"
 import { ChatDialog } from "@/components/chat/chat-dialog"
 import NotificationBell from "@/components/ui/NotificationBell"
@@ -1088,6 +1089,137 @@ export function HostDashboard({
   )
 }
 
+function UrgentRequestsSection({
+  requests,
+  hostId,
+  onRefresh,
+}: {
+  requests: any[]
+  hostId: string
+  onRefresh: () => void
+}) {
+  const [loadingId, setLoadingId] = useState<string | null>(null)
+
+  const handleAccept = async (requestId: string) => {
+    setLoadingId(requestId)
+    try {
+      const { acceptUrgentRequest } = await import("@/lib/api/urgent-match")
+      const result = await acceptUrgentRequest(requestId, hostId)
+      if (result.success) {
+        toast.success(result.message)
+        onRefresh()
+      } else {
+        toast.error(result.message)
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to accept request.")
+    } finally {
+      setLoadingId(null)
+    }
+  }
+
+  const handleDecline = async (requestId: string) => {
+    setLoadingId(requestId)
+    try {
+      const { declineUrgentRequest } = await import("@/lib/api/urgent-match")
+      await declineUrgentRequest(requestId, hostId)
+      toast.success("Request declined.")
+      onRefresh()
+    } catch (err: any) {
+      toast.error(err.message || "Failed to decline request.")
+    } finally {
+      setLoadingId(null)
+    }
+  }
+
+  const filteredRequests = requests.filter(req => {
+    const expiresAt = new Date(req.expires_at).getTime()
+    return expiresAt > Date.now()
+  })
+
+  if (filteredRequests.length === 0) return null
+
+  return (
+    <Card className="border-violet-500/30 bg-violet-950/10 shadow-lg border">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center gap-2 text-violet-400">
+          <span className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-violet-500"></span>
+          </span>
+          🚨 Incoming Urgent Matches Near You!
+        </CardTitle>
+        <CardDescription className="text-slate-400 text-xs">
+          Match with travelers looking for immediate guides within 5km. Respond before expiry!
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {filteredRequests.map((req) => {
+          const expiresAt = new Date(req.expires_at).getTime()
+          const [timeLeft, setTimeLeft] = useState(Math.max(0, Math.floor((expiresAt - Date.now()) / 1000)))
+
+          useEffect(() => {
+            const interval = setInterval(() => {
+              const remaining = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000))
+              setTimeLeft(remaining)
+              if (remaining <= 0) {
+                clearInterval(interval)
+                onRefresh()
+              }
+            }, 1000)
+            return () => clearInterval(interval)
+          }, [expiresAt, onRefresh])
+
+          if (timeLeft <= 0) return null
+
+          return (
+            <div key={req.id} className="border border-violet-500/20 bg-slate-900/60 p-4 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-colors">
+              <div className="space-y-1">
+                <p className="font-bold text-white text-sm">
+                  Traveler: {req.traveler?.full_name || "Anonymous Traveler"}
+                </p>
+                <div className="flex flex-wrap gap-2 text-xs text-slate-400">
+                  <span className="bg-violet-900/40 text-violet-300 px-2 py-0.5 rounded-full capitalize">
+                    {req.experience_type?.join(", ") || "General"}
+                  </span>
+                  <span className="font-semibold text-emerald-400">
+                    Budget: {req.budget} KES/hr
+                  </span>
+                </div>
+                <p className="text-[10px] text-rose-400 font-mono font-bold">
+                  Expires in: {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, "0")}
+                </p>
+              </div>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleDecline(req.id)}
+                  disabled={loadingId !== null}
+                  className="flex-1 sm:flex-initial border-slate-700 text-slate-400 hover:text-white"
+                >
+                  Decline
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => handleAccept(req.id)}
+                  disabled={loadingId !== null}
+                  className="flex-1 sm:flex-initial bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold"
+                >
+                  {loadingId === req.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                  Accept Match
+                </Button>
+              </div>
+            </div>
+          )
+        })}
+      </CardContent>
+    </Card>
+  )
+}
+
 function TravelerDashboard({ bookings = [], onChat }: { bookings?: Booking[]; onChat?: (booking: Booking) => void }) {
   const upcoming = bookings.filter(
     (b) => b.status === "confirmed" || b.status === "pending",
@@ -1188,6 +1320,45 @@ export default function DashboardPage() {
   const [hostBookings, setHostBookings] = useState<Booking[]>([]);
   const [travelerBookings, setTravelerBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [urgentRequests, setUrgentRequests] = useState<any[]>([]);
+
+  const fetchPendingUrgent = useCallback(async () => {
+    if (!userId || userRoleState !== "host") return
+    const now = new Date().toISOString()
+    const { data, error } = await supabase
+      .from("urgent_requests")
+      .select("*, traveler:profiles!urgent_requests_traveler_id_fkey(*)")
+      .eq("status", "pending")
+      .gt("expires_at", now)
+      .order("created_at", { ascending: false })
+
+    if (error) {
+      console.error("Error fetching pending urgent requests:", error)
+    } else if (data) {
+      setUrgentRequests(data)
+    }
+  }, [userId, userRoleState])
+
+  useEffect(() => {
+    if (userRoleState !== "host" || !userId) return
+
+    fetchPendingUrgent()
+
+    const channel = supabase
+      .channel(`urgent_requests_dashboard_${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "urgent_requests" },
+        () => {
+          fetchPendingUrgent()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [userId, userRoleState, fetchPendingUrgent])
 
   const refreshHostTours = async () => {
     if (userId) {
@@ -1531,6 +1702,11 @@ export default function DashboardPage() {
                         )}
                       </div>
                     )}
+                    <UrgentRequestsSection
+                      requests={urgentRequests}
+                      hostId={userId || ""}
+                      onRefresh={fetchPendingUrgent}
+                    />
                     <HostGamificationTips />
                     <div className="grid grid-cols-2 gap-4">
                       <StatCard icon={MapPin} label="Total Tours" value={hostTours.length.toString()} />

@@ -18,6 +18,7 @@ import {
 } from "@/lib/tour-utils"
 import { fetchWishlist, addToWishlist, removeFromWishlist } from "@/lib/api/wishlist"
 import { toast } from "sonner"
+import { UrgentMatchModal } from "@/components/ui/UrgentMatchModal"
 import {
   Pagination,
   PaginationContent,
@@ -57,6 +58,7 @@ export default function ToursPage() {
   })
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const [urgentMatchOpen, setUrgentMatchOpen] = useState(false)
 
   const [tours, setTours] = useState<Tour[]>([])
   const [loading, setLoading] = useState(true)
@@ -255,14 +257,23 @@ export default function ToursPage() {
             Discover Kenya through the eyes of locals — virtual or in-person.
           </p>
 
-          <div className="relative mt-6 max-w-md">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search tours or destinations..."
-              className="h-11 rounded-full pl-9 pr-4 focus-visible:ring-primary"
-            />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6">
+            <div className="relative max-w-md w-full">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search tours or destinations..."
+                className="h-11 rounded-full pl-9 pr-4 focus-visible:ring-primary"
+              />
+            </div>
+            <Button
+              onClick={() => setUrgentMatchOpen(true)}
+              className="h-11 px-6 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold shadow-lg hover:shadow-[0_4px_16px_rgba(127,90,240,0.3)] shrink-0 transition duration-300 cursor-pointer"
+            >
+              <Compass className="size-4 mr-2 animate-pulse" />
+              Find a Host Now
+            </Button>
           </div>
         </div>
       </div>
@@ -446,6 +457,7 @@ export default function ToursPage() {
           </>
         )}
       </div>
+      <UrgentMatchModal isOpen={urgentMatchOpen} onClose={() => setUrgentMatchOpen(false)} />
     </div>
   )
 }

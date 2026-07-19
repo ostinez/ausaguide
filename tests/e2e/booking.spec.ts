@@ -1,43 +1,78 @@
 import { test, expect } from "@playwright/test";
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "apikey, Authorization, Content-Type, Accept, X-Client-Info, Prefer",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+};
+
+const MOCK_TOUR = {
+  id: "tour-999",
+  host_id: "host-999",
+  title: "Safari Tour Masai Mara",
+  description: "An amazing safari.",
+  short_description: "Amazing safari experience",
+  price: 5000,
+  physical_price: 5000,
+  virtual_price: 2000,
+  currency: "KES",
+  duration_hours: 4,
+  max_guests: 5,
+  location_name: "Masai Mara",
+  category: "nature",
+  tour_type: "in_person",
+  images: [],
+  highlights: [],
+  is_published: true,
+  rating: 5,
+  review_count: 3,
+  status: "published",
+  host: { full_name: "Local Host", avatar_url: null },
+};
+
 test.describe("Booking E2E Flow", () => {
   test.beforeEach(async ({ page }) => {
+    // Intercept OPTIONS requests to Supabase URLs for CORS preflight
+    await page.route(
+      (url) => url.href.includes("supabase.co"),
+      async (route) => {
+        if (route.request().method() === "OPTIONS") {
+          await route.fulfill({
+            status: 204,
+            headers: CORS_HEADERS,
+          });
+        } else {
+          await route.fallback();
+        }
+      }
+    );
+
     // Intercept tour detail fetch
-    await page.route("**/rest/v1/tours*", async (route) => {
+    await page.route(/.*\/rest\/v1\/tours.*/, async (route) => {
+      const url = route.request().url();
+      const body = url.includes("id=eq.") ? MOCK_TOUR : [MOCK_TOUR];
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify([
-          {
-            id: "tour-999",
-            host_id: "host-999",
-            title: "Safari Tour Masai Mara",
-            price: 5000,
-            currency: "KES",
-            duration_hours: 4,
-            max_guests: 5,
-            location_name: "Masai Mara",
-            category: "nature",
-            tour_type: "in_person",
-            is_published: true,
-            status: "published",
-          },
-        ]),
+        headers: CORS_HEADERS,
+        body: JSON.stringify(body),
       });
     });
 
     // Intercept booking creation
-    await page.route("**/rest/v1/bookings*", async (route) => {
+    await page.route(/.*\/rest\/v1\/bookings.*/, async (route) => {
       if (route.request().method() === "GET") {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
+          headers: CORS_HEADERS,
           body: JSON.stringify([]),
         });
       } else {
         await route.fulfill({
           status: 201,
           contentType: "application/json",
+          headers: CORS_HEADERS,
           body: JSON.stringify({
             id: "booking-999",
             tour_id: "tour-999",
@@ -55,19 +90,21 @@ test.describe("Booking E2E Flow", () => {
     });
 
     // Intercept notifications insertion
-    await page.route("**/rest/v1/notifications*", async (route) => {
+    await page.route(/.*\/rest\/v1\/notifications.*/, async (route) => {
       await route.fulfill({
         status: 201,
         contentType: "application/json",
+        headers: CORS_HEADERS,
         body: JSON.stringify({ id: "notif-999" }),
       });
     });
 
     // Intercept profiles select
-    await page.route("**/rest/v1/profiles*", async (route) => {
+    await page.route(/.*\/rest\/v1\/profiles.*/, async (route) => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
+        headers: CORS_HEADERS,
         body: JSON.stringify({
           id: "host-999",
           email: "host@example.com",
@@ -76,31 +113,47 @@ test.describe("Booking E2E Flow", () => {
       });
     });
 
-    // Intercept rate_limits select & insert
-    await page.route("**/rest/v1/rate_limits*", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify([]),
-      });
+    // Intercept rate_limits
+    await page.route(/.*\/rest\/v1\/rate_limits.*/, async (route) => {
+      const method = route.request().method();
+      if (method === "GET") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          headers: CORS_HEADERS,
+          body: JSON.stringify([]),
+        });
+      } else {
+        await route.fulfill({
+          status: 201,
+          contentType: "application/json",
+          headers: CORS_HEADERS,
+          body: JSON.stringify([{ id: "rl-1", key: "booking:host-999", count: 1, reset_at: new Date(Date.now() + 60_000).toISOString() }]),
+        });
+      }
     });
 
     // Intercept booking Stripe session edge function
-    await page.route("**/functions/v1/create-booking-session*", async (route) => {
+    await page.route(/.*\/functions\/v1\/create-booking-session.*/, async (route) => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
+        headers: CORS_HEADERS,
         body: JSON.stringify({ sessionUrl: "" }),
       });
     });
   });
 
   test("User can load checkout page and complete booking form successfully", async ({ page }) => {
+    test.setTimeout(45_000);
     // Navigate with dates & slots parameters
     await page.goto("/checkout/tour-999?date=2026-12-01&time=10:00&guests=1");
 
+    // Wait for the tour to load (spinner disappears, form appears)
+    await page.waitForSelector("text=Complete your booking", { timeout: 15_000 });
+
     // Form inputs check
-    await expect(page.getByText("Complete your booking")).toBeVisible();
+    await expect(page.getByText("Complete your booking")).toBeVisible({ timeout: 10_000 });
 
     // Fill details
     await page.getByPlaceholder("Your full name").fill("Alice Smith");
@@ -111,6 +164,6 @@ test.describe("Booking E2E Flow", () => {
     await page.getByRole("button", { name: /confirm/i }).click({ force: true });
 
     // Check confirmation screen redirect
-    await expect(page).toHaveURL(/.*confirmation/);
+    await expect(page).toHaveURL(/.*confirmation/, { timeout: 15_000 });
   });
 });

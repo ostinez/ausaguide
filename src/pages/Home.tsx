@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { HeroGlobe } from "@/components/landing/hero-globe"
+import { UrgentMatchModal } from "@/components/ui/UrgentMatchModal"
 import { ToursPreview } from "@/components/landing/tours-preview"
 import { DiscoverToursStack } from "@/components/landing/discover-tours-stack"
 import { HowItWorks } from "@/components/landing/how-it-works"
@@ -16,6 +17,7 @@ import { checkRateLimit } from "@/lib/api/rate-limit"
 import { Sparkles, User, Mail, Loader2, CheckCircle2 } from "lucide-react"
 
 export default function Home() {
+  const [urgentMatchOpen, setUrgentMatchOpen] = useState(false)
   useSEO({
     title: "Live tours with real locals in Kenya",
     description:
@@ -107,8 +109,9 @@ export default function Home() {
         }}
       />
       <div id="hero" className="dark-section">
-        <HeroGlobe />
+        <HeroGlobe onFindHostNow={() => setUrgentMatchOpen(true)} />
       </div>
+      <UrgentMatchModal isOpen={urgentMatchOpen} onClose={() => setUrgentMatchOpen(false)} />
 
       {/* Homepage Waitlist Section */}
       <section className="bg-[#16161A] py-16 px-6 border-b border-white/5 relative overflow-hidden flex flex-col items-center">
