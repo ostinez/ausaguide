@@ -1,4 +1,36 @@
-# Logs
+# ── Dependencies ──────────────────────────────────────────
+node_modules
+.pnp
+.pnp.js
+
+# ── Build outputs ─────────────────────────────────────────
+dist
+dist-ssr
+build
+.output
+
+# ── Environment variables (NEVER commit these) ────────────
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+*.local
+
+# ── Secrets and credentials (NEVER commit these) ──────────
+scratch/
+*.secret
+*.key
+*.pem
+*.p12
+*.pfx
+secrets/
+.secrets/
+
+# ── Logs ──────────────────────────────────────────────────
 logs
 *.log
 npm-debug.log*
@@ -7,12 +39,12 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# ── Test artifacts ────────────────────────────────────────
+playwright-report
+test-results
+coverage
 
-# Editor directories and files
+# ── Editor and OS ─────────────────────────────────────────
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -22,12 +54,14 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local  
-playwright-report
-test-results
+Thumbs.db
 
- 
+# ── TypeScript build info ─────────────────────────────────
+*.tsbuildinfo
+
+# ── Misc root-level one-off scripts (dev only) ────────────
+fix-*.mjs
+fix-*.sql
+try-*.mjs
+test-*.mjs
+check_*.mjs

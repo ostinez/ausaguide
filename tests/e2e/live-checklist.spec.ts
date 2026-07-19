@@ -3,10 +3,14 @@ import * as supabaseJS from "@supabase/supabase-js";
 
 const createClientFn = (supabaseJS.createClient || (supabaseJS as any).default?.createClient || supabaseJS);
 
-const supabaseClient = (createClientFn as any)(
-  "https://sdbvvcjnlergsmcsorrv.supabase.co",
-  "sb_publishable_NyfTrWiQmV7NG6FUS17GGw_qyik8qVo"
-);
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error("E2E tests require VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables. Never hardcode secrets.")
+}
+
+const supabaseClient = (createClientFn as any)(supabaseUrl, supabaseAnonKey);
 
 // We run this checklist against the live production site
 const LIVE_URL = "https://www.ausaguide.com";
