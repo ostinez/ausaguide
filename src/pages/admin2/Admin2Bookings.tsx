@@ -55,6 +55,8 @@ export default function Admin2Bookings() {
             <option value="pending" className="bg-[#111111]">Pending</option>
             <option value="confirmed" className="bg-[#111111]">Confirmed</option>
             <option value="completed" className="bg-[#111111]">Completed</option>
+            <option value="cancelled" className="bg-[#111111]">Cancelled</option>
+            <option value="declined" className="bg-[#111111]">Declined</option>
           </select>
         </div>
       </div>
@@ -107,7 +109,9 @@ export default function Admin2Bookings() {
                     <td className="px-6 py-4">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize
                         ${booking.status === 'confirmed' ? 'bg-green-500/10 text-green-400' : 
-                          booking.status === 'completed' ? 'bg-blue-500/10 text-blue-400' : 
+                          booking.status === 'completed' ? 'bg-blue-500/10 text-blue-400' :
+                          booking.status === 'cancelled' ? 'bg-gray-500/10 text-gray-400' :
+                          booking.status === 'declined' ? 'bg-red-500/10 text-red-400' :
                           'bg-yellow-500/10 text-yellow-400'}`}
                       >
                         {booking.status}

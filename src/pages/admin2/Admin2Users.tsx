@@ -27,9 +27,19 @@ export default function Admin2Users() {
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     setUpdatingId(userId)
+    
+    // When setting to host, also set host_tier = 'local_host' so they don't loop back to onboarding
+    // When removing host role, clear host_tier
+    const updates: Record<string, any> = { role: newRole }
+    if (newRole === "host") {
+      updates.host_tier = "local_host"
+    } else if (newRole === "traveler" || newRole === "admin") {
+      updates.host_tier = null
+    }
+
     const { error } = await supabase
       .from("profiles")
-      .update({ role: newRole })
+      .update(updates)
       .eq("id", userId)
 
     if (!error) {

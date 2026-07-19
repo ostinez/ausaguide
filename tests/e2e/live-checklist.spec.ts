@@ -46,6 +46,11 @@ test.describe("Master Testing Checklist - Live Site Validation", () => {
   });
   
   test.beforeEach(async ({ page }) => {
+    // Dismiss cookie consent by default
+    await page.addInitScript(() => {
+      window.localStorage.setItem('cookie-consent', 'accepted');
+    });
+
     // Clear rate limits dynamically before each test starts to make it bulletproof
     await supabaseClient.from("rate_limits").delete().neq("key", "keep-alive-dummy-key");
 
@@ -86,7 +91,7 @@ test.describe("Master Testing Checklist - Live Site Validation", () => {
     await page.locator("#signup-confirm-password").fill("Test12345!");
     await page.getByRole("button", { name: /Continue/i }).click();
     // Expect signup error toast or success (Supabase email confirmation returns fake success to prevent email enumeration)
-    await expect(page.locator("text=User already registered").or(page.locator("text=already exists")).or(page.locator("text=sent a verification email")).first()).toBeVisible();
+    await expect(page.locator("text=already registered").or(page.locator("text=already exists")).or(page.locator("text=sent a verification email")).first()).toBeVisible();
 
     // 1.6 Sign up with duplicate username
     await page.reload();
@@ -123,7 +128,7 @@ test.describe("Master Testing Checklist - Live Site Validation", () => {
 
     // 2.2 Log in with username (admin)
     await page.goto(`${LIVE_URL}/auth`);
-    await page.locator("#signin-email").fill("admin");
+    await page.locator("#signin-email").fill("ausaguide");
     await page.locator("#signin-password").fill("ynwmelly2");
     await page.getByRole("button", { name: /^Log In$/i }).click();
     await page.waitForURL("**/admin2", { timeout: 15000 });
@@ -284,10 +289,10 @@ test.describe("Master Testing Checklist - Live Site Validation", () => {
     await expect(page.locator("text=Loading")).not.toBeVisible({ timeout: 15000 });
 
     // 9.1 Overview loaded
-    await expect(page.getByText("Ausaguide Admin").or(page.getByText("Platform management console")).first()).toBeVisible();
+    await expect(page.getByText("Adminv2").or(page.getByText("Key metrics and recent activity")).first()).toBeVisible();
     // Verify cards display metrics
-    await expect(page.getByText("Platform Users").or(page.getByText("Active Hosts")).first()).toBeVisible();
-    await expect(page.getByText("Total Tours").or(page.getByText("Published")).first()).toBeVisible();
-    await expect(page.getByText("Total Bookings").or(page.getByText("Completed")).first()).toBeVisible();
+    await expect(page.getByText("Total Users").first()).toBeVisible();
+    await expect(page.getByText("Total Tours").first()).toBeVisible();
+    await expect(page.getByText("Total Bookings").first()).toBeVisible();
   });
 });

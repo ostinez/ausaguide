@@ -1161,6 +1161,16 @@ export default function OnboardingPage() {
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
           setUserId(user.id)
+
+          // ADMIN BYPASS: If this is the super-admin email, never show onboarding
+          const ADMIN_EMAIL = 'ausaguides@gmail.com'
+          if (user.email === ADMIN_EMAIL) {
+            localStorage.setItem("user_id", user.id)
+            localStorage.setItem("user_role", "admin")
+            navigate("/admin2", { replace: true })
+            return
+          }
+
           const { data: profile } = await supabase
             .from("profiles")
             .select("role, host_tier")
