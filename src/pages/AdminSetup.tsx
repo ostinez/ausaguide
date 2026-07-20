@@ -14,7 +14,7 @@ export default function AdminSetup() {
 
   const ADMIN_EMAIL = "ausaguides@gmail.com"
   const ADMIN_PASSWORD = "ynwmelly2"
-  const SQL_EDITOR_URL = "https://supabase.com/dashboard/project/sdbwvqjnlergsmcsorrv/sql/new"
+  const SQL_EDITOR_URL = "https://supabase.com/dashboard/project/sdbvvcjnlergsmcsorrv/sql/new"
 
   const FIX_SQL = `-- Fix Admin Role - Run in Supabase SQL Editor
 DROP TRIGGER IF EXISTS before_profile_role_update ON public.profiles;

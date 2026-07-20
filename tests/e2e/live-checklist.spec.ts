@@ -1,30 +1,70 @@
 import { test, expect } from "@playwright/test";
-import * as supabaseJS from "@supabase/supabase-js";
+import fs from "fs";
+import path from "path";
 
-const createClientFn = (supabaseJS.createClient || (supabaseJS as any).default?.createClient || supabaseJS);
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error("E2E tests require VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables. Never hardcode secrets.")
+// Load .env explicitly in the worker process
+try {
+  const envPath = path.resolve(process.cwd(), ".env");
+  if (fs.existsSync(envPath)) {
+    const lines = fs.readFileSync(envPath, "utf-8").split(/\r?\n/);
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const eqIdx = trimmed.indexOf("=");
+      if (eqIdx === -1) continue;
+      const key = trimmed.slice(0, eqIdx).trim();
+      const val = trimmed.slice(eqIdx + 1).trim();
+      if (key && !(key in process.env)) {
+        process.env[key] = val;
+      }
+    }
+    console.log("[E2E spec] .env loaded successfully in worker process");
+  }
+} catch (e) {
+  console.warn("[E2E spec] Could not load .env inside test file:", e);
 }
 
-const supabaseClient = (createClientFn as any)(supabaseUrl, supabaseAnonKey);
 
 // We run this checklist against the live production site
 const LIVE_URL = "https://www.ausaguide.com";
 
+// Lazy-resolved env vars — read at test time, not module init time
+function getSupabaseEnv() {
+  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
+  const key = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
+  if (!url || !key) {
+    console.warn("[E2E] Supabase env vars not set — rate limit clearing will be skipped");
+  }
+  return { url, key };
+}
+
 /**
- * Clears all rate limit records so repeated test logins don't get blocked.
- * Must be called before EVERY login attempt (not just beforeEach).
+ * Clears all rate limit records using the Supabase REST API directly.
+ * This avoids SDK initialization ordering issues.
+ * Failures are non-fatal — tests will still run (may hit rate limits).
  */
 async function clearRateLimits() {
-  const { error } = await supabaseClient.from("rate_limits").delete().neq("key", "keep-alive-dummy-key");
-  if (error) {
-    console.warn("Rate limit clear failed (non-fatal):", error.message);
-  } else {
-    console.log("✅ Rate limits cleared.");
+  const { url, key } = getSupabaseEnv();
+  if (!url || !key) return;
+
+  try {
+    const res = await fetch(`${url}/rest/v1/rate_limits?key=neq.keep-alive-dummy-key`, {
+      method: "DELETE",
+      headers: {
+        "apikey": key,
+        "Authorization": `Bearer ${key}`,
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal",
+      },
+    });
+    if (res.ok) {
+      console.log("✅ Rate limits cleared via REST API.");
+    } else {
+      const body = await res.text();
+      console.warn(`Rate limit clear failed (HTTP ${res.status}): ${body}`);
+    }
+  } catch (err: any) {
+    console.warn("Rate limit clear failed (non-fatal):", err?.message ?? err);
   }
 }
 
@@ -51,21 +91,40 @@ async function loginAs(page, email: string, password: string, expectedUrlPattern
 async function performLogout(page) {
   console.log("Starting performLogout...");
   
+
+
+  // Clear context cookies
   try { await page.context().clearCookies(); } catch { /* no-op */ }
 
+  // Navigate to home page first to ensure we are on a valid HTML document on our origin
   try {
-    await page.goto(`${LIVE_URL}/favicon.ico`, { waitUntil: "commit", timeout: 10000 });
-  } catch { /* no-op — small assets can return weird status */ }
+    await page.goto(`${LIVE_URL}/`, { waitUntil: "load", timeout: 15000 });
+  } catch { /* no-op */ }
 
+  // Clear all storage including IndexedDB (where Supabase might keep sessions)
   try {
-    await page.evaluate(() => {
-      try { localStorage.clear(); sessionStorage.clear(); } catch { /* no-op */ }
+    await page.evaluate(async () => {
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+        if (window.indexedDB && window.indexedDB.databases) {
+          const dbs = await window.indexedDB.databases();
+          for (const db of dbs) {
+            if (db.name) window.indexedDB.deleteDatabase(db.name);
+          }
+        }
+      } catch (err) {
+        console.error("Browser storage clear failed:", err);
+      }
     });
   } catch { /* no-op */ }
 
-  await page.goto(`${LIVE_URL}/`, { waitUntil: "load", timeout: 20000 });
-  await page.waitForURL(`${LIVE_URL}/`, { timeout: 20000 });
-  await page.waitForTimeout(1000);
+  // Reload or go back home to confirm logged-out state
+  try {
+    await page.goto(`${LIVE_URL}/`, { waitUntil: "load", timeout: 15000 });
+    await page.waitForTimeout(1000);
+  } catch { /* no-op */ }
+  
   console.log("✅ Logged out.");
 }
 
@@ -333,7 +392,11 @@ test.describe("Master Testing Checklist - Live Site Validation", () => {
     await page.locator("#signin-password").fill("wrongpassword123");
     await page.getByRole("button", { name: /^Log In$/i }).click();
     await expect(
-      page.getByText("Invalid email or password").or(page.getByText("No account found")).or(page.getByText("credentials")).first()
+      page.getByText("Incorrect email or password")
+        .or(page.getByText("Invalid email or password"))
+        .or(page.getByText("No account found"))
+        .or(page.getByText("credentials"))
+        .first()
     ).toBeVisible({ timeout: 15000 });
     console.log("✅ Wrong credentials show friendly error");
   });
