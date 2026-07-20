@@ -120,7 +120,7 @@ export default function Home() {
 
         <div className="relative z-10 w-full max-w-xl mx-auto space-y-8">
           <div className="text-center space-y-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#7F5AF0]/10 border border-[#7F5AF0]/20 text-xs font-semibold text-[#7F5AF0] mb-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#7F5AF0]/10 border border-[#7F5AF0]/20 text-xs font-semibold text-[#a78bfa] mb-2">
               <Sparkles className="size-3.5" />
               <span>Launch day waiting list</span>
             </div>

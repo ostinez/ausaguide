@@ -23,7 +23,7 @@ export function CookieConsent() {
   if (!show) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-md bg-[#16161A] border border-primary/40 rounded-2xl p-5 shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
+    <div role="status" aria-live="polite" className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-md bg-[#16161A] border border-primary/40 rounded-2xl p-5 shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
       <p className="text-sm text-foreground leading-relaxed">
         We use cookies to improve your experience. By continuing, you agree to our use of cookies.
       </p>

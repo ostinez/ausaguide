@@ -265,6 +265,7 @@ export default function ToursPage() {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search tours or destinations..."
                 className="h-11 rounded-full pl-9 pr-4 focus-visible:ring-primary"
+                aria-label="Search tours or destinations"
               />
             </div>
             <Button
@@ -318,6 +319,7 @@ export default function ToursPage() {
                   : "text-muted-foreground hover:text-foreground"
               )}
               title="Grid View"
+              aria-label="Grid View"
             >
               <LayoutGrid className="size-4" />
             </button>
@@ -330,6 +332,7 @@ export default function ToursPage() {
                   : "text-muted-foreground hover:text-foreground"
               )}
               title="List View"
+              aria-label="List View"
             >
               <List className="size-4" />
             </button>

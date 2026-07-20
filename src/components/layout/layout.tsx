@@ -12,6 +12,21 @@ export function Layout() {
   const impersonatedUserId = localStorage.getItem("user_id")
   const [impersonatedName, setImpersonatedName] = useState<string | null>(null)
   const [authInitialized, setAuthInitialized] = useState(false)
+  const [isOffline, setIsOffline] = useState(!navigator.onLine)
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false)
+    const handleOffline = () => setIsOffline(true)
+
+    window.addEventListener("online", handleOnline)
+    window.addEventListener("offline", handleOffline)
+
+    return () => {
+      window.removeEventListener("online", handleOnline)
+      window.removeEventListener("offline", handleOffline)
+    }
+  }, [])
+
 
   useEffect(() => {
     async function fetchImpersonated() {
@@ -245,7 +260,24 @@ export function Layout() {
       </main>
       {!isAuthOrOnboarding && <Footer />}
       {!isAuthOrOnboarding && <ProfileCompletionBanner />}
+      {isOffline && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 max-w-sm w-[90%] bg-red-950/95 border border-red-500/30 text-red-200 px-4 py-3 rounded-xl shadow-2xl backdrop-blur-md z-50 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-5"
+        >
+          <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-red-500/10 text-red-400">
+            <svg xmlns="http://www.w3.org/2000/svg" className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <div className="flex-1 text-xs font-semibold leading-tight">
+            You're offline. Some features may not be available.
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+
 

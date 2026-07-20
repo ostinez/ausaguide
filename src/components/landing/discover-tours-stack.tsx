@@ -70,7 +70,7 @@ export function DiscoverToursStack() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           {/* Left Column: Heading & Copy */}
           <div className="lg:col-span-7 space-y-6 text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#7F5AF0]/35 bg-[#7F5AF0]/10 text-xs font-bold uppercase tracking-wider text-[#7F5AF0] animate-pulse">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#7F5AF0]/35 bg-[#7F5AF0]/10 text-xs font-bold uppercase tracking-wider text-[#a78bfa] animate-pulse">
               <Sparkles className="size-3.5" />
               Quick Discovery
             </div>

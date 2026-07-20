@@ -214,10 +214,11 @@ export function UrgentMatchModal({ isOpen, onClose }: UrgentMatchModalProps) {
             <div className="space-y-4 pt-2">
               {/* Location Input Group */}
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-slate-300 block">Match Location</label>
+                <label htmlFor="preset-city-select" className="text-xs font-semibold text-slate-300 block">Match Location</label>
                 {useManualCity ? (
                   <div className="flex gap-2">
                     <select
+                      id="preset-city-select"
                       value={selectedCity}
                       onChange={(e) => setSelectedCity(e.target.value)}
                       className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 text-white"
@@ -258,10 +259,11 @@ export function UrgentMatchModal({ isOpen, onClose }: UrgentMatchModalProps) {
               {/* Budget Option */}
               <div className="space-y-2">
                 <div className="flex justify-between text-xs font-semibold text-slate-300">
-                  <span>Hourly Budget (KES)</span>
+                  <label htmlFor="hourly-budget-input">Hourly Budget (KES)</label>
                   <span className="text-violet-400 font-bold">{budget} KES/hr</span>
                 </div>
                 <input
+                  id="hourly-budget-input"
                   type="range"
                   min="1000"
                   max="10000"
@@ -269,6 +271,7 @@ export function UrgentMatchModal({ isOpen, onClose }: UrgentMatchModalProps) {
                   value={budget}
                   onChange={(e) => setBudget(Number(e.target.value))}
                   className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-violet-500"
+                  aria-label="Hourly Budget (KES)"
                 />
                 <div className="flex justify-between text-[10px] text-slate-500">
                   <span>1,000 KES</span>
@@ -278,8 +281,9 @@ export function UrgentMatchModal({ isOpen, onClose }: UrgentMatchModalProps) {
 
               {/* Experience Type Option */}
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-slate-300 block">Required Experience Type</label>
+                <label htmlFor="experience-type-select" className="text-xs font-semibold text-slate-300 block">Required Experience Type</label>
                 <select
+                  id="experience-type-select"
                   value={experienceType}
                   onChange={(e) => setExperienceType(e.target.value)}
                   className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500 text-white"

@@ -51,10 +51,20 @@ export const TourCard = memo(function TourCard({ tour, isWishlisted, onToggleWis
       <SpotlightCard
         spotlightColor="rgba(127, 90, 240, 0.15)"
         className={cn(
-          "tour-card group flex cursor-pointer overflow-hidden rounded-[15px] border-0 bg-[#16161A] text-card-foreground h-full w-full",
+          "tour-card group flex cursor-pointer overflow-hidden rounded-[15px] border-0 bg-[#16161A] text-card-foreground h-full w-full focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#7F5AF0] focus-visible:ring-offset-2 focus-visible:ring-offset-[#16161A]",
           isList ? "flex-col sm:flex-row h-auto sm:h-52" : "flex-col"
         )}
         onClick={onClick || defaultClick}
+        tabIndex={0}
+        role="button"
+        aria-label={`View details for tour: ${tour.title}`}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            if (onClick) onClick();
+            else defaultClick();
+          }
+        }}
       >
         <div
           className={cn(

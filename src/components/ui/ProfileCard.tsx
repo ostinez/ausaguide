@@ -165,12 +165,12 @@ export default function ProfileCard({
             <div className="space-y-1">
               <div className="flex items-center justify-center gap-1">
                 <h3 className="text-xl font-bold text-white tracking-tight">{name}</h3>
-                <ShieldCheck className="size-5 text-[#7F5AF0]" />
+                <ShieldCheck className="size-5 text-[#a78bfa]" />
               </div>
-              <span className="text-xs font-semibold text-[#7F5AF0] uppercase tracking-wider block">
+              <span className="text-xs font-semibold text-[#a78bfa] uppercase tracking-wider block">
                 {title}
               </span>
-              {handle && <span className="text-[11px] text-white/40 block">@{handle}</span>}
+              {handle && <span className="text-[11px] text-white/60 block">@{handle}</span>}
             </div>
 
             {/* Status box */}
