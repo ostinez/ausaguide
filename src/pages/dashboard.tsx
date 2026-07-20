@@ -1510,6 +1510,16 @@ export default function DashboardPage() {
     }
   }, [userRoleState, navigate, loadDashboard])
 
+  // Fetch latest profile status on mount and keep polling if pending
+  useEffect(() => {
+    if (userId && hostProfile?.license_status === "pending") {
+      const interval = setInterval(() => {
+        loadDashboard()
+      }, 5000) // Poll every 5 seconds while pending
+      return () => clearInterval(interval)
+    }
+  }, [userId, hostProfile?.license_status, loadDashboard])
+
   async function handleUpdateBookingStatus(bookingId: string, status: BookingStatus, reason?: string) {
     if (status === "confirmed" || status === "declined") {
       try {
@@ -1682,11 +1692,17 @@ export default function DashboardPage() {
                         {profile.license_status === 'pending' && (
                           <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 flex items-start gap-3">
                             <Clock className="size-5 text-amber-500 shrink-0 mt-0.5" />
-                            <div>
+                            <div className="flex-1">
                               <h4 className="font-semibold text-sm text-amber-400">⏳ Certified Guide Application Pending</h4>
                               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
                                 Your Certified Guide application is pending review. You are currently a Local Host.
                               </p>
+                              <button
+                                onClick={loadDashboard}
+                                className="mt-2.5 text-xs text-amber-400 hover:text-amber-300 font-semibold underline flex items-center gap-1 bg-transparent border-none p-0 cursor-pointer"
+                              >
+                                Refresh Status
+                              </button>
                             </div>
                           </div>
                         )}

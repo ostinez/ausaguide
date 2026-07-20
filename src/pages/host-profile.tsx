@@ -219,7 +219,7 @@ export default function HostProfilePage() {
                 </Badge>
                  {((profile as any).verified_guide) ? (
                   <Badge className="bg-blue-500/15 border border-blue-500/40 text-blue-400 hover:bg-blue-500/25 gap-1">
-                    ✅ Verified Guide
+                    ✅ Certified Guide
                   </Badge>
                  ) : (
                    <Badge className="bg-[#2CB67D]/15 border border-[#2CB67D]/40 text-[#2CB67D] hover:bg-[#2CB67D]/25">
