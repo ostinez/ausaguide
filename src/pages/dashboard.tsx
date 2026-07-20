@@ -1093,18 +1093,20 @@ function UrgentRequestsSection({
   requests,
   hostId,
   onRefresh,
+  onChat,
 }: {
   requests: any[]
   hostId: string
   onRefresh: () => void
+  onChat: (travelerId: string, travelerName: string) => void
 }) {
   const [loadingId, setLoadingId] = useState<string | null>(null)
 
-  const handleAccept = async (requestId: string) => {
+  const handleAccept = async (requestId: string, price?: number) => {
     setLoadingId(requestId)
     try {
       const { acceptUrgentRequest } = await import("@/lib/api/urgent-match")
-      const result = await acceptUrgentRequest(requestId, hostId)
+      const result = await acceptUrgentRequest(requestId, hostId, price)
       if (result.success) {
         toast.success(result.message)
         onRefresh()
@@ -1194,6 +1196,17 @@ function UrgentRequestsSection({
                 <Button
                   type="button"
                   size="sm"
+                  variant="ghost"
+                  onClick={() => onChat(req.traveler_id, req.traveler?.full_name || "Traveler")}
+                  disabled={loadingId !== null}
+                  className="flex-1 sm:flex-initial text-violet-400 hover:text-violet-300 hover:bg-violet-950/20"
+                >
+                  <MessageSquare className="size-4 mr-1" />
+                  Chat
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
                   variant="outline"
                   onClick={() => handleDecline(req.id)}
                   disabled={loadingId !== null}
@@ -1204,7 +1217,16 @@ function UrgentRequestsSection({
                 <Button
                   type="button"
                   size="sm"
-                  onClick={() => handleAccept(req.id)}
+                  onClick={() => {
+                    const priceStr = window.prompt("Enter negotiated price (USD):", String(req.budget || 25))
+                    if (priceStr === null) return
+                    const price = parseFloat(priceStr)
+                    if (isNaN(price) || price <= 0) {
+                      toast.error("Please enter a valid price.")
+                      return
+                    }
+                    handleAccept(req.id, price)
+                  }}
                   disabled={loadingId !== null}
                   className="flex-1 sm:flex-initial bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold"
                 >
@@ -1372,6 +1394,7 @@ export default function DashboardPage() {
   }
   const [error, setError] = useState<string | null>(null);
   const [chatBooking, setChatBooking] = useState<Booking | null>(null);
+  const [directChatReceiver, setDirectChatReceiver] = useState<{ id: string; name: string } | null>(null);
   const handleChatClick = (b: Booking) => navigate(`/messages?bookingId=${b.id}`);
   const [unreadNotifications, setUnreadNotifications] = useState<number>(0);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -1706,6 +1729,9 @@ export default function DashboardPage() {
                       requests={urgentRequests}
                       hostId={userId || ""}
                       onRefresh={fetchPendingUrgent}
+                      onChat={(travelerId, travelerName) => {
+                        setDirectChatReceiver({ id: travelerId, name: travelerName })
+                      }}
                     />
                     <HostGamificationTips />
                     <div className="grid grid-cols-2 gap-4">
@@ -1964,18 +1990,22 @@ export default function DashboardPage() {
           <TravelerDashboard bookings={travelerBookings} onChat={handleChatClick} />
         )}
 
-        {chatBooking && (() => {
+        {(chatBooking || directChatReceiver) && (() => {
           const isHost = userRoleState === "host"
-          const curUid = userId || (isHost ? chatBooking.host_id : (chatBooking.guest_id || "22222222-2222-2222-2222-222222222202"))
-          const recUid = isHost ? (chatBooking.guest_id || "22222222-2222-2222-2222-222222222202") : chatBooking.host_id
-          const recName = isHost ? chatBooking.guest_name : (chatBooking.host?.full_name || chatBooking.tour?.host?.full_name || "Host")
+          const curUid = userId || ""
+          const bookingId = chatBooking?.id || ""
+          const recUid = chatBooking ? (isHost ? (chatBooking.guest_id || "22222222-2222-2222-2222-222222222202") : chatBooking.host_id) : directChatReceiver!.id
+          const recName = chatBooking ? (isHost ? chatBooking.guest_name : (chatBooking.host?.full_name || chatBooking.tour?.host?.full_name || "Host")) : directChatReceiver!.name
           
           return (
             <ChatDialog
-              bookingId={chatBooking.id}
-              isOpen={!!chatBooking}
+              bookingId={bookingId}
+              isOpen={!!(chatBooking || directChatReceiver)}
               onOpenChange={(open) => {
-                if (!open) setChatBooking(null)
+                if (!open) {
+                  setChatBooking(null)
+                  setDirectChatReceiver(null)
+                }
               }}
               currentUserId={curUid}
               receiverId={recUid}

@@ -32,7 +32,8 @@ export async function requestUrgentHost(
 // 2. Host accepts an urgent request (concurrency-safe first-accept-wins check)
 export async function acceptUrgentRequest(
   requestId: string,
-  hostId: string
+  hostId: string,
+  negotiatedPrice?: number
 ): Promise<{ success: boolean; bookingId?: string; message: string }> {
   // Step 2a. Optimistically update request status to 'accepted' ONLY if it is currently 'pending'
   const { data: request, error: updateErr } = await supabase
@@ -78,7 +79,7 @@ export async function acceptUrgentRequest(
           title: `Direct Urgent Tour - ${hostProfile?.full_name || "Host"}`,
           description: "This is a direct, urgent match tour created automatically to connect traveler and host.",
           short_description: "Real-time direct host match booking.",
-          price: request.budget,
+          price: negotiatedPrice || request.budget,
           duration_hours: 2,
           max_guests: 4,
           location_name: "Current Location",
@@ -106,7 +107,7 @@ export async function acceptUrgentRequest(
         host_id: hostId,
         booking_date: new Date().toISOString().split("T")[0],
         guest_count: 1,
-        total_price: tour.price || request.budget,
+        total_price: negotiatedPrice || tour.price || request.budget,
         guest_name: traveler?.full_name || "Traveler",
         guest_email: traveler?.email || "traveler@example.com",
         guest_phone: traveler?.phone || "N/A",

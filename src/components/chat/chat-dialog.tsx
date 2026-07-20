@@ -21,8 +21,8 @@ interface ChatDialogProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
   currentUserId: string
-  receiverId: string
-  receiverName: string
+  receiverId?: string
+  receiverName?: string
 }
 
 interface Thread {
@@ -45,16 +45,18 @@ export function ChatDialog({
   isOpen,
   onOpenChange,
   currentUserId,
+  receiverId,
+  receiverName,
 }: ChatDialogProps) {
   const [threads, setThreads] = useState<Thread[]>([])
-  const [selectedThreadId, setSelectedThreadId] = useState<string>(initialBookingId)
+  const [selectedThreadId, setSelectedThreadId] = useState<string>(initialBookingId || (receiverId ? `direct-${receiverId}` : ""))
   const [messages, setMessages] = useState<ApiMessage[]>([])
   const [loadingThreads, setLoadingThreads] = useState(false)
   const [loadingMessages, setLoadingMessages] = useState(false)
   const [sending, setSending] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [inputValue, setInputValue] = useState("")
-  const [mobileView, setMobileView] = useState<"list" | "chat">(initialBookingId ? "chat" : "list")
+  const [mobileView, setMobileView] = useState<"list" | "chat">((initialBookingId || receiverId) ? "chat" : "list")
   const [error, setError] = useState<string | null>(null)
   const [isOtherUserTyping, setIsOtherUserTyping] = useState(false)
 
@@ -62,11 +64,16 @@ export function ChatDialog({
 
   // Synchronize deep links and force thread activation on change
   useEffect(() => {
-    if (isOpen && initialBookingId) {
-      setSelectedThreadId(initialBookingId)
-      setMobileView("chat")
+    if (isOpen) {
+      if (initialBookingId) {
+        setSelectedThreadId(initialBookingId)
+        setMobileView("chat")
+      } else if (receiverId) {
+        setSelectedThreadId(`direct-${receiverId}`)
+        setMobileView("chat")
+      }
     }
-  }, [isOpen, initialBookingId])
+  }, [isOpen, initialBookingId, receiverId])
 
   // Simulated Typing Indicator when thread changes or replies are sent
   useEffect(() => {
@@ -165,8 +172,37 @@ export function ChatDialog({
         }
       })
 
+      // If receiverId is provided, and we don't have a booking thread for them yet, add a virtual thread
+      if (receiverId) {
+        const hasThread = mappedThreads.some(t => t.otherUser.id === receiverId)
+        if (!hasThread) {
+          const initials = (receiverName || "T")
+            .split(" ")
+            .map((n: string) => n[0])
+            .join("")
+            .substring(0, 2)
+            .toUpperCase()
+          
+          mappedThreads.unshift({
+            id: `direct-${receiverId}`,
+            tourTitle: "Direct Conversation",
+            bookingDate: new Date().toISOString(),
+            otherUser: {
+              id: receiverId,
+              name: receiverName || "Traveler",
+              avatarUrl: null,
+              initials,
+            },
+            unreadCount: 0,
+            online: true,
+          })
+        }
+      }
+
       // Sort threads so that threads with the newest messages appear first
       mappedThreads.sort((a, b) => {
+        if (a.id.startsWith("direct-")) return -1
+        if (b.id.startsWith("direct-")) return 1
         const aTime = a.lastMessage ? new Date(a.lastMessage.created_at).getTime() : 0
         const bTime = b.lastMessage ? new Date(b.lastMessage.created_at).getTime() : 0
         return bTime - aTime
@@ -175,8 +211,12 @@ export function ChatDialog({
       setThreads(mappedThreads)
 
       // Auto-select thread if initial selected thread is not found in mapped list but we have one
-      if (initialBookingId && !selectedThreadId) {
+      if (initialBookingId) {
         setSelectedThreadId(initialBookingId)
+      } else if (receiverId) {
+        const directId = `direct-${receiverId}`
+        const existing = mappedThreads.find(t => t.otherUser.id === receiverId)
+        setSelectedThreadId(existing ? existing.id : directId)
       } else if (!selectedThreadId && mappedThreads.length > 0) {
         setSelectedThreadId(mappedThreads[0].id)
       }
@@ -195,7 +235,13 @@ export function ChatDialog({
     setError(null)
     try {
       const activeThread = threads.find(t => t.id === threadId)
-      const data = await fetchMessages(threadId)
+      let data;
+      if (threadId.startsWith("direct-")) {
+        const otherId = threadId.replace("direct-", "")
+        data = await fetchMessages("", currentUserId, otherId)
+      } else {
+        data = await fetchMessages(threadId)
+      }
       setMessages(data)
 
       if (activeThread) {
@@ -311,7 +357,7 @@ export function ChatDialog({
         currentUserId,
         activeThread.otherUser.id,
         content,
-        selectedThreadId
+        selectedThreadId.startsWith("direct-") ? undefined : selectedThreadId
       )
       setMessages((prev) => [...prev, newMsg])
       setInputValue("")

@@ -5,9 +5,8 @@ import {
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { Spinner } from "@/components/ui/spinner"
 import { supabase } from "@/lib/supabase"
-import { fetchPosts, createPost, updatePost, deletePost, type Post } from "@/lib/api/content"
+import { fetchPosts, createPost, updatePost, deletePost, toggleFollow, fetchUserFollows, type Post } from "@/lib/api/content"
 import { cn, formatSocialLink } from "@/lib/utils"
 import { toast } from "sonner"
 import { useSEO } from "@/hooks/useSEO"
@@ -312,12 +311,26 @@ function ImageLightbox({ urls, initialIndex, onClose }: { urls: string[], initia
   )
 }
 
-function PostCard({ post, currentUserId, onDelete, onImageClick }: { post: Post; currentUserId: string | null; onDelete: (id: string) => void; onImageClick: (urls: string[], index: number) => void }) {
+function PostCard({
+  post,
+  currentUserId,
+  onDelete,
+  onImageClick,
+  isFollowing,
+  onFollowToggle,
+}: {
+  post: Post
+  currentUserId: string | null
+  onDelete: (id: string) => void
+  onImageClick: (urls: string[], index: number) => void
+  isFollowing: boolean
+  onFollowToggle: (authorId: string) => void
+}) {
   const isOwn = post.user_id === currentUserId
   const [editing, setEditing] = useState(false)
   const [editContent, setEditContent] = useState(post.content)
   const [saving, setSaving] = useState(false)
-  const [liked, setLiked] = useState(false)
+  const [loadingFollow, setLoadingFollow] = useState(false)
 
   const [editInstagram, setEditInstagram] = useState(post.instagram || "")
   const [editTiktok, setEditTiktok] = useState(post.tiktok || "")
@@ -327,6 +340,55 @@ function PostCard({ post, currentUserId, onDelete, onImageClick }: { post: Post;
 
   const authorRole = post.author?.role ?? "traveler"
   const profileHref = authorRole === "host" ? `/host/${post.user_id}` : `/traveler/${post.user_id}`
+
+  // Check if current user liked and saved
+  const likesList = post.likes || []
+  const savesList = post.saves || []
+  const liked = currentUserId ? likesList.some(l => l.user_id === currentUserId) : false
+  const saved = currentUserId ? savesList.some(s => s.user_id === currentUserId) : false
+
+  const handleLike = async () => {
+    if (!currentUserId) {
+      toast.error("Please sign in to like posts.")
+      return
+    }
+    try {
+      const { toggleLike } = await import("@/lib/api/content")
+      await toggleLike(post.id, currentUserId, !liked)
+      // Real-time channel will handle global state sync, but we show optimistic feed update
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update like.")
+    }
+  }
+
+  const handleSave = async () => {
+    if (!currentUserId) {
+      toast.error("Please sign in to save posts.")
+      return
+    }
+    try {
+      const { toggleSave } = await import("@/lib/api/content")
+      await toggleSave(post.id, currentUserId, !saved)
+      toast.success(!saved ? "Saved to favorites!" : "Removed from favorites.")
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save post.")
+    }
+  }
+
+  const handleFollowClick = async () => {
+    if (!currentUserId) {
+      toast.error("Please sign in to follow hosts.")
+      return
+    }
+    setLoadingFollow(true)
+    try {
+      await onFollowToggle(post.user_id)
+    } catch (err: any) {
+      toast.error(err.message || "Failed to toggle follow.")
+    } finally {
+      setLoadingFollow(false)
+    }
+  }
 
   const saveEdit = async () => {
     if (!editContent.trim()) return
@@ -367,37 +429,56 @@ function PostCard({ post, currentUserId, onDelete, onImageClick }: { post: Post;
     <div className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur p-4 space-y-3">
       {/* Author */}
       <div className="flex items-center justify-between">
-        <Link to={profileHref} className="flex items-center gap-3 group">
-          <Avatar className="size-10 ring-2 ring-transparent group-hover:ring-primary/40 transition-all">
-            <AvatarImage src={post.author?.avatar_url ?? ""} />
-            <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-              {initials(post.author?.full_name ?? "U")}
-            </AvatarFallback>
-          </Avatar>
-          <div className="text-left">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-sm font-semibold leading-tight group-hover:text-primary transition-colors text-white">
-                {post.author?.full_name ?? "Unknown"}
-              </span>
-              {authorRole === "host" && (
-                <span className="text-[8px] font-bold text-[#2CB67D] bg-[#2CB67D]/10 border border-[#2CB67D]/30 rounded-full px-1.5 py-0.25 tracking-wide">
-                  🟢 LOCAL HOST
+        <div className="flex items-center gap-3">
+          <Link to={profileHref} className="flex items-center gap-3 group">
+            <Avatar className="size-10 ring-2 ring-transparent group-hover:ring-primary/40 transition-all">
+              <AvatarImage src={post.author?.avatar_url ?? ""} />
+              <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                {initials(post.author?.full_name ?? "U")}
+              </AvatarFallback>
+            </Avatar>
+            <div className="text-left">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-sm font-semibold leading-tight group-hover:text-primary transition-colors text-white">
+                  {post.author?.full_name ?? "Unknown"}
                 </span>
-              )}
-              {authorRole === "admin" && (
-                <span className="text-[8px] font-bold text-amber-500 bg-amber-500/10 border border-amber-500/30 rounded-full px-1.5 py-0.25 tracking-wide">
-                  🛡️ ADMIN
-                </span>
-              )}
-              {authorRole === "traveler" && (
-                <span className="text-[8px] font-bold text-[#7F5AF0] bg-[#7F5AF0]/10 border border-[#7F5AF0]/30 rounded-full px-1.5 py-0.25 tracking-wide">
-                  ✈️ TRAVELER
-                </span>
-              )}
+                {authorRole === "host" && (
+                  <span className="text-[8px] font-bold text-[#2CB67D] bg-[#2CB67D]/10 border border-[#2CB67D]/30 rounded-full px-1.5 py-0.25 tracking-wide">
+                    🟢 LOCAL HOST
+                  </span>
+                )}
+                {authorRole === "admin" && (
+                  <span className="text-[8px] font-bold text-amber-500 bg-amber-500/10 border border-amber-500/30 rounded-full px-1.5 py-0.25 tracking-wide">
+                    🛡️ ADMIN
+                  </span>
+                )}
+                {authorRole === "traveler" && (
+                  <span className="text-[8px] font-bold text-[#7F5AF0] bg-[#7F5AF0]/10 border border-[#7F5AF0]/30 rounded-full px-1.5 py-0.25 tracking-wide">
+                    ✈️ TRAVELER
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</p>
             </div>
-            <p className="text-[11px] text-muted-foreground mt-0.5">{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</p>
-          </div>
-        </Link>
+          </Link>
+
+          {/* Follow Button */}
+          {!isOwn && currentUserId && (
+            <button
+              onClick={handleFollowClick}
+              disabled={loadingFollow}
+              className={cn(
+                "ml-2 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full transition-all duration-200",
+                isFollowing
+                  ? "bg-muted text-muted-foreground hover:bg-muted/85"
+                  : "bg-[#7F5AF0] text-white hover:bg-[#6b47d6] shadow-sm"
+              )}
+            >
+              {loadingFollow ? "..." : isFollowing ? "Following" : "Follow"}
+            </button>
+          )}
+        </div>
+
         {isOwn && (
           <div className="flex items-center gap-1">
             <button onClick={() => setEditing(!editing)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">
@@ -590,14 +671,60 @@ function PostCard({ post, currentUserId, onDelete, onImageClick }: { post: Post;
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-4 pt-1 border-t border-border/30">
+      <div className="flex items-center justify-between pt-2 border-t border-border/30">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handleLike}
+            className={cn(
+              "flex items-center gap-1.5 text-xs transition-colors",
+              liked ? "text-red-400 font-bold" : "text-muted-foreground hover:text-red-400"
+            )}
+          >
+            <Heart className={cn("size-4", liked && "fill-red-400 stroke-red-400")} />
+            <span>{likesList.length} {likesList.length === 1 ? "Like" : "Likes"}</span>
+          </button>
+        </div>
+
         <button
-          onClick={() => setLiked(!liked)}
-          className={cn("flex items-center gap-1.5 text-xs transition-colors", liked ? "text-red-400" : "text-muted-foreground hover:text-red-400")}
+          onClick={handleSave}
+          className={cn(
+            "flex items-center gap-1.5 text-xs transition-colors",
+            saved ? "text-emerald-400 font-bold" : "text-muted-foreground hover:text-emerald-400"
+          )}
         >
-          <Heart className={cn("size-4", liked && "fill-current")} />
-          {liked ? "Liked" : "Like"}
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={cn("size-4", saved && "fill-emerald-400 stroke-emerald-400")}
+          >
+            <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
+          </svg>
+          <span>{saved ? "Saved" : "Save"}</span>
         </button>
+      </div>
+    </div>
+  )
+}
+
+function PostCardSkeleton() {
+  return (
+    <div className="rounded-2xl border border-border/60 bg-card/60 p-4 space-y-4 animate-pulse">
+      <div className="flex items-center gap-3">
+        <div className="size-10 rounded-full bg-muted/30" />
+        <div className="space-y-2 flex-1">
+          <div className="h-4 bg-muted/30 rounded w-1/3" />
+          <div className="h-3 bg-muted/20 rounded w-1/4" />
+        </div>
+      </div>
+      <div className="h-16 bg-muted/20 rounded-xl w-full" />
+      <div className="h-48 bg-muted/10 rounded-xl w-full" />
+      <div className="flex justify-between items-center pt-2">
+        <div className="h-4 bg-muted/30 rounded w-12" />
+        <div className="h-4 bg-muted/30 rounded w-12" />
       </div>
     </div>
   )
@@ -612,12 +739,20 @@ export default function FeedPage() {
   const navigate = useNavigate()
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [posts, setPosts] = useState<Post[]>([])
+  const [followingIds, setFollowingIds] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [feedError, setFeedError] = useState(false)
+  const [filter, setFilter] = useState<"all" | "favorites">("all")
   const [lightboxData, setLightboxData] = useState<{ urls: string[], index: number } | null>(null)
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null))
+    supabase.auth.getUser().then(({ data }) => {
+      const uid = data.user?.id ?? null
+      setCurrentUserId(uid)
+      if (uid) {
+        fetchUserFollows(uid).then(setFollowingIds).catch(console.error)
+      }
+    })
   }, [])
 
   const loadFeed = () => {
@@ -629,33 +764,94 @@ export default function FeedPage() {
       .finally(() => setLoading(false))
   }
 
+  // Real-time Postgres subscriptions for likes and saves
+  useEffect(() => {
+    const likesChannel = supabase
+      .channel("feed-likes-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "likes" },
+        () => {
+          fetchPosts().then(setPosts).catch(console.error)
+        }
+      )
+      .subscribe()
+
+    const savesChannel = supabase
+      .channel("feed-saves-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "saves" },
+        () => {
+          fetchPosts().then(setPosts).catch(console.error)
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(likesChannel)
+      supabase.removeChannel(savesChannel)
+    }
+  }, [])
+
   useEffect(() => {
     loadFeed()
   }, [])
+
+  const handleFollowToggle = async (authorId: string) => {
+    if (!currentUserId) return
+    const isFollowing = followingIds.includes(authorId)
+    try {
+      await toggleFollow(currentUserId, authorId, !isFollowing)
+      setFollowingIds(prev =>
+        isFollowing ? prev.filter(id => id !== authorId) : [...prev, authorId]
+      )
+      toast.success(isFollowing ? "Unfollowed user." : "Following user!")
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update follow status.")
+    }
+  }
+
+  // Filter & Sort Posts: Show followed users first in 'all' view
+  const displayPosts = posts
+    .filter(post => {
+      if (filter === "favorites") {
+        return currentUserId ? (post.saves || []).some(s => s.user_id === currentUserId) : false
+      }
+      return true
+    })
+    .sort((a, b) => {
+      if (filter === "all") {
+        const aFollowed = followingIds.includes(a.user_id) ? 1 : 0
+        const bFollowed = followingIds.includes(b.user_id) ? 1 : 0
+        if (aFollowed !== bFollowed) return bFollowed - aFollowed
+      }
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
 
   return (
     <div className="min-h-screen bg-background pt-24 pb-20">
       <div className="mx-auto max-w-xl px-4 space-y-5">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-2">
-          <button
-            onClick={() => window.history.length > 1 ? navigate(-1) : navigate("/dashboard")}
-            aria-label="Go back"
-            className="p-2.5 hover:bg-muted/40 rounded-xl transition-all min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95"
-            title="Back"
-          >
-            <ArrowLeft className="size-5" />
-          </button>
-          <div className="size-9 rounded-full bg-[#7F5AF0]/10 border border-[#7F5AF0]/20 flex items-center justify-center">
-            <Rss className="size-4 text-[#7F5AF0]" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-white">Community Feed</h1>
-            <p className="text-xs text-[#7F5AF0] font-semibold flex items-center gap-1.5 mt-0.5">
-              <span>🌐 Public Shared Space</span>
-              <span>·</span>
-              <span>Stories & tips from the community</span>
-            </p>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => window.history.length > 1 ? navigate(-1) : navigate("/dashboard")}
+              aria-label="Go back"
+              className="p-2.5 hover:bg-muted/40 rounded-xl transition-all min-h-[44px] min-w-[44px] flex items-center justify-center active:scale-95"
+              title="Back"
+            >
+              <ArrowLeft className="size-5" />
+            </button>
+            <div className="size-9 rounded-full bg-[#7F5AF0]/10 border border-[#7F5AF0]/20 flex items-center justify-center">
+              <Rss className="size-4 text-[#7F5AF0]" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight text-white">Community Feed</h1>
+              <p className="text-xs text-[#7F5AF0] font-semibold flex items-center gap-1.5 mt-0.5">
+                <span>🌐 Public Shared Space</span>
+              </p>
+            </div>
           </div>
         </div>
 
@@ -673,9 +869,46 @@ export default function FeedPage() {
           </div>
         )}
 
+        {/* Filters Panel (Tabs) */}
+        {currentUserId && (
+          <div className="flex border-b border-border/40 gap-6">
+            <button
+              onClick={() => setFilter("all")}
+              className={cn(
+                "pb-3 text-sm font-semibold transition-all relative",
+                filter === "all" ? "text-primary" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              All Posts
+              {filter === "all" && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+              )}
+            </button>
+            <button
+              onClick={() => setFilter("favorites")}
+              className={cn(
+                "pb-3 text-sm font-semibold transition-all relative flex items-center gap-1",
+                filter === "favorites" ? "text-primary" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="size-3.5">
+                <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
+              </svg>
+              Favorites
+              {filter === "favorites" && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+              )}
+            </button>
+          </div>
+        )}
+
         {/* Feed */}
         {loading ? (
-          <div className="flex justify-center py-16"><Spinner className="size-6 text-primary" /></div>
+          <div className="space-y-4">
+            <PostCardSkeleton />
+            <PostCardSkeleton />
+            <PostCardSkeleton />
+          </div>
         ) : feedError ? (
           <div className="flex flex-col items-center gap-4 py-16 text-center">
             <div className="size-14 rounded-full bg-red-500/10 flex items-center justify-center">
@@ -692,17 +925,21 @@ export default function FeedPage() {
               Try Again
             </button>
           </div>
-        ) : posts.length === 0 ? (
+        ) : displayPosts.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-16 text-center">
             <Globe className="size-10 text-muted-foreground/40" />
-            <p className="text-sm text-muted-foreground">No posts yet. Be the first to share!</p>
+            <p className="text-sm text-muted-foreground">
+              {filter === "favorites" ? "No saved posts yet." : "No posts yet. Be the first to share!"}
+            </p>
           </div>
         ) : (
-          posts.map(post => (
+          displayPosts.map(post => (
             <PostCard
               key={post.id}
               post={post}
               currentUserId={currentUserId}
+              isFollowing={followingIds.includes(post.user_id)}
+              onFollowToggle={handleFollowToggle}
               onDelete={id => setPosts(prev => prev.filter(p => p.id !== id))}
               onImageClick={(urls, index) => setLightboxData({ urls, index })}
             />

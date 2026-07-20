@@ -14,6 +14,8 @@ export interface Post {
   tiktok?: string | null
   facebook?: string | null
   reddit?: string | null
+  likes?: { user_id: string }[]
+  saves?: { user_id: string }[]
 }
 
 export interface Journal {
@@ -35,12 +37,14 @@ export interface Journal {
 export async function fetchPosts(): Promise<Post[]> {
   const { data, error } = await supabase
     .from("posts")
-    .select("*, author:profiles(full_name, avatar_url, role)")
+    .select("*, author:profiles(full_name, avatar_url, role), likes(user_id), saves(user_id)")
     .order("created_at", { ascending: false })
   if (error) throw error
   return (data ?? []).map((row: any) => ({
     ...row,
     author: Array.isArray(row.author) ? row.author[0] : row.author,
+    likes: row.likes || [],
+    saves: row.saves || [],
   }))
 }
 
@@ -161,4 +165,63 @@ export async function updateJournal(
 export async function deleteJournal(id: string): Promise<void> {
   const { error } = await supabase.from("journals").delete().eq("id", id)
   if (error) throw error
+}
+
+// ─── Likes, Follows, Saves API ──────────────────────────────────────────────
+
+export async function toggleLike(postId: string, userId: string, liked: boolean): Promise<void> {
+  if (liked) {
+    const { error } = await supabase
+      .from("likes")
+      .insert({ post_id: postId, user_id: userId })
+    if (error && error.code !== "23505") throw error
+  } else {
+    const { error } = await supabase
+      .from("likes")
+      .delete()
+      .eq("post_id", postId)
+      .eq("user_id", userId)
+    if (error) throw error
+  }
+}
+
+export async function toggleSave(postId: string, userId: string, saved: boolean): Promise<void> {
+  if (saved) {
+    const { error } = await supabase
+      .from("saves")
+      .insert({ post_id: postId, user_id: userId })
+    if (error && error.code !== "23505") throw error
+  } else {
+    const { error } = await supabase
+      .from("saves")
+      .delete()
+      .eq("post_id", postId)
+      .eq("user_id", userId)
+    if (error) throw error
+  }
+}
+
+export async function toggleFollow(followerId: string, followingId: string, following: boolean): Promise<void> {
+  if (following) {
+    const { error } = await supabase
+      .from("follows")
+      .insert({ follower_id: followerId, following_id: followingId })
+    if (error && error.code !== "23505") throw error
+  } else {
+    const { error } = await supabase
+      .from("follows")
+      .delete()
+      .eq("follower_id", followerId)
+      .eq("following_id", followingId)
+    if (error) throw error
+  }
+}
+
+export async function fetchUserFollows(userId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("follows")
+    .select("following_id")
+    .eq("follower_id", userId)
+  if (error) throw error
+  return (data ?? []).map((r: any) => r.following_id)
 }
