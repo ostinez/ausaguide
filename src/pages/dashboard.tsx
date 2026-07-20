@@ -15,7 +15,6 @@ import {
   Clock,
   ArrowRight,
   MessageSquare,
-  XCircle,
   Lightbulb,
   Bell,
   Settings,
@@ -1690,102 +1689,66 @@ export default function DashboardPage() {
             <p className="text-lg font-semibold text-foreground">Could not load dashboard</p>
             <p className="mt-2 text-sm text-muted-foreground">{error}</p>
           </div>
-        ) : userRoleState === "host" && !(profile?.verified_guide === true || profile?.host_tier === "certified_guide" || hostRecord?.status === "approved") ? (
-          !hostRecord || hostRecord.status === "pending" ? (
-            <Card className="border-amber-500/30 bg-amber-500/5">
-              <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-amber-500/10">
-                  <Clock className="size-8 text-amber-500" />
-                </div>
-                <h3 className="text-xl font-bold text-foreground">Application Under Review</h3>
-                <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-                  Your application is being reviewed. You'll receive an email once approved.
-                </p>
-              </CardContent>
-            </Card>
-          ) : hostRecord.status === "rejected" ? (
-            <Card className="border-destructive/30 bg-destructive/5">
-              <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-destructive/10">
-                  <XCircle className="size-8 text-destructive" />
-                </div>
-                <h3 className="text-xl font-bold text-destructive">Application Rejected</h3>
-                <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-                  {hostRecord.rejection_reason || "Unfortunately, your application to become a host was not approved at this time."}
-                </p>
-                <Link to="/host/signup">
-                  <Button variant="outline" className="mt-6 rounded-full border-destructive/30 text-destructive hover:bg-destructive/10">
-                    Submit New Application
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="py-16 text-center">
-              <p className="text-lg font-semibold text-foreground">Host profile pending</p>
-              <p className="mt-2 text-sm text-muted-foreground">Your host profile registration is pending review.</p>
-            </div>
-          )
         ) : userRoleState === "host" ? (
             <div className="space-y-8">
               {view === "dashboard" && (
                 <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
                   {/* Left Column: stats, notifications, bookings */}
                   <div className="space-y-8 lg:col-span-2">
-                    {(profile?.tra_number || profile?.license_status === 'pending' || profile?.verified_guide || profile?.rejected_as_guide) && (
-                      <div className="space-y-4">
-                        {profile.verified_guide === true && profile.host_tier === 'certified_guide' && (
-                          <div className="rounded-xl border border-blue-500/30 bg-blue-500/5 p-4 flex items-start gap-3">
-                            <BadgeCheck className="size-5 text-blue-500 shrink-0 mt-0.5" />
-                            <div>
-                              <h4 className="font-semibold text-sm text-blue-400">You are a Certified Guide ✅</h4>
-                              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                                Your guide license has been approved and you are now active.
-                              </p>
-                            </div>
+                    <div className="space-y-4">
+                      {profile?.verified_guide === true && profile?.host_tier === 'certified_guide' && (
+                        <div className="rounded-xl border border-blue-500/30 bg-blue-500/5 p-4 flex items-start gap-3">
+                          <BadgeCheck className="size-5 text-blue-500 shrink-0 mt-0.5" />
+                          <div>
+                            <h4 className="font-semibold text-sm text-blue-400">Certified Guide ✅</h4>
+                            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                              Your guide credentials have been verified. You hold Certified Guide status.
+                            </p>
                           </div>
-                        )}
-                        {profile.verified_guide === false && profile.license_status === 'pending' && (
-                          <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 flex items-start gap-3">
-                            <Clock className="size-5 text-amber-500 shrink-0 mt-0.5" />
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-sm text-amber-400">Pending review</h4>
-                              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                                Your Certified Guide application is pending review. You are currently a Local Host.
-                              </p>
-                              <button
-                                onClick={loadDashboard}
-                                className="mt-2.5 text-xs text-amber-400 hover:text-amber-300 font-semibold underline flex items-center gap-1 bg-transparent border-none p-0 cursor-pointer"
-                              >
-                                Refresh Status
-                              </button>
-                            </div>
+                        </div>
+                      )}
+                      
+                      {profile?.license_status === 'pending' && (
+                        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 flex items-start gap-3">
+                          <Clock className="size-5 text-amber-500 shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-sm text-amber-400">Pending Review</h4>
+                            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                              Your Certified Guide credentials are under review. You can still create and manage tours.
+                            </p>
+                            <button
+                              onClick={loadDashboard}
+                              className="mt-2.5 text-xs text-amber-400 hover:text-amber-300 font-semibold underline flex items-center gap-1 bg-transparent border-none p-0 cursor-pointer"
+                            >
+                              Refresh Status
+                            </button>
                           </div>
-                        )}
-                        {profile.verified_guide === false && profile.license_status === 'rejected' && (
-                          <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4 flex items-start gap-3">
-                            <XCircle className="size-5 text-red-500 shrink-0 mt-0.5" />
-                            <div>
-                              <h4 className="font-semibold text-sm text-red-400">Not approved</h4>
-                              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                                Your Certified Guide application was not approved. You can continue as a Local Host.
-                              </p>
-                              {profile.verification_notes && (
-                                <div className="mt-2 text-xs border-l-2 border-red-500/50 pl-2 text-red-300 italic">
-                                  Reason: "{profile.verification_notes}"
-                                </div>
-                              )}
-                              <button
-                                onClick={() => navigate("/onboarding?become-host=true")}
-                                className="mt-2.5 text-xs text-red-400 underline font-semibold hover:text-red-300"
-                              >
-                                Re-apply for Certified Guide Status
-                              </button>
-                            </div>
+                        </div>
+                      )}
+
+                      {profile?.verified_guide === false && profile?.host_tier === 'local_host' && profile?.license_status !== 'pending' && (
+                        <div className="rounded-xl border border-white/10 bg-white/5 p-4 flex items-start gap-3">
+                          <BadgeCheck className="size-5 text-gray-400 shrink-0 mt-0.5" />
+                          <div>
+                            <h4 className="font-semibold text-sm text-gray-300">Local Host</h4>
+                            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                              You are currently a Local Host. You can submit your official license to become a Certified Guide.
+                            </p>
+                            {profile.verification_notes && (
+                              <div className="mt-2 text-xs border-l-2 border-red-500/50 pl-2 text-red-300 italic">
+                                Last rejection/revocation reason: "{profile.verification_notes}"
+                              </div>
+                            )}
+                            <button
+                              onClick={() => navigate("/onboarding?become-host=true")}
+                              className="mt-2.5 text-xs text-primary underline font-semibold hover:text-primary/80"
+                            >
+                              Apply for Certified Guide Status
+                            </button>
                           </div>
-                        )}
-                      </div>
-                    )}
+                        </div>
+                      )}
+                    </div>
                     <UrgentRequestsSection
                       requests={urgentRequests}
                       hostId={userId || ""}

@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
-import { Loader2, CheckSquare, XCircle, ExternalLink } from "lucide-react"
-import { sendGuideApprovedEmail, sendGuideRejectedEmail } from "@/lib/api/emails"
+import { Loader2, CheckSquare, XCircle, ExternalLink, History, AlertTriangle } from "lucide-react"
+import { sendGuideApprovedEmail, sendGuideRejectedEmail, sendGuideRevokedEmail } from "@/lib/api/emails"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 
 export default function Admin2Verifications() {
   const [profiles, setProfiles] = useState<any[]>([])
@@ -11,12 +12,19 @@ export default function Admin2Verifications() {
   const [rejectionReason, setRejectionReason] = useState("")
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
+  const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'all'>('pending')
+  const [revokingHost, setRevokingHost] = useState<any>(null)
+  const [revokeReason, setRevokeReason] = useState("")
+  const [selectedHostHistory, setSelectedHostHistory] = useState<any>(null)
+  const [historyLogs, setHistoryLogs] = useState<any[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+
   const fetchVerifications = async () => {
     setLoading(true)
     const { data, error } = await supabase
       .from("profiles")
       .select("*")
-      .eq("license_status", "pending")
+      .eq("role", "host")
       .order("created_at", { ascending: false })
     
     if (!error && data) {
@@ -111,6 +119,52 @@ export default function Admin2Verifications() {
     }
   }
 
+  const fetchHistory = async (hostId: string) => {
+    setHistoryLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from("verification_history")
+        .select(`
+          id,
+          action,
+          notes,
+          created_at,
+          admin_id
+        `)
+        .eq("host_id", hostId)
+        .order("created_at", { ascending: false })
+      
+      if (!error && data) {
+        // Resolve admin names locally or keep them simple
+        const withAdminInfo = await Promise.all(data.map(async (log: any) => {
+          if (log.admin_id) {
+            const { data: adminProf } = await supabase
+              .from("profiles")
+              .select("full_name, email")
+              .eq("id", log.admin_id)
+              .maybeSingle()
+            if (adminProf) {
+              log.admin = adminProf
+            }
+          }
+          return log
+        }))
+        setHistoryLogs(withAdminInfo)
+      } else {
+        setHistoryLogs([])
+      }
+    } catch (e) {
+      console.error("Failed to fetch history logs:", e)
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
+
+  const handleViewHistoryClick = (user: any) => {
+    setSelectedHostHistory(user)
+    fetchHistory(user.id)
+  }
+
   useEffect(() => {
     if (window.location.search.includes("mockDialogs=true")) {
       window.confirm = () => true
@@ -139,13 +193,23 @@ export default function Admin2Verifications() {
         .eq("id", user.id)
 
       if (error) throw error
+
+      const { data: { user: adminUser } } = await supabase.auth.getUser()
+
+      // Log entry
+      await supabase.from("verification_history").insert({
+        host_id: user.id,
+        admin_id: adminUser?.id || null,
+        action: "approved",
+        notes: "Approved Certified Guide license credentials."
+      })
       
       if (user.email) {
         sendGuideApprovedEmail(user.email, user.full_name || "Guide").catch(console.error)
       }
       
-      setProfiles(profiles.filter(p => p.id !== user.id))
-      alert("Certified Guide approved. Confirmation email sent.")
+      toast.success("Certified Guide approved. Confirmation email sent.")
+      fetchVerifications()
     } catch (err: any) {
       console.error("Approval failed:", err)
       alert("Failed to approve guide: " + err.message)
@@ -173,14 +237,24 @@ export default function Admin2Verifications() {
 
       if (error) throw error
 
+      const { data: { user: adminUser } } = await supabase.auth.getUser()
+
+      // Log entry
+      await supabase.from("verification_history").insert({
+        host_id: rejectingHost.id,
+        admin_id: adminUser?.id || null,
+        action: "rejected",
+        notes: finalReason
+      })
+
       if (rejectingHost.email) {
         sendGuideRejectedEmail(rejectingHost.email, rejectingHost.full_name || "Guide", finalReason).catch(console.error)
       }
       
-      setProfiles(profiles.filter(p => p.id !== rejectingHost.id))
-      alert("Application rejected. Notification email sent.")
+      toast.success("Application rejected. Notification email sent.")
       setRejectingHost(null)
       setRejectionReason("")
+      fetchVerifications()
     } catch (err: any) {
       console.error("Rejection failed:", err)
       alert("Failed to reject application: " + err.message)
@@ -188,6 +262,56 @@ export default function Admin2Verifications() {
       setActionLoading(null)
     }
   }
+
+  const submitRevoke = async () => {
+    if (!revokingHost) return
+    setActionLoading(revokingHost.id)
+    const finalReason = revokeReason.trim() || "Your Certified Guide status has been revoked by our admin team."
+    
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          host_tier: "local_host",
+          verified_guide: false,
+          license_status: "rejected",
+          verification_notes: finalReason,
+        })
+        .eq("id", revokingHost.id)
+
+      if (error) throw error
+
+      const { data: { user: adminUser } } = await supabase.auth.getUser()
+
+      // Log entry
+      await supabase.from("verification_history").insert({
+        host_id: revokingHost.id,
+        admin_id: adminUser?.id || null,
+        action: "revoked",
+        notes: finalReason
+      })
+
+      if (revokingHost.email) {
+        sendGuideRevokedEmail(revokingHost.email, revokingHost.full_name || "Guide", finalReason).catch(console.error)
+      }
+
+      toast.success("Certified Guide status revoked. Notification email sent.")
+      setRevokingHost(null)
+      setRevokeReason("")
+      fetchVerifications()
+    } catch (err: any) {
+      console.error("Revocation failed:", err)
+      alert("Failed to revoke status: " + err.message)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const filteredProfiles = profiles.filter(p => {
+    if (activeTab === 'pending') return p.license_status === 'pending'
+    if (activeTab === 'approved') return p.verified_guide === true && p.host_tier === 'certified_guide'
+    return true
+  })
 
   return (
     <div className="space-y-6 flex flex-col h-[calc(100vh-8rem)] relative">
@@ -198,6 +322,37 @@ export default function Admin2Verifications() {
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-2 border-b border-white/10 pb-2 shrink-0">
+        <button
+          onClick={() => setActiveTab('pending')}
+          className={cn(
+            "px-4 py-2 text-xs font-semibold rounded-lg transition-colors border border-transparent",
+            activeTab === 'pending' ? "bg-amber-500/10 border-amber-500/20 text-amber-400" : "text-gray-400 hover:text-white"
+          )}
+        >
+          Pending Applications ({profiles.filter(p => p.license_status === 'pending').length})
+        </button>
+        <button
+          onClick={() => setActiveTab('approved')}
+          className={cn(
+            "px-4 py-2 text-xs font-semibold rounded-lg transition-colors border border-transparent",
+            activeTab === 'approved' ? "bg-green-500/10 border-green-500/20 text-green-400" : "text-gray-400 hover:text-white"
+          )}
+        >
+          Approved Guides ({profiles.filter(p => p.verified_guide === true && p.host_tier === 'certified_guide').length})
+        </button>
+        <button
+          onClick={() => setActiveTab('all')}
+          className={cn(
+            "px-4 py-2 text-xs font-semibold rounded-lg transition-colors border border-transparent",
+            activeTab === 'all' ? "bg-white/5 border-white/10 text-white" : "text-gray-400 hover:text-white"
+          )}
+        >
+          All Hosts ({profiles.length})
+        </button>
+      </div>
+
       <div className="bg-[#111111] border border-white/10 rounded-xl overflow-hidden flex-1 flex flex-col min-h-0">
         <div className="overflow-y-auto flex-1">
           <table className="w-full text-sm text-left relative">
@@ -206,25 +361,26 @@ export default function Admin2Verifications() {
                 <th className="px-6 py-4 font-semibold">Host</th>
                 <th className="px-6 py-4 font-semibold">Credentials</th>
                 <th className="px-6 py-4 font-semibold">Certificate</th>
+                <th className="px-6 py-4 font-semibold">Status</th>
                 <th className="px-6 py-4 font-semibold text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {loading && profiles.length === 0 ? (
+              {loading && filteredProfiles.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
                     <Loader2 className="animate-spin mx-auto mb-2" size={24} />
                     Loading applications...
                   </td>
                 </tr>
-              ) : profiles.length === 0 ? (
+              ) : filteredProfiles.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
-                    No pending verifications found
+                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                    No matching guides or hosts found
                   </td>
                 </tr>
               ) : (
-                profiles.map(user => (
+                filteredProfiles.map(user => (
                   <tr key={user.id} className="hover:bg-white/2 transition-colors">
                     <td className="px-6 py-4">
                       <div className="font-medium text-gray-200">{user.full_name}</div>
@@ -248,31 +404,69 @@ export default function Admin2Verifications() {
                         <span className="text-gray-500 text-xs">No certificate uploaded yet.</span>
                       )}
                     </td>
+                    <td className="px-6 py-4">
+                      {user.verified_guide === true && user.host_tier === 'certified_guide' ? (
+                        <span className="inline-flex items-center px-2 py-0.5 bg-green-500/10 border border-green-500/20 text-green-400 rounded-full text-xs font-semibold">
+                          Certified Guide ✅
+                        </span>
+                      ) : user.license_status === 'pending' ? (
+                        <span className="inline-flex items-center px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-full text-xs font-semibold">
+                          Pending Review
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 bg-gray-500/10 border border-gray-500/20 text-gray-400 rounded-full text-xs font-semibold">
+                          Local Host
+                        </span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <a 
-                          href="https://verify.tra.go.ke" 
-                          target="_blank" 
-                          rel="noreferrer"
-                          className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded text-xs transition-colors"
-                        >
-                          Verify on TRA
-                        </a>
                         <button
-                          onClick={() => handleApprove(user)}
-                          disabled={actionLoading === user.id}
-                          className="px-3 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded flex items-center gap-1.5 text-xs transition-colors disabled:opacity-50"
+                          onClick={() => handleViewHistoryClick(user)}
+                          className="px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded flex items-center gap-1 text-xs transition-colors"
+                          title="View Verification History Log"
                         >
-                          {actionLoading === user.id ? <Loader2 size={14} className="animate-spin" /> : <CheckSquare size={14} />}
-                          Approve
+                          <History size={13} />
+                          History
                         </button>
-                        <button
-                          onClick={() => setRejectingHost(user)}
-                          disabled={actionLoading === user.id}
-                          className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded flex items-center gap-1.5 text-xs transition-colors disabled:opacity-50"
-                        >
-                          <XCircle size={14} /> Reject
-                        </button>
+                        
+                        {user.license_status === 'pending' && (
+                          <>
+                            <a 
+                              href="https://verify.tra.go.ke" 
+                              target="_blank" 
+                              rel="noreferrer"
+                              className="px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded text-xs transition-colors"
+                            >
+                              Verify on TRA
+                            </a>
+                            <button
+                              onClick={() => handleApprove(user)}
+                              disabled={actionLoading === user.id}
+                              className="px-2.5 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded flex items-center gap-1 text-xs transition-colors disabled:opacity-50"
+                            >
+                              {actionLoading === user.id ? <Loader2 size={13} className="animate-spin" /> : <CheckSquare size={13} />}
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => setRejectingHost(user)}
+                              disabled={actionLoading === user.id}
+                              className="px-2.5 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded flex items-center gap-1 text-xs transition-colors disabled:opacity-50"
+                            >
+                              <XCircle size={13} /> Reject
+                            </button>
+                          </>
+                        )}
+
+                        {user.verified_guide === true && user.host_tier === 'certified_guide' && (
+                          <button
+                            onClick={() => setRevokingHost(user)}
+                            disabled={actionLoading === user.id}
+                            className="px-2.5 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded flex items-center gap-1 text-xs transition-colors disabled:opacity-50 font-semibold"
+                          >
+                            <AlertTriangle size={13} /> Revoke
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -311,6 +505,115 @@ export default function Admin2Verifications() {
               >
                 {actionLoading === rejectingHost.id && <Loader2 size={16} className="animate-spin" />}
                 Confirm Rejection
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Revoke Modal */}
+      {revokingHost && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-[#111111] border border-white/10 rounded-xl p-6 w-full max-w-md shadow-2xl">
+            <h3 className="text-xl font-semibold text-white mb-2">Revoke Certified Guide Status</h3>
+            <p className="text-sm text-gray-400 mb-4">
+              Provide a reason for revoking {revokingHost.full_name}'s guide status. This will be logged and sent to them via email.
+            </p>
+            <textarea
+              className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white text-sm mb-4 min-h-[100px] focus:outline-none focus:border-red-500/50"
+              placeholder="e.g. Conduct policy violation or expired guide credentials..."
+              value={revokeReason}
+              onChange={(e) => setRevokeReason(e.target.value)}
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setRevokingHost(null)}
+                className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitRevoke}
+                disabled={actionLoading === revokingHost.id}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg font-medium transition-colors flex items-center gap-2"
+              >
+                {actionLoading === revokingHost.id && <Loader2 size={16} className="animate-spin" />}
+                Confirm Revocation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* History Timeline Modal */}
+      {selectedHostHistory && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-[#111111] border border-white/10 rounded-xl p-6 w-full max-w-lg shadow-2xl max-h-[80vh] flex flex-col">
+            <div className="flex justify-between items-center mb-4 shrink-0">
+              <h3 className="text-xl font-semibold text-white">Verification History</h3>
+              <button
+                onClick={() => setSelectedHostHistory(null)}
+                className="text-gray-400 hover:text-white transition-colors text-sm"
+              >
+                Close
+              </button>
+            </div>
+            
+            <div className="mb-4 bg-white/5 p-3 rounded-lg text-xs border border-white/5 shrink-0">
+              <div className="font-semibold text-gray-200">{selectedHostHistory.full_name}</div>
+              <div className="text-gray-400 mt-0.5">{selectedHostHistory.email}</div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto pr-1 space-y-4 py-2">
+              {historyLoading ? (
+                <div className="flex items-center justify-center py-8 text-gray-400">
+                  <Loader2 className="animate-spin mr-2" size={16} />
+                  Loading logs...
+                </div>
+              ) : historyLogs.length === 0 ? (
+                <div className="text-center py-8 text-gray-500 text-sm">
+                  No verification activity logs recorded for this host.
+                </div>
+              ) : (
+                <div className="relative border-l-2 border-white/10 ml-3 pl-5 space-y-6">
+                  {historyLogs.map((log) => (
+                    <div key={log.id} className="relative">
+                      {/* Marker dot */}
+                      <span className="absolute -left-[27px] top-1.5 flex h-3 w-3 items-center justify-center rounded-full bg-gradient-to-br from-[#7F5AF0] to-[#2CB67D]" />
+                      
+                      <div>
+                        <div className="flex items-center justify-between gap-4">
+                          <span className={cn(
+                            "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
+                            log.action === "approved" ? "bg-green-500/10 text-green-400 border border-green-500/20" :
+                            log.action === "rejected" ? "bg-red-500/10 text-red-400 border border-red-500/20" :
+                            "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                          )}>
+                            {log.action}
+                          </span>
+                          <span className="text-[10px] text-gray-500">
+                            {new Date(log.created_at).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-300 mt-2 bg-black/40 p-2.5 rounded-lg border border-white/5">
+                          {log.notes || "No additional comments."}
+                        </p>
+                        <div className="text-[10px] text-gray-500 mt-1">
+                          Logged by: {log.admin ? `${log.admin.full_name} (${log.admin.email})` : "System / Deleted Admin"}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <div className="mt-4 pt-4 border-t border-white/5 text-right shrink-0">
+              <button
+                onClick={() => setSelectedHostHistory(null)}
+                className="px-4 py-2 bg-white/5 hover:bg-white/10 text-sm font-semibold rounded-lg text-white transition-colors"
+              >
+                Close Window
               </button>
             </div>
           </div>

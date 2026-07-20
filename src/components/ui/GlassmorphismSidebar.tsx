@@ -161,12 +161,12 @@ export function GlassmorphismSidebar({
           inset: 0,
           /* Sit above most content including fixed navbar */
           zIndex: 140,
-          background: "rgba(0,0,0,0.55)",
-          backdropFilter: isOpen ? "blur(10px)" : "none",
-          WebkitBackdropFilter: isOpen ? "blur(10px)" : "none",
+          background: isOpen ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0)",
+          backdropFilter: isOpen ? "blur(10px)" : "blur(0px)",
+          WebkitBackdropFilter: isOpen ? "blur(10px)" : "blur(0px)",
           opacity: isOpen ? 1 : 0,
           pointerEvents: isOpen ? "auto" : "none",
-          transition: "opacity 0.25s ease",
+          transition: "opacity 0.25s ease, backdrop-filter 0.25s ease, -webkit-backdrop-filter 0.25s ease",
         }}
       />
 

@@ -369,3 +369,33 @@ export async function sendGuideRejectedEmail(
   return dispatchEmail({ to, subject, html })
 }
 
+export async function sendGuideRevokedEmail(
+  to: string,
+  hostName: string,
+  reason: string
+): Promise<boolean> {
+  const subject = `Update on Your Certified Guide Status`
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 24px; background-color: #16161A; color: #fffffe; line-height: 1.6;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <img src="https://ausaguide.com/logo-primary.png" alt="Ausaguide" style="height: 36px; width: auto; display: inline-block;" />
+      </div>
+      <p style="font-size: 16px; color: #fffffe; margin-bottom: 20px;">Dear ${hostName},</p>
+      <p style="font-size: 16px; color: #a7a9be; margin-bottom: 20px;">Please be notified that your Certified Guide status on Ausaguide has been revoked.</p>
+      
+      <div style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.3); border-radius: 16px; padding: 20px; margin-bottom: 24px;">
+        <p style="font-size: 14px; font-weight: 600; color: #fca5a5; margin: 0 0 6px;">Reason for revocation:</p>
+        <p style="font-size: 14px; color: #a7a9be; margin: 0; font-style: italic;">"${reason}"</p>
+      </div>
+      
+      <p style="font-size: 16px; color: #a7a9be; margin-bottom: 24px;">You can continue as a Local Host. If you believe this is an error, please update your guide registration credentials in your host settings.</p>
+      
+      <p style="font-size: 15px; color: #fffffe; margin-bottom: 0; font-weight: 600;">– The Ausaguide Team</p>
+      <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 32px 0;" />
+      <p style="font-size: 13px; color: #2CB67D; font-weight: 700; text-align: center; margin-bottom: 4px;">Ausaguide — Be a Local. Share Your World.</p>
+      <p style="font-size: 11px; color: #5f6368; text-align: center; margin: 0;">© 2026 Ausaguide. Nairobi, Kenya.</p>
+    </div>
+  `
+  return dispatchEmail({ to, subject, html })
+}
+
