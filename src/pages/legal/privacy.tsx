@@ -1,4 +1,5 @@
 import { Shield, Eye, Database, Share2, HelpCircle } from "lucide-react"
+import { Link } from "react-router-dom"
 
 export default function PrivacyPage() {
   return (
@@ -80,19 +81,19 @@ export default function PrivacyPage() {
           <section className="space-y-3">
             <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
               <HelpCircle className="size-5 text-teal" />
-              5. Your Rights
+              5. Your Rights & GDPR/CCPA Compliance
             </h2>
             <p>
-              Depending on your location, you possess specific data rights, which include:
+              Depending on your location, you possess specific data rights under regulations such as the General Data Protection Regulation (GDPR) and California Consumer Privacy Act (CCPA), which include:
             </p>
             <ul className="list-disc list-inside space-y-1 pl-4">
-              <li><strong>Access:</strong> The right to request copies of the personal data we hold about you.</li>
+              <li><strong>Access & Portability:</strong> The right to request copies of the personal data we hold about you. You can instantly download a complete JSON archive of your personal information (profile, tours, bookings, messages, posts, and journals) via the <Link to="/settings" className="text-primary hover:underline">Profile Settings</Link> page under the "Privacy" tab.</li>
               <li><strong>Correction:</strong> The right to request correction of inaccurate or incomplete personal information.</li>
-              <li><strong>Deletion ("Right to be Forgotten"):</strong> The right to request that we erase your personal data under certain conditions.</li>
+              <li><strong>Deletion ("Right to be Forgotten"):</strong> The right to request that we erase your personal data. You can permanently delete your account and all associated records immediately via the <Link to="/settings" className="text-primary hover:underline">Profile Settings</Link> page under the "Privacy" tab.</li>
               <li><strong>Consent Withdrawal:</strong> The right to withdraw consent for specific processing actions (such as newsletters).</li>
             </ul>
             <p>
-              To exercise any of these rights, please submit a request to <a href="mailto:welcome@ausaguide.com" className="text-primary hover:underline">welcome@ausaguide.com</a>.
+              To exercise any of these rights manually, or if you require additional assistance, please submit a request to our data protection officer at <a href="mailto:welcome@ausaguide.com" className="text-primary hover:underline">welcome@ausaguide.com</a>.
             </p>
           </section>
 

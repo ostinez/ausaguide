@@ -56,6 +56,12 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(true)
 
+  // GDPR / CCPA states
+  const [exporting, setExporting] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+
+
   // Personal Info
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
@@ -199,6 +205,80 @@ export default function SettingsPage() {
     } catch (err) {
       console.error(err)
       toast.error("Failed to disable 2FA.")
+    }
+  }
+
+  async function handleExportData() {
+    if (!userId) return
+    setExporting(true)
+    try {
+      const [profileRes, toursRes, bookingsRes, messagesRes, postsRes, journalsRes] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
+        supabase.from("tours").select("*").eq("host_id", userId),
+        supabase.from("bookings").select("*").or(`guest_id.eq.${userId},host_id.eq.${userId}`),
+        supabase.from("messages").select("*").or(`sender_id.eq.${userId},receiver_id.eq.${userId}`),
+        supabase.from("posts").select("*").eq("user_id", userId),
+        supabase.from("journals").select("*").eq("user_id", userId),
+      ])
+
+      const exportData = {
+        exported_at: new Date().toISOString(),
+        profile: profileRes.data || null,
+        tours: toursRes.data || [],
+        bookings: bookingsRes.data || [],
+        messages: messagesRes.data || [],
+        posts: postsRes.data || [],
+        journals: journalsRes.data || [],
+      }
+
+      const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
+        JSON.stringify(exportData, null, 2)
+      )}`
+      const downloadAnchor = document.createElement("a")
+      downloadAnchor.setAttribute("href", jsonString)
+      downloadAnchor.setAttribute("download", `ausaguide_data_export_${userId}.json`)
+      document.body.appendChild(downloadAnchor)
+      downloadAnchor.click()
+      downloadAnchor.remove()
+      toast.success("Your data has been successfully exported and downloaded.")
+    } catch (err) {
+      console.error("Data export failed:", err)
+      toast.error("Failed to export data. Please try again.")
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  async function handleDeleteAccount() {
+    setDeleting(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      
+      if (!token) {
+        throw new Error("No active session. Please log in again.")
+      }
+
+      // Call Supabase Edge Function
+      const { error } = await supabase.functions.invoke("delete-user-data", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (error) throw error
+
+      // Clear local storage and redirect
+      localStorage.clear()
+      toast.success("Your account and all associated data have been permanently deleted.")
+      navigate("/")
+      window.location.reload()
+    } catch (err: any) {
+      console.error("Account deletion failed:", err)
+      toast.error(err.message || "Failed to delete account. Please try again.")
+    } finally {
+      setDeleting(false)
+      setDeleteConfirmOpen(false)
     }
   }
 
@@ -624,6 +704,8 @@ export default function SettingsPage() {
             {activeTab === "privacy" && (
               <div className="space-y-5">
                 <h2 className="text-lg font-bold text-foreground">Privacy Settings</h2>
+                
+                {/* Public Profile toggle */}
                 <div className="flex items-start justify-between rounded-xl border border-border/50 bg-card/30 px-5 py-4">
                   <div>
                     <p className="text-sm font-semibold text-foreground">Public Profile</p>
@@ -649,6 +731,71 @@ export default function SettingsPage() {
                     />
                   </button>
                 </div>
+
+                {/* GDPR Tools */}
+                <div className="rounded-xl border border-border/60 bg-muted/10 p-5 space-y-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">Personal Data Management (GDPR / CCPA)</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                      Manage your data and privacy preferences. You can request a download of all your accumulated data or request complete deletion of your account.
+                    </p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                    <Button 
+                      type="button" 
+                      onClick={handleExportData} 
+                      disabled={exporting}
+                      className="text-xs w-full sm:w-auto"
+                    >
+                      {exporting ? "Exporting Data..." : "Export My Data"}
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="destructive" 
+                      onClick={() => setDeleteConfirmOpen(true)} 
+                      className="text-xs w-full sm:w-auto"
+                    >
+                      Delete My Data
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Deletion confirmation modal */}
+                {deleteConfirmOpen && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200">
+                      <div className="space-y-2">
+                        <h3 className="text-lg font-bold text-destructive">Confirm Account Deletion</h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          Are you sure? This will permanently delete your account and all associated data (including profiles, tours, bookings, messages, posts, and journals).
+                        </p>
+                        <p className="text-xs text-amber-500 font-medium">
+                          This action is irreversible and conforms to the GDPR "Right to be Forgotten".
+                        </p>
+                      </div>
+                      <div className="flex justify-end gap-3 pt-2">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          onClick={() => setDeleteConfirmOpen(false)}
+                          disabled={deleting}
+                          className="text-xs"
+                        >
+                          Cancel
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant="destructive" 
+                          onClick={handleDeleteAccount}
+                          disabled={deleting}
+                          className="text-xs bg-red-600 hover:bg-red-700"
+                        >
+                          {deleting ? "Deleting Account..." : "Delete Permanently"}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
