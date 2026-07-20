@@ -560,7 +560,7 @@ function PendingBookingRow({
                 <Users className="size-3" />
                 {booking.guest_count} {booking.guest_count === 1 ? "guest" : "guests"}
               </span>
-              <span>${booking.total_price ? `$${booking.total_price.toLocaleString()} USD` : "$0 USD"}</span>
+              <span>{booking.total_price ? `$${booking.total_price.toLocaleString()} USD` : "$0 USD"}</span>
             </div>
           </div>
         </div>
@@ -1183,7 +1183,7 @@ function UrgentRequestsSection({
                     {req.experience_type?.join(", ") || "General"}
                   </span>
                   <span className="font-semibold text-emerald-400">
-                    Budget: ${req.budget ? `$${req.budget} USD/hr` : "N/A"}
+                    Budget: {req.budget ? `$${req.budget} USD/hr` : "N/A"}
                   </span>
                 </div>
                 <p className="text-[10px] text-rose-400 font-mono font-bold">

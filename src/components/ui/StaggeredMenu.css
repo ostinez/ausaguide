@@ -21,7 +21,7 @@
   width: 100vw;
   height: 100vh;
   pointer-events: none;
-  z-index: 10;
+  z-index: 38;
 }
 
 .sm-prelayer {
@@ -160,7 +160,7 @@
   flex-direction: column;
   justify-content: flex-start;
   padding: 6rem 10vw 2rem 10vw;
-  z-index: 20;
+  z-index: 40;
   overflow-y: auto;
   overflow-x: hidden;
 }

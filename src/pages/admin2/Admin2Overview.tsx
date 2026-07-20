@@ -195,7 +195,7 @@ export default function Admin2Overview() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-gray-300">
-                      ${booking.total_price ? `$${booking.total_price.toLocaleString()} USD` : '$0 USD'}
+                      {booking.total_price ? `$${booking.total_price.toLocaleString()} USD` : '$0 USD'}
                     </td>
                   </tr>
                 ))}

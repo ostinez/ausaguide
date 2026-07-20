@@ -746,10 +746,15 @@ function StepVerifyID({
   )
 }
 
-// ── Step 4: Done ─────────────────────────────────────────
 function StepDone({ name, role, hostTier }: { name: string; role: Role; hostTier?: string | null }) {
   const navigate = useNavigate()
   const particles = useConfetti(true)
+  const [navigating, setNavigating] = useState(false)
+
+  const handleNavigate = (path: string) => {
+    setNavigating(true)
+    navigate(path, { replace: true })
+  }
 
   return (
     <div className="relative flex flex-col items-center text-center gap-6 py-4 px-2 w-full overflow-hidden">
@@ -819,16 +824,18 @@ function StepDone({ name, role, hostTier }: { name: string; role: Role; hostTier
             <Button
               id="onboarding-done-primary"
               size="lg"
-              onClick={() => navigate("/tours")}
+              disabled={navigating}
+              onClick={() => handleNavigate("/tours")}
               className="rounded-full px-8 bg-linear-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 flex items-center justify-center gap-2"
             >
-              Start Exploring <Compass className="size-4" />
+              {navigating ? <Loader2 className="size-4 animate-spin" /> : "Start Exploring"} <Compass className="size-4" />
             </Button>
             <Button
               id="onboarding-done-secondary"
               size="lg"
               variant="outline"
-              onClick={() => navigate("/dashboard")}
+              disabled={navigating}
+              onClick={() => handleNavigate("/dashboard")}
               className="rounded-full px-8 border-border text-white/80 hover:bg-accent/ hover:text-white font-semibold"
             >
               Go to Dashboard
@@ -839,16 +846,18 @@ function StepDone({ name, role, hostTier }: { name: string; role: Role; hostTier
             <Button
               id="onboarding-done-primary"
               size="lg"
-              onClick={() => navigate("/host/dashboard")}
+              disabled={navigating}
+              onClick={() => handleNavigate("/host/dashboard")}
               className="rounded-full px-8 bg-linear-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#7F5AF0]/30 flex items-center justify-center gap-2"
             >
-              Start Hosting <Home className="size-4" />
+              {navigating ? <Loader2 className="size-4 animate-spin" /> : "Start Hosting"} <Home className="size-4" />
             </Button>
             <Button
               id="onboarding-done-secondary"
               size="lg"
               variant="outline"
-              onClick={() => navigate("/tours")}
+              disabled={navigating}
+              onClick={() => handleNavigate("/tours")}
               className="rounded-full px-8 border-border text-white/80 hover:bg-accent/ hover:text-white font-semibold"
             >
               Explore Tours

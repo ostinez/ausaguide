@@ -158,11 +158,11 @@ export function GlassmorphismSidebar({
         style={{
           position: "fixed",
           inset: 0,
-          /* Sit above most content but below the sidebar itself */
-          zIndex: 54,
+          /* Sit above most content including fixed navbar */
+          zIndex: 140,
           background: "rgba(0,0,0,0.55)",
-          backdropFilter: "blur(2px)",
-          WebkitBackdropFilter: "blur(2px)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
           opacity: isOpen ? 1 : 0,
           pointerEvents: isOpen ? "auto" : "none",
           transition: "opacity 0.25s ease",
@@ -184,8 +184,8 @@ export function GlassmorphismSidebar({
           /* Full viewport height including safe-area on iOS */
           height: "100dvh",
           width: "min(280px, 85vw)",
-          /* Above the fixed navbar (z-50 = 50) and its overlay */
-          zIndex: 55,
+          /* Above the overlay (z-140) */
+          zIndex: 150,
           transform: isOpen ? "translateX(0)" : "translateX(100%)",
           transition: "transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
           background: "rgba(22, 22, 26, 0.96)",

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { Search, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 
 export default function Admin2Users() {
   const [users, setUsers] = useState<any[]>([])
@@ -44,9 +45,10 @@ export default function Admin2Users() {
 
     if (!error) {
       setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u))
+      toast.success(`Role updated to ${newRole} successfully.`)
     } else {
       console.error("Failed to update role:", error)
-      alert("Failed to update user role")
+      toast.error(`Failed to update user role: ${error.message}`)
     }
     setUpdatingId(null)
   }

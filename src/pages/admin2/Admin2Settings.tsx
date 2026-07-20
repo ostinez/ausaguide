@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { Save, AlertTriangle, Loader2, CheckCircle2, RefreshCw } from "lucide-react"
 import { supabase } from "@/lib/supabase"
+import { toast } from "sonner"
 
 // We store settings as a special profile row with id = '00000000-0000-0000-0000-000000000000'
 // keyed by a "platform_settings" marker, or we persist in localStorage with a clear banner.
@@ -89,7 +90,7 @@ export default function Admin2Settings() {
       setTimeout(() => setSaved(false), 3000)
     } catch (err) {
       console.error("Failed to save settings:", err)
-      alert("Failed to save settings. Please try again.")
+      toast.error("Failed to save settings. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -123,7 +124,7 @@ export default function Admin2Settings() {
       <div className="flex items-start gap-3 p-4 rounded-xl border border-blue-500/20 bg-blue-500/5 text-sm text-blue-300">
         <AlertTriangle size={16} className="shrink-0 mt-0.5 text-blue-400" />
         <span>
-          Settings are currently stored in browser localStorage. A future release will sync these to Supabase automatically. Changes apply immediately to this browser session.
+          Settings are synced to Supabase and take effect immediately for all users. Maintenance mode restricts access for non-admins across all devices.
           {adminCount !== null && (
             <span className="ml-1 text-blue-400 font-medium">({adminCount} admin{adminCount !== 1 ? "s" : ""} on the platform)</span>
           )}

@@ -613,17 +613,24 @@ export default function FeedPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
+  const [feedError, setFeedError] = useState(false)
   const [lightboxData, setLightboxData] = useState<{ urls: string[], index: number } | null>(null)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null))
   }, [])
 
-  useEffect(() => {
+  const loadFeed = () => {
+    setLoading(true)
+    setFeedError(false)
     fetchPosts()
       .then(setPosts)
-      .catch(err => { console.error(err); toast.error("Failed to load feed.") })
+      .catch(err => { console.error(err); setFeedError(true) })
       .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    loadFeed()
   }, [])
 
   return (
@@ -669,6 +676,22 @@ export default function FeedPage() {
         {/* Feed */}
         {loading ? (
           <div className="flex justify-center py-16"><Spinner className="size-6 text-primary" /></div>
+        ) : feedError ? (
+          <div className="flex flex-col items-center gap-4 py-16 text-center">
+            <div className="size-14 rounded-full bg-red-500/10 flex items-center justify-center">
+              <span className="text-2xl">⚠️</span>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-white">Couldn't load the feed</p>
+              <p className="text-xs text-muted-foreground mt-1">There was a problem connecting to the server.</p>
+            </div>
+            <button
+              onClick={loadFeed}
+              className="px-4 py-2 rounded-full bg-[#7F5AF0] text-white text-xs font-semibold hover:bg-[#6b47d6] transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
         ) : posts.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-16 text-center">
             <Globe className="size-10 text-muted-foreground/40" />
