@@ -429,7 +429,7 @@ function BookingRow({
               <Users className="size-3" />
               {booking.guest_count} {booking.guest_count === 1 ? "guest" : "guests"}
             </span>
-            <span>KES {booking.total_price.toLocaleString()}</span>
+            <span>${booking.total_price ? `$${booking.total_price.toLocaleString()} USD` : "$0 USD"}</span>
             {countdown && (booking.status === "confirmed" || booking.status === "pending") && (
               <span className="inline-flex items-center rounded-full bg-teal-500/10 px-2 py-0.5 text-[10px] font-semibold text-teal-400">
                 ⏱️ {countdown}
@@ -560,7 +560,7 @@ function PendingBookingRow({
                 <Users className="size-3" />
                 {booking.guest_count} {booking.guest_count === 1 ? "guest" : "guests"}
               </span>
-              <span>KES {booking.total_price.toLocaleString()}</span>
+              <span>${booking.total_price ? `$${booking.total_price.toLocaleString()} USD` : "$0 USD"}</span>
             </div>
           </div>
         </div>
@@ -978,7 +978,7 @@ export function HostDashboard({
         <StatCard
           icon={DollarSign}
           label="Total Earnings"
-          value={`KES ${totalEarnings.toLocaleString()}`}
+          value={`$${totalEarnings.toLocaleString()} USD`}
           accent
         />
         <StatCard
@@ -1183,7 +1183,7 @@ function UrgentRequestsSection({
                     {req.experience_type?.join(", ") || "General"}
                   </span>
                   <span className="font-semibold text-emerald-400">
-                    Budget: {req.budget} KES/hr
+                    Budget: ${req.budget ? `$${req.budget} USD/hr` : "N/A"}
                   </span>
                 </div>
                 <p className="text-[10px] text-rose-400 font-mono font-bold">
@@ -1237,7 +1237,7 @@ function TravelerDashboard({ bookings = [], onChat }: { bookings?: Booking[]; on
         <StatCard
           icon={TrendingUp}
           label="Total Spent"
-          value={`KES ${totalSpent.toLocaleString()}`}
+          value={`$${totalSpent.toLocaleString()} USD`}
         />
       </div>
 
@@ -1714,7 +1714,7 @@ export default function DashboardPage() {
                       <StatCard
                         icon={DollarSign}
                         label="Total Earnings"
-                        value={`KES ${hostBookings.filter((b) => b.status === "completed" || b.status === "confirmed").reduce((sum, b) => sum + b.total_price, 0).toLocaleString()}`}
+                        value={`$${hostBookings.filter((b) => b.status === "completed" || b.status === "confirmed").reduce((sum, b) => sum + b.total_price, 0).toLocaleString()} USD`}
                         accent
                       />
                       <StatCard

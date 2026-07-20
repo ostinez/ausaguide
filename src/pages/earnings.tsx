@@ -40,8 +40,8 @@ import { toast } from "sonner"
 
 const TAX_RATE = 0.05
 
-function fmt(amount: number, currency = "KES") {
-  return `${currency} ${amount.toLocaleString("en-KE", { minimumFractionDigits: 0 })}`
+function fmt(amount: number, _currency = "USD") {
+  return `$${amount.toLocaleString(undefined, { minimumFractionDigits: 0 })} USD`
 }
 
 function StatCard({
@@ -310,7 +310,7 @@ export default function EarningsDashboard() {
                   <span className="inline-block size-2 rounded-full bg-teal-500 animate-pulse" />
                   Revenue — Last 30 Days
                 </CardTitle>
-                <CardDescription>Daily earnings values in KES</CardDescription>
+                <CardDescription>Daily earnings values in USD</CardDescription>
               </CardHeader>
               <CardContent>
                 {daily.every((d) => d.amount === 0) ? (

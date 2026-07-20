@@ -76,7 +76,7 @@ export default function EditTourPage() {
   const [price, setPrice] = useState("3500")
   const [physicalPrice, setPhysicalPrice] = useState("3500")
   const [virtualPrice, setVirtualPrice] = useState("1500")
-  const [currency, setCurrency] = useState("KES")
+  const [currency, setCurrency] = useState("USD")
   const [groupDiscount, setGroupDiscount] = useState("10")
   const [groupSizeThreshold, setGroupSizeThreshold] = useState("5")
 
@@ -600,9 +600,7 @@ export default function EditTourPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="KES">KES</SelectItem>
                           <SelectItem value="USD">USD</SelectItem>
-                          <SelectItem value="EUR">EUR</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

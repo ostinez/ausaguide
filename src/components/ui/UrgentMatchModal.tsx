@@ -32,7 +32,7 @@ export function UrgentMatchModal({ isOpen, onClose }: UrgentMatchModalProps) {
   const [selectedCity, setSelectedCity] = useState("Nairobi")
 
   // Form Fields
-  const [budget, setBudget] = useState<number>(3000)
+  const [budget, setBudget] = useState<number>(25)
   const [experienceType, setExperienceType] = useState<string>("culture")
 
   // Real-time tracking
@@ -259,23 +259,23 @@ export function UrgentMatchModal({ isOpen, onClose }: UrgentMatchModalProps) {
               {/* Budget Option */}
               <div className="space-y-2">
                 <div className="flex justify-between text-xs font-semibold text-slate-300">
-                  <label htmlFor="hourly-budget-input">Hourly Budget (KES)</label>
-                  <span className="text-violet-400 font-bold">{budget} KES/hr</span>
+                  <label htmlFor="hourly-budget-input">Hourly Budget (USD)</label>
+                  <span className="text-violet-400 font-bold">${budget} USD/hr</span>
                 </div>
                 <input
                   id="hourly-budget-input"
                   type="range"
-                  min="1000"
-                  max="10000"
-                  step="500"
+                  min="10"
+                  max="100"
+                  step="5"
                   value={budget}
                   onChange={(e) => setBudget(Number(e.target.value))}
                   className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-violet-500"
-                  aria-label="Hourly Budget (KES)"
+                  aria-label="Hourly Budget (USD)"
                 />
                 <div className="flex justify-between text-[10px] text-slate-500">
-                  <span>1,000 KES</span>
-                  <span>10,000 KES</span>
+                  <span>$10 USD</span>
+                  <span>$100 USD</span>
                 </div>
               </div>
 

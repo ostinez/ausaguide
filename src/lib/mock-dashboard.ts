@@ -48,7 +48,7 @@ const tour = (
   description: "",
   short_description: "",
   price,
-  currency: "KES",
+  currency: "USD",
   duration_hours: 3,
   max_guests: 8,
   location_name: "Nairobi, Kenya",

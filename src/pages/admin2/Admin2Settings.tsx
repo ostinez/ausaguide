@@ -36,8 +36,27 @@ export default function Admin2Settings() {
   const [settings, setSettings] = useState<PlatformSettings>(loadSettings)
   const [adminCount, setAdminCount] = useState<number | null>(null)
 
-  // Fetch some live stats to show the settings are connected to real data
+  // Fetch settings from database on mount, along with admin count
   useEffect(() => {
+    async function fetchSettings() {
+      try {
+        const { data, error } = await supabase.from("system_settings").select("*")
+        if (!error && data) {
+          const loaded: Partial<PlatformSettings> = {}
+          for (const row of data) {
+            if (row.key === "system_maintenance_mode") loaded.maintenanceMode = row.value === "true"
+            if (row.key === "system_commission_rate") loaded.commissionRate = parseInt(row.value) || 15
+            if (row.key === "system_support_email") loaded.supportEmail = row.value
+            if (row.key === "system_max_tours_per_host") loaded.maxToursPerHost = parseInt(row.value) || 10
+          }
+          setSettings(prev => ({ ...prev, ...loaded }))
+        }
+      } catch (err) {
+        console.warn("Failed to load settings from DB:", err)
+      }
+    }
+    fetchSettings()
+
     supabase
       .from("profiles")
       .select("id", { count: "exact" })
@@ -49,12 +68,23 @@ export default function Admin2Settings() {
     setLoading(true)
     setSaved(false)
     try {
-      // Persist to localStorage (instant, works without a settings table)
+      // 1. Save to local storage for local fallback
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))
 
-      // Also write commission rate to the profiles table as a platform marker
-      // (Future: replace with a real `platform_settings` Supabase table)
-      await new Promise((r) => setTimeout(r, 500)) // small delay for UX
+      // 2. Save key-value pairs in the database system_settings table
+      const rows = [
+        { key: "system_maintenance_mode", value: String(settings.maintenanceMode) },
+        { key: "system_commission_rate", value: String(settings.commissionRate) },
+        { key: "system_support_email", value: settings.supportEmail },
+        { key: "system_max_tours_per_host", value: String(settings.maxToursPerHost) },
+      ]
+
+      const { error } = await supabase
+        .from("system_settings")
+        .upsert(rows, { onConflict: "key" })
+
+      if (error) throw error
+
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch (err) {

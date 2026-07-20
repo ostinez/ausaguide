@@ -143,9 +143,10 @@ export default function Home() {
             </Link>
 
             {/* Find a Host Card */}
-            <div 
+            <button 
+              type="button"
               onClick={() => setUrgentMatchOpen(true)}
-              className="group relative rounded-2xl border border-white/10 p-8 backdrop-blur-xl bg-card/20 shadow-2xl hover:border-[#2CB67D]/40 hover:bg-[#121214]/40 transition-all duration-300 flex flex-col justify-between h-48 cursor-pointer"
+              className="group relative rounded-2xl border border-white/10 p-8 backdrop-blur-xl bg-card/20 shadow-2xl hover:border-[#2CB67D]/40 hover:bg-[#121214]/40 transition-all duration-300 flex flex-col justify-between h-48 cursor-pointer text-left w-full"
             >
               <div className="space-y-2">
                 <h3 className="text-xl font-bold text-white group-hover:text-[#2CB67D] transition-colors">Find a Host Now</h3>
@@ -157,7 +158,7 @@ export default function Home() {
                 <span>Match Instantly</span>
                 <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
               </div>
-            </div>
+            </button>
           </div>
         </div>
       </section>

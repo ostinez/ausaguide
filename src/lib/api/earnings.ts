@@ -52,7 +52,7 @@ export async function fetchHostEarnings(hostId: string): Promise<{
     tour_title: b.tour?.title ?? "Unknown Tour",
     guest_name: b.guest_name,
     amount: Number(b.total_price),
-    currency: b.currency ?? "KES",
+    currency: b.currency ?? "USD",
     status: b.status as any,
     booking_date: b.booking_date,
     created_at: b.created_at,

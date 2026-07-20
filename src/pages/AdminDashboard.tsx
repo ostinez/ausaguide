@@ -70,8 +70,8 @@ function getInitials(name: string) {
   return name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2)
 }
 
-function fmt(amount: number, currency = "KES") {
-  return `${currency} ${amount.toLocaleString("en-KE")}`
+function fmt(amount: number, _currency = "USD") {
+  return `$${amount.toLocaleString()} USD`
 }
 
 function downloadCSV(rows: any[], filename: string) {
@@ -1339,7 +1339,7 @@ export default function AdminDashboard() {
                                 </td>
                                 <td className="px-4 py-3 text-xs text-white/80">{t.host_name}</td>
                                 <td className="px-4 py-3 text-xs font-medium text-white whitespace-nowrap">
-                                  KES {t.physical_price} / KES {t.virtual_price} (V)
+                                  ${t.physical_price ? `$${t.physical_price} USD` : "N/A"} / ${t.virtual_price ? `$${t.virtual_price} USD` : "N/A"} (V)
                                 </td>
                                 <td className="px-4 py-3 text-xs text-white/70">{t.capacity || "Unlimited"}</td>
                                 <td className="px-4 py-3">
@@ -1442,7 +1442,7 @@ export default function AdminDashboard() {
                                 <td className="px-4 py-3 text-xs text-muted-foreground max-w-[130px] truncate">{b.tour_title}</td>
                                 <td className="px-4 py-3 text-xs text-muted-foreground">{b.host_name}</td>
                                 <td className="px-4 py-3 text-xs font-semibold text-foreground whitespace-nowrap">
-                                  KES {Number(b.total_price).toLocaleString()}
+                                  ${b.total_price ? `$${Number(b.total_price).toLocaleString()} USD` : "N/A"}
                                 </td>
                                 <td className="px-4 py-3">
                                   <Badge className={`text-[10px] ${

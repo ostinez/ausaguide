@@ -104,7 +104,7 @@ export default function Admin2Bookings() {
                       {new Date(booking.booking_date || booking.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 text-gray-300">
-                      KES {booking.total_price?.toLocaleString() || 0}
+                      ${booking.total_price ? `$${booking.total_price.toLocaleString()} USD` : '$0 USD'}
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize

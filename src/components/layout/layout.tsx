@@ -8,6 +8,8 @@ import { ProfileCompletionBanner } from "@/components/ui/ProfileCompletionBanner
 export function Layout() {
   const location = useLocation()
   const [userId, setUserId] = useState<string | null>(localStorage.getItem("user_id"))
+  const [userRole, setUserRole] = useState<string | null>(localStorage.getItem("user_role"))
+  const [maintenanceMode, setMaintenanceMode] = useState(false)
   const impersonatorId = localStorage.getItem("admin_impersonator_id")
   const impersonatedUserId = localStorage.getItem("user_id")
   const [impersonatedName, setImpersonatedName] = useState<string | null>(null)
@@ -77,7 +79,7 @@ export function Layout() {
     }
   }, [location.pathname, authInitialized])
 
-  // 2. Setup auth state and storage synchronization listeners ONCE on mount
+  // 2. Setup auth state, storage synchronization, and maintenance mode detection
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       try {
@@ -95,6 +97,7 @@ export function Layout() {
             await supabase.auth.signOut()
             localStorage.removeItem("user_id")
             localStorage.removeItem("user_role")
+            setUserRole(null)
             window.location.href = "/auth?error=banned"
             return
           }
@@ -102,8 +105,10 @@ export function Layout() {
           const role = profile?.role
           if (role) {
             localStorage.setItem("user_role", role)
+            setUserRole(role)
           } else {
             localStorage.removeItem("user_role")
+            setUserRole(null)
           }
 
           if (event === "SIGNED_IN") {
@@ -122,6 +127,7 @@ export function Layout() {
           }
         } else {
           setUserId(null)
+          setUserRole(null)
           localStorage.removeItem("user_id")
           localStorage.removeItem("user_role")
         }
@@ -134,9 +140,45 @@ export function Layout() {
 
     const handleStorage = () => {
       setUserId(localStorage.getItem("user_id"))
+      setUserRole(localStorage.getItem("user_role"))
     }
     window.addEventListener("storage", handleStorage)
     const interval = setInterval(handleStorage, 1000)
+
+    // Load initial maintenance mode status
+    async function checkMaintenance() {
+      try {
+        const { data, error } = await supabase
+          .from("system_settings")
+          .select("value")
+          .eq("key", "system_maintenance_mode")
+          .maybeSingle()
+        if (!error && data) {
+          setMaintenanceMode(data.value === "true")
+        }
+      } catch (err) {
+        console.warn("Failed to check maintenance mode status:", err)
+      }
+    }
+    checkMaintenance()
+
+    // Real-time subscription to system_settings
+    const settingsChannel = supabase
+      .channel("system-settings-maintenance")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "system_settings",
+        },
+        (payload: any) => {
+          if (payload.new && payload.new.key === "system_maintenance_mode") {
+            setMaintenanceMode(payload.new.value === "true")
+          }
+        }
+      )
+      .subscribe()
 
     // Track active presence on site
     const anonId = "anon-" + Math.random().toString(36).substring(2, 9)
@@ -179,6 +221,8 @@ export function Layout() {
       subscription.unsubscribe()
       presenceChannel.unsubscribe()
       supabase.removeChannel(presenceChannel)
+      settingsChannel.unsubscribe()
+      supabase.removeChannel(settingsChannel)
       window.removeEventListener("storage", handleStorage)
       clearInterval(interval)
     }
@@ -192,6 +236,7 @@ export function Layout() {
     }
     localStorage.removeItem("user_id")
     localStorage.removeItem("user_role")
+    setUserRole(null)
     window.location.href = "/"
   }
 
@@ -220,6 +265,49 @@ export function Layout() {
   ]
 
   const isAuthOrOnboarding = location.pathname === "/auth" || location.pathname === "/onboarding"
+
+  if (maintenanceMode && userRole !== "admin" && location.pathname !== "/auth") {
+    return (
+      <div className="flex min-h-svh flex-col items-center justify-center bg-[#0D0D11] text-white px-4 relative overflow-hidden">
+        {/* Animated Gradient Background Shapes */}
+        <div className="absolute top-1/4 left-1/4 size-72 rounded-full bg-[#7F5AF0]/10 blur-[100px] animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 size-80 rounded-full bg-[#2CB67D]/5 blur-[100px] animate-pulse" />
+
+        <div className="max-w-md w-full text-center space-y-8 z-10 p-8 rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-xl shadow-2xl">
+          <div className="flex justify-center">
+            <div className="size-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+              <svg xmlns="http://www.w3.org/2000/svg" className="size-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+              </svg>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+              Scheduled Maintenance
+            </h1>
+            <p className="text-sm text-slate-400 leading-relaxed">
+              Ausaguide is currently undergoing essential upgrades to improve your experience. We will be back online shortly!
+            </p>
+          </div>
+
+          <div className="pt-6 border-t border-white/5 flex flex-col items-center justify-center gap-2">
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#2CB67D]"></span>
+              </span>
+              <span>Systems active. Monitoring upgrade progress...</span>
+            </div>
+            
+            <Link to="/auth" className="text-xs text-[#7F5AF0] hover:text-[#7F5AF0]/80 underline mt-4 transition-colors">
+              Admin Login Bypass
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-svh flex-col bg-[#16161A]">

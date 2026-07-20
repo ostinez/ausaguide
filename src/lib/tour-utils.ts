@@ -115,11 +115,8 @@ export function getTourFilterTags(tour: {
   return tags
 }
 
-export function formatTourPrice(price: number, currency: string): string {
-  if (currency === "KES") {
-    return `KES ${price.toLocaleString()}`
-  }
-  return `${currency} ${price.toLocaleString()}`
+export function formatTourPrice(price: number, _currency?: string): string {
+  return `$${price.toLocaleString()} USD`
 }
 
 export function getHostInitials(fullName: string): string {

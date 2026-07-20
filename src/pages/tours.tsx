@@ -36,9 +36,9 @@ type PriceFilter = "all" | "under4000" | "4000to8000" | "8000plus"
 
 
 const PRICE_FILTERS: { label: string; value: PriceFilter }[] = [
-  { label: "Under KES 4,000", value: "under4000" },
-  { label: "KES 4,000–8,000", value: "4000to8000" },
-  { label: "KES 8,000+", value: "8000plus" },
+  { label: "Under $30", value: "under4000" },
+  { label: "$30–$60", value: "4000to8000" },
+  { label: "$60+", value: "8000plus" },
 ]
 
 function matchesPrice(price: number, filter: PriceFilter): boolean {
