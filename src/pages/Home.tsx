@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { Link } from "react-router-dom"
 import { HeroGlobe } from "@/components/landing/hero-globe"
 import { UrgentMatchModal } from "@/components/ui/UrgentMatchModal"
 import { ToursPreview } from "@/components/landing/tours-preview"
@@ -14,7 +15,7 @@ import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 import { sendGeneralWaitlistEmail } from "@/lib/api/emails"
 import { checkRateLimit } from "@/lib/api/rate-limit"
-import { Sparkles, User, Mail, Loader2, CheckCircle2 } from "lucide-react"
+import { Sparkles, User, Mail, Loader2, CheckCircle2, ArrowRight } from "lucide-react"
 
 export default function Home() {
   const [urgentMatchOpen, setUrgentMatchOpen] = useState(false)
@@ -109,8 +110,58 @@ export default function Home() {
         }}
       />
       <div id="hero" className="dark-section">
-        <HeroGlobe onFindHostNow={() => setUrgentMatchOpen(true)} />
+        <HeroGlobe />
       </div>
+
+      {/* Action Selector Section */}
+      <section className="bg-background py-20 px-6 relative overflow-hidden flex flex-col items-center border-b border-white/5">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
+        <div className="relative z-10 w-full max-w-4xl mx-auto space-y-10">
+          <div className="text-center space-y-3">
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">What are you looking for?</h2>
+            <p className="text-sm text-gray-400 max-w-md mx-auto leading-relaxed">
+              Explore planned local journeys or match instantly with an active guide nearby.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+            {/* Find a Tour Card */}
+            <Link 
+              to="/tours" 
+              className="group relative rounded-2xl border border-white/10 p-8 backdrop-blur-xl bg-card/20 shadow-2xl hover:border-[#7F5AF0]/40 hover:bg-[#121214]/40 transition-all duration-300 flex flex-col justify-between h-48 cursor-pointer"
+            >
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold text-white group-hover:text-[#7F5AF0] transition-colors">Find a Tour</h3>
+                <p className="text-xs text-gray-400 leading-relaxed">
+                  Browse immersive virtual and in-person experiences led by certified guides.
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs font-bold text-[#7F5AF0] group-hover:underline">
+                <span>Browse Tours</span>
+                <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
+              </div>
+            </Link>
+
+            {/* Find a Host Card */}
+            <div 
+              onClick={() => setUrgentMatchOpen(true)}
+              className="group relative rounded-2xl border border-white/10 p-8 backdrop-blur-xl bg-card/20 shadow-2xl hover:border-[#2CB67D]/40 hover:bg-[#121214]/40 transition-all duration-300 flex flex-col justify-between h-48 cursor-pointer"
+            >
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold text-white group-hover:text-[#2CB67D] transition-colors">Find a Host Now</h3>
+                <p className="text-xs text-gray-400 leading-relaxed">
+                  Connect live and matching with nearby hosts for real-time guidance.
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs font-bold text-[#2CB67D] group-hover:underline">
+                <span>Match Instantly</span>
+                <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <UrgentMatchModal isOpen={urgentMatchOpen} onClose={() => setUrgentMatchOpen(false)} />
 
       {/* Homepage Waitlist Section */}

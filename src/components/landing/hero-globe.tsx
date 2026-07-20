@@ -9,9 +9,8 @@ import {
   type ReactNode,
   type FormEvent,
 } from "react"
-import { useNavigate, Link } from "react-router-dom"
-import { Button } from "@/components/ui/button"
-import { Search, ArrowRight } from "lucide-react"
+import { useNavigate } from "react-router-dom"
+import { Search } from "lucide-react"
 import { cn } from "@/lib/utils"
 import MagicRings from "@/components/ui/MagicRings"
 import { TextType } from "@/components/ui/TextType"
@@ -322,7 +321,7 @@ function GlobeVisual() {
 
 // ── Public export ────────────────────────────────────────────────────────────
 
-export function HeroGlobe({ onFindHostNow }: { onFindHostNow?: () => void }) {
+export function HeroGlobe() {
   const navigate = useNavigate()
   const [query, setQuery] = useState("")
   const [searchExpanded, setSearchExpanded] = useState(false)
@@ -478,23 +477,6 @@ export function HeroGlobe({ onFindHostNow }: { onFindHostNow?: () => void }) {
             />
           </div>
         </form>
-
-        <div className="flex flex-col sm:flex-row gap-3 w-full justify-center max-w-[450px]">
-          <Link to="/tours" className="w-full">
-            <Button size="lg" className="rounded-full w-full bg-[#121214]/60 border border-white/10 hover:bg-[#121214]/80 text-white font-bold cursor-pointer transition-all duration-300">
-              Find a Tour
-              <ArrowRight className="ml-1 size-4" />
-            </Button>
-          </Link>
-          <Button
-            size="lg"
-            onClick={onFindHostNow}
-            className="rounded-full w-full bg-gradient-to-r from-[#7F5AF0] to-[#2CB67D] hover:opacity-95 text-white border-0 font-bold cursor-pointer transition-all duration-300 shadow-[0_4px_14px_rgba(127,90,240,0.3)] hover:shadow-[0_6px_20px_rgba(44,182,125,0.4)]"
-          >
-            Find a Host Now
-          </Button>
-        </div>
-
         {/* Subtitles & Tagline */}
         <div className="flex flex-col gap-1 select-none">
           <p className="text-[#2CB67D] text-xs sm:text-sm md:text-base font-bold tracking-wide uppercase">
