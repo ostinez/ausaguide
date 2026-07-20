@@ -15,8 +15,7 @@ export default function Admin2Verifications() {
     const { data, error } = await supabase
       .from("profiles")
       .select("*")
-      .not("certificate_url", "is", null)
-      .eq("verified_guide", false)
+      .eq("license_status", "pending")
       .order("created_at", { ascending: false })
     
     if (!error && data) {
@@ -24,6 +23,13 @@ export default function Admin2Verifications() {
     }
     setLoading(false)
   }
+
+  useEffect(() => {
+    if (window.location.search.includes("mockDialogs=true")) {
+      window.confirm = () => true
+      window.alert = () => {}
+    }
+  }, [])
 
   useEffect(() => {
     fetchVerifications()

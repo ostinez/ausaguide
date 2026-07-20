@@ -225,3 +225,38 @@ export async function fetchUserFollows(userId: string): Promise<string[]> {
   if (error) throw error
   return (data ?? []).map((r: any) => r.following_id)
 }
+
+export async function trackView(targetType: "tour" | "post" | "journal" | "host", targetId: string, userId: string | null): Promise<void> {
+  const sessionKey = `viewed_${targetType}_${targetId}`
+  if (sessionStorage.getItem(sessionKey)) {
+    return // debounced once per session per target
+  }
+  
+  // Set session storage item to block duplicates
+  sessionStorage.setItem(sessionKey, "1")
+
+  // Generate or get session ID
+  let sessionId = sessionStorage.getItem("ausaguide_session_id")
+  if (!sessionId) {
+    sessionId = typeof crypto.randomUUID === 'function' 
+      ? crypto.randomUUID() 
+      : Math.random().toString(36).substring(2) + Date.now().toString(36)
+    sessionStorage.setItem("ausaguide_session_id", sessionId)
+  }
+
+  try {
+    const { error } = await supabase
+      .from("views")
+      .insert({
+        user_id: userId || null,
+        target_type: targetType,
+        target_id: targetId,
+        session_id: sessionId,
+      })
+    if (error) {
+      console.error(`Failed to track view for ${targetType} ${targetId}:`, error)
+    }
+  } catch (err) {
+    console.error("View tracking error:", err)
+  }
+}

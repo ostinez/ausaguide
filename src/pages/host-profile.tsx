@@ -15,6 +15,7 @@ import { fetchToursByHostId } from "@/lib/api/tours"
 import { fetchWishlist, addToWishlist, removeFromWishlist } from "@/lib/api/wishlist"
 import { toast } from "sonner"
 import { formatSocialLink } from "@/lib/utils"
+import { trackView } from "@/lib/api/content"
 
 const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -145,6 +146,9 @@ export default function HostProfilePage() {
         } else {
           setIsBusy(false)
         }
+
+        // Track host view
+        trackView("host", id, userId)
 
       } catch (err: any) {
         setError(err.message || "Failed to load host profile")

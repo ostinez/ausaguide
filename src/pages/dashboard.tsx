@@ -1677,15 +1677,15 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
                   {/* Left Column: stats, notifications, bookings */}
                   <div className="space-y-8 lg:col-span-2">
-                    {profile?.tra_number && (
+                    {(profile?.tra_number || profile?.license_status === 'pending' || profile?.verified_guide || profile?.rejected_as_guide) && (
                       <div className="space-y-4">
-                        {!profile.verified_guide && !profile.rejected_as_guide && (
+                        {profile.license_status === 'pending' && (
                           <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 flex items-start gap-3">
                             <Clock className="size-5 text-amber-500 shrink-0 mt-0.5" />
                             <div>
-                              <h4 className="font-semibold text-sm text-amber-400">⏳ Certified Guide Application Under Review</h4>
+                              <h4 className="font-semibold text-sm text-amber-400">⏳ Certified Guide Application Pending</h4>
                               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                                Your Certified Guide application is under review. You are currently a Local Host.
+                                Your Certified Guide application is pending review. You are currently a Local Host.
                               </p>
                             </div>
                           </div>

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
 import { supabase } from "@/lib/supabase"
-import { fetchJournals, createJournal, updateJournal, deleteJournal, type Journal } from "@/lib/api/content"
+import { fetchJournals, createJournal, updateJournal, deleteJournal, trackView, type Journal } from "@/lib/api/content"
 import { toast } from "sonner"
 import { format } from "date-fns"
 import { useSEO } from "@/hooks/useSEO"
@@ -125,6 +125,13 @@ export default function JournalPage() {
       .catch(err => { console.error(err); toast.error("Failed to load journals.") })
       .finally(() => setLoading(false))
   }, [currentUserId])
+
+  // Track views when a journal entry is viewed
+  useEffect(() => {
+    if (mode === "view" && selected) {
+      trackView("journal", selected.id, currentUserId)
+    }
+  }, [mode, selected?.id, currentUserId])
 
   const resetForm = () => {
     setFormTitle("")

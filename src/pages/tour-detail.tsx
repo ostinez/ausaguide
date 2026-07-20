@@ -34,6 +34,7 @@ import { fetchTourById } from "@/lib/api/tours"
 import { fetchBookingsByGuestId, fetchProfileByRole } from "@/lib/api/hosts"
 import { fetchHostAvailability, fetchHostSettings } from "@/lib/api/availability"
 import { trackEvent } from "@/lib/posthog"
+import { trackView } from "@/lib/api/content"
 import type { Tour, Booking, HostAvailability, HostSettings } from "@/lib/types"
 import { formatTourPrice, getHostInitials, getTourImage } from "@/lib/tour-utils"
 import { addDays } from "date-fns"
@@ -104,15 +105,9 @@ export default function TourDetailPage() {
             category: t.category,
             tour_type: t.tour_type,
           })
-          // Increment views count in database
-          const newViews = (t.views || 0) + 1
-          supabase
-            .from("tours")
-            .update({ views: newViews })
-            .eq("id", t.id)
-            .then(({ error }) => {
-              if (error) console.error("Failed to increment tour views:", error)
-            })
+          // Record real view tracking in views table (debounced)
+          const userId = localStorage.getItem("user_id")
+          trackView("tour", t.id, userId)
 
           const [avs, sets] = await Promise.all([
             fetchHostAvailability(t.host_id),

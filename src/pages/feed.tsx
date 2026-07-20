@@ -6,7 +6,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { supabase } from "@/lib/supabase"
-import { fetchPosts, createPost, updatePost, deletePost, toggleFollow, fetchUserFollows, type Post } from "@/lib/api/content"
+import { fetchPosts, createPost, updatePost, deletePost, toggleFollow, fetchUserFollows, trackView, type Post } from "@/lib/api/content"
 import { cn, formatSocialLink } from "@/lib/utils"
 import { toast } from "sonner"
 import { useSEO } from "@/hooks/useSEO"
@@ -331,6 +331,13 @@ function PostCard({
   const [editContent, setEditContent] = useState(post.content)
   const [saving, setSaving] = useState(false)
   const [loadingFollow, setLoadingFollow] = useState(false)
+
+  // Track post view when rendered
+  useEffect(() => {
+    if (post.id) {
+      trackView("post", post.id, currentUserId)
+    }
+  }, [post.id, currentUserId])
 
   const [editInstagram, setEditInstagram] = useState(post.instagram || "")
   const [editTiktok, setEditTiktok] = useState(post.tiktok || "")
