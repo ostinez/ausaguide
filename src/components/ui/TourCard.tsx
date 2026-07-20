@@ -156,7 +156,7 @@ export const TourCard = memo(function TourCard({ tour, isWishlisted, onToggleWis
             )}
             {tour.host?.verified_guide ? (
               <span className="text-[10px] bg-blue-500/10 border border-blue-500/30 text-blue-400 rounded-full px-2 py-0.5 font-bold flex items-center gap-0.5">
-                ✅ Verified Guide
+                ✅ Certified Guide
               </span>
             ) : (
               <span className="text-[10px] bg-teal-500/10 border border-teal-500/30 text-teal-400 rounded-full px-2 py-0.5 font-bold">
