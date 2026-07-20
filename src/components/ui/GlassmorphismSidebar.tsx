@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react"
+import { createPortal } from "react-dom"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import {
   LayoutDashboard,
@@ -149,7 +150,7 @@ export function GlassmorphismSidebar({
     return view === item.id
   }
 
-  return (
+  return createPortal(
     <>
       {/* ── Overlay ── */}
       <div
@@ -161,8 +162,8 @@ export function GlassmorphismSidebar({
           /* Sit above most content including fixed navbar */
           zIndex: 140,
           background: "rgba(0,0,0,0.55)",
-          backdropFilter: "blur(10px)",
-          WebkitBackdropFilter: "blur(10px)",
+          backdropFilter: isOpen ? "blur(10px)" : "none",
+          WebkitBackdropFilter: isOpen ? "blur(10px)" : "none",
           opacity: isOpen ? 1 : 0,
           pointerEvents: isOpen ? "auto" : "none",
           transition: "opacity 0.25s ease",
@@ -361,6 +362,7 @@ export function GlassmorphismSidebar({
           </div>
         </div>
       </aside>
-    </>
+    </>,
+    document.body
   )
 }

@@ -1446,15 +1446,16 @@ export default function DashboardPage() {
       if (profile.role === "host") {
         setHostProfile(profile)
         const hostRec = await fetchHostByUserId(profile.id)
+        console.log("[loadDashboard] Fetched host profile:", profile)
+        console.log("[loadDashboard] Fetched host record:", hostRec)
         setHostRecord(hostRec)
-        if (hostRec) {
-          const [tours, bookings] = await Promise.all([
-            fetchToursByHostId(profile.id),
-            fetchBookingsByHostId(profile.id),
-          ])
-          setHostTours(tours)
-          setHostBookings(bookings)
-        }
+        
+        const [tours, bookings] = await Promise.all([
+          fetchToursByHostId(profile.id),
+          fetchBookingsByHostId(profile.id),
+        ])
+        setHostTours(tours)
+        setHostBookings(bookings)
       }
 
       const bookings = await fetchBookingsByGuestId(profile.id)
@@ -1689,14 +1690,9 @@ export default function DashboardPage() {
             <p className="text-lg font-semibold text-foreground">Could not load dashboard</p>
             <p className="mt-2 text-sm text-muted-foreground">{error}</p>
           </div>
-        ) : userRoleState === "host" ? (
-          !hostRecord ? (
-            <div className="py-16 text-center">
-              <p className="text-lg font-semibold text-foreground">Host profile pending</p>
-              <p className="mt-2 text-sm text-muted-foreground">Your host profile registration is pending review.</p>
-            </div>
-          ) : hostRecord.status === "pending" ? (
-            <Card>
+        ) : userRoleState === "host" && !(profile?.verified_guide === true || profile?.host_tier === "certified_guide" || hostRecord?.status === "approved") ? (
+          !hostRecord || hostRecord.status === "pending" ? (
+            <Card className="border-amber-500/30 bg-amber-500/5">
               <CardContent className="flex flex-col items-center justify-center py-16 text-center">
                 <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-amber-500/10">
                   <Clock className="size-8 text-amber-500" />
@@ -1725,6 +1721,12 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           ) : (
+            <div className="py-16 text-center">
+              <p className="text-lg font-semibold text-foreground">Host profile pending</p>
+              <p className="mt-2 text-sm text-muted-foreground">Your host profile registration is pending review.</p>
+            </div>
+          )
+        ) : userRoleState === "host" ? (
             <div className="space-y-8">
               {view === "dashboard" && (
                 <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
@@ -2015,8 +2017,7 @@ export default function DashboardPage() {
                 <HostSettingsPanel hostId={hostProfile?.id || ""} pendingCount={hostBookings.filter((b) => b.status === "pending").length} />
               )}
             </div>
-          )
-        ) : view === "reviews" ? (
+          ) : view === "reviews" ? (
           userRoleState === "host" ? (
             <ReviewList hostId={hostRecord?.id} />
           ) : (
