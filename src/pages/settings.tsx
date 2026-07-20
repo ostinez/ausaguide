@@ -36,7 +36,7 @@ export default function SettingsPage() {
     { id: "personal", label: "Personal Info", icon: User },
     { id: "interests", label: "Preferences", icon: Tag },
     { id: "notifications", label: "Notifications", icon: Bell },
-    { id: "privacy", label: "Privacy", icon: Lock },
+    { id: "privacy", label: "Privacy & Data", icon: Lock },
     { id: "security", label: "Password & 2FA", icon: Shield },
   ]
 
@@ -212,38 +212,35 @@ export default function SettingsPage() {
     if (!userId) return
     setExporting(true)
     try {
-      const [profileRes, toursRes, bookingsRes, messagesRes, postsRes, journalsRes] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
-        supabase.from("tours").select("*").eq("host_id", userId),
-        supabase.from("bookings").select("*").or(`guest_id.eq.${userId},host_id.eq.${userId}`),
-        supabase.from("messages").select("*").or(`sender_id.eq.${userId},receiver_id.eq.${userId}`),
-        supabase.from("posts").select("*").eq("user_id", userId),
-        supabase.from("journals").select("*").eq("user_id", userId),
-      ])
-
-      const exportData = {
-        exported_at: new Date().toISOString(),
-        profile: profileRes.data || null,
-        tours: toursRes.data || [],
-        bookings: bookingsRes.data || [],
-        messages: messagesRes.data || [],
-        posts: postsRes.data || [],
-        journals: journalsRes.data || [],
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      
+      if (!token) {
+        throw new Error("No active session. Please log in again.")
       }
 
+      // Call Supabase Edge Function
+      const { data, error } = await supabase.functions.invoke("export-user-data", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (error) throw error
+
       const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
-        JSON.stringify(exportData, null, 2)
+        JSON.stringify(data, null, 2)
       )}`
       const downloadAnchor = document.createElement("a")
       downloadAnchor.setAttribute("href", jsonString)
-      downloadAnchor.setAttribute("download", `ausaguide_data_export_${userId}.json`)
+      downloadAnchor.setAttribute("download", "user-data-export.json")
       document.body.appendChild(downloadAnchor)
       downloadAnchor.click()
       downloadAnchor.remove()
       toast.success("Your data has been successfully exported and downloaded.")
-    } catch (err) {
+    } catch (err: any) {
       console.error("Data export failed:", err)
-      toast.error("Failed to export data. Please try again.")
+      toast.error(err.message || "Failed to export data. Please try again.")
     } finally {
       setExporting(false)
     }
@@ -703,7 +700,7 @@ export default function SettingsPage() {
 
             {activeTab === "privacy" && (
               <div className="space-y-5">
-                <h2 className="text-lg font-bold text-foreground">Privacy Settings</h2>
+                <h2 className="text-lg font-bold text-foreground">Privacy & Data Settings</h2>
                 
                 {/* Public Profile toggle */}
                 <div className="flex items-start justify-between rounded-xl border border-border/50 bg-card/30 px-5 py-4">
