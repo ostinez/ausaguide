@@ -1510,15 +1510,48 @@ export default function DashboardPage() {
     }
   }, [userRoleState, navigate, loadDashboard])
 
-  // Fetch latest profile status on mount and keep polling if pending
+  // Force Re-fetch on Dashboard Load
   useEffect(() => {
-    if (userId && hostProfile?.license_status === "pending") {
-      const interval = setInterval(() => {
-        loadDashboard()
-      }, 5000) // Poll every 5 seconds while pending
-      return () => clearInterval(interval)
+    async function forceFetchProfile() {
+      if (!userId) return
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("verified_guide, host_tier, license_status")
+          .eq("id", userId)
+          .single()
+        
+        if (!error && data) {
+          setHostProfile(prev => prev ? { ...prev, ...data } : data as any)
+        }
+      } catch (err) {
+        console.error("Force fetch profile error:", err)
+      }
     }
-  }, [userId, hostProfile?.license_status, loadDashboard])
+    forceFetchProfile()
+  }, [userId])
+
+  // Real-time updates via discrete profile channel
+  useEffect(() => {
+    if (!userId) return
+
+    const channel = supabase
+      .channel(`profile:${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${userId}` },
+        (payload) => {
+          console.log("Realtime profile change detected:", payload)
+          loadDashboard()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      channel.unsubscribe()
+      supabase.removeChannel(channel)
+    }
+  }, [userId, loadDashboard])
 
   async function handleUpdateBookingStatus(bookingId: string, status: BookingStatus, reason?: string) {
     if (status === "confirmed" || status === "declined") {
@@ -1608,6 +1641,16 @@ export default function DashboardPage() {
 
               {/* Top-Right Header Actions (Bell + Role Switch + Avatar + Menu) */}
               <div className="flex items-center gap-3 ml-auto sm:ml-0">
+                {userRoleState === "host" && (
+                  <Button
+                    onClick={loadDashboard}
+                    variant="outline"
+                    size="sm"
+                    className="h-9 rounded-xl border-border bg-[#16161A]/50 text-xs font-semibold text-white/60 hover:text-white hover:border-[#7F5AF0]/40 transition-all duration-200"
+                  >
+                    Refresh Status
+                  </Button>
+                )}
                 {userId && <NotificationBell />}
 
                 {profile?.avatar_url && (
@@ -1689,11 +1732,22 @@ export default function DashboardPage() {
                   <div className="space-y-8 lg:col-span-2">
                     {(profile?.tra_number || profile?.license_status === 'pending' || profile?.verified_guide || profile?.rejected_as_guide) && (
                       <div className="space-y-4">
-                        {profile.license_status === 'pending' && (
+                        {profile.verified_guide === true && profile.host_tier === 'certified_guide' && (
+                          <div className="rounded-xl border border-blue-500/30 bg-blue-500/5 p-4 flex items-start gap-3">
+                            <BadgeCheck className="size-5 text-blue-500 shrink-0 mt-0.5" />
+                            <div>
+                              <h4 className="font-semibold text-sm text-blue-400">You are a Certified Guide ✅</h4>
+                              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                                Your guide license has been approved and you are now active.
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                        {profile.verified_guide === false && profile.license_status === 'pending' && (
                           <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 flex items-start gap-3">
                             <Clock className="size-5 text-amber-500 shrink-0 mt-0.5" />
                             <div className="flex-1">
-                              <h4 className="font-semibold text-sm text-amber-400">⏳ Certified Guide Application Pending</h4>
+                              <h4 className="font-semibold text-sm text-amber-400">Pending review</h4>
                               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
                                 Your Certified Guide application is pending review. You are currently a Local Host.
                               </p>
@@ -1706,24 +1760,13 @@ export default function DashboardPage() {
                             </div>
                           </div>
                         )}
-                        {profile.verified_guide && (
-                          <div className="rounded-xl border border-blue-500/30 bg-blue-500/5 p-4 flex items-start gap-3">
-                            <BadgeCheck className="size-5 text-blue-500 shrink-0 mt-0.5" />
-                            <div>
-                              <h4 className="font-semibold text-sm text-blue-400">✅ Verified Guide Status Active</h4>
-                              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                                You are a Verified Guide ✅
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                        {profile.rejected_as_guide && (
+                        {profile.verified_guide === false && profile.license_status === 'rejected' && (
                           <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4 flex items-start gap-3">
                             <XCircle className="size-5 text-red-500 shrink-0 mt-0.5" />
                             <div>
-                              <h4 className="font-semibold text-sm text-red-400">Your Certified Guide Application was not approved</h4>
+                              <h4 className="font-semibold text-sm text-red-400">Not approved</h4>
                               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                                Your Certified Guide application was not approved. You are currently a Local Host.
+                                Your Certified Guide application was not approved. You can continue as a Local Host.
                               </p>
                               {profile.verification_notes && (
                                 <div className="mt-2 text-xs border-l-2 border-red-500/50 pl-2 text-red-300 italic">
@@ -1734,7 +1777,7 @@ export default function DashboardPage() {
                                 onClick={() => navigate("/onboarding?become-host=true")}
                                 className="mt-2.5 text-xs text-red-400 underline font-semibold hover:text-red-300"
                               >
-                                Re-apply for Guide Status
+                                Re-apply for Certified Guide Status
                               </button>
                             </div>
                           </div>
