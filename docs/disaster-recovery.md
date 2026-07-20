@@ -1,6 +1,6 @@
 # Disaster Recovery Plan
 
-This document outlines the backup, restore, recovery objectives, and rollback procedures for the Ausaguide application.
+This document outlines the backup, restore, recovery objectives, incident response, and rollback procedures for the Ausaguide application.
 
 ---
 
@@ -73,15 +73,26 @@ If a new frontend deployment introduces critical bugs or breaks compatibility:
 3. Click on the **Deployments** tab.
 4. Locate the last known working deployment (usually marked as "Production" prior to the current release).
 5. Click the three dots (`...`) button next to the stable deployment.
-6. Select **Rollback**.
+6. Select **Promote to Production** (or simply **Promote**).
 7. Confirm the rollback. Vercel will instantly point the production domain to the chosen build without rebuilding, achieving near-zero downtime recovery (approx. 5 seconds).
 
 ---
 
-## 5. Emergency Contacts
+## 5. Incident Response (Data Corruption or Outages)
 
-If the site goes down, contact the developers immediately:
+In the event that data is corrupted or lost:
+1. **Assess and Contain**: Determine the scope of the corruption or outage. If necessary, place the application in a temporary "Maintenance Mode" by turning off active endpoints or displaying a friendly maintenance placeholder page.
+2. **Contact Support**: Contact Supabase Support immediately for assistance on managed infrastructure outages.
+3. **Execute Restore**: Locate the most recent daily automatic backup or manual SQL snapshot (respecting the 24-hour RPO target) and execute the restore process.
+4. **Notify Affected Users**: If personal data was affected, notify users in compliance with regulatory requirements (GDPR/CCPA/local data protection acts), informing them of the incident, steps taken to resolve it, and status of their accounts.
 
-- **Lead Engineer**: Lead Developer
-- **Email**: welcome@ausaguide.com
+---
+
+## 6. Emergency Contacts
+
+If the site goes down, contact the founder immediately:
+
+- **Founder**: Lead Developer & Founder
+- **Email**: founder@ausaguide.com
+- **Phone**: +254 700 000 000
 - **Incident Channel**: Discord / Slack #ops-alerts

@@ -4,11 +4,11 @@ This directory contains scripts and configurations for load testing the Ausaguid
 
 ---
 
-## 1. Prerequisites
+## 1. Installation
 
-You need to have `k6` installed on your machine.
+You can run K6 either by installing it locally on your host machine or using the official Docker image.
 
-### Installation
+### Option A: Local Installation
 - **macOS** (Homebrew): `brew install k6`
 - **Windows** (Chocolatey): `choco install k6`
 - **Windows** (Winget): `winget install gnu.k6`
@@ -20,14 +20,21 @@ You need to have `k6` installed on your machine.
   sudo apt-get install k6
   ```
 
+### Option B: Docker Installation
+If you prefer not to install K6 directly, you can run the test script inside a Docker container:
+```bash
+docker run --rm -i grafana/k6 run - <script.js
+```
+*Note: Make sure your target server URL is accessible from within the Docker container (e.g. use `host.docker.internal` instead of `localhost` if testing local servers).*
+
 ---
 
 ## 2. Test Configuration
 
-The script `load-test-script.js` simulates three concurrent user scenarios over a period of 30 seconds:
-1. **100 concurrent users** browsing tours (`/tours`).
-2. **50 concurrent users** booking tours (`/api/bookings`).
-3. **20 concurrent users** sending messages (`/api/messages`).
+The script `script.js` simulates three concurrent user scenarios over a period of 30 seconds:
+1. **100 virtual users** browsing tours (`GET /tours`).
+2. **50 virtual users** viewing a specific tour (`GET /tours/:id`).
+3. **20 virtual users** booking a tour (`POST /api/bookings`).
 
 ---
 
@@ -36,13 +43,13 @@ The script `load-test-script.js` simulates three concurrent user scenarios over 
 ### A. Local Development Run
 To test against a local running Vite dev server (usually `http://localhost:5173`):
 ```bash
-k6 run load-test-script.js
+k6 run script.js
 ```
 
 ### B. Custom Target Environment Run
 You can override the target URL using the `BASE_URL` environment variable:
 ```bash
-k6 run --env BASE_URL=https://your-production.app load-test-script.js
+k6 run --env BASE_URL=https://your-production.app script.js
 ```
 
 ---

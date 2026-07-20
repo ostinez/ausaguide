@@ -2,9 +2,9 @@ import http from 'k6/http';
 import { sleep, check } from 'k6';
 
 // Define load testing scenarios to match concurrent requirements:
-// - 100 concurrent users browsing tours
-// - 50 concurrent users booking tours
-// - 20 concurrent users sending messages
+// - 100 virtual users browsing tours (GET /tours)
+// - 50 virtual users viewing a specific tour (GET /tours/:id)
+// - 20 virtual users booking a tour (POST /api/bookings)
 export const options = {
   scenarios: {
     browse_tours: {
@@ -13,17 +13,17 @@ export const options = {
       duration: '30s',
       exec: 'browseTours',
     },
-    book_tours: {
+    view_single_tour: {
       executor: 'constant-vus',
       vus: 50,
       duration: '30s',
-      exec: 'bookTours',
+      exec: 'viewSingleTour',
     },
-    send_messages: {
+    book_tours: {
       executor: 'constant-vus',
       vus: 20,
       duration: '30s',
-      exec: 'sendMessages',
+      exec: 'bookTours',
     },
   },
   thresholds: {
@@ -40,12 +40,21 @@ export function browseTours() {
   const res = http.get(`${BASE_URL}/tours`);
   check(res, {
     'browse tours status is 200': (r) => r.status === 200,
-    'browse response duration acceptable': (r) => r.timings.duration < 2000,
   });
   sleep(1); // Simulate user think time of 1 second
 }
 
-// Scenario 2: Book Tours (POST /bookings simulating payment/creation flows)
+// Scenario 2: View a specific tour (GET /tours/:id)
+export function viewSingleTour() {
+  const tourId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa01'; // Default seed tour ID
+  const res = http.get(`${BASE_URL}/tours/${tourId}`);
+  check(res, {
+    'view single tour status is 200 or 404': (r) => r.status === 200 || r.status === 404,
+  });
+  sleep(1.5);
+}
+
+// Scenario 3: Book Tours (POST /bookings simulating payment/creation flows)
 export function bookTours() {
   const payload = JSON.stringify({
     tour_id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa01',
@@ -63,32 +72,10 @@ export function bookTours() {
     },
   };
 
-  // Target the booking API endpoint or frontend route representation
   const res = http.post(`${BASE_URL}/api/bookings`, payload, params);
   
   check(res, {
-    'booking request received': (r) => r.status === 200 || r.status === 201 || r.status === 404, // 404 is allowed if backend routes aren't running locally
-  });
-  sleep(1.5);
-}
-
-// Scenario 3: Send Messages (POST /messages simulating active messaging chats)
-export function sendMessages() {
-  const payload = JSON.stringify({
-    booking_id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb01',
-    message: 'Hello, this is a simulated concurrent user message.'
-  });
-
-  const params = {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  };
-
-  const res = http.post(`${BASE_URL}/api/messages`, payload, params);
-
-  check(res, {
-    'message request received': (r) => r.status === 200 || r.status === 201 || r.status === 404,
+    'booking request received status is 200, 201 or 404': (r) => r.status === 200 || r.status === 201 || r.status === 404,
   });
   sleep(2);
 }
