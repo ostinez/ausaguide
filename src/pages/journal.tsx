@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { BookOpen, Plus, Edit3, Trash2, X, Check, Loader2, ImageIcon, ChevronRight } from "lucide-react"
+import { BookOpen, Plus, Edit3, Trash2, X, Check, Loader2, ImageIcon, ChevronRight, Eye } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -365,7 +365,15 @@ export default function JournalPage() {
           )}
           <div className="space-y-2">
             <h1 className="text-3xl font-bold tracking-tight">{selected.title}</h1>
-            <p className="text-xs text-muted-foreground">{format(new Date(selected.created_at), "MMMM d, yyyy")}</p>
+            <div className="flex items-center gap-3 flex-wrap">
+              <p className="text-xs text-muted-foreground">{format(new Date(selected.created_at), "MMMM d, yyyy")}</p>
+              {(selected.view_count ?? 0) > 0 && (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground/60">
+                  <Eye className="size-3" />
+                  {selected.view_count} views
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Social Links Badge Row */}

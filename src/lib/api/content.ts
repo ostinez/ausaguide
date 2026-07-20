@@ -1,6 +1,12 @@
 import { supabase } from "../supabase"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+export interface PostLiker {
+  user_id: string
+  created_at?: string
+  profile?: { full_name: string; avatar_url: string | null }
+}
+
 export interface Post {
   id: string
   user_id: string
@@ -9,12 +15,13 @@ export interface Post {
   image_urls?: string[] | null
   created_at: string
   updated_at: string
+  view_count?: number
   author?: { full_name: string; avatar_url: string | null; role?: string }
   instagram?: string | null
   tiktok?: string | null
   facebook?: string | null
   reddit?: string | null
-  likes?: { user_id: string }[]
+  likes?: PostLiker[]
   saves?: { user_id: string }[]
 }
 
@@ -26,6 +33,7 @@ export interface Journal {
   image_url: string | null
   created_at: string
   updated_at: string
+  view_count?: number
   author?: { full_name: string; avatar_url: string | null }
   instagram?: string | null
   tiktok?: string | null
@@ -37,14 +45,33 @@ export interface Journal {
 export async function fetchPosts(): Promise<Post[]> {
   const { data, error } = await supabase
     .from("posts")
-    .select("*, author:profiles(full_name, avatar_url, role), likes(user_id), saves(user_id)")
+    .select("*, author:profiles(full_name, avatar_url, role), likes(user_id, created_at, profile:profiles(full_name, avatar_url)), saves(user_id)")
     .order("created_at", { ascending: false })
   if (error) throw error
   return (data ?? []).map((row: any) => ({
     ...row,
     author: Array.isArray(row.author) ? row.author[0] : row.author,
-    likes: row.likes || [],
+    likes: (row.likes || []).map((l: any) => ({
+      user_id: l.user_id,
+      created_at: l.created_at,
+      profile: Array.isArray(l.profile) ? l.profile[0] : l.profile,
+    })),
     saves: row.saves || [],
+    view_count: row.view_count ?? 0,
+  }))
+}
+
+export async function fetchPostLikers(postId: string): Promise<PostLiker[]> {
+  const { data, error } = await supabase
+    .from("likes")
+    .select("user_id, created_at, profile:profiles(full_name, avatar_url)")
+    .eq("post_id", postId)
+    .order("created_at", { ascending: false })
+  if (error) throw error
+  return (data ?? []).map((l: any) => ({
+    user_id: l.user_id,
+    created_at: l.created_at,
+    profile: Array.isArray(l.profile) ? l.profile[0] : l.profile,
   }))
 }
 

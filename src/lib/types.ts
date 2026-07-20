@@ -68,6 +68,7 @@ export interface Tour {
   status?: "draft" | "published"
   tags?: string[]
   views?: number
+  view_count?: number
   physical_price?: number
   virtual_price?: number
   created_at: string

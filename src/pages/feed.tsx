@@ -1,12 +1,12 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import {
-  Trash2, Edit3, Heart, Rss, Globe, ImageIcon, X, Check, Loader2, ChevronLeft, ChevronRight, ArrowLeft
+  Trash2, Edit3, Heart, Rss, Globe, ImageIcon, X, Check, Loader2, ChevronLeft, ChevronRight, ArrowLeft, Eye
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { supabase } from "@/lib/supabase"
-import { fetchPosts, createPost, updatePost, deletePost, toggleFollow, fetchUserFollows, trackView, type Post } from "@/lib/api/content"
+import { fetchPosts, createPost, updatePost, deletePost, toggleFollow, fetchUserFollows, fetchPostLikers, trackView, type Post, type PostLiker } from "@/lib/api/content"
 import { cn, formatSocialLink } from "@/lib/utils"
 import { toast } from "sonner"
 import { useSEO } from "@/hooks/useSEO"
@@ -42,6 +42,103 @@ const RedditIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 function initials(name: string) {
   return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
+}
+
+// ─── Like List Modal ──────────────────────────────────────────────────────────
+function LikeListModal({ postId, likeCount, likers, onClose }: {
+  postId: string
+  likeCount: number
+  likers: PostLiker[]
+  onClose: () => void
+}) {
+  const [fullLikers, setFullLikers] = useState<PostLiker[]>(likers)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    // Lock body scroll
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [])
+
+  useEffect(() => {
+    if (likeCount === 0) return
+    setLoading(true)
+    fetchPostLikers(postId)
+      .then(setFullLikers)
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [postId, likeCount])
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [onClose])
+
+  return (
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200" />
+      {/* Panel */}
+      <div
+        className="relative z-10 w-full max-w-sm rounded-2xl border border-border/60 bg-[#16161a] shadow-2xl flex flex-col max-h-[75vh] animate-in slide-in-from-bottom-4 fade-in duration-250"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
+          <div className="flex items-center gap-2">
+            <Heart className="size-4 fill-red-400 stroke-red-400" />
+            <span className="font-bold text-white text-sm">
+              {likeCount} {likeCount === 1 ? 'Like' : 'Likes'}
+            </span>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-full hover:bg-white/10 text-muted-foreground hover:text-white transition-colors"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+        {/* Body */}
+        <div className="overflow-y-auto flex-1 p-3 space-y-1">
+          {loading ? (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="size-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : fullLikers.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 gap-2">
+              <Heart className="size-8 text-muted-foreground/30" />
+              <p className="text-xs text-muted-foreground">No likes yet</p>
+            </div>
+          ) : (
+            fullLikers.map(liker => (
+              <div key={liker.user_id} className="flex items-center gap-3 px-2 py-2.5 rounded-xl hover:bg-white/5 transition-colors">
+                <Avatar className="size-9 shrink-0">
+                  <AvatarImage src={liker.profile?.avatar_url ?? ''} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                    {initials(liker.profile?.full_name ?? 'U')}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-white truncate">
+                    {liker.profile?.full_name ?? 'Unknown User'}
+                  </p>
+                  {liker.created_at && (
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      Liked {formatDistanceToNow(new Date(liker.created_at), { addSuffix: true })}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function CreatePostCard({ currentUserId, onCreated }: { currentUserId: string; onCreated: (p: Post) => void }) {
@@ -318,6 +415,7 @@ function PostCard({
   onImageClick,
   isFollowing,
   onFollowToggle,
+  onLikesChange,
 }: {
   post: Post
   currentUserId: string | null
@@ -325,12 +423,15 @@ function PostCard({
   onImageClick: (urls: string[], index: number) => void
   isFollowing: boolean
   onFollowToggle: (authorId: string) => void
+  onLikesChange: (postId: string, newLikes: PostLiker[]) => void
 }) {
   const isOwn = post.user_id === currentUserId
   const [editing, setEditing] = useState(false)
   const [editContent, setEditContent] = useState(post.content)
   const [saving, setSaving] = useState(false)
   const [loadingFollow, setLoadingFollow] = useState(false)
+  const [showLikeModal, setShowLikeModal] = useState(false)
+  const [likingInProgress, setLikingInProgress] = useState(false)
 
   // Track post view when rendered
   useEffect(() => {
@@ -359,12 +460,23 @@ function PostCard({
       toast.error("Please sign in to like posts.")
       return
     }
+    if (likingInProgress) return
+    setLikingInProgress(true)
+    // Optimistic update
+    const wasLiked = liked
+    const newLikes = wasLiked
+      ? likesList.filter(l => l.user_id !== currentUserId)
+      : [...likesList, { user_id: currentUserId, created_at: new Date().toISOString() }]
+    onLikesChange(post.id, newLikes)
     try {
       const { toggleLike } = await import("@/lib/api/content")
-      await toggleLike(post.id, currentUserId, !liked)
-      // Real-time channel will handle global state sync, but we show optimistic feed update
+      await toggleLike(post.id, currentUserId, !wasLiked)
     } catch (err: any) {
+      // Revert on error
+      onLikesChange(post.id, likesList)
       toast.error(err.message || "Failed to update like.")
+    } finally {
+      setLikingInProgress(false)
     }
   }
 
@@ -680,16 +792,38 @@ function PostCard({
       {/* Actions */}
       <div className="flex items-center justify-between pt-2 border-t border-border/30">
         <div className="flex items-center gap-4">
+          {/* Heart / Like toggle */}
           <button
             onClick={handleLike}
+            disabled={likingInProgress}
             className={cn(
-              "flex items-center gap-1.5 text-xs transition-colors",
-              liked ? "text-red-400 font-bold" : "text-muted-foreground hover:text-red-400"
+              "flex items-center gap-1.5 text-xs transition-all duration-150 active:scale-90",
+              liked ? "text-red-400 font-bold" : "text-muted-foreground hover:text-red-400",
+              likingInProgress && "opacity-60 cursor-not-allowed"
             )}
           >
-            <Heart className={cn("size-4", liked && "fill-red-400 stroke-red-400")} />
-            <span>{likesList.length} {likesList.length === 1 ? "Like" : "Likes"}</span>
+            <Heart className={cn("size-4 transition-transform", liked && "fill-red-400 stroke-red-400 scale-110")} />
           </button>
+          {/* Clickable like count → opens modal */}
+          <button
+            onClick={() => likesList.length > 0 && setShowLikeModal(true)}
+            className={cn(
+              "text-xs transition-colors",
+              likesList.length > 0
+                ? "text-muted-foreground hover:text-white cursor-pointer"
+                : "text-muted-foreground/50 cursor-default"
+            )}
+            title={likesList.length > 0 ? "See who liked this" : undefined}
+          >
+            {likesList.length} {likesList.length === 1 ? "Like" : "Likes"}
+          </button>
+          {/* View count */}
+          {(post.view_count ?? 0) > 0 && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground/60">
+              <Eye className="size-3.5" />
+              {post.view_count}
+            </span>
+          )}
         </div>
 
         <button
@@ -713,6 +847,16 @@ function PostCard({
           <span>{saved ? "Saved" : "Save"}</span>
         </button>
       </div>
+
+      {/* Like List Modal */}
+      {showLikeModal && (
+        <LikeListModal
+          postId={post.id}
+          likeCount={likesList.length}
+          likers={likesList}
+          onClose={() => setShowLikeModal(false)}
+        />
+      )}
     </div>
   )
 }
@@ -773,14 +917,21 @@ export default function FeedPage() {
 
   // Real-time Postgres subscriptions for likes and saves
   useEffect(() => {
+    // Debounce timer to avoid rapid refetches from realtime
+    let refetchTimer: ReturnType<typeof setTimeout> | null = null
+    const scheduleRefetch = () => {
+      if (refetchTimer) clearTimeout(refetchTimer)
+      refetchTimer = setTimeout(() => {
+        fetchPosts().then(setPosts).catch(console.error)
+      }, 1500)
+    }
+
     const likesChannel = supabase
       .channel("feed-likes-realtime")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "likes" },
-        () => {
-          fetchPosts().then(setPosts).catch(console.error)
-        }
+        scheduleRefetch
       )
       .subscribe()
 
@@ -789,13 +940,12 @@ export default function FeedPage() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "saves" },
-        () => {
-          fetchPosts().then(setPosts).catch(console.error)
-        }
+        scheduleRefetch
       )
       .subscribe()
 
     return () => {
+      if (refetchTimer) clearTimeout(refetchTimer)
       supabase.removeChannel(likesChannel)
       supabase.removeChannel(savesChannel)
     }
@@ -818,6 +968,10 @@ export default function FeedPage() {
       toast.error(err.message || "Failed to update follow status.")
     }
   }
+
+  const handleLikesChange = useCallback((postId: string, newLikes: PostLiker[]) => {
+    setPosts(prev => prev.map(p => p.id === postId ? { ...p, likes: newLikes } : p))
+  }, [])
 
   // Filter & Sort Posts: Show followed users first in 'all' view
   const displayPosts = posts
@@ -947,6 +1101,7 @@ export default function FeedPage() {
               currentUserId={currentUserId}
               isFollowing={followingIds.includes(post.user_id)}
               onFollowToggle={handleFollowToggle}
+              onLikesChange={handleLikesChange}
               onDelete={id => setPosts(prev => prev.filter(p => p.id !== id))}
               onImageClick={(urls, index) => setLightboxData({ urls, index })}
             />

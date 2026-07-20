@@ -18,6 +18,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  Eye,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { GlareHover } from "@/components/ui/GlareHover"
@@ -372,6 +373,12 @@ export default function TourDetailPage() {
               <Users className="size-3.5" />
               Up to {tour.max_guests} guests
             </span>
+            {(tour.view_count ?? 0) > 0 && (
+              <span className="flex items-center gap-1">
+                <Eye className="size-3.5" />
+                {tour.view_count} views
+              </span>
+            )}
           </div>
         </div>
       </div>
