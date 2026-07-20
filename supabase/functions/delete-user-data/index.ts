@@ -7,6 +7,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 }
 
+/**
+ * delete-user-data Supabase Edge Function
+ * 
+ * Secure Deno serverless endpoint to permanently delete a user account in compliance with GDPR.
+ * Validates request authorization header to extract user id, deletes the user profiles database row,
+ * deletes bookings as a guest, and purges the auth.users record via the Admin API. Finally, dispatches
+ * a confirmation email via Brevo API.
+ * 
+ * @param {Request} req - Incoming HTTP request with Authorization Bearer JWT token
+ * @returns {Promise<Response>} Status indicator confirming successful deletion
+ */
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {

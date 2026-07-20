@@ -7,6 +7,16 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 }
 
+/**
+ * export-user-data Supabase Edge Function
+ * 
+ * Secure Deno serverless endpoint to retrieve all user database tables in compliance with GDPR.
+ * Validates request authorization header to extract user id, queries all user profile tables parallelly,
+ * and compiles a structured JSON download response.
+ * 
+ * @param {Request} req - Incoming HTTP request with Authorization Bearer JWT token
+ * @returns {Promise<Response>} JSON payload containing all accumulated user data
+ */
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {

@@ -61,6 +61,12 @@ function ScrollToTop() {
   return null
 }
 
+/**
+ * App Component
+ * 
+ * Root component that defines client-side routes, page view analytics tracking,
+ * layout wrappers, and authentication protection gates.
+ */
 export default function App() {
   const location = useLocation()
 

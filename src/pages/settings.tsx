@@ -27,6 +27,14 @@ const INTEREST_OPTIONS = [
   { value: "wellness", label: "🧘 Wellness" },
 ]
 
+/**
+ * SettingsPage Component
+ * 
+ * Renders the main user dashboard profile control panels.
+ * Supports updating personal information (name, bio, languages, phone), social profile links (Instagram, TikTok, etc.),
+ * managing notification preferences, enabling/disabling 2-Factor Authentication (2FA via TOTP),
+ * host verification uploads, payout configuration settings, and GDPR Privacy & Data tools (Export My Data & Delete My Data).
+ */
 export default function SettingsPage() {
   const role = localStorage.getItem("user_role") ?? "traveler"
   const userId = localStorage.getItem("user_id")
