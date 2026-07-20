@@ -53,7 +53,7 @@ export function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) 
         if (session.user.email === ADMIN_EMAIL) {
           role = 'admin'
         } else if (role === "host" && profile?.host_tier === null) {
-          role = null
+          role = "host"
         }
 
         if (active) {
