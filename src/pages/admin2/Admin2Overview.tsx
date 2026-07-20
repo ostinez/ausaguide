@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { Users, Map, Calendar, List, CheckSquare, RefreshCw } from "lucide-react"
+import { SkeletonStatGrid, SkeletonTable } from "@/components/ui/SkeletonCard"
 
 export default function Admin2Overview() {
   const [loading, setLoading] = useState(true)
@@ -92,122 +93,139 @@ export default function Admin2Overview() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <StatCard 
-          title="Total Users" 
-          value={stats.totalUsers.toString()} 
-          icon={<Users className="text-blue-400" size={24} />}
-          subtext={`${stats.travelers} T · ${stats.hosts} H · ${stats.admins} A`}
-        />
-        <StatCard 
-          title="Total Tours" 
-          value={stats.totalTours.toString()} 
-          icon={<Map className="text-green-400" size={24} />}
-        />
-        <StatCard 
-          title="Total Bookings" 
-          value={stats.totalBookings.toString()} 
-          icon={<Calendar className="text-purple-400" size={24} />}
-          subtext={`${stats.pendingBookings} P · ${stats.confirmedBookings} C`}
-        />
-        <StatCard 
-          title="Waitlist" 
-          value={stats.totalWaitlist.toString()} 
-          icon={<List className="text-yellow-400" size={24} />}
-        />
-        <StatCard 
-          title="Verifications" 
-          value={stats.pendingVerifications.toString()} 
-          icon={<CheckSquare className="text-orange-400" size={24} />}
-          subtext="Pending review"
-        />
-      </div>
+      {loading ? (
+        <SkeletonStatGrid count={5} />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <StatCard 
+            title="Total Users" 
+            value={stats.totalUsers.toString()} 
+            icon={<Users className="text-blue-400" size={24} />}
+            subtext={`${stats.travelers} T · ${stats.hosts} H · ${stats.admins} A`}
+          />
+          <StatCard 
+            title="Total Tours" 
+            value={stats.totalTours.toString()} 
+            icon={<Map className="text-green-400" size={24} />}
+          />
+          <StatCard 
+            title="Total Bookings" 
+            value={stats.totalBookings.toString()} 
+            icon={<Calendar className="text-purple-400" size={24} />}
+            subtext={`${stats.pendingBookings} P · ${stats.confirmedBookings} C`}
+          />
+          <StatCard 
+            title="Waitlist" 
+            value={stats.totalWaitlist.toString()} 
+            icon={<List className="text-yellow-400" size={24} />}
+          />
+          <StatCard 
+            title="Verifications" 
+            value={stats.pendingVerifications.toString()} 
+            icon={<CheckSquare className="text-orange-400" size={24} />}
+            subtext="Pending review"
+          />
+        </div>
+      )}
 
       {/* Recent Tables Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* Recent Users */}
-        <div className="bg-[#111111] border border-white/10 rounded-xl overflow-hidden flex flex-col">
-          <div className="p-4 border-b border-white/10 bg-white/5">
-            <h3 className="font-semibold text-white">Recent Users</h3>
+      {loading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-3">
+            <h3 className="font-semibold text-white text-sm">Recent Users</h3>
+            <SkeletonTable rows={5} cols={3} />
           </div>
-          <div className="p-0 overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="text-xs text-gray-400 bg-black/20 uppercase">
-                <tr>
-                  <th className="px-4 py-3">Name</th>
-                  <th className="px-4 py-3">Role</th>
-                  <th className="px-4 py-3">Joined</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {recentUsers.map(user => (
-                  <tr key={user.id} className="hover:bg-white/2">
-                    <td className="px-4 py-3 text-gray-200">
-                      <div className="font-medium">{user.full_name}</div>
-                      <div className="text-xs text-gray-500">{user.email}</div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium bg-white/10 ${user.role === 'admin' ? 'text-primary' : 'text-gray-300'}`}>
-                        {user.role || 'none'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-400">
-                      {new Date(user.created_at).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-                {recentUsers.length === 0 && !loading && (
-                  <tr><td colSpan={3} className="px-4 py-8 text-center text-gray-500">No users found</td></tr>
-                )}
-              </tbody>
-            </table>
+          <div className="space-y-3">
+            <h3 className="font-semibold text-white text-sm">Recent Bookings</h3>
+            <SkeletonTable rows={5} cols={4} />
           </div>
         </div>
-
-        {/* Recent Bookings */}
-        <div className="bg-[#111111] border border-white/10 rounded-xl overflow-hidden flex flex-col">
-          <div className="p-4 border-b border-white/10 bg-white/5">
-            <h3 className="font-semibold text-white">Recent Bookings</h3>
-          </div>
-          <div className="p-0 overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="text-xs text-gray-400 bg-black/20 uppercase">
-                <tr>
-                  <th className="px-4 py-3">Tour</th>
-                  <th className="px-4 py-3">Guest</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Amount</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {recentBookings.map(booking => (
-                  <tr key={booking.id} className="hover:bg-white/2">
-                    <td className="px-4 py-3 text-gray-200 font-medium truncate max-w-[150px]">
-                      {booking.tours?.title || 'Unknown Tour'}
-                    </td>
-                    <td className="px-4 py-3 text-gray-400">
-                      {booking.profiles?.full_name || 'Unknown'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-white/10 text-gray-300 capitalize">
-                        {booking.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-300">
-                      {booking.total_price ? `$${booking.total_price.toLocaleString()} USD` : '$0 USD'}
-                    </td>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          {/* Recent Users */}
+          <div className="bg-[#111111] border border-white/10 rounded-xl overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-white/10 bg-white/5">
+              <h3 className="font-semibold text-white">Recent Users</h3>
+            </div>
+            <div className="p-0 overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="text-xs text-gray-400 bg-black/20 uppercase">
+                  <tr>
+                    <th className="px-4 py-3">Name</th>
+                    <th className="px-4 py-3">Role</th>
+                    <th className="px-4 py-3">Joined</th>
                   </tr>
-                ))}
-                {recentBookings.length === 0 && !loading && (
-                  <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-500">No bookings found</td></tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {recentUsers.map(user => (
+                    <tr key={user.id} className="hover:bg-white/2">
+                      <td className="px-4 py-3 text-gray-200">
+                        <div className="font-medium">{user.full_name}</div>
+                        <div className="text-xs text-gray-500">{user.email}</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium bg-white/10 ${user.role === 'admin' ? 'text-primary' : 'text-gray-300'}`}>
+                          {user.role || 'none'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-400">
+                        {new Date(user.created_at).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))}
+                  {recentUsers.length === 0 && !loading && (
+                    <tr><td colSpan={3} className="px-4 py-8 text-center text-gray-500">No users found</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
 
-      </div>
+          {/* Recent Bookings */}
+          <div className="bg-[#111111] border border-white/10 rounded-xl overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-white/10 bg-white/5">
+              <h3 className="font-semibold text-white">Recent Bookings</h3>
+            </div>
+            <div className="p-0 overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="text-xs text-gray-400 bg-black/20 uppercase">
+                  <tr>
+                    <th className="px-4 py-3">Tour</th>
+                    <th className="px-4 py-3">Guest</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {recentBookings.map(booking => (
+                    <tr key={booking.id} className="hover:bg-white/2">
+                      <td className="px-4 py-3 text-gray-200 font-medium truncate max-w-[150px]">
+                        {booking.tours?.title || 'Unknown Tour'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-400">
+                        {booking.profiles?.full_name || 'Unknown'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-white/10 text-gray-300 capitalize">
+                          {booking.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-300">
+                        {booking.total_price ? `$${booking.total_price.toLocaleString()} USD` : '$0 USD'}
+                      </td>
+                    </tr>
+                  ))}
+                  {recentBookings.length === 0 && !loading && (
+                    <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-500">No bookings found</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      )}
     </div>
   )
 }

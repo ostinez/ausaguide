@@ -6,7 +6,7 @@ import { GradientText } from "@/components/ui/GradientText"
 
 import { GlassIcons } from "@/components/ui/GlassIcons"
 import { Input } from "@/components/ui/input"
-import { PlusSpinner } from "@/components/ui/PlusSpinner"
+import { SkeletonTourGrid } from "@/components/ui/SkeletonCard"
 import { cn } from "@/lib/utils"
 import { fetchTours, incrementTourViews } from "@/lib/api/tours"
 import { TourCard } from "@/components/ui/TourCard"
@@ -340,9 +340,8 @@ export default function ToursPage() {
         </div>
 
         {loading ? (
-          <div className="mt-16 flex flex-col items-center gap-3">
-            <PlusSpinner size={48} />
-            <p className="text-sm text-muted-foreground">Loading tours...</p>
+          <div className="mt-8">
+            <SkeletonTourGrid count={6} />
           </div>
         ) : error ? (
           <div className="mt-16 flex flex-col items-center gap-3 text-center">

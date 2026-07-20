@@ -27,7 +27,6 @@ import ReviewList from "@/components/ui/ReviewList"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { Calendar } from "@/components/ui/calendar"
-import { PlusSpinner } from "@/components/ui/PlusSpinner"
 import LaserFlow from "@/components/ui/LaserFlow"
 import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
@@ -36,6 +35,7 @@ import { fetchBookingsByGuestId, fetchProfileByRole } from "@/lib/api/hosts"
 import { fetchHostAvailability, fetchHostSettings } from "@/lib/api/availability"
 import { trackEvent } from "@/lib/posthog"
 import { trackView } from "@/lib/api/content"
+import { SkeletonTourDetail } from "@/components/ui/SkeletonCard"
 import type { Tour, Booking, HostAvailability, HostSettings } from "@/lib/types"
 import { formatTourPrice, getHostInitials, getTourImage } from "@/lib/tour-utils"
 import { addDays } from "date-fns"
@@ -129,12 +129,7 @@ export default function TourDetailPage() {
   }, [id])
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background">
-        <PlusSpinner size={52} />
-        <p className="text-sm text-muted-foreground">Loading tour...</p>
-      </div>
-    )
+    return <SkeletonTourDetail />
   }
 
   if (error) {

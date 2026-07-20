@@ -117,6 +117,7 @@ function GlobeVisual() {
   const [hoveredCountry, setHoveredCountry] = useState<CountryFeature | null>(null)
   const [userCountryCode, setUserCountryCode] = useState<string | null>(null)
   const [globeSize, setGlobeSize] = useState(600)
+  const isMobile = window.innerWidth < 768
 
   // Detect user's country code via IP
   useEffect(() => {
@@ -294,7 +295,7 @@ function GlobeVisual() {
           height={globeSize}
           backgroundColor="rgba(0,0,0,0)"
           globeImageUrl="https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg"
-          bumpImageUrl="https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-topology.png"
+          bumpImageUrl={isMobile ? undefined : "https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-topology.png"}
           lineHoverPrecision={0}
           polygonsData={countries}
           polygonAltitude={polygonAltitude}
@@ -304,14 +305,14 @@ function GlobeVisual() {
           polygonLabel={polygonLabel}
           onPolygonHover={handlePolygonHover}
           onPolygonClick={handlePolygonClick}
-          polygonsTransitionDuration={300}
+          polygonsTransitionDuration={isMobile ? 0 : 300}
           onGlobeReady={handleGlobeReady}
           atmosphereColor={PURPLE}
-          atmosphereAltitude={0.15}
+          atmosphereAltitude={isMobile ? 0.08 : 0.15}
           rendererConfig={{
-            precision: "mediump",
+            precision: isMobile ? "lowp" : "mediump",
             antialias: false,
-            powerPreference: "high-performance"
+            powerPreference: isMobile ? "low-power" : "high-performance"
           }}
         />
       </div>
@@ -412,7 +413,7 @@ export function HeroGlobe() {
       {/* On mobile we skip the heavy WebGL globe for performance */}
       <div className="absolute inset-0 z-[2] pointer-events-none flex items-center justify-center">
         <div className="pointer-events-auto w-full h-full">
-          {isInViewport && !isMobile ? (
+          {isInViewport ? (
             <GlobeErrorBoundary fallback={<GlobeFallback />}>
               <Suspense fallback={<GlobeLoading />}>
                 <GlobeVisual />

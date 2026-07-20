@@ -11,6 +11,7 @@ import { cn, formatSocialLink } from "@/lib/utils"
 import { toast } from "sonner"
 import { useSEO } from "@/hooks/useSEO"
 import { formatDistanceToNow } from "date-fns"
+import { SkeletonPostCard } from "@/components/ui/SkeletonCard"
 
 const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -861,25 +862,6 @@ function PostCard({
   )
 }
 
-function PostCardSkeleton() {
-  return (
-    <div className="rounded-2xl border border-border/60 bg-card/60 p-4 space-y-4 animate-pulse">
-      <div className="flex items-center gap-3">
-        <div className="size-10 rounded-full bg-muted/30" />
-        <div className="space-y-2 flex-1">
-          <div className="h-4 bg-muted/30 rounded w-1/3" />
-          <div className="h-3 bg-muted/20 rounded w-1/4" />
-        </div>
-      </div>
-      <div className="h-16 bg-muted/20 rounded-xl w-full" />
-      <div className="h-48 bg-muted/10 rounded-xl w-full" />
-      <div className="flex justify-between items-center pt-2">
-        <div className="h-4 bg-muted/30 rounded w-12" />
-        <div className="h-4 bg-muted/30 rounded w-12" />
-      </div>
-    </div>
-  )
-}
 
 export default function FeedPage() {
   useSEO({
@@ -1066,9 +1048,9 @@ export default function FeedPage() {
         {/* Feed */}
         {loading ? (
           <div className="space-y-4">
-            <PostCardSkeleton />
-            <PostCardSkeleton />
-            <PostCardSkeleton />
+            <SkeletonPostCard />
+            <SkeletonPostCard />
+            <SkeletonPostCard />
           </div>
         ) : feedError ? (
           <div className="flex flex-col items-center gap-4 py-16 text-center">

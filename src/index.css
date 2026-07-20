@@ -143,6 +143,20 @@
   body {
     @apply bg-background text-foreground;
     transition: background-color 0.2s ease, color 0.2s ease;
+    /* Prevent horizontal scroll on all pages */
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+  /* All images must never cause horizontal overflow */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+  /* Fix iOS auto-zoom on inputs: iOS zooms in when font-size < 16px */
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1rem);
   }
 }
 
@@ -179,6 +193,25 @@
 
 @keyframes fade-in {
   from { opacity: 0; }
+}
+
+/* ── Global skeleton shimmer ──────────────────────────────────────────────── */
+/* All skeleton components use this single animation declaration */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+/* Convenience class — apply to any shimmer overlay div */
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.06) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
 }
 
 .tour-card {
