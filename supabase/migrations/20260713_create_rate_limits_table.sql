@@ -1,4 +1,4 @@
-﻿-- Create rate_limits table for login and action throttling
+-- Create rate_limits table for login and action throttling
 -- Run this in: Supabase Dashboard → SQL Editor
 CREATE TABLE IF NOT EXISTS public.rate_limits (
   id        UUID        DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -16,5 +16,6 @@ CREATE INDEX IF NOT EXISTS idx_rate_limits_key ON public.rate_limits (key);
 ALTER TABLE public.rate_limits ENABLE ROW LEVEL SECURITY;
 
 -- Only service_role can read/write rate_limits (not exposed to the public anon key)
+DROP POLICY IF EXISTS "Service role full access" ON public.rate_limits;
 CREATE POLICY "Service role full access" ON public.rate_limits
   FOR ALL USING (auth.role() = 'service_role');
