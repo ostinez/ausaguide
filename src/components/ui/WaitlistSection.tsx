@@ -53,7 +53,7 @@ export function WaitlistSection({ defaultInterest }: WaitlistSectionProps) {
         throw error
       }
 
-      toast.success("✅ You're on the list! We'll notify you when we launch.")
+      toast.success("You're on the list! We'll notify you when we launch.")
       setSuccess(true)
     } catch (err: any) {
       console.error(err)
@@ -78,7 +78,7 @@ export function WaitlistSection({ defaultInterest }: WaitlistSectionProps) {
           <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-[#2CB67D]/15 text-[#2CB67D] border border-[#2CB67D]/30">
             <ShieldCheck className="size-6 animate-bounce" />
           </div>
-          <h4 className="text-sm font-bold text-white">✅ You're on the list!</h4>
+          <h4 className="text-sm font-bold text-white">You're on the list!</h4>
           <p className="text-xs text-white/50 leading-relaxed max-w-sm mx-auto font-medium">
             We'll notify you when we launch. Thank you for your early support!
           </p>

@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { GradientText } from "@/components/ui/GradientText"
-import { SkeletonTourGrid } from "@/components/ui/SkeletonCard"
+import { SkeletonTourGrid } from "@/components/ui/Skeleton"
 import { ArrowRight } from "lucide-react"
 import { fetchFeaturedTours } from "@/lib/api/tours"
 import type { Tour } from "@/lib/types"
@@ -18,7 +19,7 @@ export function ToursPreview() {
 
   // Fetch featured tours + subscribe to realtime view count updates
   useEffect(() => {
-    fetchFeaturedTours(3)
+    fetchFeaturedTours(6)
       .then(setTours)
       .catch(() => setTours([]))
       .finally(() => setLoading(false))
@@ -113,16 +114,19 @@ export function ToursPreview() {
         </div>
 
         {loading ? (
-          <SkeletonTourGrid count={3} />
+          <div className="animate-in fade-in duration-300">
+            <SkeletonTourGrid count={6} mobileCount={2} />
+          </div>
         ) : tours.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {tours.map((tour) => (
-              <TourCard
-                key={tour.id}
-                tour={tour}
-                isWishlisted={wishlist.has(tour.id)}
-                onToggleWishlist={handleToggleWishlist}
-              />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 animate-in fade-in duration-300">
+            {tours.map((tour, i) => (
+              <div key={tour.id} className={cn(i >= 2 ? "hidden sm:block" : "block")}>
+                <TourCard
+                  tour={tour}
+                  isWishlisted={wishlist.has(tour.id)}
+                  onToggleWishlist={handleToggleWishlist}
+                />
+              </div>
             ))}
           </div>
         ) : (

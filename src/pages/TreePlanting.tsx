@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { TreePine, Sprout, Globe, Leaf, TrendingUp, Heart, ShieldCheck, Mail, Building, User, FileText, ArrowRight, Camera } from "lucide-react"
+import { TreePine, Sprout, Globe, Leaf, TrendingUp, Heart, ShieldCheck, Mail, Building, User, FileText, ArrowRight, Camera, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -15,13 +15,13 @@ import { toast } from "sonner"
 import { useSEO } from "@/hooks/useSEO"
 import { JsonLd } from "@/components/seo/JsonLd"
 
-import treePlantingHero from "../assets/images/tree-planting/tree-planting-hero.jpg"
-import meruOakImage from "../assets/images/tree-planting/meru-oak.jpg"
-import africanTulipImage from "../assets/images/tree-planting/african-tulip.jpg"
-import crotonImage from "../assets/images/tree-planting/croton.jpg"
-import treeGallery1 from "../assets/images/tree-planting/tree-gallery-1.jpg"
-import treeGallery2 from "../assets/images/tree-planting/tree-gallery-2.jpg"
-import treeGallery3 from "../assets/images/tree-planting/tree-gallery-3.jpg"
+import treePlantingHero from "../assets/images/tree-planting/tree-planting-hero.webp"
+import meruOakImage from "../assets/images/tree-planting/meru-oak.webp"
+import africanTulipImage from "../assets/images/tree-planting/african-tulip.webp"
+import crotonImage from "../assets/images/tree-planting/croton.webp"
+import treeGallery1 from "../assets/images/tree-planting/tree-gallery-1.webp"
+import treeGallery2 from "../assets/images/tree-planting/tree-gallery-2.webp"
+import treeGallery3 from "../assets/images/tree-planting/tree-gallery-3.webp"
 
 const TREE_TYPES = [
   {
@@ -189,7 +189,7 @@ export default function TreePlantingPage() {
 
       if (error) throw error
 
-      toast.success("✅ Thank you for reaching out! Our team will respond within 48 hours.")
+      toast.success("Thank you for reaching out! Our team will respond within 48 hours.")
       setPartnerSuccess(true)
       // Reset form
       setOrgName("")
@@ -245,6 +245,7 @@ export default function TreePlantingPage() {
             <img
               src={treePlantingHero}
               alt="Community tree planting in Kenya forest restoration"
+              loading="lazy"
               className="relative w-full h-[260px] rounded-3xl object-cover border border-border shadow-2xl"
             />
           </div>
@@ -321,6 +322,7 @@ export default function TreePlantingPage() {
                   <img
                     src={tree.image}
                     alt={tree.name}
+                    loading="lazy"
                     className="w-full h-40 object-cover"
                   />
                   <div className="p-5 space-y-2">
@@ -535,7 +537,10 @@ export default function TreePlantingPage() {
                   <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-[#2CB67D]/10 text-[#2CB67D] border border-[#2CB67D]/20">
                     <ShieldCheck className="size-6" />
                   </div>
-                  <h4 className="text-sm font-bold text-white">✅ Thank you for reaching out!</h4>
+                   <h4 className="text-sm font-bold text-white flex items-center justify-center gap-1.5">
+                     <CheckCircle2 className="size-4 text-emerald-400" />
+                     Thank you for reaching out!
+                   </h4>
                   <p className="text-xs text-white/50 leading-relaxed max-w-sm mx-auto font-medium">
                     Our team will respond within 48 hours. We appreciate your interest in partnering with us.
                   </p>

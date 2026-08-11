@@ -27,12 +27,13 @@ export function LocationToggle({ userId, className }: LocationToggleProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showVpnWarning, setShowVpnWarning] = useState(false)
-  const intervalRef = useRef<any>(null)
+  const watchIdRef = useRef<number | null>(null)
+  const lastWriteTimeRef = useRef<number>(0)
 
   const stopSharing = async () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current)
-      intervalRef.current = null
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current)
+      watchIdRef.current = null
     }
     setSharing(false)
     setShowVpnWarning(false)
@@ -62,53 +63,47 @@ export function LocationToggle({ userId, className }: LocationToggleProps) {
     setLoading(true)
     setError(null)
 
-    // Request initial position to check permissions
-    navigator.geolocation.getCurrentPosition(
+    // Reset throttle time
+    lastWriteTimeRef.current = 0
+
+    const watchId = navigator.geolocation.watchPosition(
       async (position) => {
         try {
           const { latitude, longitude } = position.coords
-          await supabase.from("profiles").update({
-            share_location: true
-          }).eq("id", userId)
-          await upsertLocation(latitude, longitude)
-          setSharing(true)
-          setLoading(false)
+          const now = Date.now()
 
-          // Fetch IP location and compare
-          fetch("https://ipinfo.io/json")
-            .then((res) => {
-              if (!res.ok) throw new Error("CORS or network issue")
-              return res.json()
-            })
-            .then((data) => {
-              if (data && data.loc) {
-                const [ipLat, ipLng] = data.loc.split(",").map(Number)
-                const distance = getHaversineDistance(latitude, longitude, ipLat, ipLng)
-                console.log(`[LocationToggle] GPS coords: ${latitude}, ${longitude}; IP coords: ${ipLat}, ${ipLng}; Distance: ${distance} km`)
-                if (distance > 200) {
-                  setShowVpnWarning(true)
-                } else {
-                  setShowVpnWarning(false)
+          // Throttle database writes to at most once per 5 seconds
+          if (now - lastWriteTimeRef.current >= 5000) {
+            lastWriteTimeRef.current = now
+            await supabase.from("profiles").update({
+              share_location: true
+            }).eq("id", userId)
+            await upsertLocation(latitude, longitude)
+            setSharing(true)
+            setLoading(false)
+
+            // Fetch IP location and compare
+            fetch("https://ipinfo.io/json")
+              .then((res) => {
+                if (!res.ok) throw new Error("CORS or network issue")
+                return res.json()
+              })
+              .then((data) => {
+                if (data && data.loc) {
+                  const [ipLat, ipLng] = data.loc.split(",").map(Number)
+                  const distance = getHaversineDistance(latitude, longitude, ipLat, ipLng)
+                  console.log(`[LocationToggle] GPS coords: ${latitude}, ${longitude}; IP coords: ${ipLat}, ${ipLng}; Distance: ${distance} km`)
+                  if (distance > 200) {
+                    setShowVpnWarning(true)
+                  } else {
+                    setShowVpnWarning(false)
+                  }
                 }
-              }
-            })
-            .catch((err) => {
-              console.warn("[LocationToggle] IP check failed:", err.message)
-            })
-
-          // Start the 5-second interval loop
-          intervalRef.current = setInterval(() => {
-            navigator.geolocation.getCurrentPosition(
-              (pos) => {
-                upsertLocation(pos.coords.latitude, pos.coords.longitude)
-              },
-              (err) => {
-                console.error("Interval geolocation error:", err.message)
-                setError(`Location error: ${err.message}`)
-              },
-              { enableHighAccuracy: true, timeout: 5000 }
-            )
-          }, 5000)
+              })
+              .catch((err) => {
+                console.warn("[LocationToggle] IP check failed:", err.message)
+              })
+          }
         } catch (err: any) {
           setError(err.message || "Failed to update location in database.")
           setLoading(false)
@@ -122,8 +117,10 @@ export function LocationToggle({ userId, className }: LocationToggleProps) {
         setError(msg)
         setLoading(false)
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     )
+
+    watchIdRef.current = watchId
   }
 
   const upsertLocation = async (lat: number, lng: number) => {
@@ -194,8 +191,8 @@ export function LocationToggle({ userId, className }: LocationToggleProps) {
     checkInitialState()
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current)
       }
     }
   }, [userId])

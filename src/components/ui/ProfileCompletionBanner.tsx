@@ -67,6 +67,11 @@ export function ProfileCompletionBanner() {
       if (data) setProfile(data)
     }
     load()
+
+    window.addEventListener("profile-updated", load)
+    return () => {
+      window.removeEventListener("profile-updated", load)
+    }
   }, [])
 
   useEffect(() => {

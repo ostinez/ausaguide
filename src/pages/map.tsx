@@ -96,19 +96,21 @@ export default function MapPage() {
   useEffect(() => {
     fetchHostsAndLocations()
 
-    // Subscribe to realtime profiles updates
-    /*
+    const existingChannels = supabase.getChannels()
+    existingChannels
+      .filter((ch) => ch.topic.includes("host-locations-realtime"))
+      .forEach((ch) => supabase.removeChannel(ch))
+
     const channel = supabase
-      .channel("public-profiles-locations")
+      .channel("host-locations-realtime")
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "profiles" },
+        { event: "*", schema: "public", table: "location_updates" },
         () => {
           fetchHostsAndLocations()
         }
       )
       .subscribe()
-    */
 
     // VPN detection check
     if (navigator.geolocation) {
@@ -153,7 +155,8 @@ export default function MapPage() {
     return () => {
       document.head.removeChild(script)
       document.head.removeChild(link)
-      // supabase.removeChannel(channel)
+      channel.unsubscribe()
+      supabase.removeChannel(channel)
     }
   }, [])
 

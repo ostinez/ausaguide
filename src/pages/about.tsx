@@ -7,7 +7,7 @@ import { BorderGlow } from "@/components/ui/BorderGlow"
 import { StarBorder } from "@/components/ui/StarBorder"
 import { useSEO } from "@/hooks/useSEO"
 import { JsonLd } from "@/components/seo/JsonLd"
-import founderPhoto from "../assets/images/founder/austin-mbote.jpg"
+import founderPhoto from "../assets/images/founder/austin-mbote.webp"
 
 export default function AboutPage() {
   const isAuthenticated = !!localStorage.getItem("user_id")
@@ -353,7 +353,7 @@ export default function AboutPage() {
                 role="img"
                 aria-label="Kenyan travelers enjoying a peaceful sunset on Watamu beach"
                 className="absolute inset-0 bg-cover bg-center transition-transform duration-500 hover:scale-105" 
-                style={{ backgroundImage: "url('/images/home/cta_coast.png')" }} 
+                style={{ backgroundImage: "url('/images/home/cta_coast.webp')" }} 
               />
               <div className="absolute inset-0 bg-black/85 backdrop-blur-[1px]" />
               

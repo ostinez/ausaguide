@@ -12,11 +12,11 @@ import { toast } from "sonner"
 import { useSEO } from "@/hooks/useSEO"
 import { JsonLd } from "@/components/seo/JsonLd"
 
-import mentalHealthHero from "../assets/images/mental-health/mental-health-hero.jpg"
-import mentalGallery1 from "../assets/images/mental-health/mental-gallery-1.jpg"
-import mentalGallery2 from "../assets/images/mental-health/mental-gallery-2.jpg"
-import mentalGallery3 from "../assets/images/mental-health/mental-gallery-3.jpg"
-import mentalGallery4 from "../assets/images/mental-health/mental-gallery-4.jpg"
+import mentalHealthHero from "../assets/images/mental-health/mental-health-hero.webp"
+import mentalGallery1 from "../assets/images/mental-health/mental-gallery-1.webp"
+import mentalGallery2 from "../assets/images/mental-health/mental-gallery-2.webp"
+import mentalGallery3 from "../assets/images/mental-health/mental-gallery-3.webp"
+import mentalGallery4 from "../assets/images/mental-health/mental-gallery-4.webp"
 
 const TIERS = [
   {
@@ -214,6 +214,7 @@ export default function MentalHealthPage() {
             <img
               src={mentalHealthHero}
               alt="Person sitting peacefully overlooking Watamu beach sunset"
+              loading="lazy"
               className="relative w-full h-[280px] rounded-3xl object-cover border border-border shadow-2xl"
             />
           </div>
@@ -233,8 +234,9 @@ export default function MentalHealthPage() {
               <div className="p-7 bg-[#121214]/60 border border-border rounded-2xl space-y-4 flex-1 flex flex-col justify-between hover:border-border transition duration-300">
                 <div className="space-y-3">
                   <img
-                    src="/images/mental-health/problem_nairobi_city.png"
+                    src="/images/mental-health/problem_nairobi_city.webp"
                     alt="Crowded street in Nairobi"
+                    loading="lazy"
                     className="w-full h-36 object-cover rounded-xl mb-2"
                   />
                   <div className="flex items-center gap-2">
@@ -265,8 +267,9 @@ export default function MentalHealthPage() {
               <div className="p-7 bg-[#121214]/60 border border-border rounded-2xl space-y-4 flex-1 flex flex-col justify-between hover:border-border transition duration-300">
                 <div className="space-y-3">
                   <img
-                    src="/images/mental-health/solution_chyulu_hills.png"
+                    src="/images/mental-health/solution_chyulu_hills.webp"
                     alt="Traveler relaxing in nature"
+                    loading="lazy"
                     className="w-full h-36 object-cover rounded-xl mb-2"
                   />
                   <div className="flex items-center gap-2">

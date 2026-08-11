@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
-import { Loader2, Filter } from "lucide-react"
+import { Filter } from "lucide-react"
+import { SkeletonTable } from "@/components/ui/Skeleton"
 
 export default function Admin2Bookings() {
   const [bookings, setBookings] = useState<any[]>([])
@@ -61,69 +62,68 @@ export default function Admin2Bookings() {
         </div>
       </div>
 
-      <div className="bg-[#111111] border border-white/10 rounded-xl overflow-hidden flex-1 flex flex-col min-h-0">
-        <div className="overflow-y-auto flex-1">
-          <table className="w-full text-sm text-left relative">
-            <thead className="text-xs text-gray-400 bg-black/40 uppercase sticky top-0 z-10 backdrop-blur-md">
-              <tr>
-                <th className="px-6 py-4 font-semibold">Tour</th>
-                <th className="px-6 py-4 font-semibold">Traveler</th>
-                <th className="px-6 py-4 font-semibold">Host</th>
-                <th className="px-6 py-4 font-semibold">Date</th>
-                <th className="px-6 py-4 font-semibold">Amount</th>
-                <th className="px-6 py-4 font-semibold">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {loading && bookings.length === 0 ? (
+      {loading ? (
+        <div className="animate-in fade-in duration-300">
+          <SkeletonTable rows={5} cols={6} />
+        </div>
+      ) : (
+        <div className="bg-[#111111] border border-white/10 rounded-xl overflow-hidden flex-1 flex flex-col min-h-0 animate-in fade-in duration-300">
+          <div className="overflow-y-auto flex-1">
+            <table className="w-full text-sm text-left relative">
+              <thead className="text-xs text-gray-400 bg-black/40 uppercase sticky top-0 z-10 backdrop-blur-md">
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                    <Loader2 className="animate-spin mx-auto mb-2" size={24} />
-                    Loading bookings...
-                  </td>
+                  <th className="px-6 py-4 font-semibold">Tour</th>
+                  <th className="px-6 py-4 font-semibold">Traveler</th>
+                  <th className="px-6 py-4 font-semibold">Host</th>
+                  <th className="px-6 py-4 font-semibold">Date</th>
+                  <th className="px-6 py-4 font-semibold">Amount</th>
+                  <th className="px-6 py-4 font-semibold">Status</th>
                 </tr>
-              ) : filteredBookings.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                    No bookings found matching the current filter
-                  </td>
-                </tr>
-              ) : (
-                filteredBookings.map(booking => (
-                  <tr key={booking.id} className="hover:bg-white/2 transition-colors">
-                    <td className="px-6 py-4 font-medium text-gray-200 max-w-[200px] truncate" title={booking.tours?.title}>
-                      {booking.tours?.title || 'Unknown Tour'}
-                    </td>
-                    <td className="px-6 py-4 text-gray-400">
-                      {booking.profiles?.full_name || 'Unknown'}
-                    </td>
-                    <td className="px-6 py-4 text-gray-400">
-                      {booking.tours?.profiles?.full_name || 'Unknown'}
-                    </td>
-                    <td className="px-6 py-4 text-gray-400">
-                      {new Date(booking.booking_date || booking.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 text-gray-300">
-                      {booking.total_price ? `$${booking.total_price.toLocaleString()} USD` : '$0 USD'}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize
-                        ${booking.status === 'confirmed' ? 'bg-green-500/10 text-green-400' : 
-                          booking.status === 'completed' ? 'bg-blue-500/10 text-blue-400' :
-                          booking.status === 'cancelled' ? 'bg-gray-500/10 text-gray-400' :
-                          booking.status === 'declined' ? 'bg-red-500/10 text-red-400' :
-                          'bg-yellow-500/10 text-yellow-400'}`}
-                      >
-                        {booking.status}
-                      </span>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {filteredBookings.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                      No bookings found matching the current filter
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  filteredBookings.map(booking => (
+                    <tr key={booking.id} className="hover:bg-white/2 transition-colors">
+                      <td className="px-6 py-4 font-medium text-gray-200 max-w-[200px] truncate" title={booking.tours?.title}>
+                        {booking.tours?.title || 'Unknown Tour'}
+                      </td>
+                      <td className="px-6 py-4 text-gray-400">
+                        {booking.profiles?.full_name || 'Unknown'}
+                      </td>
+                      <td className="px-6 py-4 text-gray-400">
+                        {booking.tours?.profiles?.full_name || 'Unknown'}
+                      </td>
+                      <td className="px-6 py-4 text-gray-400">
+                        {new Date(booking.booking_date || booking.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 text-gray-300">
+                        {booking.total_price ? `$${booking.total_price.toLocaleString()} USD` : '$0 USD'}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize
+                          ${booking.status === 'confirmed' ? 'bg-green-500/10 text-green-400' : 
+                            booking.status === 'completed' ? 'bg-blue-500/10 text-blue-400' :
+                            booking.status === 'cancelled' ? 'bg-gray-500/10 text-gray-400' :
+                            booking.status === 'declined' ? 'bg-red-500/10 text-red-400' :
+                            'bg-yellow-500/10 text-yellow-400'}`}
+                        >
+                          {booking.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

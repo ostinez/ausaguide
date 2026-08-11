@@ -129,6 +129,7 @@ export function UrgentMatchModal({ isOpen, onClose }: UrgentMatchModalProps) {
       .subscribe()
 
     return () => {
+      channel.unsubscribe()
       supabase.removeChannel(channel)
     }
   }, [requestId, step])

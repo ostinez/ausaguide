@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef, useCallback, memo } from "react"
 import { useNavigate, Link } from "react-router-dom"
+import useEmblaCarousel from "embla-carousel-react"
 import {
-  Trash2, Edit3, Heart, Rss, Globe, ImageIcon, X, Check, Loader2, ChevronLeft, ChevronRight, ArrowLeft, Eye
+  Trash2, Edit3, Heart, Rss, Globe, ImageIcon, X, Check, Loader2, ChevronLeft, ChevronRight, ArrowLeft, Eye, AlertTriangle, Medal, MapPin, Shield
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -11,7 +12,7 @@ import { cn, formatSocialLink } from "@/lib/utils"
 import { toast } from "sonner"
 import { useSEO } from "@/hooks/useSEO"
 import { formatDistanceToNow } from "date-fns"
-import { SkeletonPostCard } from "@/components/ui/SkeletonCard"
+import { SkeletonPostCard } from "@/components/ui/Skeleton"
 
 const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -356,6 +357,87 @@ function PrivatePostImage({ src, alt, className, onClick }: { src: string; alt?:
   )
 }
 
+function ImageCarousel({ urls, onImageClick }: { urls: string[]; onImageClick: (urls: string[], index: number) => void }) {
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: "start" })
+  const [prevBtnEnabled, setPrevBtnEnabled] = useState(false)
+  const [nextBtnEnabled, setNextBtnEnabled] = useState(false)
+  const [selectedIndex, setSelectedIndex] = useState(0)
+
+  const scrollPrev = useCallback(() => emblaApi && emblaApi.scrollPrev(), [emblaApi])
+  const scrollNext = useCallback(() => emblaApi && emblaApi.scrollNext(), [emblaApi])
+
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return
+    setSelectedIndex(emblaApi.selectedScrollSnap())
+    setPrevBtnEnabled(emblaApi.canScrollPrev())
+    setNextBtnEnabled(emblaApi.canScrollNext())
+  }, [emblaApi])
+
+  useEffect(() => {
+    if (!emblaApi) return
+    onSelect()
+    emblaApi.on("select", onSelect)
+    emblaApi.on("reInit", onSelect)
+  }, [emblaApi, onSelect])
+
+  return (
+    <div className="relative group overflow-hidden rounded-xl border border-white/5 bg-[#16161A]/40 shadow-inner aspect-video">
+      {/* Embla Viewport */}
+      <div className="overflow-hidden w-full h-full" ref={emblaRef}>
+        <div className="flex h-full">
+          {urls.map((url, idx) => (
+            <div key={url} className="flex-[0_0_100%] min-w-0 h-full relative cursor-pointer" onClick={() => onImageClick(urls, idx)}>
+              <PrivatePostImage
+                src={url}
+                alt={`Post media ${idx + 1}`}
+                className="w-full h-full object-cover transition-transform duration-300 hover:scale-102"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Navigation Buttons */}
+      {prevBtnEnabled && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); scrollPrev(); }}
+          className="absolute left-3 top-1/2 -translate-y-1/2 z-20 flex size-8 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white backdrop-blur-xs opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/85 hover:scale-105 active:scale-95"
+        >
+          <ChevronLeft className="size-4" />
+        </button>
+      )}
+
+      {nextBtnEnabled && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); scrollNext(); }}
+          className="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex size-8 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white backdrop-blur-xs opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/85 hover:scale-105 active:scale-95"
+        >
+          <ChevronRight className="size-4" />
+        </button>
+      )}
+
+      {/* Indicators */}
+      {urls.length > 1 && (
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex gap-1.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-xs">
+          {urls.map((_, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={(e) => { e.stopPropagation(); emblaApi?.scrollTo(idx); }}
+              className={cn(
+                "size-1.5 rounded-full transition-all duration-300",
+                idx === selectedIndex ? "w-3 bg-primary" : "bg-white/40 hover:bg-white/70"
+              )}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ImageLightbox({ urls, initialIndex, onClose }: { urls: string[], initialIndex: number, onClose: () => void }) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
 
@@ -409,7 +491,7 @@ function ImageLightbox({ urls, initialIndex, onClose }: { urls: string[], initia
   )
 }
 
-function PostCard({
+const PostCard = memo(function PostCard({
   post,
   currentUserId,
   onDelete,
@@ -434,10 +516,16 @@ function PostCard({
   const [showLikeModal, setShowLikeModal] = useState(false)
   const [likingInProgress, setLikingInProgress] = useState(false)
 
+  const [viewCount, setViewCount] = useState(post.view_count ?? 0)
+
   // Track post view when rendered
   useEffect(() => {
     if (post.id) {
-      trackView("post", post.id, currentUserId)
+      trackView("post", post.id, currentUserId).then((didTrack) => {
+        if (didTrack) {
+          setViewCount((prev) => prev + 1)
+        }
+      })
     }
   }, [post.id, currentUserId])
 
@@ -546,7 +634,7 @@ function PostCard({
   }
 
   return (
-    <div className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur p-4 space-y-3">
+    <div className="post-card rounded-2xl border border-white/10 bg-[#16161A]/60 backdrop-blur-md p-4 space-y-3 shadow-[0_8px_32px_rgba(0,0,0,0.37)] hover:border-primary/30 transition-all">
       {/* Author */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -562,19 +650,22 @@ function PostCard({
                 <span className="text-sm font-semibold leading-tight group-hover:text-primary transition-colors text-white">
                   {post.author?.full_name ?? "Unknown"}
                 </span>
-                {authorRole === "host" && (
-                  <span className="text-[8px] font-bold text-[#2CB67D] bg-[#2CB67D]/10 border border-[#2CB67D]/30 rounded-full px-1.5 py-0.25 tracking-wide">
-                    🟢 LOCAL HOST
+                {post.author?.host_tier === "certified_guide" && (
+                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-[#b49cf8] bg-[#7F5AF0]/10 border border-[#7F5AF0]/30 rounded-full px-2 py-0.5 tracking-wide">
+                    <Medal size={10} className="text-[#a78bfa]" />
+                    <span>Certified Guide</span>
+                  </span>
+                )}
+                {post.author?.host_tier === "local_host" && (
+                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-[#34e0a1] bg-[#2CB67D]/10 border border-[#2CB67D]/30 rounded-full px-2 py-0.5 tracking-wide">
+                    <MapPin size={10} className="text-[#2CB67D]" />
+                    <span>Local Host</span>
                   </span>
                 )}
                 {authorRole === "admin" && (
-                  <span className="text-[8px] font-bold text-amber-500 bg-amber-500/10 border border-amber-500/30 rounded-full px-1.5 py-0.25 tracking-wide">
-                    🛡️ ADMIN
-                  </span>
-                )}
-                {authorRole === "traveler" && (
-                  <span className="text-[8px] font-bold text-[#7F5AF0] bg-[#7F5AF0]/10 border border-[#7F5AF0]/30 rounded-full px-1.5 py-0.25 tracking-wide">
-                    ✈️ TRAVELER
+                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-full px-2 py-0.5 tracking-wide">
+                    <Shield size={10} className="text-amber-500" />
+                    <span>Admin</span>
                   </span>
                 )}
               </div>
@@ -665,7 +756,7 @@ function PostCard({
         <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{post.content}</p>
       )}
 
-      {/* Images Grid */}
+      {/* Images Carousel / Grid */}
       {(() => {
         const urls = post.image_urls && post.image_urls.length > 0 
           ? post.image_urls 
@@ -675,64 +766,19 @@ function PostCard({
 
         if (urls.length === 1) {
           return (
-            <PrivatePostImage 
-              src={urls[0]} 
-              alt="Post media" 
-              className="w-full rounded-xl max-h-80 object-cover cursor-pointer border border-border/40" 
-              onClick={() => onImageClick(urls, 0)} 
-            />
-          )
-        }
-
-        if (urls.length === 2) {
-          return (
-            <div className="grid grid-cols-2 gap-2 rounded-xl overflow-hidden border border-border/40 aspect-[2/1]">
-              <div className="relative cursor-pointer h-full" onClick={() => onImageClick(urls, 0)}>
-                <PrivatePostImage src={urls[0]} alt="Post media 0" className="w-full h-full object-cover" />
-              </div>
-              <div className="relative cursor-pointer h-full" onClick={() => onImageClick(urls, 1)}>
-                <PrivatePostImage src={urls[1]} alt="Post media 1" className="w-full h-full object-cover" />
-              </div>
-            </div>
-          )
-        }
-
-        if (urls.length === 3) {
-          return (
-            <div className="grid grid-cols-2 gap-2 rounded-xl overflow-hidden border border-border/40 aspect-[4/3]">
-              <div className="row-span-2 relative cursor-pointer h-full" onClick={() => onImageClick(urls, 0)}>
-                <PrivatePostImage src={urls[0]} alt="Post media 0" className="w-full h-full object-cover" />
-              </div>
-              <div className="relative cursor-pointer h-full" onClick={() => onImageClick(urls, 1)}>
-                <PrivatePostImage src={urls[1]} alt="Post media 1" className="w-full h-full object-cover" />
-              </div>
-              <div className="relative cursor-pointer h-full" onClick={() => onImageClick(urls, 2)}>
-                <PrivatePostImage src={urls[2]} alt="Post media 2" className="w-full h-full object-cover" />
-              </div>
+            <div className="relative overflow-hidden rounded-xl border border-white/5 bg-[#16161A]/40 aspect-video w-full">
+              <PrivatePostImage 
+                src={urls[0]} 
+                alt="Post media" 
+                className="w-full h-full object-cover cursor-pointer hover:scale-102 transition-transform duration-300" 
+                onClick={() => onImageClick(urls, 0)} 
+              />
             </div>
           )
         }
 
         return (
-          <div className="grid grid-cols-2 gap-2 rounded-xl overflow-hidden border border-border/40 aspect-[4/3]">
-            {urls.slice(0, 4).map((url, index) => {
-              const isLast = index === 3 && urls.length > 4
-              return (
-                <div key={url} className="relative w-full h-full group overflow-hidden cursor-pointer" onClick={() => onImageClick(urls, index)}>
-                  <PrivatePostImage 
-                    src={url} 
-                    alt={`Post media ${index}`} 
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
-                  />
-                  {isLast && (
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-black text-lg select-none">
-                      +{urls.length - 4}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+          <ImageCarousel urls={urls} onImageClick={onImageClick} />
         )
       })()}
 
@@ -819,12 +865,10 @@ function PostCard({
             {likesList.length} {likesList.length === 1 ? "Like" : "Likes"}
           </button>
           {/* View count */}
-          {(post.view_count ?? 0) > 0 && (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground/60">
-              <Eye className="size-3.5" />
-              {post.view_count}
-            </span>
-          )}
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground/60" title="Views">
+            <Eye className="size-3.5" />
+            <span>{viewCount} {viewCount === 1 ? "view" : "views"}</span>
+          </span>
         </div>
 
         <button
@@ -860,7 +904,7 @@ function PostCard({
       )}
     </div>
   )
-}
+})
 
 
 export default function FeedPage() {
@@ -928,6 +972,8 @@ export default function FeedPage() {
 
     return () => {
       if (refetchTimer) clearTimeout(refetchTimer)
+      likesChannel.unsubscribe()
+      savesChannel.unsubscribe()
       supabase.removeChannel(likesChannel)
       supabase.removeChannel(savesChannel)
     }
@@ -991,9 +1037,10 @@ export default function FeedPage() {
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight text-white">Community Feed</h1>
-              <p className="text-xs text-[#7F5AF0] font-semibold flex items-center gap-1.5 mt-0.5">
-                <span>🌐 Public Shared Space</span>
-              </p>
+              <span className="flex items-center gap-1.5">
+                <Globe className="size-3.5 text-[#7F5AF0]" />
+                Public Shared Space
+              </span>
             </div>
           </div>
         </div>
@@ -1047,15 +1094,16 @@ export default function FeedPage() {
 
         {/* Feed */}
         {loading ? (
-          <div className="space-y-4">
+          <div className="space-y-4 animate-in fade-in duration-300">
             <SkeletonPostCard />
             <SkeletonPostCard />
-            <SkeletonPostCard />
+            <SkeletonPostCard className="hidden sm:block" />
+            <SkeletonPostCard className="hidden sm:block" />
           </div>
         ) : feedError ? (
-          <div className="flex flex-col items-center gap-4 py-16 text-center">
+          <div className="flex flex-col items-center gap-4 py-16 text-center animate-in fade-in duration-300">
             <div className="size-14 rounded-full bg-red-500/10 flex items-center justify-center">
-              <span className="text-2xl">⚠️</span>
+              <AlertTriangle className="size-6 text-red-500" />
             </div>
             <div>
               <p className="text-sm font-semibold text-white">Couldn't load the feed</p>
@@ -1069,25 +1117,27 @@ export default function FeedPage() {
             </button>
           </div>
         ) : displayPosts.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-16 text-center">
+          <div className="flex flex-col items-center gap-3 py-16 text-center animate-in fade-in duration-300">
             <Globe className="size-10 text-muted-foreground/40" />
             <p className="text-sm text-muted-foreground">
               {filter === "favorites" ? "No saved posts yet." : "No posts yet. Be the first to share!"}
             </p>
           </div>
         ) : (
-          displayPosts.map(post => (
-            <PostCard
-              key={post.id}
-              post={post}
-              currentUserId={currentUserId}
-              isFollowing={followingIds.includes(post.user_id)}
-              onFollowToggle={handleFollowToggle}
-              onLikesChange={handleLikesChange}
-              onDelete={id => setPosts(prev => prev.filter(p => p.id !== id))}
-              onImageClick={(urls, index) => setLightboxData({ urls, index })}
-            />
-          ))
+          <div className="space-y-4 animate-in fade-in duration-300">
+            {displayPosts.map(post => (
+              <PostCard
+                key={post.id}
+                post={post}
+                currentUserId={currentUserId}
+                isFollowing={followingIds.includes(post.user_id)}
+                onFollowToggle={handleFollowToggle}
+                onLikesChange={handleLikesChange}
+                onDelete={id => setPosts(prev => prev.filter(p => p.id !== id))}
+                onImageClick={(urls, index) => setLightboxData({ urls, index })}
+              />
+            ))}
+          </div>
         )}
       </div>
 

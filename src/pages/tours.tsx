@@ -6,7 +6,7 @@ import { GradientText } from "@/components/ui/GradientText"
 
 import { GlassIcons } from "@/components/ui/GlassIcons"
 import { Input } from "@/components/ui/input"
-import { SkeletonTourGrid } from "@/components/ui/SkeletonCard"
+import { SkeletonTourGrid } from "@/components/ui/Skeleton"
 import { cn } from "@/lib/utils"
 import { fetchTours, incrementTourViews } from "@/lib/api/tours"
 import { TourCard } from "@/components/ui/TourCard"
@@ -340,11 +340,11 @@ export default function ToursPage() {
         </div>
 
         {loading ? (
-          <div className="mt-8">
-            <SkeletonTourGrid count={6} />
+          <div className="mt-8 animate-in fade-in duration-300">
+            <SkeletonTourGrid count={6} mobileCount={2} />
           </div>
         ) : error ? (
-          <div className="mt-16 flex flex-col items-center gap-3 text-center">
+          <div className="mt-16 flex flex-col items-center gap-3 text-center animate-in fade-in duration-300">
             <p className="text-lg font-semibold text-foreground">Could not load tours</p>
             <p className="text-sm text-muted-foreground">{error}</p>
           </div>
@@ -358,7 +358,7 @@ export default function ToursPage() {
             {displayedTours.length > 0 ? (
               <>
                 <div className={cn(
-                  "mt-4",
+                  "mt-4 animate-in fade-in duration-300",
                   viewMode === "grid"
                     ? "grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
                     : "flex flex-col gap-6"

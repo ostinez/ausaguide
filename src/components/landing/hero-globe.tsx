@@ -1,5 +1,4 @@
 import {
-  useCallback,
   useEffect,
   useRef,
   useState,
@@ -16,30 +15,10 @@ import MagicRings from "@/components/ui/MagicRings"
 import { TextType } from "@/components/ui/TextType"
 
 
-// Lazy-load the heavy WebGL globe so it never blocks initial render
-const Globe = lazy(() => import("react-globe.gl"))
+// Lazy-load the optimized WebGL globe visual component so it is completely code-split
+const GlobeVisual = lazy(() => import("./GlobeVisual"))
 
 const PURPLE = "#7F5AF0"
-const TEAL = "#2CB67D"
-
-// Use explicit HTTPS to avoid protocol-relative URL issues
-const COUNTRIES_GEOJSON_URL =
-  "https://raw.githubusercontent.com/vasturiano/react-globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson"
-
-interface CountryProperties {
-  ADMIN: string
-  ISO_A2: string
-}
-
-interface CountryFeature {
-  type: string
-  properties: CountryProperties
-  geometry: unknown
-}
-
-interface CountriesGeoJSON {
-  features: CountryFeature[]
-}
 
 // ── Error boundary ───────────────────────────────────────────────────────────
 
@@ -62,25 +41,38 @@ class GlobeErrorBoundary extends Component<
 
 function GlobeFallback() {
   return (
-    <div className="flex h-full w-full items-center justify-center">
+    <div 
+      className="flex h-full w-full items-center justify-center select-none animate-in fade-in duration-700"
+      style={{ touchAction: "pan-y" }}
+    >
       <div
-        className="flex items-center justify-center rounded-full"
+        className="relative flex items-center justify-center rounded-full overflow-hidden"
         style={{
-          width: "80%",
-          maxWidth: 700,
+          width: "min(85%, 600px)",
           aspectRatio: "1",
-          background: `radial-gradient(ellipse at center, ${PURPLE}22 0%, transparent 70%)`,
-          border: `1px solid ${PURPLE}33`,
+          boxShadow: `0 0 80px rgba(127, 90, 240, 0.15)`,
+          border: `1px solid rgba(255, 255, 255, 0.08)`,
+          background: `rgba(255, 255, 255, 0.02)`,
+          backdropFilter: "blur(4px)"
         }}
       >
-        <svg viewBox="0 0 200 200" width="60%" height="60%" opacity={0.3}>
-          <circle cx="100" cy="100" r="90" fill="none" stroke={PURPLE} strokeWidth="1" />
-          <ellipse cx="100" cy="100" rx="90" ry="35" fill="none" stroke={PURPLE} strokeWidth="0.5" />
-          <ellipse cx="100" cy="100" rx="60" ry="90" fill="none" stroke={PURPLE} strokeWidth="0.5" />
-          <ellipse cx="100" cy="100" rx="25" ry="90" fill="none" stroke={PURPLE} strokeWidth="0.5" />
-          <line x1="10" y1="100" x2="190" y2="100" stroke={PURPLE} strokeWidth="0.5" />
-          <line x1="100" y1="10" x2="100" y2="190" stroke={PURPLE} strokeWidth="0.5" />
-        </svg>
+        <img
+          src="https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?auto=format&fit=crop&w=600&q=80"
+          alt="Ausaguide Earth View"
+          loading="lazy"
+          className="w-full h-full object-cover rounded-full opacity-50 animate-pulse duration-10000"
+          style={{
+            mixBlendMode: "lighten",
+            filter: "brightness(0.9) contrast(1.1) saturate(0.8)"
+          }}
+        />
+        {/* Vignette overlay */}
+        <div
+          className="absolute inset-0 pointer-events-none rounded-full"
+          style={{
+            background: "radial-gradient(circle at center, transparent 35%, #16161A 95%)"
+          }}
+        />
       </div>
     </div>
   )
@@ -105,221 +97,6 @@ function GlobeLoading() {
   )
 }
 
-// ── WebGL Globe ──────────────────────────────────────────────────────────────
-
-function GlobeVisual() {
-  const navigate = useNavigate()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const globeRef = useRef<any>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  const [countries, setCountries] = useState<CountryFeature[]>([])
-  const [hoveredCountry, setHoveredCountry] = useState<CountryFeature | null>(null)
-  const [userCountryCode, setUserCountryCode] = useState<string | null>(null)
-  const [globeSize, setGlobeSize] = useState(600)
-  const isMobile = window.innerWidth < 768
-
-  // Detect user's country code via IP
-  useEffect(() => {
-    fetch("https://ipinfo.io/json")
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        return res.json()
-      })
-      .then((data) => {
-        if (data && data.country) {
-          const code = data.country.toUpperCase()
-          setUserCountryCode(code)
-        } else {
-          throw new Error("No country returned in ipinfo data")
-        }
-      })
-      .catch((err) => {
-        console.warn("[HeroGlobe] IP country detection failed, trying navigator language fallback:", err.message)
-        try {
-          const navLang = navigator.language
-          const code = navLang?.split("-")[1]?.toUpperCase()
-          if (code && code.length === 2) {
-            console.log("[HeroGlobe] Detected user country via navigator fallback:", code)
-            setUserCountryCode(code)
-          } else {
-            throw new Error("Invalid or missing country code in navigator.language")
-          }
-        } catch (fallbackErr) {
-          console.warn("[HeroGlobe] Fallbacks failed, defaulting to KE:", (fallbackErr as Error).message)
-          setUserCountryCode("KE")
-        }
-      })
-  }, [])
-
-  // Fetch GeoJSON country polygons
-  useEffect(() => {
-    const controller = new AbortController()
-
-    fetch(COUNTRIES_GEOJSON_URL, { signal: controller.signal })
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        return res.json() as Promise<CountriesGeoJSON>
-      })
-      .then((data) => {
-        // Filter out Antarctica
-        setCountries(data.features.filter((f) => f.properties.ISO_A2 !== "AQ"))
-      })
-      .catch((err) => {
-        if (err.name !== "AbortError") {
-          console.warn("[HeroGlobe] GeoJSON fetch failed:", err.message)
-        }
-      })
-
-    return () => controller.abort()
-  }, [])
-
-  // Measure container and set globe size (debounced)
-  useEffect(() => {
-    const container = containerRef.current
-    if (!container) return
-
-    let rafId: number
-    const measure = () => {
-      cancelAnimationFrame(rafId)
-      rafId = requestAnimationFrame(() => {
-        const rect = container.getBoundingClientRect()
-        const size = Math.max(400, Math.min(rect.width, rect.height, 900))
-        setGlobeSize(size)
-      })
-    }
-
-    measure()
-    const ro = new ResizeObserver(measure)
-    ro.observe(container)
-    return () => { ro.disconnect(); cancelAnimationFrame(rafId) }
-  }, [])
-
-  // Start auto-rotate once the globe is ready
-  const handleGlobeReady = useCallback(() => {
-    const controls = globeRef.current?.controls?.()
-    if (!controls) return
-    controls.autoRotate = true
-    controls.autoRotateSpeed = 0.1
-    controls.enableZoom = false
-    // Start centred on Africa
-    globeRef.current?.pointOfView?.({ lat: -1, lng: 37, altitude: 1.8 }, 0)
-  }, [])
-
-  const handlePolygonClick = useCallback((polygon: any) => {
-    const countryName = polygon?.properties?.name || polygon?.properties?.ADMIN
-    if (countryName) {
-      navigate(`/map?country=${encodeURIComponent(countryName)}`)
-    } else {
-      navigate("/map")
-    }
-  }, [navigate])
-
-  const handlePolygonHover = useCallback((polygon: object | null) => {
-    setHoveredCountry(polygon as CountryFeature | null)
-  }, [])
-
-  const isHovered = useCallback(
-    (f: CountryFeature) => {
-      return hoveredCountry && f.properties.ISO_A2 === hoveredCountry.properties.ISO_A2
-    },
-    [hoveredCountry]
-  )
-
-  const isOwn = useCallback(
-    (f: CountryFeature) => {
-      return userCountryCode && f.properties.ISO_A2 === userCountryCode
-    },
-    [userCountryCode]
-  )
-
-  const polygonAltitude = useCallback(
-    (f: object) => {
-      const feat = f as CountryFeature
-      if (isOwn(feat) && isHovered(feat)) return 0.08
-      if (isHovered(feat)) return 0.06
-      if (isOwn(feat)) return 0.02
-      return 0.01
-    },
-    [isOwn, isHovered]
-  )
-
-  const polygonCapColor = useCallback(
-    (f: object) => {
-      const feat = f as CountryFeature
-      if (isOwn(feat) && isHovered(feat)) return `${TEAL}E6` // 90% opacity
-      if (isHovered(feat)) return `${PURPLE}CC` // 80% opacity
-      if (isOwn(feat)) return `${TEAL}80` // 50% opacity
-      return `${PURPLE}55`
-    },
-    [isOwn, isHovered]
-  )
-
-  const polygonSideColor = useCallback(
-    (f: object) => {
-      const feat = f as CountryFeature
-      if (isOwn(feat) || (isOwn(feat) && isHovered(feat))) return `${TEAL}33`
-      return `${PURPLE}22`
-    },
-    [isOwn, isHovered]
-  )
-
-  const polygonStrokeColor = useCallback(
-    (f: object) => {
-      const feat = f as CountryFeature
-      if (isOwn(feat) || (isOwn(feat) && isHovered(feat))) return TEAL
-      if (isHovered(feat)) return PURPLE
-      return `${PURPLE}99`
-    },
-    [isOwn, isHovered]
-  )
-
-  const polygonLabel = useCallback((f: object) => {
-    const { ADMIN } = (f as CountryFeature).properties
-    return `<div style="background:#16161A;border:1px solid #7F5AF0;border-radius:8px;padding:8px 12px;color:#FFFFFE;font-family:Inter,sans-serif;font-size:13px;font-weight:500;pointer-events:none;">${ADMIN}</div>`
-  }, [])
-
-  return (
-    <div ref={containerRef} className="flex h-full w-full items-center justify-center">
-      <div className="relative" style={{ width: globeSize, height: globeSize }}>
-        {/* Vignette overlay to blend edges into background */}
-        <div
-          className="pointer-events-none absolute inset-0 z-10 rounded-full"
-          style={{
-            background: "radial-gradient(ellipse at center, transparent 50%, #16161A 80%)",
-          }}
-        />
-        <Globe
-          ref={globeRef}
-          width={globeSize}
-          height={globeSize}
-          backgroundColor="rgba(0,0,0,0)"
-          globeImageUrl="https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg"
-          bumpImageUrl={isMobile ? undefined : "https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-topology.png"}
-          lineHoverPrecision={0}
-          polygonsData={countries}
-          polygonAltitude={polygonAltitude}
-          polygonCapColor={polygonCapColor}
-          polygonSideColor={polygonSideColor}
-          polygonStrokeColor={polygonStrokeColor}
-          polygonLabel={polygonLabel}
-          onPolygonHover={handlePolygonHover}
-          onPolygonClick={handlePolygonClick}
-          polygonsTransitionDuration={isMobile ? 0 : 300}
-          onGlobeReady={handleGlobeReady}
-          atmosphereColor={PURPLE}
-          atmosphereAltitude={isMobile ? 0.08 : 0.15}
-          rendererConfig={{
-            precision: isMobile ? "lowp" : "mediump",
-            antialias: false,
-            powerPreference: isMobile ? "low-power" : "high-performance"
-          }}
-        />
-      </div>
-    </div>
-  )
-}
-
 // ── Public export ────────────────────────────────────────────────────────────
 
 export function HeroGlobe() {
@@ -328,10 +105,25 @@ export function HeroGlobe() {
   const [searchExpanded, setSearchExpanded] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [hasWebGLSupport, setHasWebGLSupport] = useState(true)
 
   // Intersection Observer to track if the hero section is visible in the viewport
   const sectionRef = useRef<HTMLElement>(null)
   const [isInViewport, setIsInViewport] = useState(true)
+
+  // Detect WebGL support once
+  useEffect(() => {
+    try {
+      const canvas = document.createElement("canvas")
+      const support = !!(
+        window.WebGLRenderingContext &&
+        (canvas.getContext("webgl") || canvas.getContext("experimental-webgl"))
+      )
+      setHasWebGLSupport(support)
+    } catch (e) {
+      setHasWebGLSupport(false)
+    }
+  }, [])
 
   // Track responsive screen size for props
   useEffect(() => {
@@ -371,10 +163,14 @@ export function HeroGlobe() {
   const isSearchActive = searchExpanded || isFocused || query.trim().length > 0
 
   return (
-    <section ref={sectionRef} className="relative overflow-hidden bg-[#16161A] w-full" style={{ height: "100svh" }}>
+    <section 
+      ref={sectionRef} 
+      className="relative overflow-hidden bg-[#16161A] w-full" 
+      style={{ height: isMobile ? "80svh" : "100svh" }}
+    >
       {/* Layer 3: Magic Rings background (z-[1]) - Only renders when in viewport to save CPU/GPU */}
       <div className="absolute inset-0 z-[1]">
-        {isInViewport && (
+        {isInViewport && !isMobile && (
           <MagicRings
             color="#7F5AF0"
             colorTwo="#2CB67D"
@@ -410,10 +206,9 @@ export function HeroGlobe() {
       />
 
       {/* Layer 4: Globe centered in the hero area (z-[2]) - Only renders when in viewport */}
-      {/* On mobile we skip the heavy WebGL globe for performance */}
       <div className="absolute inset-0 z-[2] pointer-events-none flex items-center justify-center">
         <div className="pointer-events-auto w-full h-full">
-          {isInViewport ? (
+          {isInViewport && hasWebGLSupport ? (
             <GlobeErrorBoundary fallback={<GlobeFallback />}>
               <Suspense fallback={<GlobeLoading />}>
                 <GlobeVisual />
@@ -484,6 +279,16 @@ export function HeroGlobe() {
             your window into their world
           </p>
         </div>
+        
+        {/* Subtle scroll indicator on mobile */}
+        {isMobile && (
+          <div className="flex flex-col items-center gap-1 mt-3 text-[10px] uppercase tracking-widest text-[#7F5AF0]/80 animate-bounce">
+            <span>Scroll down to explore</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="size-3.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </div>
+        )}
       </div>
     </section>
   )

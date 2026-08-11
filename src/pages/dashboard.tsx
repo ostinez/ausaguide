@@ -22,13 +22,14 @@ import {
   Menu,
   BadgeCheck,
   Loader2,
+  CheckCircle2,
 } from "lucide-react"
 import { ChatDialog } from "@/components/chat/chat-dialog"
 import NotificationBell from "@/components/ui/NotificationBell"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Spinner } from "@/components/ui/spinner"
-import { PlusSpinner } from "@/components/ui/PlusSpinner"
+import { SkeletonDashboard } from "@/components/ui/Skeleton"
 import {
   Card,
   CardAction,
@@ -352,6 +353,32 @@ function BookingRow({
   const dateStr = format(new Date(booking.booking_date), "MMM d, yyyy")
   const [joiningCall, setJoiningCall] = useState(false)
   const [countdown, setCountdown] = useState<string>("")
+  const [payingOut, setPayingOut] = useState(false)
+  const [payoutDone, setPayoutDone] = useState(booking.host_paid === true)
+
+  async function handleConfirmCompletion(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (payoutDone) return
+    setPayingOut(true)
+    try {
+      const { data, error: fnErr } = await supabase.functions.invoke("inta-pay-host", {
+        body: {
+          bookingId: booking.id,
+          hostId: booking.host_id,
+          amount: booking.payment_amount || booking.total_price,
+          phone: booking.guest_phone,
+        },
+      })
+      if (fnErr) throw new Error(fnErr.message || "Payout failed")
+      if (data?.error) throw new Error(data.error)
+      setPayoutDone(true)
+      toast.success("Tour marked complete & host payout initiated! 🎉")
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to initiate host payout")
+    } finally {
+      setPayingOut(false)
+    }
+  }
 
   useEffect(() => {
     const startStr = booking.booking_time 
@@ -431,7 +458,7 @@ function BookingRow({
             <span>${booking.total_price ? `$${booking.total_price.toLocaleString()} USD` : "$0 USD"}</span>
             {countdown && (booking.status === "confirmed" || booking.status === "pending") && (
               <span className="inline-flex items-center rounded-full bg-teal-500/10 px-2 py-0.5 text-[10px] font-semibold text-teal-400">
-                ⏱️ {countdown}
+                <Clock className="size-3 mr-1 inline" /> {countdown}
               </span>
             )}
           </div>
@@ -464,6 +491,28 @@ function BookingRow({
               <Video className="size-3.5" />
             )}
             Join Call
+          </Button>
+        )}
+        {(booking.status === "confirmed" || booking.status === "completed") && !showTour && (
+          <Button
+            size="sm"
+            variant={payoutDone ? "ghost" : "outline"}
+            className={cn(
+              "rounded-full shrink-0 gap-1.5 mr-1 text-xs",
+              payoutDone
+                ? "text-green-500 border-green-500/30 bg-green-500/10 cursor-default"
+                : "border-primary/40 text-primary hover:bg-primary/10"
+            )}
+            onClick={handleConfirmCompletion}
+            disabled={payingOut || payoutDone}
+          >
+            {payingOut ? (
+              <><Spinner className="size-3 animate-spin" /> Paying out…</>
+            ) : payoutDone ? (
+              <><CheckCircle2 className="size-3" /> Paid Out</>
+            ) : (
+              <><BadgeCheck className="size-3" /> Confirm Tour Completion</>
+            )}
           </Button>
         )}
         {booking.status === "declined" && booking.decline_reason && (
@@ -1143,12 +1192,9 @@ function UrgentRequestsSection({
   return (
     <Card className="border-violet-500/30 bg-violet-950/10 shadow-lg border">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base flex items-center gap-2 text-violet-400">
-          <span className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-violet-500"></span>
-          </span>
-          🚨 Incoming Urgent Matches Near You!
+        <CardTitle className="text-white text-base flex items-center gap-1.5">
+          <Bell className="size-4 text-violet-400 inline shrink-0 animate-bounce" />
+          Incoming Urgent Matches Near You!
         </CardTitle>
         <CardDescription className="text-slate-400 text-xs">
           Match with travelers looking for immediate guides within 5km. Respond before expiry!
@@ -1377,6 +1423,7 @@ export default function DashboardPage() {
       .subscribe()
 
     return () => {
+      channel.unsubscribe()
       supabase.removeChannel(channel)
     }
   }, [userId, userRoleState, fetchPendingUrgent])
@@ -1535,6 +1582,11 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!userId) return
 
+    const existingChannels = supabase.getChannels()
+    existingChannels
+      .filter((ch) => ch.topic.includes(`profile:${userId}`))
+      .forEach((ch) => supabase.removeChannel(ch))
+
     const channel = supabase
       .channel(`profile:${userId}`)
       .on(
@@ -1680,17 +1732,16 @@ export default function DashboardPage() {
           </div>
 
         {loading ? (
-          <div className="flex flex-col items-center gap-3 py-16">
-            <PlusSpinner size={48} />
-            <p className="text-sm text-muted-foreground">Loading dashboard...</p>
+          <div className="animate-in fade-in duration-300">
+            <SkeletonDashboard role={userRoleState} />
           </div>
         ) : error ? (
-          <div className="py-16 text-center">
+          <div className="py-16 text-center animate-in fade-in duration-300">
             <p className="text-lg font-semibold text-foreground">Could not load dashboard</p>
             <p className="mt-2 text-sm text-muted-foreground">{error}</p>
           </div>
         ) : userRoleState === "host" ? (
-            <div className="space-y-8">
+            <div className="space-y-8 animate-in fade-in duration-300">
               {view === "dashboard" && (
                 <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
                   {/* Left Column: stats, notifications, bookings */}
@@ -1700,7 +1751,7 @@ export default function DashboardPage() {
                         <div className="rounded-xl border border-blue-500/30 bg-blue-500/5 p-4 flex items-start gap-3">
                           <BadgeCheck className="size-5 text-blue-500 shrink-0 mt-0.5" />
                           <div>
-                            <h4 className="font-semibold text-sm text-blue-400">Certified Guide ✅</h4>
+                            <h4 className="font-semibold text-sm text-blue-400">Certified Guide</h4>
                             <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
                               Your guide credentials have been verified. You hold Certified Guide status.
                             </p>
@@ -2010,7 +2061,9 @@ export default function DashboardPage() {
             </div>
           )
         ) : (
-          <TravelerDashboard bookings={travelerBookings} onChat={handleChatClick} />
+          <div className="animate-in fade-in duration-300">
+            <TravelerDashboard bookings={travelerBookings} onChat={handleChatClick} />
+          </div>
         )}
 
         {(chatBooking || directChatReceiver) && (() => {

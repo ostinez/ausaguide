@@ -214,6 +214,17 @@
   animation: shimmer 1.6s ease-in-out infinite;
 }
 
+.skeleton-shimmer-custom {
+  background: linear-gradient(
+    90deg,
+    #1e1e24 25%,
+    #2a2a32 50%,
+    #1e1e24 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
 .tour-card {
   box-shadow: var(--shadow-2);
   transition: box-shadow 0.25s var(--ease-3), transform 0.25s var(--ease-3);
@@ -395,6 +406,20 @@ img {
 /* Sparingly apply will-change for performance optimizations */
 .accelerated-animating-panel {
   will-change: transform, opacity;
+}
+
+/* ── depth effects & glassmorphism ──────────────────────────────────────── */
+
+.tour-card,
+.post-card,
+[data-slot="dialog-content"],
+[data-slot="dropdown-menu-content"],
+.group[data-sonner-toast] {
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
 }
 
 

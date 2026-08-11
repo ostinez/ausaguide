@@ -10,6 +10,7 @@ import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { createGeneralDailyRoom } from "@/lib/api/daily"
+import { useRealtimePresence } from "@/lib/hooks/useRealtimePresence"
 import { BackButton } from "@/components/ui/BackButton"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -228,22 +229,26 @@ function ProfileModal({ userId, onClose }: { userId: string; onClose: () => void
 export default function MessagesPage() {
   const [searchParams] = useSearchParams()
   const preselectedConvId = searchParams.get("conversationId") || ""
+  const paramHostId = searchParams.get("hostId") || searchParams.get("userId") || ""
+  const paramBookingId = searchParams.get("bookingId") || ""
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const { isUserOnline } = useRealtimePresence(currentUserId)
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [selectedConvId, setSelectedConvId] = useState<string>(preselectedConvId)
   const [messages, setMessages] = useState<DirectMessage[]>([])
   const [inputValue, setInputValue] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
-  const [otherTyping] = useState(false)
+  const [otherTyping, setOtherTyping] = useState(false)
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
-  const [mobileView, setMobileView] = useState<"list" | "chat">(preselectedConvId ? "chat" : "list")
+  const [mobileView, setMobileView] = useState<"list" | "chat">(preselectedConvId || paramHostId || paramBookingId ? "chat" : "list")
   const [uploadProgress, setUploadProgress] = useState<number | null>(null)
   const [showProfileUserId, setShowProfileUserId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+  const typingTimeoutRef = useRef<any>(null)
 
   // ─── Load current user ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -257,6 +262,19 @@ export default function MessagesPage() {
     if (!currentUserId) return
     setLoading(true)
     try {
+      let targetOtherId = paramHostId
+
+      if (!targetOtherId && paramBookingId) {
+        const { data: bData } = await supabase
+          .from("bookings")
+          .select("host_id, guest_id")
+          .eq("id", paramBookingId)
+          .maybeSingle()
+        if (bData) {
+          targetOtherId = bData.host_id === currentUserId ? bData.guest_id : bData.host_id
+        }
+      }
+
       const { data: convRows, error } = await supabase
         .from("conversations")
         .select("id, participant1_id, participant2_id, last_message, last_message_at, created_at")
@@ -265,8 +283,41 @@ export default function MessagesPage() {
 
       if (error) throw error
 
+      let allConvRows = convRows ?? []
+
+      // If target user specified and no existing conversation, create one automatically
+      if (targetOtherId && targetOtherId !== currentUserId) {
+        let existing = allConvRows.find(
+          (c) =>
+            (c.participant1_id === currentUserId && c.participant2_id === targetOtherId) ||
+            (c.participant2_id === currentUserId && c.participant1_id === targetOtherId)
+        )
+
+        if (!existing) {
+          const { data: newConv, error: createErr } = await supabase
+            .from("conversations")
+            .insert({
+              participant1_id: currentUserId,
+              participant2_id: targetOtherId,
+              last_message: "Started conversation",
+              last_message_at: new Date().toISOString(),
+            })
+            .select()
+            .single()
+
+          if (!createErr && newConv) {
+            allConvRows.unshift(newConv)
+            setSelectedConvId(newConv.id)
+            setMobileView("chat")
+          }
+        } else if (!selectedConvId) {
+          setSelectedConvId(existing.id)
+          setMobileView("chat")
+        }
+      }
+
       const enriched: Conversation[] = await Promise.all(
-        (convRows ?? []).map(async (row) => {
+        allConvRows.map(async (row) => {
           const otherId = row.participant1_id === currentUserId ? row.participant2_id : row.participant1_id
           const { data: profile } = await supabase
             .from("profiles")
@@ -283,7 +334,7 @@ export default function MessagesPage() {
 
           return {
             ...row,
-            other: (profile as Participant) ?? { id: otherId, full_name: "Unknown", avatar_url: null, host_tier: null },
+            other: (profile as Participant) ?? { id: otherId, full_name: "User", avatar_url: null, host_tier: null },
             unreadCount: unreadCount ?? 0,
           }
         })
@@ -296,12 +347,15 @@ export default function MessagesPage() {
       })
 
       setConversations(enriched)
+      if (!selectedConvId && enriched.length > 0) {
+        setSelectedConvId(enriched[0].id)
+      }
     } catch (err) {
-      console.error(err)
+      console.error("Error loading conversations:", err)
     } finally {
       setLoading(false)
     }
-  }, [currentUserId])
+  }, [currentUserId, paramHostId, paramBookingId, selectedConvId])
 
   useEffect(() => {
     loadConversations()
@@ -336,7 +390,6 @@ export default function MessagesPage() {
   useEffect(() => {
     if (!selectedConvId || !currentUserId) return
 
-    /*
     const channel = supabase
       .channel(`conv:${selectedConvId}`)
       .on(
@@ -344,16 +397,15 @@ export default function MessagesPage() {
         { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${selectedConvId}` },
         (payload) => {
           const newMsg = payload.new as DirectMessage
-          setMessages((prev) => [...prev, newMsg])
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === newMsg.id)) return prev
+            return [...prev, newMsg]
+          })
           if (newMsg.sender_id !== currentUserId) {
-            // Auto mark read
             supabase
               .from("messages")
               .update({ read: true })
               .eq("id", newMsg.id)
-            
-            // Toast notification
-            toast.info(`New message from ${selectedConv?.other.full_name ?? "User"}`)
           }
           loadConversations()
         }
@@ -366,11 +418,31 @@ export default function MessagesPage() {
       .subscribe()
 
     channelRef.current = channel
-    */
+
     return () => {
-      // supabase.removeChannel(channel)
+      supabase.removeChannel(channel)
     }
   }, [selectedConvId, currentUserId, loadConversations])
+
+  const broadcastTyping = (val: string) => {
+    setInputValue(val)
+    if (!channelRef.current || !currentUserId) return
+
+    channelRef.current.send({
+      type: "broadcast",
+      event: "typing",
+      payload: { senderId: currentUserId, isTyping: val.length > 0 },
+    })
+
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
+    typingTimeoutRef.current = setTimeout(() => {
+      channelRef.current?.send({
+        type: "broadcast",
+        event: "typing",
+        payload: { senderId: currentUserId, isTyping: false },
+      })
+    }, 2000)
+  }
 
   // ─── Auto-scroll ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -457,18 +529,6 @@ export default function MessagesPage() {
     }
   }
 
-  // ─── Typing indicator broadcast ─────────────────────────────────────────────
-  const broadcastTyping = (val: string) => {
-    setInputValue(val)
-    if (!channelRef.current || !currentUserId) return
-    const isTyping = val.length > 0
-    channelRef.current.send({
-      type: "broadcast",
-      event: "typing",
-      payload: { senderId: currentUserId, isTyping },
-    })
-  }
-
   // ─── Video calling integration ──────────────────────────────────────────────
   const handleVideoCall = async () => {
     if (!selectedConvId) return
@@ -545,6 +605,9 @@ export default function MessagesPage() {
                       {initials(conv.other.full_name)}
                     </AvatarFallback>
                   </Avatar>
+                  {isUserOnline(conv.other.id) && (
+                    <span className="absolute bottom-0 right-0 size-3 rounded-full bg-emerald-500 border-2 border-[#16161A]" title="Online" />
+                  )}
                   {conv.unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 size-5 rounded-full bg-primary text-[10px] text-white font-black flex items-center justify-center animate-pulse">
                       {conv.unreadCount}
@@ -609,12 +672,17 @@ export default function MessagesPage() {
                     className="flex items-center gap-3 hover:opacity-85 transition-opacity"
                     title="View Profile"
                   >
-                    <Avatar className="size-10 border border-white/10">
-                      <AvatarImage src={selectedConv.other.avatar_url ?? ""} />
-                      <AvatarFallback className="bg-primary/20 text-primary text-sm font-semibold">
-                        {initials(selectedConv.other.full_name)}
-                      </AvatarFallback>
-                    </Avatar>
+                    <div className="relative">
+                      <Avatar className="size-10 border border-white/10">
+                        <AvatarImage src={selectedConv.other.avatar_url ?? ""} />
+                        <AvatarFallback className="bg-primary/20 text-primary text-sm font-semibold">
+                          {initials(selectedConv.other.full_name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      {otherId && isUserOnline(otherId) && (
+                        <span className="absolute bottom-0 right-0 size-2.5 rounded-full bg-emerald-500 border-2 border-[#16161A]" />
+                      )}
+                    </div>
                     <div className="text-left min-w-0">
                       <div className="flex items-center gap-1.5">
                         <p className="font-semibold text-sm leading-tight text-white">{selectedConv.other.full_name}</p>

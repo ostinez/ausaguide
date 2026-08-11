@@ -21,7 +21,7 @@ const mockTours: Tour[] = [
     longitude: 36.8219,
     category: "nature",
     tour_type: "in_person",
-    images: ["/images/tours/safari.png"],
+    images: ["/images/tours/safari.webp"],
     highlights: ["Game drives", "Sunset views"],
     is_published: true,
     rating: 4.8,

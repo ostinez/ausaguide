@@ -15,7 +15,7 @@ serve(async (req) => {
   }
 
   try {
-    const { bookingId, tourType } = await req.json()
+    const { bookingId, tourType, tipAmount } = await req.json()
 
     if (!bookingId || !tourType) {
       return new Response(JSON.stringify({ error: "Missing required fields: bookingId, tourType" }), {
@@ -27,7 +27,7 @@ serve(async (req) => {
     const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY") || ""
     if (!stripeSecretKey) {
       console.error("STRIPE_SECRET_KEY is not set in environment")
-      return new Response(JSON.stringify({ error: "Stripe configuration error" }), {
+      return new Response(JSON.stringify({ error: "Stripe configuration error on server" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       })
@@ -42,7 +42,7 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error("Supabase environment variables not set")
-      return new Response(JSON.stringify({ error: "Database configuration error" }), {
+      return new Response(JSON.stringify({ error: "Database configuration error on server" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       })
@@ -59,7 +59,7 @@ serve(async (req) => {
 
     if (bookingErr || !booking) {
       console.error("Failed to fetch booking details:", bookingErr)
-      return new Response(JSON.stringify({ error: "Booking not found" }), {
+      return new Response(JSON.stringify({ error: "Booking not found in database" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       })
@@ -68,70 +68,117 @@ serve(async (req) => {
     // Origin header for absolute success and cancel redirection URLs
     const origin = req.headers.get("origin") || "http://localhost:5173"
 
-    // Prepare payment intent data (manual capture)
-    const paymentIntentData: any = {
-      capture_method: "manual",
-      metadata: {
-        booking_id: bookingId,
-        tour_type: tourType,
-      },
-    }
-
     // Connect destination configuration if host has connected their stripe account
     const hostStripeAccountId = booking.host_profile?.stripe_account_id
-    if (hostStripeAccountId) {
-      paymentIntentData.transfer_data = {
-        destination: hostStripeAccountId,
-      }
-    }
+    const currency = (booking.currency || booking.tour?.currency || "KES").toLowerCase()
 
-    // Create Stripe Checkout Session
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price_data: {
-            currency: 'kes',
-            product_data: {
-              name: booking.tour?.title || "Tour Booking",
-              description: `${tourType === 'virtual' ? 'Virtual Live Tour' : 'Physical In-Person Experience'} - Booking Ref BK-${bookingId.slice(0, 8).toUpperCase()}`,
-            },
-            unit_amount: Math.round(Number(booking.total_price) * 100), // in cents
-          },
-          quantity: 1,
+    if (tipAmount && Number(tipAmount) > 0) {
+      // 1. Tipping Flow (post-tour payment)
+      const paymentIntentData: any = {
+        metadata: {
+          booking_id: bookingId,
+          payment_type: "tip",
         },
-      ],
-      mode: 'payment',
-      payment_intent_data: paymentIntentData,
-      success_url: `${origin}/confirmation/${bookingId}?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/checkout/${booking.tour_id}?error=payment_cancelled&date=${booking.booking_date}&time=${booking.booking_time}&guests=${booking.guest_count}`,
-      metadata: {
-        booking_id: bookingId,
-        tour_type: tourType,
-      },
-    })
+      }
 
-    // Update booking_type on bookings table
-    const { error: updateErr } = await supabase
-      .from("bookings")
-      .update({ booking_type: tourType })
-      .eq("id", bookingId)
+      if (hostStripeAccountId) {
+        paymentIntentData.transfer_data = {
+          destination: hostStripeAccountId,
+        }
+      }
 
-    if (updateErr) {
-      console.error("Failed to update booking type:", updateErr)
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: currency,
+              product_data: {
+                name: `Tip for ${booking.host_profile?.full_name || "your Host"}`,
+                description: `Tip for ${booking.tour?.title || "Tour Experience"} - Booking Ref BK-${bookingId.slice(0, 8).toUpperCase()}`,
+              },
+              unit_amount: Math.round(Number(tipAmount) * 100), // in cents
+            },
+            quantity: 1,
+          },
+        ],
+        mode: 'payment',
+        payment_intent_data: paymentIntentData,
+        success_url: `${origin}/confirmation/${bookingId}?success=tip`,
+        cancel_url: `${origin}/confirmation/${bookingId}?error=tip_cancelled`,
+        metadata: {
+          booking_id: bookingId,
+          payment_type: "tip",
+        },
+      })
+
+      console.log(`Created Stripe Checkout Session ${session.id} for Tip of Booking ID ${bookingId}`)
+      return new Response(JSON.stringify({ sessionId: session.id, sessionUrl: session.url }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      })
+    } else {
+      // 2. Standard Booking Flow
+      const paymentIntentData: any = {
+        capture_method: "manual",
+        metadata: {
+          booking_id: bookingId,
+          tour_type: tourType,
+        },
+      }
+
+      if (hostStripeAccountId) {
+        paymentIntentData.transfer_data = {
+          destination: hostStripeAccountId,
+        }
+      }
+
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: currency,
+              product_data: {
+                name: booking.tour?.title || "Tour Booking",
+                description: `${tourType === 'virtual' ? 'Virtual Live Tour' : 'Physical In-Person Experience'} - Booking Ref BK-${bookingId.slice(0, 8).toUpperCase()}`,
+              },
+              unit_amount: Math.round(Number(booking.total_price) * 100), // in cents
+            },
+            quantity: 1,
+          },
+        ],
+        mode: 'payment',
+        payment_intent_data: paymentIntentData,
+        success_url: `${origin}/confirmation/${bookingId}?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${origin}/checkout/${booking.tour_id}?error=payment_cancelled&date=${booking.booking_date}&time=${booking.booking_time}&guests=${booking.guest_count}`,
+        metadata: {
+          booking_id: bookingId,
+          tour_type: tourType,
+        },
+      })
+
+      // Update booking_type on bookings table
+      const { error: updateErr } = await supabase
+        .from("bookings")
+        .update({ booking_type: tourType })
+        .eq("id", bookingId)
+
+      if (updateErr) {
+        console.error("Failed to update booking type:", updateErr)
+      }
+
+      console.log(`Created Stripe Checkout Session ${session.id} for booking ID ${bookingId}`)
+      return new Response(JSON.stringify({ sessionId: session.id, sessionUrl: session.url }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      })
     }
-
-    console.log(`Created Stripe Checkout Session ${session.id} for booking ID ${bookingId}`)
-
-    return new Response(JSON.stringify({ sessionId: session.id, sessionUrl: session.url }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    })
 
   } catch (err: any) {
     console.error(`Unhandled edge function error: ${err.message}`)
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
+    return new Response(JSON.stringify({ error: err.message || "Failed to process payment session" }), {
+      status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     })
   }

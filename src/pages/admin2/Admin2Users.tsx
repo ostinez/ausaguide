@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { Search, Loader2 } from "lucide-react"
+import { SkeletonTable } from "@/components/ui/Skeleton"
 import { toast } from "sonner"
 
 export default function Admin2Users() {
@@ -28,25 +29,26 @@ export default function Admin2Users() {
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     setUpdatingId(userId)
-    
-    // When setting to host, also set host_tier = 'local_host' so they don't loop back to onboarding
-    // When removing host role, clear host_tier
-    const updates: Record<string, any> = { role: newRole }
-    if (newRole === "host") {
-      updates.host_tier = "local_host"
-    } else if (newRole === "traveler" || newRole === "admin") {
-      updates.host_tier = null
-    }
+    try {
+      // When setting to host, also set host_tier = 'local_host' so they don't loop back to onboarding
+      // When removing host role, clear host_tier
+      const updates: Record<string, any> = { role: newRole }
+      if (newRole === "host") {
+        updates.host_tier = "local_host"
+      } else if (newRole === "traveler" || newRole === "admin") {
+        updates.host_tier = null
+      }
 
-    const { error } = await supabase
-      .from("profiles")
-      .update(updates)
-      .eq("id", userId)
+      const { error } = await supabase
+        .from("profiles")
+        .update(updates)
+        .eq("id", userId)
 
-    if (!error) {
-      setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u))
-      toast.success(`Role updated to ${newRole} successfully.`)
-    } else {
+      if (error) throw error
+
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u))
+      toast.success("User role updated successfully!")
+    } catch (error: any) {
       console.error("Failed to update role:", error)
       toast.error(`Failed to update user role: ${error.message}`)
     }
@@ -78,75 +80,74 @@ export default function Admin2Users() {
         </div>
       </div>
 
-      <div className="bg-[#111111] border border-white/10 rounded-xl overflow-hidden flex-1 flex flex-col min-h-0">
-        <div className="overflow-y-auto flex-1">
-          <table className="w-full text-sm text-left relative">
-            <thead className="text-xs text-gray-400 bg-black/40 uppercase sticky top-0 z-10 backdrop-blur-md">
-              <tr>
-                <th className="px-6 py-4 font-semibold">User</th>
-                <th className="px-6 py-4 font-semibold">Sign Up Date</th>
-                <th className="px-6 py-4 font-semibold w-48">Role</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {loading && users.length === 0 ? (
+      {loading ? (
+        <div className="animate-in fade-in duration-300">
+          <SkeletonTable rows={5} cols={3} />
+        </div>
+      ) : (
+        <div className="bg-[#111111] border border-white/10 rounded-xl overflow-hidden flex-1 flex flex-col min-h-0 animate-in fade-in duration-300">
+          <div className="overflow-y-auto flex-1">
+            <table className="w-full text-sm text-left relative">
+              <thead className="text-xs text-gray-400 bg-black/40 uppercase sticky top-0 z-10 backdrop-blur-md">
                 <tr>
-                  <td colSpan={3} className="px-6 py-12 text-center text-gray-500">
-                    <Loader2 className="animate-spin mx-auto mb-2" size={24} />
-                    Loading users...
-                  </td>
+                  <th className="px-6 py-4 font-semibold">User</th>
+                  <th className="px-6 py-4 font-semibold">Sign Up Date</th>
+                  <th className="px-6 py-4 font-semibold w-48">Role</th>
                 </tr>
-              ) : filteredUsers.length === 0 ? (
-                <tr>
-                  <td colSpan={3} className="px-6 py-12 text-center text-gray-500">
-                    No users found matching "{search}"
-                  </td>
-                </tr>
-              ) : (
-                filteredUsers.map(user => (
-                  <tr key={user.id} className="hover:bg-white/2 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-primary font-bold border border-white/10">
-                          {(user.full_name || "?").charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-200">{user.full_name}</div>
-                          <div className="text-xs text-gray-500">{user.email}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-gray-400">
-                      {new Date(user.created_at).toLocaleDateString(undefined, {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                      })}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="relative flex items-center">
-                        <select
-                          value={user.role || ""}
-                          onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                          disabled={updatingId === user.id}
-                          className="bg-black/50 border border-white/10 text-gray-200 text-sm rounded-lg focus:ring-primary focus:border-primary block w-full p-2 appearance-none cursor-pointer disabled:opacity-50"
-                        >
-                          <option value="traveler">Traveler</option>
-                          <option value="host">Host</option>
-                          <option value="admin">Admin</option>
-                        </select>
-                        {updatingId === user.id && (
-                          <Loader2 className="animate-spin text-primary absolute right-8" size={14} />
-                        )}
-                      </div>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {filteredUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="px-6 py-12 text-center text-gray-500">
+                      No users found matching "{search}"
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  filteredUsers.map(user => (
+                    <tr key={user.id} className="hover:bg-white/2 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-primary font-bold border border-white/10">
+                            {(user.full_name || "?").charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-200">{user.full_name}</div>
+                            <div className="text-xs text-gray-500">{user.email}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-gray-400">
+                        {new Date(user.created_at).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="relative flex items-center">
+                          <select
+                            value={user.role || ""}
+                            onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                            disabled={updatingId === user.id}
+                            className="bg-black/50 border border-white/10 text-gray-200 text-sm rounded-lg focus:ring-primary focus:border-primary block w-full p-2 appearance-none cursor-pointer disabled:opacity-50"
+                          >
+                            <option value="traveler">Traveler</option>
+                            <option value="host">Host</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                          {updatingId === user.id && (
+                            <Loader2 className="animate-spin text-primary absolute right-8" size={14} />
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

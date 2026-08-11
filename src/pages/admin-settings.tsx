@@ -340,7 +340,7 @@ export default function AdminSettingsPage() {
             <Card className="border-border/60 bg-card/40 backdrop-blur p-6">
               <CardHeader className="px-0 pt-0">
                 <CardTitle className="text-lg">Platform Composition (Benchmark Comparison)</CardTitle>
-                <CardDescription>Ratio comparison against Airbnb and Upwork structures</CardDescription>
+                <CardDescription>Ratio comparison against leading local-first marketplaces</CardDescription>
               </CardHeader>
               <CardContent className="px-0 pb-0 space-y-4">
                 <div className="space-y-1">
@@ -355,8 +355,8 @@ export default function AdminSettingsPage() {
                 </div>
                 <div className="rounded-xl bg-muted/10 border border-border/40 p-4 text-xs text-muted-foreground leading-normal space-y-1.5">
                   <p><strong>💡 Operational Insights:</strong></p>
-                  <p>· Your current Host ratio matches Lamu/Nairobi seasonal peaks, aligned with Airbnb's early supply loops.</p>
-                  <p>· User growth rate is trending +14% week-on-week, matching freelancer growth structures on Upwork.</p>
+                  <p>· Your current Host ratio matches Lamu/Nairobi seasonal peaks, aligned with standard early supply loops.</p>
+                  <p>· User growth rate is trending +14% week-on-week, matching freelancer growth structures on other global marketplaces.</p>
                 </div>
               </CardContent>
             </Card>

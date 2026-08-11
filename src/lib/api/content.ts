@@ -16,7 +16,7 @@ export interface Post {
   created_at: string
   updated_at: string
   view_count?: number
-  author?: { full_name: string; avatar_url: string | null; role?: string }
+  author?: { full_name: string; avatar_url: string | null; role?: string; host_tier?: string | null }
   instagram?: string | null
   tiktok?: string | null
   facebook?: string | null
@@ -45,7 +45,7 @@ export interface Journal {
 export async function fetchPosts(): Promise<Post[]> {
   const { data, error } = await supabase
     .from("posts")
-    .select("*, author:profiles(full_name, avatar_url, role), likes(user_id, created_at, profile:profiles(full_name, avatar_url)), saves(user_id)")
+    .select("*, author:profiles(full_name, avatar_url, role, host_tier), likes(user_id, created_at, profile:profiles(full_name, avatar_url)), saves(user_id)")
     .order("created_at", { ascending: false })
   if (error) throw error
   return (data ?? []).map((row: any) => ({
@@ -94,7 +94,7 @@ export async function createPost(
       facebook: socials?.facebook || null,
       reddit: socials?.reddit || null,
     })
-    .select("*, author:profiles(full_name, avatar_url, role)")
+    .select("*, author:profiles(full_name, avatar_url, role, host_tier)")
     .single()
   if (error) throw error
   return { ...(data as any), author: Array.isArray((data as any).author) ? (data as any).author[0] : (data as any).author }
@@ -253,10 +253,10 @@ export async function fetchUserFollows(userId: string): Promise<string[]> {
   return (data ?? []).map((r: any) => r.following_id)
 }
 
-export async function trackView(targetType: "tour" | "post" | "journal" | "host", targetId: string, userId: string | null): Promise<void> {
+export async function trackView(targetType: "tour" | "post" | "journal" | "host", targetId: string, userId: string | null): Promise<boolean> {
   const sessionKey = `viewed_${targetType}_${targetId}`
   if (sessionStorage.getItem(sessionKey)) {
-    return // debounced once per session per target
+    return false // debounced once per session per target
   }
   
   // Set session storage item to block duplicates
@@ -282,8 +282,11 @@ export async function trackView(targetType: "tour" | "post" | "journal" | "host"
       })
     if (error) {
       console.error(`Failed to track view for ${targetType} ${targetId}:`, error)
+      return false
     }
+    return true
   } catch (err) {
     console.error("View tracking error:", err)
+    return false
   }
 }

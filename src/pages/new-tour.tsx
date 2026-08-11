@@ -503,7 +503,7 @@ export default function NewTourPage() {
                   <div className="flex items-start gap-2 text-xs text-muted-foreground bg-primary/5 p-3 rounded-lg border border-primary/10">
                     <Info className="size-4 text-primary shrink-0 mt-0.5" />
                     <span>
-                      Use the toolbar buttons to apply basic styling. Be description-rich! Airbnb listings with detailed descriptions receive 40% more bookings.
+                      Use the toolbar buttons to apply basic styling. Be description-rich! Experiences with detailed descriptions receive 40% more bookings on average.
                     </span>
                   </div>
                 </CardContent>
@@ -580,9 +580,9 @@ export default function NewTourPage() {
                     <p className="text-xs text-muted-foreground">See what similar experiences charge. Use this to price competitively without undervaluing your time.</p>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       {[
-                        { platform: "Airbnb Experiences", type: "City walks / culture", low: "$25", high: "$60", avg: "$40", color: "#FF5A5F" },
-                        { platform: "GetYourGuide", type: "Safari / nature day trips", low: "$50", high: "$180", avg: "$95", color: "#FF8000" },
-                        { platform: "Viator", type: "Food & cooking tours", low: "$30", high: "$85", avg: "$52", color: "#0B6EFD" },
+                        { platform: "Global Travel Platforms", type: "City walks / culture", low: "$25", high: "$60", avg: "$40", color: "#FF5A5F" },
+                        { platform: "Sightseeing Marketplaces", type: "Safari / nature day trips", low: "$50", high: "$180", avg: "$95", color: "#FF8000" },
+                        { platform: "Local Tour Aggregates", type: "Food & cooking tours", low: "$30", high: "$85", avg: "$52", color: "#0B6EFD" },
                       ].map((b) => (
                         <div key={b.platform} className="rounded-lg border border-border/50 bg-card/60 p-3 space-y-1.5">
                           <div className="flex items-center gap-1.5">

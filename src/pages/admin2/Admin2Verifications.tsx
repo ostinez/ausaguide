@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { Loader2, CheckSquare, XCircle, ExternalLink, History, AlertTriangle } from "lucide-react"
+import { SkeletonTable } from "@/components/ui/Skeleton"
 import { sendGuideApprovedEmail, sendGuideRejectedEmail, sendGuideRevokedEmail } from "@/lib/api/emails"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -353,129 +354,128 @@ export default function Admin2Verifications() {
         </button>
       </div>
 
-      <div className="bg-[#111111] border border-white/10 rounded-xl overflow-hidden flex-1 flex flex-col min-h-0">
-        <div className="overflow-y-auto flex-1">
-          <table className="w-full text-sm text-left relative">
-            <thead className="text-xs text-gray-400 bg-black/40 uppercase sticky top-0 z-10 backdrop-blur-md">
-              <tr>
-                <th className="px-6 py-4 font-semibold">Host</th>
-                <th className="px-6 py-4 font-semibold">Credentials</th>
-                <th className="px-6 py-4 font-semibold">Certificate</th>
-                <th className="px-6 py-4 font-semibold">Status</th>
-                <th className="px-6 py-4 font-semibold text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {loading && filteredProfiles.length === 0 ? (
+      {loading ? (
+        <div className="animate-in fade-in duration-300">
+          <SkeletonTable rows={5} cols={5} />
+        </div>
+      ) : (
+        <div className="bg-[#111111] border border-white/10 rounded-xl overflow-hidden flex-1 flex flex-col min-h-0 animate-in fade-in duration-300">
+          <div className="overflow-y-auto flex-1">
+            <table className="w-full text-sm text-left relative">
+              <thead className="text-xs text-gray-400 bg-black/40 uppercase sticky top-0 z-10 backdrop-blur-md">
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                    <Loader2 className="animate-spin mx-auto mb-2" size={24} />
-                    Loading applications...
-                  </td>
+                  <th className="px-6 py-4 font-semibold">Host</th>
+                  <th className="px-6 py-4 font-semibold">Credentials</th>
+                  <th className="px-6 py-4 font-semibold">Certificate</th>
+                  <th className="px-6 py-4 font-semibold">Status</th>
+                  <th className="px-6 py-4 font-semibold text-right">Actions</th>
                 </tr>
-              ) : filteredProfiles.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                    No matching guides or hosts found
-                  </td>
-                </tr>
-              ) : (
-                filteredProfiles.map(user => (
-                  <tr key={user.id} className="hover:bg-white/2 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-gray-200">{user.full_name}</div>
-                      <div className="text-xs text-gray-500">{user.email}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col gap-1 text-xs">
-                        <span className="text-gray-400">TRA: <span className="text-gray-200">{user.tra_number || 'N/A'}</span></span>
-                        <span className="text-gray-400">KPSGA: <span className="text-gray-200">{user.kpsga_number || 'N/A'}</span></span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {user.certificate_url && user.certificate_url.trim() !== "" ? (
-                        <button
-                          onClick={() => handleViewCertificate(user.certificate_url)}
-                          className="inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors bg-transparent border-none p-0 cursor-pointer"
-                        >
-                          <ExternalLink size={14} /> View Certificate
-                        </button>
-                      ) : (
-                        <span className="text-gray-500 text-xs">No certificate uploaded yet.</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      {user.verified_guide === true && user.host_tier === 'certified_guide' ? (
-                        <span className="inline-flex items-center px-2 py-0.5 bg-green-500/10 border border-green-500/20 text-green-400 rounded-full text-xs font-semibold">
-                          Certified Guide ✅
-                        </span>
-                      ) : user.license_status === 'pending' ? (
-                        <span className="inline-flex items-center px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-full text-xs font-semibold">
-                          Pending Review
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 bg-gray-500/10 border border-gray-500/20 text-gray-400 rounded-full text-xs font-semibold">
-                          Local Host
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleViewHistoryClick(user)}
-                          className="px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded flex items-center gap-1 text-xs transition-colors"
-                          title="View Verification History Log"
-                        >
-                          <History size={13} />
-                          History
-                        </button>
-                        
-                        {user.license_status === 'pending' && (
-                          <>
-                            <a 
-                              href="https://verify.tra.go.ke" 
-                              target="_blank" 
-                              rel="noreferrer"
-                              className="px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded text-xs transition-colors"
-                            >
-                              Verify on TRA
-                            </a>
-                            <button
-                              onClick={() => handleApprove(user)}
-                              disabled={actionLoading === user.id}
-                              className="px-2.5 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded flex items-center gap-1 text-xs transition-colors disabled:opacity-50"
-                            >
-                              {actionLoading === user.id ? <Loader2 size={13} className="animate-spin" /> : <CheckSquare size={13} />}
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => setRejectingHost(user)}
-                              disabled={actionLoading === user.id}
-                              className="px-2.5 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded flex items-center gap-1 text-xs transition-colors disabled:opacity-50"
-                            >
-                              <XCircle size={13} /> Reject
-                            </button>
-                          </>
-                        )}
-
-                        {user.verified_guide === true && user.host_tier === 'certified_guide' && (
-                          <button
-                            onClick={() => setRevokingHost(user)}
-                            disabled={actionLoading === user.id}
-                            className="px-2.5 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded flex items-center gap-1 text-xs transition-colors disabled:opacity-50 font-semibold"
-                          >
-                            <AlertTriangle size={13} /> Revoke
-                          </button>
-                        )}
-                      </div>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {filteredProfiles.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                      No matching guides or hosts found
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  filteredProfiles.map(user => (
+                    <tr key={user.id} className="hover:bg-white/2 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-gray-200">{user.full_name}</div>
+                        <div className="text-xs text-gray-500">{user.email}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col gap-1 text-xs">
+                          <span className="text-gray-400">TRA: <span className="text-gray-200">{user.tra_number || 'N/A'}</span></span>
+                          <span className="text-gray-400">KPSGA: <span className="text-gray-200">{user.kpsga_number || 'N/A'}</span></span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        {user.certificate_url && user.certificate_url.trim() !== "" ? (
+                          <button
+                            onClick={() => handleViewCertificate(user.certificate_url)}
+                            className="inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors bg-transparent border-none p-0 cursor-pointer"
+                          >
+                            <ExternalLink size={14} /> View Certificate
+                          </button>
+                        ) : (
+                          <span className="text-gray-500 text-xs">No certificate uploaded yet.</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        {user.verified_guide === true && user.host_tier === 'certified_guide' ? (
+                          <span className="inline-flex items-center px-2 py-0.5 bg-green-500/10 border border-green-500/20 text-green-400 rounded-full text-xs font-semibold">
+                            Certified Guide ✅
+                          </span>
+                        ) : user.license_status === 'pending' ? (
+                          <span className="inline-flex items-center px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-full text-xs font-semibold">
+                            Pending Review
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 bg-gray-500/10 border border-gray-500/20 text-gray-400 rounded-full text-xs font-semibold">
+                            Local Host
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleViewHistoryClick(user)}
+                            className="px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded flex items-center gap-1 text-xs transition-colors"
+                            title="View Verification History Log"
+                          >
+                            <History size={13} />
+                            History
+                          </button>
+                          
+                          {user.license_status === 'pending' && (
+                            <>
+                              <a 
+                                href="https://verify.tra.go.ke" 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded text-xs transition-colors"
+                              >
+                                Verify on TRA
+                              </a>
+                              <button
+                                onClick={() => handleApprove(user)}
+                                disabled={actionLoading === user.id}
+                                className="px-2.5 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded flex items-center gap-1 text-xs transition-colors disabled:opacity-50"
+                              >
+                                {actionLoading === user.id ? <Loader2 size={13} className="animate-spin" /> : <CheckSquare size={13} />}
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => setRejectingHost(user)}
+                                disabled={actionLoading === user.id}
+                                className="px-2.5 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded flex items-center gap-1 text-xs transition-colors disabled:opacity-50"
+                              >
+                                <XCircle size={13} /> Reject
+                              </button>
+                            </>
+                          )}
+
+                          {user.verified_guide === true && user.host_tier === 'certified_guide' && (
+                            <button
+                              onClick={() => setRevokingHost(user)}
+                              disabled={actionLoading === user.id}
+                              className="px-2.5 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded flex items-center gap-1 text-xs transition-colors disabled:opacity-50 font-semibold"
+                            >
+                              <AlertTriangle size={13} /> Revoke
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Reject Modal */}
       {rejectingHost && (

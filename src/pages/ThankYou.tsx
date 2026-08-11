@@ -98,7 +98,7 @@ export default function ThankYouPage() {
               {loading ? (
                 <div className="flex items-center gap-2 py-3 text-xs text-white/45 font-medium">
                   <Loader2 className="size-4 animate-spin text-primary" />
-                  <span>Verifying payment details with Stripe...</span>
+                  <span>Verifying payment details with Paystack...</span>
                 </div>
               ) : donation ? (
                 <div className="space-y-2 text-xs">

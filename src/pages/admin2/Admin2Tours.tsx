@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { Search, Loader2, Trash2, Eye, EyeOff } from "lucide-react"
+import { SkeletonTable } from "@/components/ui/Skeleton"
 
 export default function Admin2Tours() {
   const [tours, setTours] = useState<any[]>([])
@@ -86,87 +87,86 @@ export default function Admin2Tours() {
         </div>
       </div>
 
-      <div className="bg-[#111111] border border-white/10 rounded-xl overflow-hidden flex-1 flex flex-col min-h-0">
-        <div className="overflow-y-auto flex-1">
-          <table className="w-full text-sm text-left relative">
-            <thead className="text-xs text-gray-400 bg-black/40 uppercase sticky top-0 z-10 backdrop-blur-md">
-              <tr>
-                <th className="px-6 py-4 font-semibold">Title</th>
-                <th className="px-6 py-4 font-semibold">Host</th>
-                <th className="px-6 py-4 font-semibold">Price</th>
-                <th className="px-6 py-4 font-semibold">Status</th>
-                <th className="px-6 py-4 font-semibold">Created Date</th>
-                <th className="px-6 py-4 font-semibold text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {loading && tours.length === 0 ? (
+      {loading ? (
+        <div className="animate-in fade-in duration-300">
+          <SkeletonTable rows={5} cols={6} />
+        </div>
+      ) : (
+        <div className="bg-[#111111] border border-white/10 rounded-xl overflow-hidden flex-1 flex flex-col min-h-0 animate-in fade-in duration-300">
+          <div className="overflow-y-auto flex-1">
+            <table className="w-full text-sm text-left relative">
+              <thead className="text-xs text-gray-400 bg-black/40 uppercase sticky top-0 z-10 backdrop-blur-md">
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                    <Loader2 className="animate-spin mx-auto mb-2" size={24} />
-                    Loading tours...
-                  </td>
+                  <th className="px-6 py-4 font-semibold">Title</th>
+                  <th className="px-6 py-4 font-semibold">Host</th>
+                  <th className="px-6 py-4 font-semibold">Price</th>
+                  <th className="px-6 py-4 font-semibold">Status</th>
+                  <th className="px-6 py-4 font-semibold">Created Date</th>
+                  <th className="px-6 py-4 font-semibold text-right">Actions</th>
                 </tr>
-              ) : filteredTours.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                    No tours found matching "{search}"
-                  </td>
-                </tr>
-              ) : (
-                filteredTours.map(tour => (
-                  <tr key={tour.id} className="hover:bg-white/2 transition-colors">
-                    <td className="px-6 py-4 font-medium text-gray-200 max-w-[200px]">
-                      <div className="truncate" title={tour.title}>{tour.title}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-gray-300">{tour.profiles?.full_name || 'Unknown'}</div>
-                      <div className="text-xs text-gray-500">{tour.profiles?.email || ''}</div>
-                    </td>
-                    <td className="px-6 py-4 text-gray-300">
-                      ${tour.price ? `$${tour.price.toLocaleString()} USD` : '$0 USD'}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        tour.is_published ? 'bg-green-500/10 text-green-400' : 'bg-gray-500/10 text-gray-400'
-                      }`}>
-                        {tour.is_published ? 'Published' : 'Draft'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-gray-400">
-                      {new Date(tour.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => handleTogglePublish(tour)}
-                          disabled={togglingId === tour.id}
-                          className={`p-2 rounded-lg transition-colors disabled:opacity-50 ${
-                            tour.is_published
-                              ? 'text-gray-400 hover:text-orange-400 hover:bg-orange-400/10'
-                              : 'text-gray-400 hover:text-green-400 hover:bg-green-400/10'
-                          }`}
-                          title={tour.is_published ? 'Unpublish' : 'Publish'}
-                        >
-                          {togglingId === tour.id ? <Loader2 size={16} className="animate-spin" /> : tour.is_published ? <EyeOff size={16} /> : <Eye size={16} />}
-                        </button>
-                        <button
-                          onClick={() => handleDelete(tour.id)}
-                          disabled={deletingId === tour.id}
-                          className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors disabled:opacity-50"
-                          title="Delete Tour"
-                        >
-                          {deletingId === tour.id ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
-                        </button>
-                      </div>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {filteredTours.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                      No tours found matching "{search}"
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  filteredTours.map(tour => (
+                    <tr key={tour.id} className="hover:bg-white/2 transition-colors">
+                      <td className="px-6 py-4 font-medium text-gray-200 max-w-[200px]">
+                        <div className="truncate" title={tour.title}>{tour.title}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-gray-300">{tour.profiles?.full_name || 'Unknown'}</div>
+                        <div className="text-xs text-gray-500">{tour.profiles?.email || ''}</div>
+                      </td>
+                      <td className="px-6 py-4 text-gray-300">
+                        {tour.price ? `$${tour.price.toLocaleString()} USD` : '$0 USD'}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          tour.is_published ? 'bg-green-500/10 text-green-400' : 'bg-gray-500/10 text-gray-400'
+                        }`}>
+                          {tour.is_published ? 'Published' : 'Draft'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-gray-400">
+                        {new Date(tour.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => handleTogglePublish(tour)}
+                            disabled={togglingId === tour.id}
+                            className={`p-2 rounded-lg transition-colors disabled:opacity-50 ${
+                              tour.is_published
+                                ? 'text-gray-400 hover:text-orange-400 hover:bg-orange-400/10'
+                                : 'text-gray-400 hover:text-green-400 hover:bg-green-400/10'
+                            }`}
+                            title={tour.is_published ? 'Unpublish' : 'Publish'}
+                          >
+                            {togglingId === tour.id ? <Loader2 size={16} className="animate-spin" /> : tour.is_published ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
+                          <button
+                            onClick={() => handleDelete(tour.id)}
+                            disabled={deletingId === tour.id}
+                            className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors disabled:opacity-50"
+                            title="Delete Tour"
+                          >
+                            {deletingId === tour.id ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

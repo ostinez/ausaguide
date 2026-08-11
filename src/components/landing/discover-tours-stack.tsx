@@ -31,7 +31,7 @@ export function DiscoverToursStack() {
     }
     try {
       await addToWishlist(userId, String(card.id))
-      toast.success(`Saved "${card.title}" to wishlist! ❤️`)
+      toast.success(`Saved "${card.title}" to wishlist!`)
     } catch (err) {
       console.error(err)
       toast.error("Could not save to wishlist.")
@@ -39,7 +39,7 @@ export function DiscoverToursStack() {
   }
 
   const handleSwipeLeft = (card: StackCardData) => {
-    toast.info(`Skipped "${card.title}" ✖️`)
+    toast.info(`Skipped "${card.title}"`)
   }
 
   useEffect(() => {

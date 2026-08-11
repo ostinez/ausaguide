@@ -3,7 +3,7 @@ import { BookOpen, Plus, Edit3, Trash2, X, Check, Loader2, ImageIcon, ChevronRig
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Spinner } from "@/components/ui/spinner"
+import { SkeletonJournalCard } from "@/components/ui/Skeleton"
 import { supabase } from "@/lib/supabase"
 import { fetchJournals, createJournal, updateJournal, deleteJournal, trackView, type Journal } from "@/lib/api/content"
 import { toast } from "sonner"
@@ -481,9 +481,14 @@ export default function JournalPage() {
 
         {/* Journal list */}
         {loading ? (
-          <div className="flex justify-center py-16"><Spinner className="size-6 text-amber-500" /></div>
+          <div className="space-y-4 animate-in fade-in duration-300">
+            <SkeletonJournalCard />
+            <SkeletonJournalCard />
+            <SkeletonJournalCard className="hidden sm:block" />
+            <SkeletonJournalCard className="hidden sm:block" />
+          </div>
         ) : journals.length === 0 ? (
-          <div className="flex flex-col items-center gap-4 py-16 text-center rounded-2xl border border-dashed border-amber-500/20 bg-[#1d1b18]/25 p-8">
+          <div className="flex flex-col items-center gap-4 py-16 text-center rounded-2xl border border-dashed border-amber-500/20 bg-[#1d1b18]/25 p-8 animate-in fade-in duration-300">
             <BookOpen className="size-12 text-amber-500/30" />
             <div>
               <h3 className="font-semibold text-white text-sm">Your Personal Diary is Empty</h3>
@@ -499,7 +504,7 @@ export default function JournalPage() {
             </Button>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 animate-in fade-in duration-300">
             {journals.map(j => (
               <div
                 key={j.id}

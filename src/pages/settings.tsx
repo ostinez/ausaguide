@@ -425,6 +425,7 @@ export default function SettingsPage() {
       }
 
       const p = await fetchProfileById(userId)
+      let pct = 0
       if (p) {
         setName(p.full_name || "")
         setEmail(p.email || "")
@@ -435,9 +436,22 @@ export default function SettingsPage() {
         setHostType(p.host_type || "")
         setAvatarUrl(p.avatar_url || null)
         setIsVerified(!!p.is_verified)
+
+        const fields = role === "host" ? ["avatar_url", "bio", "location", "phone", "languages"] : ["avatar_url", "bio", "location"]
+        const missing = fields.filter((key) => {
+          const val = (p as any)[key]
+          if (Array.isArray(val)) return val.length === 0
+          return !val || String(val).trim() === ""
+        })
+        pct = Math.round(((fields.length - missing.length) / fields.length) * 100)
       }
 
-      toast.success("Settings saved successfully!")
+      toast.success("Profile updated! 🎉", {
+        description: `Congratulations! Your profile is now ${pct}% complete.`
+      })
+
+      // Dispatch custom event to notify banners to update
+      window.dispatchEvent(new Event("profile-updated"))
     } catch (err) {
       console.error("Error saving settings", err)
       if (err instanceof Error && err.message === 'AUTH_REQUIRED') {
@@ -542,6 +556,7 @@ export default function SettingsPage() {
                           try {
                             await updateProfile(userId, { avatar_url: newUrl })
                             toast.success("Profile photo updated!")
+                            window.dispatchEvent(new Event("profile-updated"))
                           } catch (err) {
                             console.error("Auto-save avatar failed:", err)
                             toast.error("Failed to auto-save profile photo.")

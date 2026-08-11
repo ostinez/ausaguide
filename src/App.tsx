@@ -50,6 +50,7 @@ import ResetPasswordPage from "@/pages/ResetPassword"
 import EmailPreferencesPage from "@/pages/email-preferences"
 import AdminSetupPage from "@/pages/AdminSetup"
 import LogoutPage from "@/pages/Logout"
+import NotificationsPage from "@/pages/notifications"
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -87,6 +88,7 @@ export default function App() {
           <Route path="/tours" element={<ToursPage />} />
           <Route path="/tours/:id" element={<TourDetailPage />} />
           <Route path="/checkout/:tourId" element={<CheckoutPage />} />
+          <Route path="/payment-success" element={<PaymentSuccessPage />} />
           <Route path="/confirmation/:bookingId" element={<ConfirmationPage />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
@@ -95,6 +97,7 @@ export default function App() {
           <Route path="/host/signup" element={<Navigate to="/onboarding?become-host=true" replace />} />
           <Route path="/host/:id" element={<HostProfilePage />} />
           <Route path="/admin/*" element={<Navigate to="/admin2" replace />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
 
           {/* Host routes */}
           <Route element={<ProtectedRoute allowedRoles={["host"]} />}>

@@ -14,10 +14,10 @@ const icons = [
 const colors = ["purple", "teal", "indigo", "pink"]
 
 const stepImages = [
-  "/images/home/book_phone.png", // Step 1: smartphone search
-  "/images/home/book_confirm.png", // Step 2: booking confirmation
-  "/images/home/virtual_tour.png", // Step 3: virtual video call
-  "/images/home/physical_tour.png", // Step 4: physical guided tour
+  "/images/home/book_phone.webp", // Step 1: smartphone search
+  "/images/home/book_confirm.webp", // Step 2: booking confirmation
+  "/images/home/virtual_tour.webp", // Step 3: virtual video call
+  "/images/home/physical_tour.webp", // Step 4: physical guided tour
 ]
 
 export function HowItWorks() {

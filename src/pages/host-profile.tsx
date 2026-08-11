@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react"
 import { useParams, Link, useNavigate } from "react-router-dom"
-import { MapPin, AlertCircle, MessageSquare, ArrowLeft } from "lucide-react"
+import { MapPin, AlertCircle, MessageSquare, ArrowLeft, BadgeCheck } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Spinner } from "@/components/ui/spinner"
+import { SkeletonProfile } from "@/components/ui/Skeleton"
 import { supabase } from "@/lib/supabase"
 import { fetchHostSettings } from "@/lib/api/availability"
 import type { Profile, Tour } from "@/lib/types"
@@ -160,11 +160,7 @@ export default function HostProfilePage() {
   }, [id])
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Spinner className="size-8 text-primary" />
-      </div>
-    )
+    return <SkeletonProfile />
   }
 
   if (error || !profile) {
@@ -183,7 +179,7 @@ export default function HostProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20 pt-24">
+    <div className="min-h-screen bg-background pb-20 pt-24 animate-in fade-in duration-300">
       {/* Glow effect */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-40 left-1/2 h-[600px] w-[900px] -translate-x-1/2 rounded-full bg-primary/5 blur-3xl" />
@@ -218,9 +214,10 @@ export default function HostProfilePage() {
                   {profile.host_type?.replace("_", " ")}
                 </Badge>
                  {((profile as any).verified_guide) ? (
-                  <Badge className="bg-blue-500/15 border border-blue-500/40 text-blue-400 hover:bg-blue-500/25 gap-1">
-                    ✅ Certified Guide
-                  </Badge>
+                    <Badge className="bg-blue-500/15 border border-blue-500/40 text-blue-400 hover:bg-blue-500/25 gap-1.5 flex items-center">
+                      <BadgeCheck className="size-3.5 text-blue-400" />
+                      Certified Guide
+                    </Badge>
                  ) : (
                    <Badge className="bg-[#2CB67D]/15 border border-[#2CB67D]/40 text-[#2CB67D] hover:bg-[#2CB67D]/25">
                      Local Host

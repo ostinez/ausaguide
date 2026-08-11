@@ -51,7 +51,7 @@ export const TourCard = memo(function TourCard({ tour, isWishlisted, onToggleWis
       <SpotlightCard
         spotlightColor="rgba(127, 90, 240, 0.15)"
         className={cn(
-          "tour-card group flex cursor-pointer overflow-hidden rounded-[15px] border-0 bg-[#16161A] text-card-foreground h-full w-full focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#7F5AF0] focus-visible:ring-offset-2 focus-visible:ring-offset-[#16161A]",
+          "tour-card group flex cursor-pointer overflow-hidden rounded-[15px] border border-white/10 bg-[#16161A]/60 backdrop-blur-md text-card-foreground h-full w-full shadow-[0_8px_32px_rgba(0,0,0,0.37)] hover:shadow-[#7F5AF0]/10 hover:border-[#7F5AF0]/30 transition-all focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#7F5AF0] focus-visible:ring-offset-2 focus-visible:ring-offset-[#16161A]",
           isList ? "flex-col sm:flex-row h-auto sm:h-52" : "flex-col"
         )}
         onClick={onClick || defaultClick}
@@ -155,8 +155,9 @@ export const TourCard = memo(function TourCard({ tour, isWishlisted, onToggleWis
               <BadgeCheck className="size-3.5 text-primary" />
             )}
             {tour.host?.verified_guide ? (
-              <span className="text-[10px] bg-blue-500/10 border border-blue-500/30 text-blue-400 rounded-full px-2 py-0.5 font-bold flex items-center gap-0.5">
-                ✅ Certified Guide
+              <span className="text-[10px] bg-blue-500/10 border border-blue-500/30 text-blue-400 rounded-full px-2 py-0.5 font-bold flex items-center gap-1">
+                <BadgeCheck className="size-3 text-blue-400" />
+                Certified Guide
               </span>
             ) : (
               <span className="text-[10px] bg-teal-500/10 border border-teal-500/30 text-teal-400 rounded-full px-2 py-0.5 font-bold">

@@ -35,7 +35,7 @@ import { fetchBookingsByGuestId, fetchProfileByRole } from "@/lib/api/hosts"
 import { fetchHostAvailability, fetchHostSettings } from "@/lib/api/availability"
 import { trackEvent } from "@/lib/posthog"
 import { trackView } from "@/lib/api/content"
-import { SkeletonTourDetail } from "@/components/ui/SkeletonCard"
+import { SkeletonTourDetail } from "@/components/ui/Skeleton"
 import type { Tour, Booking, HostAvailability, HostSettings } from "@/lib/types"
 import { formatTourPrice, getHostInitials, getTourImage } from "@/lib/tour-utils"
 import { addDays } from "date-fns"
@@ -277,7 +277,7 @@ export default function TourDetailPage() {
   const selectedDayStatus = selectedDate ? getDayStatus(selectedDate) : "available"
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background animate-in fade-in duration-300">
       {tour && (
         <JsonLd
           data={{

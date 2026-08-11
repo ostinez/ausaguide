@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useParams, Link, useNavigate } from "react-router-dom"
+import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom"
 import ReviewForm from '@/components/ui/ReviewForm';
 import { createOrGetDailyRoom } from "@/lib/api/daily"
 import { LiveLocationMap } from "@/components/map/LiveLocationMap"
@@ -18,6 +18,7 @@ import {
   ArrowRight,
   Wifi,
   MessageSquare,
+  Heart,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -27,10 +28,13 @@ import { Spinner } from "@/components/ui/spinner"
 import { fetchBookingById } from "@/lib/api/bookings"
 import type { Booking } from "@/lib/types"
 import { formatTourPrice, getHostInitials, getTourGradient } from "@/lib/tour-utils"
+import { toast } from "sonner"
+import { supabase } from "@/lib/supabase"
 
 export default function ConfirmationPage() {
   const { bookingId } = useParams<{ bookingId: string }>()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [booking, setBooking] = useState<Booking | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -41,6 +45,69 @@ export default function ConfirmationPage() {
   const [callError, setCallError] = useState<string | null>(null)
   const [countdownText, setCountdownText] = useState("")
   const [canJoin, setCanJoin] = useState(false)
+
+  // Tip jar states
+  const [tipPercent, setTipPercent] = useState<number | "custom" | null>(null)
+  const [customTip, setCustomTip] = useState("")
+  const [tipping, setTipping] = useState(false)
+  const [tipError, setTipError] = useState<string | null>(null)
+
+  const subtotal = booking?.total_price || 0
+  const tipAmount = tipPercent === "custom"
+    ? (Number(customTip) || 0)
+    : tipPercent !== null
+    ? Math.round(subtotal * (tipPercent / 100))
+    : 0
+
+  useEffect(() => {
+    const successParam = searchParams.get("success")
+    const errorParam = searchParams.get("error")
+    if (successParam === "tip" || errorParam === "tip_success") {
+      toast.success("Thank you for tipping your host! 🎉")
+    }
+  }, [searchParams])
+
+  async function handleSendTip() {
+    if (!booking || tipAmount <= 0) return
+    setTipping(true)
+    setTipError(null)
+    try {
+      const { data, error: functionErr } = await supabase.functions.invoke("create-booking-session", {
+        body: {
+          bookingId: booking.id,
+          tourType: booking.booking_type || "physical",
+          tipAmount: tipAmount
+        }
+      })
+
+      if (functionErr) {
+        let errorMsg = "Failed to create Paystack tip session"
+        if (functionErr instanceof Error) {
+          errorMsg = functionErr.message
+          try {
+            const httpErr = functionErr as any
+            if (httpErr.context && typeof httpErr.context.json === 'function') {
+              const body = await httpErr.context.json()
+              if (body && body.error) {
+                errorMsg = body.error
+              }
+            }
+          } catch (_) {}
+        }
+        throw new Error(errorMsg)
+      }
+
+      if (data?.sessionUrl || data?.authorizationUrl) {
+        window.location.href = data.sessionUrl || data.authorizationUrl
+      } else {
+        toast.error("Paystack Checkout URL not found.")
+      }
+    } catch (err: any) {
+      console.error("Tipping error:", err)
+      setTipError(err.message || "Failed to process tip payment")
+      setTipping(false)
+    }
+  }
 
   useEffect(() => {
     if (!booking) return
@@ -407,6 +474,94 @@ export default function ConfirmationPage() {
             </div>
           )}
         </div>
+
+        {/* Tipping Section */}
+        {booking.status === "completed" && (
+          <div className="mt-4 rounded-2xl border border-border bg-card/60 backdrop-blur-md p-6 space-y-4 shadow-xl relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-rose-500/5 to-primary/5 pointer-events-none" />
+            <div className="relative z-10 space-y-4">
+              <div className="flex items-center gap-2">
+                <Heart className="size-5 text-rose-400 fill-rose-400/20" />
+                <h2 className="text-base font-bold text-foreground">Leave a tip for your host</h2>
+                <span className="ml-auto text-xs text-muted-foreground bg-muted/80 backdrop-blur-sm rounded-full px-2.5 py-1">Optional</span>
+              </div>
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                100% of your tip goes directly to {hostName} (after the standard 20% platform fee). Show your appreciation for their time, hospitality, and local knowledge!
+              </p>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {([5, 10, 15] as number[]).map((pct) => (
+                  <button
+                    key={pct}
+                    type="button"
+                    onClick={() => { setTipPercent(tipPercent === pct ? null : pct); setCustomTip("") }}
+                    className={`rounded-full border px-4 py-1.5 text-sm font-semibold transition-all ${
+                      tipPercent === pct
+                        ? "bg-rose-500/20 border-rose-500 text-rose-400"
+                        : "border-border text-muted-foreground hover:border-rose-400 hover:text-rose-400"
+                    }`}
+                  >
+                    {pct}% · {formatTourPrice(Math.round(subtotal * pct / 100), booking.currency || "KES")}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => { setTipPercent("custom"); }}
+                  className={`rounded-full border px-4 py-1.5 text-sm font-semibold transition-all ${
+                    tipPercent === "custom"
+                      ? "bg-rose-500/20 border-rose-500 text-rose-400"
+                      : "border-border text-muted-foreground hover:border-rose-400 hover:text-rose-400"
+                  }`}
+                >
+                  Custom
+                </button>
+                {tipPercent !== null && (
+                  <button
+                    type="button"
+                    onClick={() => { setTipPercent(null); setCustomTip("") }}
+                    className="rounded-full border border-border text-muted-foreground hover:text-foreground px-4 py-1.5 text-sm transition-colors"
+                  >
+                    No tip
+                  </button>
+                )}
+              </div>
+
+              {tipPercent === "custom" && (
+                <div className="flex items-center gap-2 max-w-[240px] pt-1">
+                  <span className="text-sm text-muted-foreground shrink-0">{booking.currency || "KES"}</span>
+                  <input
+                    type="number"
+                    min="1"
+                    value={customTip}
+                    onChange={(e) => setCustomTip(e.target.value)}
+                    placeholder="Enter amount"
+                    className="flex-1 rounded-md border border-input bg-background/50 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
+              )}
+
+              {tipAmount > 0 && (
+                <div className="space-y-3 pt-1">
+                  <p className="text-xs text-muted-foreground bg-muted/30 backdrop-blur-sm rounded-lg px-3 py-2 border border-border/45">
+                    🙏 You're adding <strong className="text-foreground">{formatTourPrice(tipAmount, booking.currency || "KES")}</strong> tip. Your host will receive <strong className="text-foreground">{formatTourPrice(Math.round(tipAmount * 0.8), booking.currency || "KES")}</strong> after the platform fee.
+                  </p>
+                  <Button
+                    onClick={handleSendTip}
+                    disabled={tipping}
+                    className="w-full bg-rose-500 hover:bg-rose-600 text-white rounded-full font-bold shadow-lg shadow-rose-500/10 gap-2"
+                  >
+                    {tipping ? "Processing..." : `Send ${formatTourPrice(tipAmount, booking.currency || "KES")} Tip`}
+                  </Button>
+                </div>
+              )}
+
+              {tipError && (
+                <p className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
+                  {tipError}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Traveller summary */}
         <div className="mt-4 rounded-2xl border border-border bg-card p-5">

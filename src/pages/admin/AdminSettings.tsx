@@ -160,9 +160,9 @@ export default function AdminSettings() {
             </div>
           </div>
 
-          {/* Stripe Mode */}
+          {/* Paystack Mode */}
           <div className="space-y-1.5">
-            <label className="text-[10px] text-white/40 uppercase tracking-wider font-mono font-bold">Stripe Payment Gateway</label>
+            <label className="text-[10px] text-white/40 uppercase tracking-wider font-mono font-bold">Paystack Payment Gateway</label>
             <select
               value={stripeMode}
               onChange={(e) => setStripeMode(e.target.value)}

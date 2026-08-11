@@ -5,16 +5,20 @@ export interface Notification {
   user_id: string
   booking_id: string | null
   message: string
-  type: "booking_request" | "booking_accepted" | "booking_declined" | "booking_completed" | "new_message"
+  type: "booking_request" | "booking_accepted" | "booking_declined" | "booking_completed" | "new_message" | string
   read: boolean
+  title?: string | null
+  link?: string | null
   created_at: string
 }
 
 export async function createNotification(
   userId: string,
   message: string,
-  type: Notification["type"],
-  bookingId?: string | null
+  type: string,
+  bookingId?: string | null,
+  title?: string | null,
+  link?: string | null
 ): Promise<Notification> {
   const { data, error } = await supabase
     .from("notifications")
@@ -23,6 +27,8 @@ export async function createNotification(
       message,
       type,
       booking_id: bookingId ?? null,
+      title: title ?? null,
+      link: link ?? null,
       read: false,
     })
     .select("*")

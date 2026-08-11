@@ -8,16 +8,19 @@ import {
   type Notification,
 } from "@/lib/api/notifications"
 import { formatDistanceToNow } from "date-fns"
+import { supabase } from "@/lib/supabase"
+import { Link } from "react-router-dom"
+import { ChevronDown, ChevronUp, ExternalLink } from "lucide-react"
 
 export default function NotificationBell() {
   const navigate = useNavigate()
   const [notifications, setNotifications] = useState<Notification[]>([])
+  const [expandedNotifId, setExpandedNotifId] = useState<string | null>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   
   const userId = localStorage.getItem("user_id")
-  const userRole = localStorage.getItem("user_role") || "traveler"
   
   const unreadCount = Array.isArray(notifications)
     ? notifications.filter((n) => n && !n.read).length
@@ -42,9 +45,6 @@ export default function NotificationBell() {
 
     if (!userId) return
 
-    const interval = setInterval(loadNotifications, 10000)
-
-    /*
     // Use a unique channel name per mount to avoid the Supabase channel-reuse
     // error: "cannot add postgres_changes callbacks after subscribe()".
     // The timestamp suffix ensures a fresh channel even on strict-mode double-mount.
@@ -71,12 +71,10 @@ export default function NotificationBell() {
         }
       )
       .subscribe()
-    */
 
     return () => {
-      clearInterval(interval)
-      // channel.unsubscribe()
-      // supabase.removeChannel(channel)
+      channel.unsubscribe()
+      supabase.removeChannel(channel)
     }
   }, [userId])
 
@@ -92,7 +90,6 @@ export default function NotificationBell() {
 
   async function handleNotificationClick(notif: Notification) {
     if (!notif) return
-    setIsOpen(false)
     if (!notif.read) {
       try {
         await markAsRead(notif.id)
@@ -104,14 +101,20 @@ export default function NotificationBell() {
       }
     }
 
-    if (notif.booking_id) {
-      if (userRole === "host") {
-        navigate(`/dashboard?tab=bookings`)
-      } else {
-        navigate(`/confirmation/${notif.booking_id}`)
-      }
+    // Toggle expanded state
+    setExpandedNotifId(expandedNotifId === notif.id ? null : notif.id)
+  }
+
+  function handleActionClick(notif: Notification, e: React.MouseEvent) {
+    e.stopPropagation()
+    setIsOpen(false)
+
+    if (notif.link) {
+      navigate(notif.link)
+    } else if (notif.booking_id) {
+      navigate(`/messages?bookingId=${notif.booking_id}`)
     } else {
-      navigate("/dashboard")
+      navigate("/messages")
     }
   }
 
@@ -145,7 +148,7 @@ export default function NotificationBell() {
       </button>
 
       {isOpen && (
-        <div className="fixed sm:absolute top-20 sm:top-auto left-4 right-4 sm:left-auto sm:right-0 mt-2.5 w-auto sm:w-96 rounded-2xl border border-primary/20 bg-card p-2 shadow-2xl z-50 animate-in fade-in slide-in-from-top-3 duration-200">
+        <div className="fixed sm:absolute top-20 sm:top-auto left-4 right-4 sm:left-auto sm:right-0 mt-2.5 w-auto sm:w-96 rounded-2xl border border-white/10 bg-[#16161A]/90 backdrop-blur-xl p-2 shadow-2xl z-50 animate-in fade-in slide-in-from-top-3 duration-200">
           <div className="flex items-center justify-between px-3 py-2 border-b border-border/80">
             <span className="font-bold text-sm text-foreground">Notifications</span>
             {unreadCount > 0 && (
@@ -170,43 +173,80 @@ export default function NotificationBell() {
                 No notifications yet.
               </div>
             ) : (
-              notifications.map((notif) => {
+              notifications.slice(0, 10).map((notif) => {
                 if (!notif) return null
+                const isExpanded = expandedNotifId === notif.id
                 return (
                   <div
                     key={notif.id || Math.random().toString()}
                     onClick={() => handleNotificationClick(notif)}
-                    className={`group relative flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all duration-300 hover:bg-primary/10 border ${
+                    className={`group relative flex flex-col p-3 rounded-xl cursor-pointer transition-all duration-300 hover:bg-primary/10 border ${
                       notif.read
                         ? "border-transparent bg-transparent text-muted-foreground"
                         : "border-primary/20 bg-primary/5 text-foreground font-medium"
                     }`}
                   >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs break-words">{notif.message || ""}</p>
-                      <div className="mt-1 flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                        <Clock className="size-3" />
-                        <span>
-                          {(() => {
-                            try {
-                              if (!notif.created_at) return "recently"
-                              const d = new Date(notif.created_at)
-                              if (isNaN(d.getTime())) return "recently"
-                              return formatDistanceToNow(d, { addSuffix: true })
-                            } catch {
-                              return "recently"
-                            }
-                          })()}
-                        </span>
+                    <div className="flex items-start gap-3 w-full">
+                      <div className="flex-1 min-w-0">
+                        {notif.title && (
+                          <p className="text-xs font-semibold text-white mb-0.5">{notif.title}</p>
+                        )}
+                        <p className={`text-xs break-words ${isExpanded ? "" : "line-clamp-2"}`}>
+                          {notif.message || ""}
+                        </p>
+                        <div className="mt-1 flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                          <Clock className="size-3" />
+                          <span>
+                            {(() => {
+                              try {
+                                if (!notif.created_at) return "recently"
+                                const d = new Date(notif.created_at)
+                                if (isNaN(d.getTime())) return "recently"
+                                return formatDistanceToNow(d, { addSuffix: true })
+                              } catch {
+                                return "recently"
+                              }
+                            })()}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-center gap-2 shrink-0">
+                        {!notif.read && (
+                          <span className="size-2 rounded-full bg-primary shrink-0 shadow-[0_0_8px_#8b5cf6]" />
+                        )}
+                        {isExpanded ? (
+                          <ChevronUp className="size-3.5 text-muted-foreground" />
+                        ) : (
+                          <ChevronDown className="size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        )}
                       </div>
                     </div>
-                    {!notif.read && (
-                      <span className="size-2 rounded-full bg-primary mt-1.5 shrink-0 shadow-[0_0_8px_#8b5cf6]" />
+
+                    {isExpanded && (
+                      <div className="mt-2.5 pt-2.5 border-t border-white/5 flex justify-end">
+                        <button
+                          onClick={(e) => handleActionClick(notif, e)}
+                          className="flex items-center gap-1 px-3 py-1.5 text-[11px] font-bold text-white bg-primary hover:bg-primary/80 rounded-lg transition-colors"
+                        >
+                          <span>Go to details</span>
+                          <ExternalLink className="size-3" />
+                        </button>
+                      </div>
                     )}
                   </div>
                 )
               })
             )}
+          </div>
+
+          <div className="mt-2 pt-2 border-t border-border/80 flex justify-center">
+            <Link
+              to="/notifications"
+              onClick={() => setIsOpen(false)}
+              className="text-xs text-primary hover:text-primary-foreground font-semibold py-1 hover:underline"
+            >
+              View All Notifications
+            </Link>
           </div>
         </div>
       )}

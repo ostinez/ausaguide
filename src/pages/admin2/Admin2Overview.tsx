@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { Users, Map, Calendar, List, CheckSquare, RefreshCw } from "lucide-react"
-import { SkeletonStatGrid, SkeletonTable } from "@/components/ui/SkeletonCard"
+import { SkeletonStatGrid, SkeletonTable } from "@/components/ui/Skeleton"
+import { cn } from "@/lib/utils"
 
 export default function Admin2Overview() {
   const [loading, setLoading] = useState(true)
@@ -94,9 +95,11 @@ export default function Admin2Overview() {
 
       {/* Stats Grid */}
       {loading ? (
-        <SkeletonStatGrid count={5} />
+        <div className="animate-in fade-in duration-300">
+          <SkeletonStatGrid count={5} />
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 animate-in fade-in duration-300">
           <StatCard 
             title="Total Users" 
             value={stats.totalUsers.toString()} 
@@ -124,13 +127,14 @@ export default function Admin2Overview() {
             value={stats.pendingVerifications.toString()} 
             icon={<CheckSquare className="text-orange-400" size={24} />}
             subtext="Pending review"
+            className="col-span-2 md:col-span-1"
           />
         </div>
       )}
 
       {/* Recent Tables Grid */}
       {loading ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in duration-300">
           <div className="space-y-3">
             <h3 className="font-semibold text-white text-sm">Recent Users</h3>
             <SkeletonTable rows={5} cols={3} />
@@ -141,7 +145,7 @@ export default function Admin2Overview() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in duration-300">
           
           {/* Recent Users */}
           <div className="bg-[#111111] border border-white/10 rounded-xl overflow-hidden flex flex-col">
@@ -230,9 +234,9 @@ export default function Admin2Overview() {
   )
 }
 
-function StatCard({ title, value, icon, subtext }: { title: string, value: string, icon: React.ReactNode, subtext?: string }) {
+function StatCard({ title, value, icon, subtext, className }: { title: string, value: string, icon: React.ReactNode, subtext?: string, className?: string }) {
   return (
-    <div className="bg-[#111111] border border-white/10 rounded-xl p-5 flex flex-col relative overflow-hidden group hover:border-white/20 transition-colors">
+    <div className={cn("bg-[#111111] border border-white/10 rounded-xl p-5 flex flex-col relative overflow-hidden group hover:border-white/20 transition-colors", className)}>
       <div className="flex justify-between items-start mb-4">
         <h3 className="text-gray-400 text-sm font-medium">{title}</h3>
         <div className="p-2 bg-white/5 rounded-lg border border-white/5">

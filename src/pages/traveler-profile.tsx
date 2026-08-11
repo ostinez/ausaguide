@@ -4,7 +4,7 @@ import { MapPin, Star, Calendar, ArrowLeft, Globe, User, BookOpen, Quote } from 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Spinner } from "@/components/ui/spinner"
+import { SkeletonProfile } from "@/components/ui/Skeleton"
 import { supabase } from "@/lib/supabase"
 import { getHostInitials } from "@/lib/tour-utils"
 import { formatSocialLink } from "@/lib/utils"
@@ -131,11 +131,7 @@ export default function TravelerProfilePage() {
   }, [id])
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Spinner className="size-8 text-primary" />
-      </div>
-    )
+    return <SkeletonProfile />
   }
 
   if (error || !profile) {
@@ -154,7 +150,7 @@ export default function TravelerProfilePage() {
   const initials = getHostInitials(profile.full_name)
 
   return (
-    <div className="min-h-screen bg-background pt-20 pb-24">
+    <div className="min-h-screen bg-background pt-20 pb-24 animate-in fade-in duration-300">
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-40 left-1/2 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-primary/5 blur-3xl" />
       </div>

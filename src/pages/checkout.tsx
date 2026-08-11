@@ -14,7 +14,6 @@ import {
   Star,
   BadgeCheck,
   CheckCircle2,
-  Heart,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -28,6 +27,7 @@ import { supabase } from "@/lib/supabase"
 import type { Tour } from "@/lib/types"
 import { formatTourPrice, getHostInitials, getTourGradient } from "@/lib/tour-utils"
 import { cn } from "@/lib/utils"
+import { MPesaCheckout } from "@/components/Checkout/MPesaCheckout"
 import {
   validateName,
   validateEmail,
@@ -56,10 +56,9 @@ export default function CheckoutPage() {
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
   const [notes, setNotes] = useState("")
-  const [tipPercent, setTipPercent] = useState<number | "custom" | null>(null)
-  const [customTip, setCustomTip] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [createdBookingId, setCreatedBookingId] = useState<string | null>(null)
 
   // Field-level validation errors
   const [errors, setErrors] = useState<{ name?: string; email?: string; phone?: string }>({})
@@ -118,12 +117,7 @@ export default function CheckoutPage() {
   const guests = Math.min(Math.max(1, guestsParam), tour.max_guests)
   const price = typeParam === "virtual" ? (tour.virtual_price ?? 0) : (tour.physical_price ?? tour.price)
   const subtotal = price * guests
-  const tipAmount = tipPercent === "custom"
-    ? (Number(customTip) || 0)
-    : tipPercent !== null
-    ? Math.round(subtotal * (tipPercent / 100))
-    : 0
-  const total = subtotal + tipAmount
+  const total = subtotal
   const hostName = tour.host?.full_name ?? "Local Host"
   const hostInitials = getHostInitials(hostName)
 
@@ -175,27 +169,12 @@ export default function CheckoutPage() {
         notes: notes.trim() ? sanitizeText(notes) : undefined,
         guest_id: localStorage.getItem("user_id") || undefined,
         booking_type: typeParam,
+        currency: tour!.currency || "KES",
       })
 
-      // Call the create-booking-session Edge Function to get the Stripe Checkout redirect URL
-      const { data, error: functionErr } = await supabase.functions.invoke("create-booking-session", {
-        body: {
-          bookingId: booking.id,
-          tourType: typeParam,
-        }
-      })
-
-      if (functionErr) {
-        throw new Error(functionErr.message || "Failed to create Stripe payment session")
-      }
-
-      if (data?.sessionUrl) {
-        // Redirect traveler to Stripe Checkout
-        window.location.href = data.sessionUrl
-      } else {
-        // Fallback if Stripe redirect is unavailable
-        navigate(`/confirmation/${booking.id}`)
-      }
+      // Set created booking state for IntaSend checkout
+      setCreatedBookingId(booking.id)
+      setSubmitting(false)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Something went wrong"
       setSubmitError(message)
@@ -310,69 +289,27 @@ export default function CheckoutPage() {
               </div>
             </section>
 
-            {/* Tip Jar */}
-            <section className="rounded-2xl border border-border bg-card p-6 space-y-4">
-              <div className="flex items-center gap-2">
-                <Heart className="size-4 text-rose-400" />
-                <h2 className="text-base font-semibold text-foreground">Leave a tip for your host</h2>
-                <span className="ml-auto text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">Optional</span>
-              </div>
-              <p className="text-xs text-muted-foreground">100% of your tip goes directly to your host (after the standard 20% platform fee). Show your appreciation for their time and local knowledge!</p>
-              <div className="flex flex-wrap gap-2">
-                {([5, 10, 15] as number[]).map((pct) => (
-                  <button
-                    key={pct}
-                    type="button"
-                    onClick={() => { setTipPercent(tipPercent === pct ? null : pct); setCustomTip("") }}
-                    className={`rounded-full border px-4 py-1.5 text-sm font-semibold transition-all ${
-                      tipPercent === pct
-                        ? "bg-rose-500/20 border-rose-500 text-rose-400"
-                        : "border-border text-muted-foreground hover:border-rose-400 hover:text-rose-400"
-                    }`}
-                  >
-                    {pct}% · {formatTourPrice(Math.round(subtotal * pct / 100), tour.currency)}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => { setTipPercent("custom"); }}
-                  className={`rounded-full border px-4 py-1.5 text-sm font-semibold transition-all ${
-                    tipPercent === "custom"
-                      ? "bg-rose-500/20 border-rose-500 text-rose-400"
-                      : "border-border text-muted-foreground hover:border-rose-400 hover:text-rose-400"
-                  }`}
-                >
-                  Custom
-                </button>
-                {tipPercent !== null && (
-                  <button
-                    type="button"
-                    onClick={() => { setTipPercent(null); setCustomTip("") }}
-                    className="rounded-full border border-border text-muted-foreground hover:text-foreground px-4 py-1.5 text-sm transition-colors"
-                  >
-                    No tip
-                  </button>
-                )}
-              </div>
-              {tipPercent === "custom" && (
-                <div className="flex items-center gap-2 max-w-[240px]">
-                  <span className="text-sm text-muted-foreground shrink-0">{tour.currency}</span>
-                  <input
-                    type="number"
-                    min="0"
-                    value={customTip}
-                    onChange={(e) => setCustomTip(e.target.value)}
-                    placeholder="Enter amount"
-                    className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
-                </div>
-              )}
-              {tipAmount > 0 && (
-                <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
-                  🙏 You're adding <strong className="text-foreground">{formatTourPrice(tipAmount, tour.currency)}</strong> tip. Your host will receive <strong className="text-foreground">{formatTourPrice(Math.round(tipAmount * 0.8), tour.currency)}</strong> after the platform fee.
-                </p>
-              )}
-            </section>
+            {/* M-PESA Checkout Card once booking record is created */}
+            {createdBookingId && (
+              <MPesaCheckout
+                bookingId={createdBookingId}
+                amount={total}
+                currency={tour.currency || "KES"}
+                email={email}
+                prefillPhone={phone}
+                bookingSummary={{
+                  tourTitle: tour.title,
+                  bookingDate: format(bookingDate, "EEE, d MMM yyyy"),
+                  guestCount: guests,
+                  totalPrice: total,
+                  currency: tour.currency || "KES",
+                }}
+                onSuccess={(paymentId) => {
+                  navigate(`/payment-success?booking_id=${createdBookingId}&payment_id=${paymentId}`)
+                }}
+                onError={(err) => setSubmitError(err)}
+              />
+            )}
 
             {/* Error banner */}
             {submitError && (
@@ -382,24 +319,26 @@ export default function CheckoutPage() {
             )}
 
             {/* Mobile: show submit button inside form section */}
-            <div className="lg:hidden">
-              <Button
-                type="submit"
-                form="checkout-form"
-                size="lg"
-                className="w-full rounded-full py-6 text-base font-semibold"
-                disabled={submitting}
-              >
-                {submitting ? (
-                  <><Spinner className="mr-2 size-4" />Processing…</>
-                ) : (
-                  <><CreditCard className="mr-2 size-4" />Confirm Booking</>
-                )}
-              </Button>
-              <p className="mt-2 text-center text-xs text-muted-foreground">
-                Free cancellation · No charge until confirmed
-              </p>
-            </div>
+            {!createdBookingId && (
+              <div className="lg:hidden">
+                <Button
+                  type="submit"
+                  form="checkout-form"
+                  size="lg"
+                  className="w-full rounded-full py-6 text-base font-semibold"
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <><Spinner className="mr-2 size-4" />Processing…</>
+                  ) : (
+                    <><CreditCard className="mr-2 size-4" />Continue to IntaSend Payment</>
+                  )}
+                </Button>
+                <p className="mt-2 text-center text-xs text-muted-foreground">
+                  Free cancellation · Secured by IntaSend
+                </p>
+              </div>
+            )}
           </form>
 
           {/* ── Right: Booking summary ── */}
@@ -487,12 +426,7 @@ export default function CheckoutPage() {
                   <span>{formatTourPrice(price, tour.currency)} × {guests} {guests === 1 ? "guest" : "guests"}</span>
                   <span>{formatTourPrice(subtotal, tour.currency)}</span>
                 </div>
-                {tipAmount > 0 && (
-                  <div className="flex justify-between text-muted-foreground">
-                    <span className="flex items-center gap-1"><Heart className="size-3 text-rose-400" /> Host tip</span>
-                    <span>+{formatTourPrice(tipAmount, tour.currency)}</span>
-                  </div>
-                )}
+
                 <div className="flex justify-between font-bold text-base text-foreground border-t border-border pt-2">
                   <span>Total</span>
                   <span className="text-primary">{formatTourPrice(total, tour.currency)}</span>
@@ -521,24 +455,26 @@ export default function CheckoutPage() {
             </div>
 
             {/* Desktop: confirm button lives in the sidebar */}
-            <div className="hidden lg:block">
-              <Button
-                type="submit"
-                form="checkout-form"
-                size="lg"
-                className="w-full rounded-full py-6 text-base font-semibold"
-                disabled={submitting}
-              >
-                {submitting ? (
-                  <><Spinner className="mr-2 size-4" />Processing…</>
-                ) : (
-                  <><CreditCard className="mr-2 size-4" />Confirm Booking</>
-                )}
-              </Button>
-              <p className="mt-2 text-center text-xs text-muted-foreground">
-                Free cancellation · No charge until confirmed
-              </p>
-            </div>
+            {!createdBookingId && (
+              <div className="hidden lg:block">
+                <Button
+                  type="submit"
+                  form="checkout-form"
+                  size="lg"
+                  className="w-full rounded-full py-6 text-base font-semibold"
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <><Spinner className="mr-2 size-4" />Processing…</>
+                  ) : (
+                    <><CreditCard className="mr-2 size-4" />Continue to IntaSend Payment</>
+                  )}
+                </Button>
+                <p className="mt-2 text-center text-xs text-muted-foreground">
+                  Free cancellation · Secured by IntaSend
+                </p>
+              </div>
+            )}
 
             {/* Trust badges */}
             <div className="flex items-center gap-2 text-xs text-muted-foreground">

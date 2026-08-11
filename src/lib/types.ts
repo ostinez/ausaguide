@@ -87,6 +87,7 @@ export interface Booking {
   guest_count: number
   status: BookingStatus
   total_price: number
+  currency?: string
   booking_type?: 'physical' | 'virtual'
   stripe_payment_intent_id: string | null
   daily_room_url: string | null
@@ -101,6 +102,12 @@ export interface Booking {
   updated_at: string
   tour?: Tour
   host?: Profile
+  // IntaSend payment fields
+  payment_status?: string
+  payment_id?: string | null
+  payment_amount?: number | null
+  payment_currency?: string
+  host_paid?: boolean
 }
 
 export interface Review {
