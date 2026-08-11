@@ -1,176 +1,220 @@
-// @ts-nocheck -- Deno edge function
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.8"
+// deno-lint-ignore-file
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.8";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-}
+const INTASEND_API_KEY = Deno.env.get("INTASEND_API_KEY");
+const INTASEND_PUBLIC_KEY = Deno.env.get("INTASEND_PUBLIC_KEY");
+const INTASEND_IS_PRODUCTION = Deno.env.get("INTASEND_IS_PRODUCTION") === "true";
 
-// Helper to convert Kenyan phone numbers to international format (254XXXXXXXXX)
-function formatIntaSendPhone(raw: string): string {
-  const digits = (raw || "").replace(/\D/g, "")
-  if (digits.startsWith("254") && digits.length === 12) {
-    return digits
-  }
-  if (digits.startsWith("0") && digits.length === 10) {
-    return "254" + digits.slice(1)
-  }
-  if (digits.length === 9 && (digits.startsWith("7") || digits.startsWith("1"))) {
-    return "254" + digits
-  }
-  return digits
+const BASE_URL = INTASEND_IS_PRODUCTION
+  ? "https://payment.intasend.com/api/v1"
+  : "https://sandbox.intasend.com/api/v1";
+
+function formatPhone(raw: string): string {
+  let cleaned = (raw || "").replace(/\D/g, "");
+  if (cleaned.startsWith("0")) cleaned = "254" + cleaned.slice(1);
+  else if (cleaned.startsWith("7") || cleaned.startsWith("1")) cleaned = "254" + cleaned;
+  else if (!cleaned.startsWith("254")) cleaned = "254" + cleaned;
+  return cleaned;
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
+  // --- CORS headers (required for browser calls) ---
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  };
+
+  // Handle preflight
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders })
+    return new Response(null, { status: 204, headers: corsHeaders });
   }
 
   try {
-    const { amount: rawAmount, email, phone: rawPhone, bookingId, currency = "KES", method = "STK_PUSH" } = await req.json()
+    // 1. Parse and validate input
+    const body = await req.json();
+    const { amount, phone, email, bookingId, currency = "KES", method = "STK_PUSH" } = body;
 
-    if (!rawAmount || !bookingId || !email) {
+    if (!amount || !email || !bookingId) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields: amount, bookingId, email" }),
+        JSON.stringify({ error: "Missing required fields: amount, email, bookingId" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      )
+      );
     }
 
-    // Minimum amount KES 10 for IntaSend sandbox/live
-    const amount = Math.max(10, Math.round(Number(rawAmount) || 10))
-    const phone = formatIntaSendPhone(rawPhone)
+    // 2. Validate IntaSend API key
+    if (!INTASEND_API_KEY) {
+      console.error("INTASEND_API_KEY is not set in environment");
+      return new Response(
+        JSON.stringify({ error: "Payment gateway not configured (missing INTASEND_API_KEY in secrets)" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    const apiKey = Deno.env.get("INTASEND_API_KEY") || ""
-    const publicKey = Deno.env.get("INTASEND_PUBLIC_KEY") || ""
+    const finalAmount = Math.max(10, Math.round(Number(amount) || 10));
 
-    const baseUrl = Deno.env.get("INTASEND_IS_PRODUCTION") === "true" 
-      ? "https://payment.intasend.com/api/v1" 
-      : "https://sandbox.intasend.com/api/v1"
+    let paymentId = "";
+    let checkoutUrl = "";
+    let status = "pending";
+    let responseData: any = {};
 
-    console.log(`[inta-pay-init] Method: ${method}, Amount: ${amount} ${currency}, Phone: ${phone}, Booking: ${bookingId}`)
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") || ""
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
-    let paymentId = ""
-    let checkoutUrl = ""
-    let status = "pending"
-    let responseData: any = {}
-
-    if (method === "STK_PUSH" && phone) {
-      const payload = {
-        public_key: publicKey,
-        amount,
-        phone_number: phone,
-        email,
-        api_ref: bookingId,
-        currency,
+    if (method === "STK_PUSH") {
+      if (!phone) {
+        return new Response(
+          JSON.stringify({ error: "Missing phone number for M-PESA STK Push" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
-      console.log("[inta-pay-init] STK Push payload:", JSON.stringify(payload))
 
-      // Initiate M-PESA STK Push
-      const stkRes = await fetch(`${baseUrl}/payment/mpesa-stk-push/`, {
+      const formattedPhone = formatPhone(phone);
+      if (!formattedPhone.startsWith("254") || formattedPhone.length !== 12) {
+        return new Response(
+          JSON.stringify({ error: `Invalid phone number format: ${phone}. Must be 254XXXXXXXXX.` }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const payload: Record<string, any> = {
+        amount: finalAmount,
+        phone_number: formattedPhone,
+        email: email,
+        api_ref: bookingId,
+        currency: currency,
+      };
+
+      if (INTASEND_PUBLIC_KEY) {
+        payload.public_key = INTASEND_PUBLIC_KEY;
+      }
+
+      console.log("📤 Sending STK Push to IntaSend:", JSON.stringify(payload, null, 2));
+
+      const response = await fetch(`${BASE_URL}/payment/mpesa-stk-push/`, {
         method: "POST",
         headers: {
+          "Authorization": `Bearer ${INTASEND_API_KEY}`,
           "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify(payload),
-      })
+      });
 
-      const rawText = await stkRes.text()
-      console.log(`[inta-pay-init] STK Push response status: ${stkRes.status}, body: ${rawText}`)
+      const responseText = await response.text();
+      console.log(`📥 IntaSend raw response (${response.status}):`, responseText);
 
       try {
-        responseData = JSON.parse(rawText)
-      } catch (_) {
-        responseData = { raw: rawText }
+        responseData = JSON.parse(responseText);
+      } catch {
+        responseData = { raw: responseText };
       }
 
-      if (!stkRes.ok) {
-        const errorDetail =
-          responseData.detail ||
-          responseData.message ||
-          responseData.errors?.phone_number?.[0] ||
-          responseData.errors?.amount?.[0] ||
-          JSON.stringify(responseData)
-        throw new Error(`IntaSend STK Push failed (${stkRes.status}): ${errorDetail}`)
+      if (!response.ok) {
+        console.error("❌ IntaSend STK Push error:", responseData);
+        return new Response(
+          JSON.stringify({
+            error: "IntaSend STK Push failed",
+            details: responseData.detail || responseData.message || responseData,
+          }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
-      paymentId = responseData.invoice?.invoice_id || responseData.tracking_id || responseData.id || `IS_${bookingId}`
-      status = responseData.invoice?.state || responseData.status || "PROCESSING"
+
+      paymentId = responseData.invoice?.invoice_id || responseData.tracking_id || responseData.id || `IS_${bookingId}`;
+      status = responseData.invoice?.state || responseData.status || "PROCESSING";
+
     } else {
-      const payload = {
-        public_key: publicKey,
-        amount,
-        currency,
-        email,
-        phone_number: phone || undefined,
+      const payload: Record<string, any> = {
+        amount: finalAmount,
+        currency: currency,
+        email: email,
         api_ref: bookingId,
         redirect_url: `${req.headers.get("origin") || "http://localhost:5173"}/payment-success?booking_id=${bookingId}`,
-      }
-      console.log("[inta-pay-init] Hosted checkout payload:", JSON.stringify(payload))
+      };
 
-      // Initiate Hosted Checkout Session
-      const checkoutRes = await fetch(`${baseUrl}/checkout/`, {
+      if (phone) {
+        payload.phone_number = formatPhone(phone);
+      }
+      if (INTASEND_PUBLIC_KEY) {
+        payload.public_key = INTASEND_PUBLIC_KEY;
+      }
+
+      console.log("📤 Sending Hosted Checkout to IntaSend:", JSON.stringify(payload, null, 2));
+
+      const response = await fetch(`${BASE_URL}/checkout/`, {
         method: "POST",
         headers: {
+          "Authorization": `Bearer ${INTASEND_API_KEY}`,
           "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify(payload),
-      })
+      });
 
-      const rawText = await checkoutRes.text()
-      console.log(`[inta-pay-init] Hosted checkout status: ${checkoutRes.status}, body: ${rawText}`)
+      const responseText = await response.text();
+      console.log(`📥 IntaSend Hosted Checkout raw response (${response.status}):`, responseText);
 
       try {
-        responseData = JSON.parse(rawText)
-      } catch (_) {
-        responseData = { raw: rawText }
+        responseData = JSON.parse(responseText);
+      } catch {
+        responseData = { raw: responseText };
       }
 
-      if (!checkoutRes.ok) {
-        const errorDetail = responseData.detail || responseData.message || JSON.stringify(responseData)
-        throw new Error(`IntaSend Checkout failed (${checkoutRes.status}): ${errorDetail}`)
+      if (!response.ok) {
+        console.error("❌ IntaSend Checkout error:", responseData);
+        return new Response(
+          JSON.stringify({
+            error: "IntaSend Checkout failed",
+            details: responseData.detail || responseData.message || responseData,
+          }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
-      paymentId = responseData.id || responseData.signature || `IS_${bookingId}`
-      checkoutUrl = responseData.url || ""
-      status = responseData.status || "PENDING"
+
+      paymentId = responseData.id || responseData.signature || `IS_${bookingId}`;
+      checkoutUrl = responseData.url || "";
+      status = responseData.status || "PENDING";
     }
 
-    // Update booking in Supabase with payment tracking info
-    const { error: dbError } = await supabase
-      .from("bookings")
-      .update({
-        payment_id: paymentId,
-        payment_amount: amount,
-        payment_currency: currency,
-        payment_status: "pending",
-      })
-      .eq("id", bookingId)
+    // 5. Update booking in Supabase if URL is present
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-    if (dbError) {
-      console.error("Supabase booking update error:", dbError)
+    if (supabaseUrl && supabaseServiceKey && bookingId && !bookingId.startsWith("test-")) {
+      try {
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+        await supabase
+          .from("bookings")
+          .update({
+            payment_id: paymentId,
+            payment_amount: finalAmount,
+            payment_currency: currency,
+            payment_status: "pending",
+          })
+          .eq("id", bookingId);
+      } catch (dbErr) {
+        console.error("⚠️ Database update non-fatal error:", dbErr);
+      }
     }
 
+    // 6. Return Clean Success JSON
     return new Response(
       JSON.stringify({
         success: true,
         payment_id: paymentId,
         checkout_url: checkoutUrl,
-        status,
-        raw: responseData,
+        status: status,
+        data: responseData,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    )
+    );
+
   } catch (error: any) {
-    console.error("inta-pay-init error:", error)
+    console.error("🔥 Unhandled exception in inta-pay-init:", error);
     return new Response(
-      JSON.stringify({ error: error.message || "Failed to initialize IntaSend payment" }),
+      JSON.stringify({
+        error: "Internal server error",
+        message: error.message || String(error),
+        stack: error.stack,
+      }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    )
+    );
   }
-})
+});
