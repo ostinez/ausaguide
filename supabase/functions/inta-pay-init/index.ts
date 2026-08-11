@@ -2,13 +2,23 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.8";
 
-const INTASEND_API_KEY = Deno.env.get("INTASEND_API_KEY");
-const INTASEND_PUBLIC_KEY = Deno.env.get("INTASEND_PUBLIC_KEY");
-const INTASEND_IS_PRODUCTION = Deno.env.get("INTASEND_IS_PRODUCTION") === "true";
+function getIntaSendApiKey(): string {
+  return (
+    Deno.env.get("INTASEND_API_KEY") ||
+    Deno.env.get("INTASEND_SECRET_KEY") ||
+    Deno.env.get("intasend api secret key") ||
+    ""
+  );
+}
 
-const BASE_URL = INTASEND_IS_PRODUCTION
-  ? "https://payment.intasend.com/api/v1"
-  : "https://sandbox.intasend.com/api/v1";
+function getIntaSendPublicKey(): string {
+  return (
+    Deno.env.get("INTASEND_PUBLIC_KEY") ||
+    Deno.env.get("INTASEND_PUBLISHABLE_KEY") ||
+    Deno.env.get("intasend publishable key") ||
+    ""
+  );
+}
 
 function formatPhone(raw: string): string {
   let cleaned = (raw || "").replace(/\D/g, "");
@@ -32,6 +42,13 @@ serve(async (req) => {
   }
 
   try {
+    const apiKey = getIntaSendApiKey();
+    const publicKey = getIntaSendPublicKey();
+    const isProduction = Deno.env.get("INTASEND_IS_PRODUCTION") === "true";
+    const baseUrl = isProduction
+      ? "https://payment.intasend.com/api/v1"
+      : "https://sandbox.intasend.com/api/v1";
+
     // 1. Parse and validate input
     const body = await req.json();
     const { amount, phone, email, bookingId, currency = "KES", method = "STK_PUSH" } = body;
@@ -44,10 +61,10 @@ serve(async (req) => {
     }
 
     // 2. Validate IntaSend API key
-    if (!INTASEND_API_KEY) {
-      console.error("INTASEND_API_KEY is not set in environment");
+    if (!apiKey) {
+      console.error("IntaSend API Key is missing in Edge Function environment variables");
       return new Response(
-        JSON.stringify({ error: "Payment gateway not configured (missing INTASEND_API_KEY in secrets)" }),
+        JSON.stringify({ error: "Payment gateway not configured: missing INTASEND_API_KEY in secrets" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -83,16 +100,16 @@ serve(async (req) => {
         currency: currency,
       };
 
-      if (INTASEND_PUBLIC_KEY) {
-        payload.public_key = INTASEND_PUBLIC_KEY;
+      if (publicKey) {
+        payload.public_key = publicKey;
       }
 
       console.log("📤 Sending STK Push to IntaSend:", JSON.stringify(payload, null, 2));
 
-      const response = await fetch(`${BASE_URL}/payment/mpesa-stk-push/`, {
+      const response = await fetch(`${baseUrl}/payment/mpesa-stk-push/`, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${INTASEND_API_KEY}`,
+          "Authorization": `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
@@ -133,16 +150,16 @@ serve(async (req) => {
       if (phone) {
         payload.phone_number = formatPhone(phone);
       }
-      if (INTASEND_PUBLIC_KEY) {
-        payload.public_key = INTASEND_PUBLIC_KEY;
+      if (publicKey) {
+        payload.public_key = publicKey;
       }
 
       console.log("📤 Sending Hosted Checkout to IntaSend:", JSON.stringify(payload, null, 2));
 
-      const response = await fetch(`${BASE_URL}/checkout/`, {
+      const response = await fetch(`${baseUrl}/checkout/`, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${INTASEND_API_KEY}`,
+          "Authorization": `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
