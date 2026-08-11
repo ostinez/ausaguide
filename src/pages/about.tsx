@@ -271,7 +271,7 @@ export default function AboutPage() {
               </div>
               <h3 className="text-sm font-bold text-white mb-2">Book Your Experience</h3>
               <p className="text-[11px] text-white/50 leading-relaxed">
-                Securely pay through our stripe-guaranteed portal with custom time slots and host communication.
+                Securely pay through our IntaSend-guaranteed portal with custom time slots and host communication.
               </p>
             </SpotlightCard>
 

@@ -50,7 +50,7 @@ export default function TermsPage() {
               3. Booking & Payments
             </h2>
             <p>
-              Ausaguide enables travelers to book tours offered by local hosts. All bookings are processed through our secure third-party payment partner, Stripe.
+              Ausaguide enables travelers to book tours offered by local hosts. All bookings are processed through our secure third-party payment partner, IntaSend (M-PESA & Cards).
             </p>
             <ul className="list-disc list-inside space-y-1 pl-4">
               <li><strong>Pricing:</strong> Prices are set by hosts and display on listing pages. Service fees or commissions may apply.</li>

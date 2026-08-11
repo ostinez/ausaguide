@@ -107,7 +107,7 @@ export default function PrivacyPage() {
             </p>
             <ul className="list-disc list-inside space-y-2 pl-4">
               <li><strong>Supabase:</strong> For database storage, backend authentication, and user data hosting.</li>
-              <li><strong>Stripe:</strong> For processing secure payment transactions and verifying host payouts. We do not store full credit card details.</li>
+              <li><strong>IntaSend:</strong> For processing secure payment transactions (M-PESA & Cards) and verifying host payouts. We do not store full payment credential details.</li>
               <li><strong>Daily:</strong> For powering live virtual tour video rooms and audio connections.</li>
               <li><strong>Mapbox:</strong> For rendering interactive maps showing coordinates and host locations.</li>
             </ul>

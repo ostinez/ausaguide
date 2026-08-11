@@ -24,11 +24,11 @@ const FAQ_CATEGORIES = [
       },
       {
         q: "What payment methods are accepted?",
-        a: "We accept all major credit and debit cards via Stripe. Your payment is held securely until the booking is confirmed by the host.",
+        a: "We accept M-PESA Express STK Push and major credit/debit cards via IntaSend. Your payment is held securely until the booking is confirmed.",
       },
       {
-        q: "When is my card charged?",
-        a: "Your card is charged immediately at checkout. If a host declines your booking, a full refund is processed automatically.",
+        q: "When is my payment charged?",
+        a: "Your payment is authorized immediately at checkout. If a host declines your booking, a full refund is processed automatically.",
       },
     ],
   },
@@ -108,7 +108,7 @@ const FAQ_CATEGORIES = [
     questions: [
       {
         q: "How does billing work?",
-        a: "Payments are processed securely via Stripe. You'll receive a receipt by email after each successful booking.",
+        a: "Payments are processed securely via IntaSend. You'll receive a receipt by email after each successful booking.",
       },
       {
         q: "Are there hidden fees?",
@@ -116,7 +116,7 @@ const FAQ_CATEGORIES = [
       },
       {
         q: "How do hosts receive payouts?",
-        a: "Host earnings are processed via Stripe Connect. Payouts are sent after the tour is marked as completed, typically within 2 business days.",
+        a: "Host earnings are disbursed directly to your M-PESA number via IntaSend Payouts once the tour is marked as completed by the host.",
       },
     ],
   },

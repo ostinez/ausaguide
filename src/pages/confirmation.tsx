@@ -72,35 +72,30 @@ export default function ConfirmationPage() {
     setTipping(true)
     setTipError(null)
     try {
-      const { data, error: functionErr } = await supabase.functions.invoke("create-booking-session", {
+      const { data, error: functionErr } = await supabase.functions.invoke("inta-pay-init", {
         body: {
           bookingId: booking.id,
-          tourType: booking.booking_type || "physical",
-          tipAmount: tipAmount
+          amount: tipAmount,
+          currency: booking.currency || "KES",
+          email: booking.guest_email || "guest@ausaguide.com",
+          phone: booking.guest_phone || "",
+          method: "CHECKOUT_URL",
         }
       })
 
       if (functionErr) {
-        let errorMsg = "Failed to create Paystack tip session"
+        let errorMsg = "Failed to create IntaSend tip payment"
         if (functionErr instanceof Error) {
           errorMsg = functionErr.message
-          try {
-            const httpErr = functionErr as any
-            if (httpErr.context && typeof httpErr.context.json === 'function') {
-              const body = await httpErr.context.json()
-              if (body && body.error) {
-                errorMsg = body.error
-              }
-            }
-          } catch (_) {}
         }
         throw new Error(errorMsg)
       }
 
-      if (data?.sessionUrl || data?.authorizationUrl) {
-        window.location.href = data.sessionUrl || data.authorizationUrl
+      if (data?.checkout_url || data?.sessionUrl) {
+        window.location.href = data.checkout_url || data.sessionUrl
       } else {
-        toast.error("Paystack Checkout URL not found.")
+        toast.success("Tip payment initiated! IntaSend reference: " + (data?.payment_id || booking.id))
+        setTipping(false)
       }
     } catch (err: any) {
       console.error("Tipping error:", err)

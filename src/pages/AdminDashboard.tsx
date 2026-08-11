@@ -1998,12 +1998,12 @@ export default function AdminDashboard() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="space-y-1.5">
-                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Paystack Integration Gateway Mode</label>
+                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">IntaSend Payment Gateway Mode (M-PESA & Cards)</label>
                         <select value={stripeMode}
                           onChange={(e) => {
                             setStripeMode(e.target.value)
                             localStorage.setItem("system_stripe_mode", e.target.value)
-                            showToast("Paystack environment updated", "success")
+                            showToast("IntaSend environment updated", "success")
                           }}
                           className="w-full bg-card/60 border border-border/60 rounded-xl px-3 py-2 text-xs text-white">
                           <option value="test">Test Gateway (Simulated Payments)</option>

@@ -160,15 +160,15 @@ export default function AdminSettings() {
             </div>
           </div>
 
-          {/* Paystack Mode */}
+          {/* IntaSend Mode */}
           <div className="space-y-1.5">
-            <label className="text-[10px] text-white/40 uppercase tracking-wider font-mono font-bold">Paystack Payment Gateway</label>
+            <label className="text-[10px] text-white/40 uppercase tracking-wider font-mono font-bold">IntaSend Payment Gateway (M-PESA & Cards)</label>
             <select
               value={stripeMode}
               onChange={(e) => setStripeMode(e.target.value)}
               className="w-full border border-white/5 bg-white/5 focus:border-purple-500/30 text-white rounded-xl text-xs h-10 px-3"
             >
-              <option value="test">Test Mode (Mock Transactions)</option>
+              <option value="test">Sandbox Test Mode (M-PESA STK Push)</option>
               <option value="live">Live Production Mode</option>
             </select>
           </div>

@@ -1606,30 +1606,15 @@ export default function DashboardPage() {
   }, [userId, loadDashboard])
 
   async function handleUpdateBookingStatus(bookingId: string, status: BookingStatus, reason?: string) {
-    if (status === "confirmed" || status === "declined") {
-      try {
-        const action = status === "confirmed" ? "confirm" : "reject"
-        const { data, error } = await supabase.functions.invoke("manage-booking-payment", {
-          body: {
-            bookingId,
-            action,
-            declineReason: reason,
-          }
-        })
-        if (error) throw error
-        
-        if (data?.success) {
-          toast.success(`Booking ${status === "confirmed" ? "confirmed" : "declined"} successfully!`)
-        }
-      } catch (err: any) {
-        console.error("Failed to update payment status:", err)
-        toast.error(`Error: ${err.message || "Failed to update booking"}`)
-      }
-    } else {
+    try {
       const updated = await updateBookingStatus(bookingId, status, reason)
       setHostBookings((prev) =>
         prev.map((b) => (b.id === bookingId ? { ...b, status: updated.status, decline_reason: updated.decline_reason } : b))
       )
+      toast.success(`Booking ${status === "confirmed" ? "confirmed" : status === "declined" ? "declined" : "updated"} successfully!`)
+    } catch (err: any) {
+      console.error("Failed to update booking status:", err)
+      toast.error(`Error: ${err.message || "Failed to update booking"}`)
     }
     loadDashboard()
   }
