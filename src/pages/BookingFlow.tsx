@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { useParams, useSearchParams, useNavigate, Link } from "react-router-dom"
-import { ArrowLeft, CheckCircle2, User, CreditCard } from "lucide-react"
+import { ArrowLeft, User, CreditCard } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,7 +9,7 @@ import { fetchTourById } from "@/lib/api/tours"
 import { createBooking } from "@/lib/api/bookings"
 import type { Tour } from "@/lib/types"
 import { PaystackCheckout } from "@/components/Checkout/PaystackCheckout"
-import { validateName, validateEmail, validatePhone, sanitizeText } from "@/lib/validation"
+import { sanitizeText } from "@/lib/validation"
 
 export default function BookingFlow() {
   const { tourId } = useParams<{ tourId: string }>()

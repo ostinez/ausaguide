@@ -51,6 +51,7 @@ import EmailPreferencesPage from "@/pages/email-preferences"
 import AdminSetupPage from "@/pages/AdminSetup"
 import LogoutPage from "@/pages/Logout"
 import NotificationsPage from "@/pages/notifications"
+import PaymentSuccessPage from "@/pages/PaymentSuccess"
 
 function ScrollToTop() {
   const { pathname } = useLocation()

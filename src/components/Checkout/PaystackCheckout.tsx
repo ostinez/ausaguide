@@ -29,7 +29,7 @@ export function PaystackCheckout({
   paystackPublicKey,
   onSuccess,
   onCancel,
-  onRedirectFallback,
+  onRedirectFallback: _onRedirectFallback,
   disabled = false,
   className = "",
 }: PaystackCheckoutProps) {

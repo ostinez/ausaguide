@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useSearchParams, Link } from "react-router-dom"
-import { CheckCircle2, Calendar, MapPin, Users, ArrowRight, ShieldCheck } from "lucide-react"
+import { CheckCircle2, Calendar, Users, ArrowRight, ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,7 +14,7 @@ export default function PaymentSuccessPage() {
   const paymentId = searchParams.get("payment_id") || searchParams.get("tracking_id")
 
   const [loading, setLoading] = useState(true)
-  const [verified, setVerified] = useState(false)
+  const [, setVerified] = useState(false)
   const [booking, setBooking] = useState<Booking | null>(null)
   const [error, setError] = useState<string | null>(null)
 
