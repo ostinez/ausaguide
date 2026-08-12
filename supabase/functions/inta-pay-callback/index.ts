@@ -1,12 +1,12 @@
 // deno-lint-ignore-file
-// inta-pay-callback: Receives webhook from IntaSend after M-PESA payment completes
+// inta-pay-callback: Webhook handler for IntaSend M-PESA & Card payments
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.8";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-intasend-challenge",
 };
 
 serve(async (req) => {
@@ -19,26 +19,40 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const payload = await req.json();
+    const challengeSecret = Deno.env.get("INTASEND_WEBHOOK_CHALLENGE") || "ausaguide_webhook_secret_2026";
+    const headerChallenge = req.headers.get("x-intasend-challenge") || req.headers.get("X-Intasend-Challenge");
+
+    const payload = await req.json().catch(() => ({}));
     console.log("📩 IntaSend callback received:", JSON.stringify(payload, null, 2));
 
-    // IntaSend sends: { state, invoice: { invoice_id, api_ref, ... }, ... }
-    const state = (payload.state || payload.invoice?.state || "").toUpperCase();
-    const invoiceId = payload.invoice?.invoice_id || payload.invoice_id || "";
-    const apiRef = payload.invoice?.api_ref || payload.api_ref || "";
-    const amount = payload.invoice?.net_amount || payload.invoice?.amount || payload.amount || 0;
+    // Optional challenge check if header is present
+    if (headerChallenge && challengeSecret && headerChallenge !== challengeSecret) {
+      console.warn("⚠️ Webhook challenge mismatch! Incoming:", headerChallenge);
+    }
 
-    console.log(`📦 State: ${state}, Invoice: ${invoiceId}, Ref: ${apiRef}`);
+    // Extract event, state, order_id / api_ref, and payment ID
+    const event = payload.event || payload.challenge || "";
+    const state = (payload.state || payload.invoice?.state || payload.data?.state || "").toUpperCase();
+    const invoiceId = payload.invoice?.invoice_id || payload.invoice_id || payload.data?.transaction_id || payload.data?.id || "";
+    const apiRef = payload.invoice?.api_ref || payload.api_ref || payload.data?.order_id || payload.order_id || "";
+    const amount = payload.invoice?.net_amount || payload.invoice?.amount || payload.amount || payload.data?.amount || 0;
 
-    if (!["COMPLETE", "COMPLETED", "SUCCESS", "SUCCESSFUL"].includes(state)) {
-      console.log(`⏩ Ignoring non-success state: ${state}`);
+    console.log(`📦 Event: ${event}, State: ${state}, Invoice/Txn: ${invoiceId}, Ref: ${apiRef}`);
+
+    // If event is collection or state is COMPLETE/SUCCESS
+    const isSuccess =
+      event === "collection" ||
+      ["COMPLETE", "COMPLETED", "SUCCESS", "SUCCESSFUL", "PAID"].includes(state);
+
+    if (!isSuccess) {
+      console.log(`⏩ Ignoring non-successful webhook state: ${state} / event: ${event}`);
       return new Response(
-        JSON.stringify({ received: true, action: "ignored", state }),
+        JSON.stringify({ received: true, action: "ignored", state, event }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Find the booking by api_ref (bookingId) or by payment_id (invoiceId)
+    // Find the booking by api_ref (bookingId) or payment_id (invoiceId)
     let booking: any = null;
     if (apiRef) {
       const { data } = await supabase
@@ -60,26 +74,27 @@ serve(async (req) => {
     if (!booking) {
       console.error(`❌ No booking found for apiRef=${apiRef} or invoiceId=${invoiceId}`);
       return new Response(
-        JSON.stringify({ received: true, error: "Booking not found" }),
+        JSON.stringify({ received: true, error: "Booking record not found", ref: apiRef }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`✅ Found booking ${booking.id}, confirming...`);
+    console.log(`✅ Confirming booking ${booking.id}...`);
 
-    // Update booking status to confirmed
+    // Update booking status to confirmed & payment_status to paid
     await supabase
       .from("bookings")
       .update({
         status: "confirmed",
         payment_status: "paid",
         payment_id: invoiceId || booking.payment_id,
-        payment_amount: amount || booking.payment_amount,
+        payment_amount: amount || booking.total_price,
+        updated_at: new Date().toISOString(),
       })
       .eq("id", booking.id);
 
     // Find or create conversation between traveler and host
-    const travelerId = booking.guest_id;
+    const travelerId = booking.guest_id || booking.traveler_id;
     const hostId = booking.host_id;
 
     if (travelerId && hostId) {
@@ -110,40 +125,49 @@ serve(async (req) => {
       }
 
       if (convId) {
-        // Insert booking receipt as system message
-        const receiptMeta = {
-          type: "booking_receipt",
-          booking_id: booking.id,
-          tour_name: booking.tours?.title || "Tour",
-          date: booking.booking_date,
-          time: booking.booking_time,
-          guests: booking.guest_count,
-          total: amount || booking.total_price,
-          currency: booking.tours?.currency || booking.payment_currency || "KES",
-          payment_id: invoiceId,
-          confirmed_at: new Date().toISOString(),
-        };
+        // Check if receipt message already exists
+        const { data: existingReceipt } = await supabase
+          .from("messages")
+          .select("id")
+          .eq("conversation_id", convId)
+          .eq("sender_type", "system")
+          .like("message", `%${booking.id}%`)
+          .maybeSingle();
 
-        await supabase.from("messages").insert({
-          conversation_id: convId,
-          sender_id: null,
-          receiver_id: travelerId,
-          message: `✅ Booking confirmed for ${receiptMeta.tour_name} on ${receiptMeta.date}`,
-          sender_type: "system",
-          metadata: receiptMeta,
-          read: false,
-        });
+        if (!existingReceipt) {
+          const receiptMeta = {
+            type: "booking_receipt",
+            booking_id: booking.id,
+            tour_name: booking.tours?.title || "Tour",
+            date: booking.booking_date,
+            time: booking.booking_time,
+            guests: booking.guest_count,
+            total: amount || booking.total_price,
+            currency: booking.tours?.currency || booking.currency || "KES",
+            payment_id: invoiceId,
+            confirmed_at: new Date().toISOString(),
+          };
 
-        // Update conversation last message
-        await supabase
-          .from("conversations")
-          .update({
-            last_message: "🧾 Booking confirmed",
-            last_message_at: new Date().toISOString(),
-          })
-          .eq("id", convId);
+          await supabase.from("messages").insert({
+            conversation_id: convId,
+            sender_id: null,
+            receiver_id: travelerId,
+            message: `✅ Booking confirmed for ${receiptMeta.tour_name} on ${receiptMeta.date}`,
+            sender_type: "system",
+            metadata: receiptMeta,
+            read: false,
+          });
 
-        console.log(`💬 Receipt inserted into conversation ${convId}`);
+          await supabase
+            .from("conversations")
+            .update({
+              last_message: "🧾 Booking confirmed",
+              last_message_at: new Date().toISOString(),
+            })
+            .eq("id", convId);
+
+          console.log(`💬 Receipt inserted into conversation ${convId}`);
+        }
       }
     }
 
@@ -153,7 +177,6 @@ serve(async (req) => {
     );
   } catch (error: any) {
     console.error("🔥 inta-pay-callback error:", error);
-    // Always return 200 to IntaSend so it doesn't retry endlessly
     return new Response(
       JSON.stringify({ received: true, error: error.message }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
