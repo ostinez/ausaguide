@@ -25,12 +25,25 @@ interface Participant {
 interface DirectMessage {
   id: string
   conversation_id: string
-  sender_id: string
+  sender_id: string | null
   receiver_id: string
   message: string
   image_url: string | null
   created_at: string
   read: boolean
+  sender_type?: "user" | "system"
+  metadata?: {
+    type?: string
+    booking_id?: string
+    tour_name?: string
+    date?: string
+    time?: string
+    guests?: number
+    total?: number
+    currency?: string
+    payment_id?: string
+    confirmed_at?: string
+  } | null
 }
 
 interface Conversation {
@@ -59,6 +72,56 @@ function initials(name: string) {
     .join("")
     .toUpperCase()
     .slice(0, 2)
+}
+
+// ─── Sub-component: Booking Receipt Card ────────────────────────────────────
+function BookingReceiptCard({ msg }: { msg: DirectMessage }) {
+  const m = msg.metadata ?? {}
+  const fmtCurrency = (val: number, currency = "KES") =>
+    new Intl.NumberFormat("en-KE", { style: "currency", currency, maximumFractionDigits: 0 }).format(val)
+
+  return (
+    <div className="flex justify-center my-3">
+      <div className="w-full max-w-sm rounded-2xl border border-emerald-500/30 bg-emerald-500/5 backdrop-blur-sm overflow-hidden shadow-lg">
+        {/* Header */}
+        <div className="flex items-center gap-2.5 px-4 py-3 bg-emerald-500/10 border-b border-emerald-500/20">
+          <div className="size-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
+            <svg viewBox="0 0 24 24" className="size-4 text-emerald-400" fill="none" stroke="currentColor" strokeWidth={2.5}>
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Booking Confirmed</p>
+            <p className="text-[10px] text-white/40">{m.confirmed_at ? new Date(m.confirmed_at).toLocaleString() : "Just now"}</p>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="px-4 py-3 space-y-2.5">
+          {m.tour_name && (
+            <p className="text-sm font-bold text-white leading-snug">{m.tour_name}</p>
+          )}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+            {m.date && (
+              <><span className="text-white/40">Date</span><span className="text-white font-medium text-right">{m.date}</span></>
+            )}
+            {m.time && (
+              <><span className="text-white/40">Time</span><span className="text-white font-medium text-right">{m.time}</span></>
+            )}
+            {m.guests && (
+              <><span className="text-white/40">Guests</span><span className="text-white font-medium text-right">{m.guests}</span></>
+            )}
+            {m.total != null && (
+              <><span className="text-white/40">Total Paid</span><span className="text-emerald-400 font-bold text-right">{fmtCurrency(m.total, m.currency)}</span></>
+            )}
+          </div>
+          {m.booking_id && (
+            <p className="text-[10px] text-white/30 font-mono"># {m.booking_id.slice(0, 8)}…</p>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // ─── Sub-component: Secure Private Image Renderer ───────────────────────────
@@ -722,6 +785,32 @@ export default function MessagesPage() {
                 const showDate =
                   i === 0 ||
                   new Date(msg.created_at).toDateString() !== new Date(messages[i - 1].created_at).toDateString()
+
+                // System messages render as a receipt card, centered
+                if (msg.sender_type === "system") {
+                  return (
+                    <div key={msg.id}>
+                      {showDate && (
+                        <div className="flex items-center justify-center my-4">
+                          <span className="text-[10px] text-white/40 bg-white/5 rounded-full px-3 py-0.5 tracking-wider font-semibold">
+                            {isToday(new Date(msg.created_at))
+                              ? "TODAY"
+                              : isYesterday(new Date(msg.created_at))
+                              ? "YESTERDAY"
+                              : format(new Date(msg.created_at), "MMMM d, yyyy").toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                      {msg.metadata?.type === "booking_receipt" ? (
+                        <BookingReceiptCard msg={msg} />
+                      ) : (
+                        <div className="flex justify-center my-2">
+                          <span className="text-[11px] text-white/40 bg-white/5 rounded-full px-3 py-1 italic">{msg.message}</span>
+                        </div>
+                      )}
+                    </div>
+                  )
+                }
 
                 return (
                   <div key={msg.id}>
