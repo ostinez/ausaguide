@@ -148,19 +148,30 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
   // 2. Fetch existing bookings for this tour and date
   const { data: existingBookings, error: bookingsError } = await supabase
     .from("bookings")
-    .select("guest_count, booking_time")
+    .select("guest_count, booking_time, status, payment_status, created_at")
     .eq("tour_id", input.tour_id)
     .eq("booking_date", input.booking_date)
     .in("status", ["confirmed", "pending"])
 
   if (bookingsError) throw bookingsError
 
-  // 3. Filter by slot time
+  // 3. Filter by slot time (only count confirmed bookings, paid bookings, or active checkouts created < 15 mins ago)
   const inputTime = input.booking_time ? input.booking_time.substring(0, 5) : ""
+  const fifteenMinutesAgo = Date.now() - 15 * 60 * 1000
+
   const totalGuestsBooked = (existingBookings ?? [])
     .filter(b => {
       const bTime = b.booking_time ? b.booking_time.substring(0, 5) : ""
-      return bTime === inputTime
+      if (bTime !== inputTime) return false
+      
+      if (b.status === "confirmed" || b.payment_status === "paid") return true
+      
+      // Count pending bookings only if created in the last 15 minutes (active checkout)
+      if (b.status === "pending" && b.created_at) {
+        const createdAtMs = new Date(b.created_at).getTime()
+        return createdAtMs > fifteenMinutesAgo
+      }
+      return false
     })
     .reduce((sum, b) => sum + (b.guest_count || 0), 0)
 

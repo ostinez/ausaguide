@@ -118,7 +118,10 @@ export default function TourDetailPage() {
           setHostSettings(sets)
 
           // Fetch all bookings for this tour to grey out fully booked slots
-          const { data } = await supabase.from("bookings").select("booking_date, booking_time, status, guest_count").eq("tour_id", t.id)
+          const { data } = await supabase
+            .from("bookings")
+            .select("booking_date, booking_time, status, guest_count, payment_status, created_at")
+            .eq("tour_id", t.id)
           if (data) {
             setTourBookings(data as unknown as Booking[])
           }
@@ -208,6 +211,8 @@ export default function TourDetailPage() {
 
     const dateStr = date.toISOString().slice(0, 10)
     
+    const fifteenMinutesAgo = Date.now() - 15 * 60 * 1000
+
     // A day is "fully_booked" if ALL of its individual slots are fully booked
     let allSlotsBooked = true
     let hasSlots = false
@@ -215,11 +220,15 @@ export default function TourDetailPage() {
     for (const slot of slots) {
       hasSlots = true
       const timeStr = slot.start_time.substring(0, 5)
-      const bookingsAtTime = tourBookings.filter(b => 
-        b.booking_date === dateStr && 
-        b.booking_time?.substring(0, 5) === timeStr &&
-        (b.status === "confirmed" || b.status === "pending")
-      )
+      const bookingsAtTime = tourBookings.filter(b => {
+        if (b.booking_date !== dateStr) return false
+        if (b.booking_time?.substring(0, 5) !== timeStr) return false
+        if (b.status === "confirmed" || b.payment_status === "paid") return true
+        if (b.status === "pending" && b.created_at) {
+          return new Date(b.created_at).getTime() > fifteenMinutesAgo
+        }
+        return false
+      })
       const guestsBooked = bookingsAtTime.reduce((sum, b) => sum + b.guest_count, 0)
       const maxLimit = tour!.max_guests || slot.guest_limit || 1
       if (guestsBooked + guests <= maxLimit) {
@@ -239,6 +248,7 @@ export default function TourDetailPage() {
     if (!selectedDate || !tour) return []
     const day = selectedDate.getDay()
     const dateStr = selectedDate.toISOString().slice(0, 10)
+    const fifteenMinutesAgo = Date.now() - 15 * 60 * 1000
     
     // Find slots from hostAvailability
     let slots = hostAvailability.filter(a => a.day_of_week === day)
@@ -254,12 +264,16 @@ export default function TourDetailPage() {
     return slots.map(slot => {
       const timeStr = slot.start_time.substring(0, 5) // "HH:MM"
       const endTimeStr = slot.end_time.substring(0, 5) // "HH:MM"
-      // Calculate bookings at this time
-      const bookingsAtTime = tourBookings.filter(b => 
-        b.booking_date === dateStr && 
-        b.booking_time?.substring(0, 5) === timeStr &&
-        (b.status === "confirmed" || b.status === "pending")
-      )
+      // Calculate active bookings at this time
+      const bookingsAtTime = tourBookings.filter(b => {
+        if (b.booking_date !== dateStr) return false
+        if (b.booking_time?.substring(0, 5) !== timeStr) return false
+        if (b.status === "confirmed" || b.payment_status === "paid") return true
+        if (b.status === "pending" && b.created_at) {
+          return new Date(b.created_at).getTime() > fifteenMinutesAgo
+        }
+        return false
+      })
       const guestsBooked = bookingsAtTime.reduce((sum, b) => sum + b.guest_count, 0)
       const maxLimit = tour.max_guests || slot.guest_limit || 1
       const isAvailable = (guestsBooked + guests) <= maxLimit
