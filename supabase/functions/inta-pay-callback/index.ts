@@ -148,15 +148,21 @@ serve(async (req) => {
             confirmed_at: new Date().toISOString(),
           };
 
-          await supabase.from("messages").insert({
+          const { error: msgErr } = await supabase.from("messages").insert({
             conversation_id: convId,
-            sender_id: null,
+            sender_id: travelerId,
             receiver_id: travelerId,
             message: `✅ Booking confirmed for ${receiptMeta.tour_name} on ${receiptMeta.date}`,
             sender_type: "system",
             metadata: receiptMeta,
             read: false,
           });
+
+          if (msgErr) {
+            console.error("❌ Error inserting receipt message:", msgErr);
+          } else {
+            console.log(`💬 Receipt inserted into conversation ${convId}`);
+          }
 
           await supabase
             .from("conversations")
@@ -165,8 +171,6 @@ serve(async (req) => {
               last_message_at: new Date().toISOString(),
             })
             .eq("id", convId);
-
-          console.log(`💬 Receipt inserted into conversation ${convId}`);
         }
       }
     }
