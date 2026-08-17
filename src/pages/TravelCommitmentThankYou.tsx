@@ -113,105 +113,105 @@ export default function TravelCommitmentThankYouPage() {
  }
 
  return (
- <div className="relative overflow-hidden min-h-screen bg-background text-foreground text-white flex flex-col items-center">
- {/* Decorative Glow */}
- <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[350px] bg-gradient-to-b from-[#0D6F73]/10 via-[#0D6F73]/3 to-transparent blur-3xl pointer-events-none z-0" />
+    <div className="relative overflow-hidden min-h-screen bg-background text-foreground flex flex-col items-center">
+      {/* Decorative Glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[350px] bg-gradient-to-b from-primary/10 via-primary/5 to-transparent blur-3xl pointer-events-none z-0" />
 
- <div className="relative z-10 max-w-2xl w-full px-6 py-16 md:py-24 pt-32 flex flex-col space-y-8 items-center text-center">
- 
- {/* Success Header */}
- <div className="space-y-3">
- <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon/10 text-[#0D6F73] border border-[#0D6F73]/20 shadow-[0_0_15px_rgba(13, 111, 115,0.2)]">
- <ShieldCheck className="size-8" />
- </div>
- <h1 className="text-3xl sm:text-4xl font-black tracking-tight bg-gradient-to-r from-[#0D6F73] via-[#0D6F73] to-[#FFFFFE] bg-clip-text text-transparent">
- Pledge Registered!
- </h1>
- <p className="text-sm text-white/60 max-w-md mx-auto">
- Your commitment has been saved in our database. We've reserved commitment ID <span className="font-bold text-[#0D6F73]">{commitmentId}</span> for you!
- </p>
- </div>
+      <div className="relative z-10 max-w-2xl w-full px-6 py-16 md:py-24 pt-32 flex flex-col space-y-8 items-center text-center">
+        
+        {/* Success Header */}
+        <div className="space-y-3">
+          <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 shadow-md">
+            <ShieldCheck className="size-8" />
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground">
+            Pledge Registered!
+          </h1>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            Your commitment has been saved in our database. We've reserved commitment ID <span className="font-bold text-primary">{commitmentId}</span> for you!
+          </p>
+        </div>
 
- {/* Certificate Display on Screen */}
- <BorderGlow
- glowColor="127 90 240"
- glowIntensity={0.5}
- borderRadius={24}
- backgroundColor="#121214"
- className="w-full"
- >
- <div className="p-8 sm:p-12 bg-radial-gradient border border-border rounded-3xl space-y-8 text-center relative overflow-hidden">
- <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-48 h-48 bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon/5 rounded-full blur-3xl pointer-events-none" />
- 
- <div className="space-y-2">
- <span className="text-3xl">🌅</span>
- <p className="text-[10px] font-bold uppercase tracking-widest text-[#0D6F73]">
- Ausaguide Conservation & Wellness Network
- </p>
- <h2 className="text-2xl font-black uppercase tracking-tight text-white">
- Getaway Sponsorship Pledge
- </h2>
- </div>
+        {/* Certificate Display on Screen */}
+        <BorderGlow
+          glowColor="127 90 240"
+          glowIntensity={0.5}
+          borderRadius={24}
+          backgroundColor="#121214"
+          className="w-full shadow-modern"
+        >
+          <div className="p-8 sm:p-12 bg-radial-gradient border border-white/10 rounded-3xl space-y-8 text-center relative overflow-hidden">
+            <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+            
+            <div className="space-y-2">
+              <span className="text-3xl">🌅</span>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#84BABF]">
+                Ausaguide Conservation & Wellness Network
+              </p>
+              <h2 className="text-2xl font-black uppercase tracking-tight text-white">
+                Getaway Sponsorship Pledge
+              </h2>
+            </div>
 
- <div className="space-y-1">
- <p className="text-xs text-white/40 italic">This certifies that</p>
- <p className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight py-2 font-accent">
- {name}
- </p>
- <p className="text-xs text-white/50 leading-relaxed max-w-md mx-auto">
- has committed to sponsoring a wellness getaway experience, supporting local guide wellness and sustainable travel initiatives in Kenya.
- </p>
- </div>
+            <div className="space-y-1">
+              <p className="text-xs text-white/50 italic">This certifies that</p>
+              <p className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight py-2 font-accent">
+                {name}
+              </p>
+              <p className="text-xs text-white/70 leading-relaxed max-w-md mx-auto">
+                has committed to sponsoring a wellness getaway experience, supporting local guide wellness and sustainable travel initiatives in Kenya.
+              </p>
+            </div>
 
- <div className="grid grid-cols-2 gap-y-4 gap-x-2 pt-6 border-t border-border text-left max-w-md mx-auto">
- <div className="space-y-1">
- <span className="block text-[9px] font-bold uppercase tracking-wider text-white/40">Commitment ID</span>
- <span className="block text-xs font-bold text-[#0D6F73] font-mono">{commitmentId}</span>
- </div>
- <div className="space-y-1">
- <span className="block text-[9px] font-bold uppercase tracking-wider text-white/40">Commitment Date</span>
- <span className="block text-xs font-medium text-white/80">{date}</span>
- </div>
- <div className="space-y-1">
- <span className="block text-[9px] font-bold uppercase tracking-wider text-white/40">Sponsorship Type</span>
- <span className="block text-xs font-semibold text-white/90">Getaway Trip Sponsorship</span>
- </div>
- <div className="space-y-1">
- <span className="block text-[9px] font-bold uppercase tracking-wider text-white/40">Dedicated To</span>
- <span className="block text-xs font-semibold text-white/90 truncate">{dedication}</span>
- </div>
- </div>
- </div>
- </BorderGlow>
+            <div className="grid grid-cols-2 gap-y-4 gap-x-2 pt-6 border-t border-white/10 text-left max-w-md mx-auto">
+              <div className="space-y-1">
+                <span className="block text-[9px] font-bold uppercase tracking-wider text-white/50">Commitment ID</span>
+                <span className="block text-xs font-bold text-[#84BABF] font-mono">{commitmentId}</span>
+              </div>
+              <div className="space-y-1">
+                <span className="block text-[9px] font-bold uppercase tracking-wider text-white/50">Commitment Date</span>
+                <span className="block text-xs font-medium text-white/90">{date}</span>
+              </div>
+              <div className="space-y-1">
+                <span className="block text-[9px] font-bold uppercase tracking-wider text-white/50">Sponsorship Type</span>
+                <span className="block text-xs font-semibold text-white/90">Getaway Trip Sponsorship</span>
+              </div>
+              <div className="space-y-1">
+                <span className="block text-[9px] font-bold uppercase tracking-wider text-white/50">Dedicated To</span>
+                <span className="block text-xs font-semibold text-white/90 truncate">{dedication}</span>
+              </div>
+            </div>
+          </div>
+        </BorderGlow>
 
- {/* Action Buttons */}
- <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
- <Button
- onClick={handlePrint}
- className="flex-1 h-11 bg-primary hover:opacity-90 font-bold rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer text-white animate-pulse"
- >
- <Printer className="size-4" />
- Print/Download Pledge
- </Button>
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
+          <Button
+            onClick={handlePrint}
+            className="flex-1 h-11 bg-primary hover:bg-primary/90 font-bold rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer text-primary-foreground shadow-md"
+          >
+            <Printer className="size-4" />
+            Print/Download Certificate
+          </Button>
 
- <Link to="/mental-health" className="flex-1">
- <Button
- variant="outline"
- className="w-full h-11 border-border hover:bg-accent/ text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer"
- >
- <ArrowLeft className="size-3.5" />
- Back to Sponsorship
- </Button>
- </Link>
- </div>
+          <Link to="/tree-planting" className="flex-1">
+            <Button
+              variant="outline"
+              className="w-full h-11 border-border hover:bg-muted text-foreground font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <ArrowLeft className="size-3.5" />
+              Back to Initiative
+            </Button>
+          </Link>
+        </div>
 
- {/* Support Note */}
- <p className="text-[11px] text-white/40 max-w-sm flex items-center justify-center gap-1">
- <Heart className="size-3 text-red-500 fill-red-500" />
- Thank you for supporting guide wellness. We will notify you when you can fund this trip in reality.
- </p>
+        {/* Support Note */}
+        <p className="text-xs text-muted-foreground max-w-sm flex items-center justify-center gap-1">
+          <Heart className="size-3 text-red-500 fill-red-500" />
+          Thank you for making a difference. We will notify you when sponsorship matching opens.
+        </p>
 
- </div>
- </div>
+      </div>
+    </div>
  )
 }

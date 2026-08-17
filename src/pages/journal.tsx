@@ -378,13 +378,13 @@ export default function JournalPage() {
 
  {/* Social Links Badge Row */}
  {(selected.instagram || selected.tiktok || selected.facebook || selected.reddit) && (
- <div className="flex flex-wrap items-center gap-2 py-3 border-t border-b border-border/20">
+ <div className="flex flex-wrap items-center gap-2 py-3 border-t border-b border-border/40">
  {selected.instagram && (
  <a
  href={formatSocialLink("instagram", selected.instagram)}
  target="_blank"
  rel="noopener noreferrer"
- className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card shadow-modern border border-border/40 hover:border-[#0D6F73] text-[10px] text-muted-foreground hover:text-white transition-colors"
+ className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card shadow-modern border border-border hover:border-primary hover:bg-primary/10 text-[10px] text-muted-foreground hover:text-primary transition-colors font-medium"
  title="Instagram"
  >
  <InstagramIcon className="size-3" />
@@ -396,7 +396,7 @@ export default function JournalPage() {
  href={formatSocialLink("tiktok", selected.tiktok)}
  target="_blank"
  rel="noopener noreferrer"
- className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card shadow-modern border border-border/40 hover:border-[#0D6F73] text-[10px] text-muted-foreground hover:text-white transition-colors"
+ className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card shadow-modern border border-border hover:border-primary hover:bg-primary/10 text-[10px] text-muted-foreground hover:text-primary transition-colors font-medium"
  title="TikTok"
  >
  <TikTokIcon className="size-3" />
@@ -408,7 +408,7 @@ export default function JournalPage() {
  href={formatSocialLink("facebook", selected.facebook)}
  target="_blank"
  rel="noopener noreferrer"
- className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card shadow-modern border border-border/40 hover:border-[#0D6F73] text-[10px] text-muted-foreground hover:text-white transition-colors"
+ className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card shadow-modern border border-border hover:border-primary hover:bg-primary/10 text-[10px] text-muted-foreground hover:text-primary transition-colors font-medium"
  title="Facebook"
  >
  <FacebookIcon className="size-3" />
@@ -420,7 +420,7 @@ export default function JournalPage() {
  href={formatSocialLink("reddit", selected.reddit)}
  target="_blank"
  rel="noopener noreferrer"
- className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card shadow-modern border border-border/40 hover:border-[#0D6F73] text-[10px] text-muted-foreground hover:text-white transition-colors"
+ className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card shadow-modern border border-border hover:border-primary hover:bg-primary/10 text-[10px] text-muted-foreground hover:text-primary transition-colors font-medium"
  title="Reddit"
  >
  <RedditIcon className="size-3" />

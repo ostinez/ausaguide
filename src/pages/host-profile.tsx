@@ -237,54 +237,54 @@ export default function HostProfilePage() {
  </div>
 
  {/* Social Links */}
- {(profile.instagram || profile.facebook || profile.tiktok || profile.reddit) && (
- <div className="flex flex-wrap items-center justify-center gap-3 pt-2 md:justify-start">
- {profile.instagram && (
- <a
- href={formatSocialLink("instagram", profile.instagram)}
- target="_blank"
- rel="noopener noreferrer"
- className="p-1.5 rounded-full bg-card shadow-modern border border-border/40 hover:border-[#0D6F73] text-muted-foreground hover:text-white transition-colors"
- title="Instagram"
- >
- <InstagramIcon className="size-4" />
- </a>
- )}
- {profile.facebook && (
- <a
- href={formatSocialLink("facebook", profile.facebook)}
- target="_blank"
- rel="noopener noreferrer"
- className="p-1.5 rounded-full bg-card shadow-modern border border-border/40 hover:border-[#0D6F73] text-muted-foreground hover:text-white transition-colors"
- title="Facebook"
- >
- <FacebookIcon className="size-4" />
- </a>
- )}
- {profile.tiktok && (
- <a
- href={formatSocialLink("tiktok", profile.tiktok)}
- target="_blank"
- rel="noopener noreferrer"
- className="px-2.5 py-0.5 rounded-full bg-card shadow-modern border border-border/40 hover:border-[#0D6F73] text-[10px] font-bold text-muted-foreground hover:text-white transition-colors font-mono tracking-tighter"
- title="TikTok"
- >
- TikTok
- </a>
- )}
- {profile.reddit && (
- <a
- href={formatSocialLink("reddit", profile.reddit)}
- target="_blank"
- rel="noopener noreferrer"
- className="px-2.5 py-0.5 rounded-full bg-card shadow-modern border border-border/40 hover:border-[#0D6F73] text-[10px] font-bold text-muted-foreground hover:text-white transition-colors font-mono tracking-tighter"
- title="Reddit"
- >
- Reddit
- </a>
- )}
- </div>
- )}
+        {(profile.instagram || profile.facebook || profile.tiktok || profile.reddit) && (
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2 md:justify-start">
+            {profile.instagram && (
+              <a
+                href={formatSocialLink("instagram", profile.instagram)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-1.5 rounded-full bg-card shadow-modern border border-border hover:border-primary hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                title="Instagram"
+              >
+                <InstagramIcon className="size-4" />
+              </a>
+            )}
+            {profile.facebook && (
+              <a
+                href={formatSocialLink("facebook", profile.facebook)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-1.5 rounded-full bg-card shadow-modern border border-border hover:border-primary hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                title="Facebook"
+              >
+                <FacebookIcon className="size-4" />
+              </a>
+            )}
+            {profile.tiktok && (
+              <a
+                href={formatSocialLink("tiktok", profile.tiktok)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-2.5 py-1 rounded-full bg-card shadow-modern border border-border hover:border-primary hover:bg-primary/10 text-[10px] font-bold text-muted-foreground hover:text-primary transition-colors font-mono tracking-tighter"
+                title="TikTok"
+              >
+                TikTok
+              </a>
+            )}
+            {profile.reddit && (
+              <a
+                href={formatSocialLink("reddit", profile.reddit)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-2.5 py-1 rounded-full bg-card shadow-modern border border-border hover:border-primary hover:bg-primary/10 text-[10px] font-bold text-muted-foreground hover:text-primary transition-colors font-mono tracking-tighter"
+                title="Reddit"
+              >
+                Reddit
+              </a>
+            )}
+          </div>
+        )}
  </div>
  </div>
  

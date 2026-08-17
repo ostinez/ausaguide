@@ -199,13 +199,13 @@ export default function TravelerProfilePage() {
 
  {/* Social Links */}
  {(profile.instagram || profile.facebook || profile.tiktok || profile.reddit) && (
- <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-white/5 mt-3">
+ <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-border/40 mt-3">
  {profile.instagram && (
  <a
  href={formatSocialLink("instagram", profile.instagram)}
  target="_blank"
  rel="noopener noreferrer"
- className="p-1 rounded-full bg-card shadow-modern border border-border/40 hover:border-[#0D6F73] text-muted-foreground hover:text-white transition-colors"
+ className="p-1.5 rounded-full bg-card shadow-modern border border-border hover:border-primary hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
  title="Instagram"
  >
  <InstagramIcon className="size-3.5" />
@@ -216,7 +216,7 @@ export default function TravelerProfilePage() {
  href={formatSocialLink("facebook", profile.facebook)}
  target="_blank"
  rel="noopener noreferrer"
- className="p-1 rounded-full bg-card shadow-modern border border-border/40 hover:border-[#0D6F73] text-muted-foreground hover:text-white transition-colors"
+ className="p-1.5 rounded-full bg-card shadow-modern border border-border hover:border-primary hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
  title="Facebook"
  >
  <FacebookIcon className="size-3.5" />
@@ -227,7 +227,7 @@ export default function TravelerProfilePage() {
  href={formatSocialLink("tiktok", profile.tiktok)}
  target="_blank"
  rel="noopener noreferrer"
- className="px-2 py-0.5 rounded-full bg-card shadow-modern border border-border/40 hover:border-[#0D6F73] text-[9px] font-bold text-muted-foreground hover:text-white transition-colors font-mono tracking-tighter"
+ className="px-2.5 py-1 rounded-full bg-card shadow-modern border border-border hover:border-primary hover:bg-primary/10 text-[10px] font-bold text-muted-foreground hover:text-primary transition-colors font-mono tracking-tighter"
  title="TikTok"
  >
  TikTok
@@ -238,7 +238,7 @@ export default function TravelerProfilePage() {
  href={formatSocialLink("reddit", profile.reddit)}
  target="_blank"
  rel="noopener noreferrer"
- className="px-2 py-0.5 rounded-full bg-card shadow-modern border border-border/40 hover:border-[#0D6F73] text-[9px] font-bold text-muted-foreground hover:text-white transition-colors font-mono tracking-tighter"
+ className="px-2.5 py-1 rounded-full bg-card shadow-modern border border-border hover:border-primary hover:bg-primary/10 text-[10px] font-bold text-muted-foreground hover:text-primary transition-colors font-mono tracking-tighter"
  title="Reddit"
  >
  Reddit

@@ -67,159 +67,83 @@ function useConfetti(active: boolean): Particle[] {
 
 // ── Step 1: Welcome ─────────────────────────────────────
 function StepWelcome({ onNext }: { onNext: () => void }) {
- return (
- <div className="flex flex-col items-center text-center gap-6 py-4 px-2 w-full">
- {/* Animated Lucide globe */}
- <motion.div
- initial={{ scale: 0.5, opacity: 0 }}
- animate={{ scale: 1, opacity: 1 }}
- transition={{ type: "spring", stiffness: 200, damping: 14 }}
- className="select-none text-[#0D6F73]"
- aria-hidden
- >
- <Globe className="size-16 animate-pulse" />
- </motion.div>
+  return (
+    <div className="flex flex-col items-center text-center gap-6 py-4 px-2 w-full">
+      {/* Animated Lucide globe */}
+      <motion.div
+        initial={{ scale: 0.5, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 200, damping: 14 }}
+        className="select-none text-primary"
+        aria-hidden
+      >
+        <Globe className="size-16 animate-pulse" />
+      </motion.div>
 
- <motion.div
- initial={{ opacity: 0, y: 20 }}
- animate={{ opacity: 1, y: 0 }}
- transition={{ delay: 0.15, duration: 0.5 }}
- className="space-y-3"
- >
- <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight flex items-center justify-center gap-2">
- Welcome to Ausaguide!
- <Sparkles className="size-6 text-[#0D6F73] shrink-0 animate-bounce" />
- </h1>
- <p className="text-base sm:text-lg text-[#0D6F73] font-semibold tracking-wide">
- Be a Local. Share Your World.
- </p>
- <p className="text-sm text-white/60 max-w-xs mx-auto leading-relaxed">
- You're about to join a community of real local hosts and curious global travellers. Let's set you up.
- </p>
- </motion.div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15, duration: 0.5 }}
+        className="space-y-3"
+      >
+        <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight flex items-center justify-center gap-2">
+          Welcome to Ausaguide!
+          <Sparkles className="size-6 text-primary shrink-0 animate-bounce" />
+        </h1>
+        <p className="text-base sm:text-lg text-primary font-bold tracking-wide">
+          Be a Local. Share Your World.
+        </p>
+        <p className="text-sm text-muted-foreground max-w-xs mx-auto leading-relaxed">
+          You're about to join a community of real local hosts and curious global travellers. Let's set you up.
+        </p>
+      </motion.div>
 
- <motion.div
- initial={{ opacity: 0, y: 12 }}
- animate={{ opacity: 1, y: 0 }}
- transition={{ delay: 0.35, duration: 0.4 }}
- >
- <Button
- id="onboarding-welcome-next"
- size="lg"
- onClick={onNext}
- className="rounded-full px-10 bg-linear-to-r from-[#0D6F73] to-[#0D6F73] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#0D6F73]/30 transition-all duration-300 flex items-center gap-2"
- >
- Let's get started
- <ArrowRight className="size-4" />
- </Button>
- </motion.div>
- </div>
- )
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35, duration: 0.4 }}
+      >
+        <Button
+          id="onboarding-welcome-next"
+          size="lg"
+          onClick={onNext}
+          className="rounded-full px-10 bg-primary hover:bg-primary/90 text-primary-foreground border-0 font-bold shadow-md transition-all duration-300 flex items-center gap-2"
+        >
+          Let's get started
+          <ArrowRight className="size-4" />
+        </Button>
+      </motion.div>
+    </div>
+  )
 }
 
 // ── Step 2: Choose Role ──────────────────────────────────
 interface RoleCard {
- id: Role
- title: string
- subtitle: string
- description: string
- color: string
- shadow: string
+  id: Role
+  title: string
+  subtitle: string
+  description: string
+  color: string
 }
 
 const ROLE_CARDS: RoleCard[] = [
- {
- id: "traveler",
- title: "Traveler",
- subtitle: "Explore Kenya live with locals",
- description: "Book immersive tours, meet real locals, and experience authentic culture.",
- color: "border-[#0D6F73] shadow-[#0D6F73]/30",
- shadow: "0 0 0 2px #0D6F73, 0 8px 32px rgba(13, 111, 115,0.25)",
- },
- {
- id: "host",
- title: "Host",
- subtitle: "Share your world and earn",
- description: "Turn your local knowledge into income. Share Kenya's hidden gems.",
- color: "border-[#0D6F73] shadow-[#0D6F73]/30",
- shadow: "0 0 0 2px #0D6F73, 0 8px 32px rgba(13, 111, 115,0.25)",
- },
+  {
+    id: "traveler",
+    title: "Traveler",
+    subtitle: "Explore Kenya live with locals",
+    description: "Book immersive tours, meet real locals, and experience authentic culture.",
+    color: "border-primary bg-primary/10",
+  },
+  {
+    id: "host",
+    title: "Host",
+    subtitle: "Share your world and earn",
+    description: "Turn your local knowledge into income. Share Kenya's hidden gems.",
+    color: "border-primary bg-primary/10",
+  },
 ]
 
 function StepRole({
- selectedRole,
- onSelect,
- onNext,
-}: {
- selectedRole: Role | null
- onSelect: (r: Role) => void
- onNext: () => void
-}) {
- return (
- <div className="flex flex-col items-center gap-6 py-4 px-2 w-full">
- <div className="text-center space-y-1.5">
- <h2 className="text-2xl sm:text-3xl font-black text-white">Choose Your Role</h2>
- <p className="text-sm text-[#0D6F73] font-semibold">Choose carefully. Your role cannot be changed once selected.</p>
- </div>
-
- <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg">
- {ROLE_CARDS.map((card) => {
- const isSelected = selectedRole === card.id
- return (
- <button
- key={card.id}
- id={`onboarding-role-${card.id}`}
- onClick={() => onSelect(card.id)}
- className={cn(
- "flex flex-col items-center gap-3 p-6 rounded-2xl border-2 transition-all duration-300 cursor-pointer text-left",
- "bg-card shadow-modern hover:bg-card shadow-modern",
- isSelected
- ? card.color + " scale-[1.03]"
- : "border-border hover:border-border"
- )}
- style={isSelected ? { boxShadow: card.shadow } : {}}
- >
- {card.id === "traveler" ? (
- <Compass className="size-10 text-[#0D6F73]" />
- ) : (
- <Home className="size-10 text-[#0D6F73]" />
- )}
- <div className="text-center space-y-1">
- <p className="text-lg font-black text-white">{card.title}</p>
- <p className={cn("text-xs font-semibold", isSelected ? "text-white/80" : "text-white/50")}>
- {card.subtitle}
- </p>
- <p className="text-xs text-white/40 leading-relaxed hidden sm:block">
- {card.description}
- </p>
- </div>
- {isSelected && (
- <motion.div
- layoutId="role-check"
- initial={{ scale: 0 }}
- animate={{ scale: 1 }}
- className="flex items-center justify-center size-6 rounded-full bg-card shadow-modern"
- >
- <Check className="size-4 text-white" />
- </motion.div>
- )}
- </button>
- )
- })}
- </div>
-
- <Button
- id="onboarding-role-next"
- size="lg"
- disabled={!selectedRole}
- onClick={onNext}
- className={cn(
- "rounded-full px-10 font-bold transition-all duration-300 flex items-center gap-2",
- selectedRole
- ? "bg-linear-to-r from-[#0D6F73] to-[#0D6F73] text-white border-0 shadow-lg shadow-[#0D6F73]/30 hover:opacity-90"
- : "bg-accent/ text-white/30 border border-border cursor-not-allowed"
- )}
- >
  Continue
  <ArrowRight className="size-4" />
  </Button>
@@ -229,30 +153,6 @@ function StepRole({
 
 // ── Step 3: Tell Us About You ─────────────────────────────
 function StepProfile({
- role,
- userId,
- onComplete,
-}: {
- role: Role
- userId: string
- onComplete: (name: string, userId: string) => void
-}) {
- const [name, setName] = useState("")
- const [email, setEmail] = useState("")
- const [username, setUsername] = useState("")
- const [communityBio, setCommunityBio] = useState("")
- const [loading, setLoading] = useState(false)
- const [error, setError] = useState<string | null>(null)
-
- useEffect(() => {
- async function checkUser() {
- try {
- const { data: { user } } = await supabase.auth.getUser()
- if (user) {
- setEmail(user.email || "")
- 
- // Fetch existing profile if trigger created it
- const { data: profile } = await supabase
  .from("profiles")
  .select("*")
  .eq("id", user.id)
@@ -335,114 +235,6 @@ function StepProfile({
  city: "Nairobi",
  host_type: "local_host",
  bio: communityBio.trim() || "New host registered on Ausaguide.",
- status: "pending",
- },
- { onConflict: "user_id" }
- )
- if (hostErr) console.error("Failed to create host record:", hostErr)
- }
-
- trackEvent("user_onboarded", { email: email.trim(), role })
- identifyUser(userId, { email: email.trim(), role })
- 
- toast.success("Profile updated successfully!")
- onComplete(name.trim(), userId)
- } catch (err: any) {
- console.error(err)
- setError(err?.message || "Failed to update profile. Please try again.")
- } finally {
- setLoading(false)
- }
- }
-
- return (
- <div className="flex flex-col items-center gap-5 py-4 px-2 w-full">
- <div className="text-center space-y-1.5">
- <h2 className="text-2xl sm:text-3xl font-black text-white">Tell Us About You</h2>
- <p className="text-sm text-white/50">
- {role === "host" ? "Almost there — let's set up your host profile." : "Quick setup and you're in!"}
- </p>
- </div>
-
- <form onSubmit={handleSubmit} className="w-full max-w-md space-y-4">
- {error && (
- <div className="flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs font-semibold text-red-400">
- <AlertCircle className="size-4 shrink-0 mt-0.5" />
- <span>{error}</span>
- </div>
- )}
-
- <div className="space-y-1.5">
- <Label htmlFor="ob-name" className="text-white/70 text-xs font-semibold uppercase tracking-wide">
- Full Name
- </Label>
- <Input
- id="ob-name"
- type="text"
- placeholder="Your full name"
- value={name}
- onChange={(e) => setName(e.target.value)}
- required
- className="bg-card shadow-modern border-border text-white placeholder:text-white/30 focus:border-[#0D6F73]/60 rounded-xl"
- />
- </div>
-
- <div className="space-y-1.5">
- <Label htmlFor="ob-username" className="text-white/70 text-xs font-semibold uppercase tracking-wide">
- Username
- </Label>
- <div className="relative">
- <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-white/50">@</span>
- <Input
- id="ob-username"
- type="text"
- placeholder="username"
- value={username}
- onChange={(e) => setUsername(e.target.value)}
- required
- minLength={3}
- maxLength={20}
- className="pl-7 bg-card shadow-modern border-border text-white placeholder:text-white/30 focus:border-[#0D6F73]/60 rounded-xl"
- />
- </div>
- </div>
-
- <div className="space-y-1.5">
- <Label htmlFor="ob-email" className="text-white/70 text-xs font-semibold uppercase tracking-wide">
- Email
- </Label>
- <Input
- id="ob-email"
- type="email"
- placeholder="you@example.com"
- value={email}
- required
- disabled
- className="bg-card shadow-modern border-border text-white placeholder:text-white/30 focus:border-[#0D6F73]/60 rounded-xl disabled:opacity-70"
- />
- <p className="text-[11px] text-white/40 mt-1">
- Your email is verified and linked to your account.
- </p>
- </div>
-
- {role === "host" && (
- <div className="space-y-1.5">
- <Label htmlFor="ob-bio" className="text-white/70 text-xs font-semibold uppercase tracking-wide">
- Tell us about your community
- </Label>
- <textarea
- id="ob-bio"
- placeholder="What makes your area unique? What experiences can you offer?"
- value={communityBio}
- onChange={(e) => setCommunityBio(e.target.value)}
- rows={3}
- className="w-full rounded-xl border border-border bg-card shadow-modern px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#0D6F73]/60 resize-none transition-colors"
- />
- </div>
- )}
-
- <Button
- id="onboarding-profile-submit"
  type="submit"
  size="lg"
  disabled={loading}

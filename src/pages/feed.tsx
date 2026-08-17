@@ -92,14 +92,14 @@ function LikeListModal({ postId, likeCount, likers, onClose }: {
  {/* Header */}
  <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
  <div className="flex items-center gap-2">
- <Heart className="size-4 fill-red-400 stroke-red-400" />
- <span className="font-bold text-white text-sm">
+ <Heart className="size-4 fill-red-500 stroke-red-500" />
+ <span className="font-bold text-foreground text-sm">
  {likeCount} {likeCount === 1 ? 'Like' : 'Likes'}
  </span>
  </div>
  <button
  onClick={onClose}
- className="p-1.5 rounded-full hover:bg-card shadow-modern text-muted-foreground hover:text-white transition-colors"
+ className="p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
  >
  <X className="size-4" />
  </button>
@@ -784,13 +784,13 @@ const PostCard = memo(function PostCard({
 
  {/* Social Links Badge Row */}
  {(post.instagram || post.tiktok || post.facebook || post.reddit) && (
- <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/20">
+ <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/40">
  {post.instagram && (
  <a
  href={formatSocialLink("instagram", post.instagram)}
  target="_blank"
  rel="noopener noreferrer"
- className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card shadow-modern border border-border/40 hover:border-[#0D6F73] text-[10px] text-muted-foreground hover:text-white transition-colors"
+ className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card shadow-modern border border-border hover:border-primary hover:bg-primary/10 text-[10px] text-muted-foreground hover:text-primary transition-colors font-medium"
  title="Instagram"
  >
  <InstagramIcon className="size-3" />
@@ -802,7 +802,7 @@ const PostCard = memo(function PostCard({
  href={formatSocialLink("tiktok", post.tiktok)}
  target="_blank"
  rel="noopener noreferrer"
- className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card shadow-modern border border-border/40 hover:border-[#0D6F73] text-[10px] text-muted-foreground hover:text-white transition-colors"
+ className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card shadow-modern border border-border hover:border-primary hover:bg-primary/10 text-[10px] text-muted-foreground hover:text-primary transition-colors font-medium"
  title="TikTok"
  >
  <TikTokIcon className="size-3" />
@@ -814,7 +814,7 @@ const PostCard = memo(function PostCard({
  href={formatSocialLink("facebook", post.facebook)}
  target="_blank"
  rel="noopener noreferrer"
- className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card shadow-modern border border-border/40 hover:border-[#0D6F73] text-[10px] text-muted-foreground hover:text-white transition-colors"
+ className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card shadow-modern border border-border hover:border-primary hover:bg-primary/10 text-[10px] text-muted-foreground hover:text-primary transition-colors font-medium"
  title="Facebook"
  >
  <FacebookIcon className="size-3" />
@@ -826,7 +826,7 @@ const PostCard = memo(function PostCard({
  href={formatSocialLink("reddit", post.reddit)}
  target="_blank"
  rel="noopener noreferrer"
- className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card shadow-modern border border-border/40 hover:border-[#0D6F73] text-[10px] text-muted-foreground hover:text-white transition-colors"
+ className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card shadow-modern border border-border hover:border-primary hover:bg-primary/10 text-[10px] text-muted-foreground hover:text-primary transition-colors font-medium"
  title="Reddit"
  >
  <RedditIcon className="size-3" />

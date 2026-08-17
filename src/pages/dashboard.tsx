@@ -1679,7 +1679,7 @@ export default function DashboardPage() {
  onClick={loadDashboard}
  variant="outline"
  size="sm"
- className="h-9 rounded-xl border-border bg-card shadow-modern text-xs font-semibold text-white/60 hover:text-white hover:border-[#0D6F73]/40 transition-all duration-200"
+ className="h-9 rounded-xl border-border bg-card shadow-modern text-xs font-semibold text-foreground hover:text-primary hover:border-primary/40 transition-all duration-200"
  >
  Refresh Status
  </Button>
@@ -1699,7 +1699,7 @@ export default function DashboardPage() {
  <button
  onClick={() => setSidebarOpen(true)}
  aria-label="Open navigation"
- className="flex size-9 items-center justify-center rounded-xl border border-border bg-card shadow-modern text-white/60 hover:text-white hover:border-[#0D6F73]/40 transition-all duration-200"
+ className="flex size-9 items-center justify-center rounded-xl border border-border bg-card shadow-modern text-foreground hover:text-primary hover:border-primary/40 transition-all duration-200"
  >
  <Menu className="size-5" />
  </button>

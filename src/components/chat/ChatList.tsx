@@ -51,26 +51,26 @@ export function ChatList({
  )
 
  return (
- <div className={cn("flex flex-col h-full bg-[#0E131F]/90 border border-white/10 rounded-2xl overflow-hidden shadow-2xl", className)}>
+ <div className={cn("flex flex-col h-full bg-card border border-border rounded-2xl overflow-hidden shadow-modern", className)}>
  {/* Search & Header */}
- <div className="p-3.5 border-b border-white/10 bg-card shadow-modern space-y-3 shrink-0">
+ <div className="p-3.5 border-b border-border bg-card space-y-3 shrink-0">
  <div className="flex items-center justify-between">
- <h2 className="font-bold text-white text-base tracking-tight flex items-center gap-2">
+ <h2 className="font-bold text-foreground text-base tracking-tight flex items-center gap-2">
  <MessageSquare className="size-4 text-primary" />
  Messages
  </h2>
- <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-card shadow-modern text-white/70">
+ <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border/50">
  {conversations.length}
  </span>
  </div>
 
  <div className="relative">
- <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-white/40" />
+ <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
  <Input
  value={searchQuery}
  onChange={(e) => onSearchChange(e.target.value)}
  placeholder="Search messages..."
- className="pl-8.5 bg-card shadow-modern border-white/10 text-white placeholder:text-white/40 h-8.5 text-xs rounded-xl focus-visible:ring-1 focus-visible:ring-primary"
+ className="pl-8.5 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground h-8.5 text-xs rounded-xl focus-visible:ring-1 focus-visible:ring-primary"
  />
  </div>
  </div>
@@ -78,7 +78,7 @@ export function ChatList({
  {/* Conversations scroll area */}
  <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
  {filtered.length === 0 ? (
- <div className="text-center py-12 px-4 text-white/40">
+ <div className="text-center py-12 px-4 text-muted-foreground">
  <p className="text-xs">No conversations found</p>
  </div>
  ) : (
@@ -93,35 +93,35 @@ export function ChatList({
  className={cn(
  "w-full flex items-center gap-3 p-2.5 rounded-xl transition-all duration-200 text-left group cursor-pointer",
  isSelected
- ? "bg-primary/20 border border-primary/40 shadow-sm"
- : "hover:bg-card shadow-modern border border-transparent"
+ ? "bg-primary/10 border border-primary/30 shadow-sm"
+ : "hover:bg-muted/60 border border-transparent"
  )}
  >
  {/* Avatar with presence */}
  <div className="relative shrink-0">
- <Avatar className="size-11 border border-white/10">
+ <Avatar className="size-11 border border-border">
  {conv.other.avatar_url ? (
  <AvatarImage src={conv.other.avatar_url} alt={conv.other.full_name} className="object-cover" />
  ) : null}
- <AvatarFallback className="bg-gradient-to-br from-primary/30 to-teal/30 text-white font-bold text-xs">
+ <AvatarFallback className="bg-primary/15 text-primary font-bold text-xs">
  {initials(conv.other.full_name || "User")}
  </AvatarFallback>
  </Avatar>
  {online && (
- <span className="absolute bottom-0 right-0 size-3 rounded-full bg-emerald-500 ring-2 ring-[#0E131F]" />
+ <span className="absolute bottom-0 right-0 size-3 rounded-full bg-emerald-500 ring-2 ring-card" />
  )}
  </div>
 
  {/* Text and preview */}
  <div className="flex-1 min-w-0">
  <div className="flex items-center justify-between gap-1 mb-0.5">
- <span className="font-semibold text-xs text-white truncate group-hover:text-primary transition-colors flex items-center gap-1">
+ <span className="font-semibold text-xs text-foreground truncate group-hover:text-primary transition-colors flex items-center gap-1">
  {conv.other.full_name}
  {conv.other.host_tier && (
- <Star className="size-2.5 fill-amber-400 text-amber-400 shrink-0" />
+ <Star className="size-2.5 fill-amber-500 text-amber-500 shrink-0" />
  )}
  </span>
- <span className="text-[10px] text-white/40 shrink-0">
+ <span className="text-[10px] text-muted-foreground shrink-0">
  {formatConvTime(conv.last_message_at || conv.created_at)}
  </span>
  </div>
@@ -131,15 +131,15 @@ export function ChatList({
  className={cn(
  "text-[11px] truncate leading-tight",
  conv.unreadCount > 0
- ? "font-semibold text-white"
- : "text-white/50 group-hover:text-white/70"
+ ? "font-bold text-foreground"
+ : "text-muted-foreground group-hover:text-foreground/80"
  )}
  >
  {conv.last_message || "No messages yet"}
  </p>
 
  {conv.unreadCount > 0 && (
- <span className="flex size-4.5 items-center justify-center rounded-full bg-gradient-to-r from-[#0D6F73] to-[#0D6F73] text-[9px] font-bold text-white shrink-0 shadow-sm animate-pulse">
+ <span className="flex size-4.5 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground shrink-0 shadow-sm animate-pulse">
  {conv.unreadCount}
  </span>
  )}
