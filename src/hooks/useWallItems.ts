@@ -84,55 +84,89 @@ export function useWallItems() {
     setError(null)
 
     try {
-      // 1. Fetch up to 10 tours
-      const { data: toursData, error: toursError } = await supabase
-        .from("tours")
-        .select("id, title, cover_image, images")
-        .eq("is_published", true)
-        .order("created_at", { ascending: false })
-        .limit(10)
+      // 1. Fetch up to 10 published tours
+      let formattedTours: DriftItem[] = []
+      try {
+        const { data: toursData, error: toursError } = await supabase
+          .from("tours")
+          .select("id, title, cover_image, images")
+          .eq("is_published", true)
+          .order("created_at", { ascending: false })
+          .limit(10)
 
-      if (toursError) {
-        console.warn("[useWallItems] Tours fetch warning:", toursError.message)
+        if (toursError) {
+          console.warn("[useWallItems] Tours query notice:", toursError.message)
+        } else if (toursData) {
+          formattedTours = toursData
+            .filter((t) => t.cover_image || (t.images && t.images.length > 0))
+            .map((t) => ({
+              image: t.cover_image || t.images?.[0] || FALLBACK_ITEMS[0].image,
+              title: t.title || "Kenya Experience",
+              href: `/tours/${t.id}`,
+            }))
+        }
+      } catch (tErr) {
+        console.warn("[useWallItems] Tours fetch failed:", tErr)
       }
 
-      // 2. Fetch up to 5 community posts
-      const { data: postsData, error: postsError } = await supabase
-        .from("posts")
-        .select("id, title, content, image_url, images")
-        .order("created_at", { ascending: false })
-        .limit(5)
+      // 2. Fetch up to 5 community posts (posts schema: id, content, image_url)
+      let formattedPosts: DriftItem[] = []
+      try {
+        const { data: postsData, error: postsError } = await supabase
+          .from("posts")
+          .select("id, content, image_url")
+          .not("image_url", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(5)
 
-      if (postsError) {
-        console.warn("[useWallItems] Posts fetch warning:", postsError.message)
+        if (postsError) {
+          console.warn("[useWallItems] Posts query notice:", postsError.message)
+        } else if (postsData) {
+          formattedPosts = postsData
+            .filter((p) => p.image_url)
+            .map((p) => ({
+              image: p.image_url,
+              title: p.content?.slice(0, 45) || "Community Story",
+              href: "/feed",
+            }))
+        }
+      } catch (pErr) {
+        console.warn("[useWallItems] Posts fetch failed:", pErr)
       }
 
-      const formattedTours: DriftItem[] = (toursData || [])
-        .filter((t) => t.cover_image || (t.images && t.images.length > 0))
-        .map((t) => ({
-          image: t.cover_image || t.images?.[0] || FALLBACK_ITEMS[0].image,
-          title: t.title || "Kenya Experience",
-          href: `/tours/${t.id}`,
-        }))
+      // 3. Fetch up to 5 journal entries (journals schema: id, title, image_url)
+      let formattedJournals: DriftItem[] = []
+      try {
+        const { data: journalsData, error: journalsError } = await supabase
+          .from("journals")
+          .select("id, title, image_url")
+          .not("image_url", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(5)
 
-      const formattedPosts: DriftItem[] = (postsData || [])
-        .filter((p) => p.image_url || (p.images && p.images.length > 0))
-        .map((p) => ({
-          image: p.image_url || p.images?.[0] || FALLBACK_ITEMS[1].image,
-          title: p.title || p.content?.slice(0, 50) || "Community Story",
-          href: `/feed`,
-        }))
+        if (!journalsError && journalsData) {
+          formattedJournals = journalsData
+            .filter((j) => j.image_url)
+            .map((j) => ({
+              image: j.image_url,
+              title: j.title || "Travel Journal",
+              href: "/journal",
+            }))
+        }
+      } catch (jErr) {
+        console.warn("[useWallItems] Journals fetch failed:", jErr)
+      }
 
-      const combined = [...formattedTours, ...formattedPosts]
+      const combined = [...formattedTours, ...formattedPosts, ...formattedJournals]
 
       if (combined.length >= 4) {
         setItems(shuffleArray(combined))
       } else {
-        // Blend with fallbacks if database has few items
+        // Blend with vibrant fallbacks if database has few live rows
         setItems(shuffleArray([...combined, ...FALLBACK_ITEMS]))
       }
     } catch (err: any) {
-      console.warn("[useWallItems] Failed to fetch items, using fallback:", err)
+      console.warn("[useWallItems] Using fallback items:", err)
       setError(err.message || "Failed to load live items")
       setItems(FALLBACK_ITEMS)
     } finally {

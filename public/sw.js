@@ -45,13 +45,19 @@ self.addEventListener("fetch", (event) => {
   // Only handle GET requests
   if (event.request.method !== "GET") return;
 
+  // Filter out unsupported schemes (e.g. chrome-extension://, moz-extension://, file://)
+  if (!event.request.url.startsWith("http://") && !event.request.url.startsWith("https://")) {
+    return;
+  }
+
   const url = new URL(event.request.url);
 
-  // Skip caching for Supabase API, Sentry, PostHog, or Hot Module Reloading (Vite)
+  // Skip caching for Supabase API, Sentry, PostHog, Vercel Insights, or Hot Module Reloading (Vite)
   if (
     url.hostname.includes("supabase.co") ||
     url.hostname.includes("sentry") ||
     url.hostname.includes("posthog") ||
+    url.hostname.includes("vercel-insights") ||
     url.pathname.includes("@vite") ||
     url.pathname.includes("@react-refresh") ||
     url.pathname.includes("hmr") ||
@@ -67,10 +73,12 @@ self.addEventListener("fetch", (event) => {
       fetch(event.request)
         .then((response) => {
           // Cache the latest version of the page
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
+          if (response && response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseClone).catch(() => {});
+            });
+          }
           return response;
         })
         .catch(() => {
@@ -100,9 +108,9 @@ self.addEventListener("fetch", (event) => {
         // Fetch in the background and update cache
         fetch(event.request)
           .then((networkResponse) => {
-            if (networkResponse.status === 200) {
+            if (networkResponse && networkResponse.status === 200) {
               caches.open(CACHE_NAME).then((cache) => {
-                cache.put(event.request, networkResponse);
+                cache.put(event.request, networkResponse).catch(() => {});
               });
             }
           })
@@ -119,11 +127,10 @@ self.addEventListener("fetch", (event) => {
         }
         const responseClone = networkResponse.clone();
         caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseClone);
+          cache.put(event.request, responseClone).catch(() => {});
         });
         return networkResponse;
       });
     })
   );
 });
-
