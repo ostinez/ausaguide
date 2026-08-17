@@ -128,7 +128,7 @@ export function useWallItems() {
       if (combined.length >= 4) {
         setItems(shuffleArray(combined))
       } else {
-        // Blend with fallbacks if database has few rows
+        // Blend with fallbacks if database has few items
         setItems(shuffleArray([...combined, ...FALLBACK_ITEMS]))
       }
     } catch (err: any) {
@@ -146,3 +146,5 @@ export function useWallItems() {
 
   return { items, loading, error, refresh: fetchItems }
 }
+
+export default useWallItems

@@ -1,5 +1,7 @@
 import { useEffect } from "react"
 import { Routes, Route, useLocation, Navigate } from "react-router-dom"
+import { Analytics } from "@vercel/analytics/react"
+import { SpeedInsights } from "@vercel/speed-insights/react"
 import { Layout } from "@/components/layout/layout"
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute"
 import { trackEvent } from "@/lib/posthog"
@@ -156,6 +158,8 @@ export default function App() {
  </Route>
  </Routes>
  <CookieConsent />
+ <Analytics />
+ <SpeedInsights />
  </>
  )
 }

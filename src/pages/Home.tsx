@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
-import { HeroGlobe } from "@/components/landing/hero-globe"
+import { HeroSection } from "@/components/landing/HeroSection"
 import { UrgentMatchModal } from "@/components/ui/UrgentMatchModal"
 import { ToursPreview } from "@/components/landing/tours-preview"
 import { DiscoverToursStack } from "@/components/landing/discover-tours-stack"
@@ -109,9 +109,9 @@ export default function Home() {
  }
  }}
  />
- <div id="hero" className="dark-section">
- <HeroGlobe />
- </div>
+      <div id="hero" className="dark-section">
+        <HeroSection />
+      </div>
 
       {/* Action Selector Section */}
       <section className="bg-background py-20 px-6 relative overflow-hidden flex flex-col items-center border-b border-border">
