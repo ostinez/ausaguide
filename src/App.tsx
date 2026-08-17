@@ -116,6 +116,7 @@ export default function App() {
  <Route path="/wishlist" element={<WishlistPage />} />
  <Route path="/journal" element={<JournalPage />} />
  <Route path="/messages" element={<MessagesPage />} />
+ <Route path="/messages/:conversationId" element={<MessagesPage />} />
  </Route>
 
  {/* Public routes */}

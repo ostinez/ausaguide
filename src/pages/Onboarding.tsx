@@ -8,12 +8,10 @@ import { Spinner } from "@/components/ui/spinner"
 import { Stepper } from "@/components/ui/Stepper"
 import { supabase } from "@/lib/supabase"
 import { validateName, validateUsername } from "@/lib/validation"
-import { identifyUser, trackEvent } from "@/lib/posthog"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { sendGuideApplicationNotification } from "@/lib/api/emails"
 import { 
- AlertCircle, 
  Loader2, 
  Globe, 
  Sparkles, 
@@ -144,107 +142,270 @@ const ROLE_CARDS: RoleCard[] = [
 ]
 
 function StepRole({
- Continue
- <ArrowRight className="size-4" />
- </Button>
- </div>
- )
+  selectedRole,
+  onSelect,
+  onNext,
+}: {
+  selectedRole: Role | null
+  onSelect: (r: Role) => void
+  onNext: () => void
+}) {
+  return (
+    <div className="flex flex-col items-center text-center gap-6 py-4 px-2 w-full max-w-md mx-auto">
+      <div className="space-y-2">
+        <h2 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
+          How do you plan to use Ausaguide?
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Choose your primary role. You can always switch or explore both later.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+        {ROLE_CARDS.map((c) => {
+          const isSelected = selectedRole === c.id
+          return (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => onSelect(c.id)}
+              className={cn(
+                "flex flex-col text-left p-5 rounded-2xl border-2 transition-all duration-200 cursor-pointer relative",
+                isSelected
+                  ? "border-primary bg-primary/10 shadow-md ring-2 ring-primary/20"
+                  : "border-border/80 bg-card hover:border-primary/40 hover:bg-muted/50"
+              )}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-bold text-base text-foreground">{c.title}</span>
+                {isSelected && <Check className="size-4 text-primary" />}
+              </div>
+              <p className="text-xs font-semibold text-primary mb-1">{c.subtitle}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">{c.description}</p>
+            </button>
+          )
+        })}
+      </div>
+
+      <Button
+        size="lg"
+        disabled={!selectedRole}
+        onClick={onNext}
+        className="rounded-full px-10 bg-primary hover:bg-primary/90 text-primary-foreground border-0 font-bold shadow-md transition-all duration-300 flex items-center gap-2"
+      >
+        Continue
+        <ArrowRight className="size-4" />
+      </Button>
+    </div>
+  )
 }
 
 // ── Step 3: Tell Us About You ─────────────────────────────
 function StepProfile({
- .from("profiles")
- .select("*")
- .eq("id", user.id)
- .maybeSingle()
- 
- if (profile) {
- setName(profile.full_name || user.user_metadata?.full_name || "")
- setUsername(profile.username || user.user_metadata?.username || "")
- setCommunityBio(profile.bio || "")
- } else {
- setName(user.user_metadata?.full_name || "")
- setUsername(user.user_metadata?.username || "")
- }
- }
- } catch (err) {
- console.error("Error checking active session:", err)
- }
- }
- checkUser()
- }, [])
+  role,
+  userId: propUserId,
+  onComplete,
+}: {
+  role: Role
+  userId: string
+  onComplete: (name: string, realUserId: string) => void
+}) {
+  const [name, setName] = useState("")
+  const [username, setUsername] = useState("")
+  const [communityBio, setCommunityBio] = useState("")
+  const [email, setEmail] = useState("")
+  const [userId, setUserId] = useState(propUserId)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
- async function handleSubmit(e: React.FormEvent) {
- e.preventDefault()
- setError(null)
+  useEffect(() => {
+    async function checkUser() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          setUserId(user.id)
+          setEmail(user.email || "")
 
- const nameErr = validateName(name)
- if (nameErr) { setError(nameErr); return }
- const userErr = validateUsername(username)
- if (userErr) { setError(userErr); return }
- if (role === "host" && communityBio.trim().length < 10) {
- setError("Please tell us a bit more about your community (at least 10 characters).")
- return
- }
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", user.id)
+            .maybeSingle()
 
- setLoading(true)
- try {
- // Check if username is taken by anyone else
- const { data: existingUser, error: checkError } = await supabase
- .from("profiles")
- .select("id")
- .eq("username", username.trim().toLowerCase())
- .maybeSingle()
+          if (profile) {
+            setName(profile.full_name || user.user_metadata?.full_name || "")
+            setUsername(profile.username || user.user_metadata?.username || "")
+            setCommunityBio(profile.bio || "")
+          } else {
+            setName(user.user_metadata?.full_name || "")
+            setUsername(user.user_metadata?.username || "")
+          }
+        }
+      } catch (err) {
+        console.error("Error checking active session:", err)
+      }
+    }
+    checkUser()
+  }, [])
 
- if (checkError) throw checkError
- if (existingUser && existingUser.id !== userId) {
- setError("This username is already taken.")
- setLoading(false)
- return
- }
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
 
- const { error: upsertError } = await supabase
- .from("profiles")
- .upsert(
- {
- id: userId,
- email: email.trim(),
- full_name: name.trim(),
- username: username.trim().toLowerCase(),
- role: role,
- languages: role === "host" ? ["English", "Swahili"] : ["English"],
- bio: role === "host" ? communityBio.trim() : null,
- },
- { onConflict: "id" }
- )
+    const nameErr = validateName(name)
+    if (nameErr) { setError(nameErr); return }
+    const userErr = validateUsername(username)
+    if (userErr) { setError(userErr); return }
+    if (role === "host" && communityBio.trim().length < 10) {
+      setError("Please tell us a bit more about your community (at least 10 characters).")
+      return
+    }
 
- if (upsertError) throw upsertError
+    setLoading(true)
+    try {
+      // Check if username is taken by anyone else
+      const { data: existingUser, error: checkError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("username", username.trim().toLowerCase())
+        .maybeSingle()
 
- // Save role & ID to localStorage
- localStorage.setItem("user_id", userId)
- localStorage.setItem("user_role", role)
+      if (checkError) throw checkError
+      if (existingUser && existingUser.id !== userId) {
+        setError("This username is already taken.")
+        setLoading(false)
+        return
+      }
 
- if (role === "host") {
- const { error: hostErr } = await supabase
- .from("hosts")
- .upsert(
- {
- user_id: userId,
- full_name: name.trim(),
- email: email.trim(),
- city: "Nairobi",
- host_type: "local_host",
- bio: communityBio.trim() || "New host registered on Ausaguide.",
- type="submit"
- size="lg"
- disabled={loading}
- className="w-full rounded-full bg-linear-to-r from-[#0D6F73] to-[#0D6F73] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#0D6F73]/30 transition-all duration-300"
- >
- {loading ? <Spinner className="size-4 animate-spin" /> : "Save Profile & Continue"}
- </Button>
- </form>
- </div>
- )
+      const { error: upsertError } = await supabase
+        .from("profiles")
+        .upsert(
+          {
+            id: userId,
+            email: email.trim(),
+            full_name: name.trim(),
+            username: username.trim().toLowerCase(),
+            role: role,
+            languages: role === "host" ? ["English", "Swahili"] : ["English"],
+            bio: role === "host" ? communityBio.trim() : null,
+          },
+          { onConflict: "id" }
+        )
+
+      if (upsertError) throw upsertError
+
+      // Save role & ID to localStorage
+      localStorage.setItem("user_id", userId)
+      localStorage.setItem("user_role", role)
+
+      if (role === "host") {
+        await supabase
+          .from("hosts")
+          .upsert(
+            {
+              user_id: userId,
+              full_name: name.trim(),
+              email: email.trim(),
+              city: "Nairobi",
+              host_type: "local_host",
+              bio: communityBio.trim() || "New host registered on Ausaguide.",
+            },
+            { onConflict: "user_id" }
+          )
+      }
+
+      toast.success("Profile details saved!")
+      onComplete(name.trim(), effectiveId)
+    } catch (err: any) {
+      console.error("[StepProfile] Error updating profile:", err)
+      setError(err.message || "Failed to update profile. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const effectiveId = userId || propUserId
+
+  return (
+    <div className="flex flex-col items-center gap-6 py-4 px-2 w-full max-w-md mx-auto">
+      <div className="text-center space-y-2">
+        <h2 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
+          Tell us about yourself
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          {role === "host"
+            ? "Your host profile helps travelers get to know and trust you."
+            : "Complete your basic traveler profile to get started."}
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="w-full space-y-4">
+        {error && (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive font-medium">
+            {error}
+          </div>
+        )}
+
+        <div className="space-y-1.5">
+          <Label htmlFor="onboarding-full-name" className="text-xs font-semibold text-foreground">
+            Full Name <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            id="onboarding-full-name"
+            type="text"
+            placeholder="e.g. Jane Wanjiku"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            className="border-border/80 text-foreground placeholder:text-muted-foreground/50 text-sm"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="onboarding-username" className="text-xs font-semibold text-foreground">
+            Username <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            id="onboarding-username"
+            type="text"
+            placeholder="e.g. janew"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            className="border-border/80 text-foreground placeholder:text-muted-foreground/50 text-sm"
+          />
+        </div>
+
+        {role === "host" && (
+          <div className="space-y-1.5">
+            <Label htmlFor="onboarding-bio" className="text-xs font-semibold text-foreground">
+              About Your Tours & Local Passion <span className="text-destructive">*</span>
+            </Label>
+            <textarea
+              id="onboarding-bio"
+              rows={3}
+              placeholder="Tell travelers what makes your experiences special..."
+              value={communityBio}
+              onChange={(e) => setCommunityBio(e.target.value)}
+              className="w-full rounded-xl border border-border/80 bg-background p-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+        )}
+
+        <div className="pt-2">
+          <Button
+            type="submit"
+            size="lg"
+            disabled={loading}
+            className="w-full rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-md"
+          >
+            {loading ? <Spinner className="size-4 animate-spin mr-2" /> : null}
+            Save Profile & Continue
+          </Button>
+        </div>
+      </form>
+    </div>
+  )
 }
 
 // ── Step 3.5: Identity Verification (Hosts Only) ──────────────

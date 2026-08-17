@@ -41,6 +41,7 @@ import { formatTourPrice, getHostInitials, getTourImage } from "@/lib/tour-utils
 import { addDays } from "date-fns"
 import { useSEO } from "@/hooks/useSEO"
 import { JsonLd } from "@/components/seo/JsonLd"
+import { DirectMessageButton } from "@/components/common/DirectMessageButton"
 
 export default function TourDetailPage() {
  const { id } = useParams<{ id: string }>()
@@ -467,7 +468,8 @@ export default function TourDetailPage() {
  <h2 className="scroll-m-20 text-2xl font-semibold tracking-tight text-foreground">
  Your host
  </h2>
- <div className="mt-5 flex items-start gap-4">
+ <div className="mt-5 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+ <div className="flex items-start gap-4">
  <Avatar className="size-16 shrink-0">
  <AvatarImage src={tour.host?.avatar_url ?? ""} alt={hostName} className="object-cover" />
  <AvatarFallback className="bg-primary text-lg font-bold text-primary-foreground">
@@ -506,6 +508,18 @@ export default function TourDetailPage() {
  </p>
  )}
  </div>
+ </div>
+ {tour.host_id && (
+ <div className="shrink-0 self-start">
+ <DirectMessageButton
+ hostId={tour.host_id}
+ hostName={hostName}
+ tourId={tour.id}
+ variant="outline"
+ label="Message Host"
+ />
+ </div>
+ )}
  </div>
  </section>
 
@@ -811,6 +825,19 @@ export default function TourDetailPage() {
  Free cancellation · No charge until confirmed
  </p>
  </>
+ )}
+
+ {tour.host_id && (
+ <div className="mt-4 pt-4 border-t border-border/50 flex flex-col items-center gap-1.5">
+ <DirectMessageButton
+ hostId={tour.host_id}
+ hostName={hostName}
+ tourId={tour.id}
+ variant="ghost"
+ className="w-full text-xs text-muted-foreground hover:text-primary hover:bg-primary/5 py-2.5 min-h-[36px]"
+ label={`Have questions? Chat with ${hostName.split(" ")[0]}`}
+ />
+ </div>
  )}
  </div>
  </div>{/* end relative wrapper for auth guard */}

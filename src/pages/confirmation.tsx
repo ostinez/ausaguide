@@ -30,6 +30,7 @@ import type { Booking } from "@/lib/types"
 import { formatTourPrice, getHostInitials, getTourGradient } from "@/lib/tour-utils"
 import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
+import { DirectMessageButton } from "@/components/common/DirectMessageButton"
 
 export default function ConfirmationPage() {
  const { bookingId } = useParams<{ bookingId: string }>()
@@ -336,26 +337,39 @@ export default function ConfirmationPage() {
 
  <Separator className="my-4" />
 
- {/* Host info */}
- <div className="flex items-center gap-3">
- <Avatar className="size-11 shrink-0">
- <AvatarFallback className="bg-primary/20 text-sm font-semibold text-primary">
- {hostInitials}
- </AvatarFallback>
- </Avatar>
- <div>
- <p className="text-xs text-muted-foreground">Your host</p>
- <div className="flex items-center gap-1.5">
- <p className="text-sm font-semibold text-foreground">{hostName}</p>
- {host?.is_verified && <BadgeCheck className="size-3.5 text-primary" />}
- </div>
- {host?.location && (
- <p className="text-xs text-muted-foreground">{host.location}</p>
- )}
- </div>
- </div>
- </div>
- )}
+        {/* Host info */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Avatar className="size-11 shrink-0">
+              <AvatarFallback className="bg-primary/20 text-sm font-semibold text-primary">
+                {hostInitials}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="text-xs text-muted-foreground">Your host</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-semibold text-foreground">{hostName}</p>
+                {host?.is_verified && <BadgeCheck className="size-3.5 text-primary" />}
+              </div>
+              {host?.location && (
+                <p className="text-xs text-muted-foreground">{host.location}</p>
+              )}
+            </div>
+          </div>
+          {booking.host_id && (
+            <DirectMessageButton
+              hostId={booking.host_id}
+              hostName={hostName}
+              bookingId={booking.id}
+              tourId={tour?.id}
+              variant="outline"
+              size="sm"
+              label="Message Host"
+            />
+          )}
+        </div>
+      </div>
+      )}
 
  {/* Live Location Map for In-Person Tours */}
  {tour && !isVirtual && (

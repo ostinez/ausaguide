@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@
 import { Button } from "@/components/ui/button"
 import { Loader2, MapPin, Compass, CheckCircle2, ShieldAlert } from "lucide-react"
 import { toast } from "sonner"
+import { DirectMessageButton } from "@/components/common/DirectMessageButton"
 
 // Coordinates for preset cities
 const PRESET_CITIES = [
@@ -360,19 +361,28 @@ export function UrgentMatchModal({ isOpen, onClose }: UrgentMatchModalProps) {
             </div>
 
             {/* Matched Host Card */}
-            <div className="bg-secondary/40 border border-border rounded-2xl p-4 flex gap-4 items-center">
-              <img
-                src={matchedHost.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120"}
-                alt={matchedHost.full_name}
-                className="h-16 w-16 rounded-full object-cover border border-brand/30 shadow-sm"
-              />
-              <div className="space-y-1">
-                <h4 className="font-bold text-foreground text-base">{matchedHost.full_name}</h4>
-                <p className="text-muted-foreground text-xs line-clamp-1">{matchedHost.bio || "Local expert guide"}</p>
-                <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-medium">
-                  <span>Languages: {matchedHost.languages?.join(", ") || "English"}</span>
+            <div className="bg-secondary/40 border border-border rounded-2xl p-4 flex gap-4 items-center justify-between">
+              <div className="flex gap-4 items-center min-w-0">
+                <img
+                  src={matchedHost.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120"}
+                  alt={matchedHost.full_name}
+                  className="h-14 w-14 rounded-full object-cover border border-brand/30 shadow-sm shrink-0"
+                />
+                <div className="space-y-1 min-w-0">
+                  <h4 className="font-bold text-foreground text-base truncate">{matchedHost.full_name}</h4>
+                  <p className="text-muted-foreground text-xs line-clamp-1">{matchedHost.bio || "Local expert guide"}</p>
+                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-medium">
+                    <span>Languages: {matchedHost.languages?.join(", ") || "English"}</span>
+                  </div>
                 </div>
               </div>
+              <DirectMessageButton
+                hostId={matchedHost.id}
+                hostName={matchedHost.full_name}
+                variant="pill"
+                label="Chat"
+                className="shrink-0"
+              />
             </div>
 
             <div className="flex gap-3">

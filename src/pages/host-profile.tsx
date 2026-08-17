@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useParams, Link, useNavigate } from "react-router-dom"
-import { MapPin, AlertCircle, MessageSquare, ArrowLeft, BadgeCheck } from "lucide-react"
+import { MapPin, AlertCircle, ArrowLeft, BadgeCheck } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,6 +16,7 @@ import { fetchWishlist, addToWishlist, removeFromWishlist } from "@/lib/api/wish
 import { toast } from "sonner"
 import { formatSocialLink } from "@/lib/utils"
 import { trackView } from "@/lib/api/content"
+import { DirectMessageButton } from "@/components/common/DirectMessageButton"
 
 const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -91,31 +92,6 @@ export default function HostProfilePage() {
  toast.error("Failed to update wishlist.")
  }
  }
-
- const handleMessage = async () => {
- if (!userId) { toast.error("Please sign in to message this host."); return }
- if (!id) return
- // Find or create a conversation
- const { data: existing } = await supabase
- .from("conversations")
- .select("id")
- .or(`and(participant_a.eq.${userId},participant_b.eq.${id}),and(participant_a.eq.${id},participant_b.eq.${userId})`)
- .maybeSingle()
- let convId: string
- if (existing) {
- convId = existing.id
- } else {
- const { data: created, error } = await supabase
- .from("conversations")
- .insert({ participant_a: userId, participant_b: id })
- .select("id")
- .single()
- if (error) { toast.error("Could not start conversation."); return }
- convId = created.id
- }
- navigate(`/messages?conversationId=${convId}`)
- }
-
 
  useEffect(() => {
  async function loadHost() {
@@ -305,20 +281,18 @@ export default function HostProfilePage() {
  <span className="text-xs opacity-80">{busyReason}</span>
  )}
  </div>
- {userId && userId !== id && (
- <Button
- id="message-host-btn"
- variant="outline"
- size="sm"
- className="rounded-full gap-2 border-primary/40 text-primary hover:bg-primary/5"
- onClick={handleMessage}
- >
- <MessageSquare className="size-4" />
- Message Host
- </Button>
- )}
- </div>
- </div>
+          {id && (
+            <DirectMessageButton
+              hostId={id}
+              hostName={profile.full_name}
+              variant="outline"
+              size="default"
+              className="rounded-full gap-2 border-primary/40 text-primary hover:bg-primary/10 px-5 shadow-sm"
+              label="Message Host"
+            />
+          )}
+        </div>
+      </div>
 
  <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
  

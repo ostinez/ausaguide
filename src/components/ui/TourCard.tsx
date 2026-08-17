@@ -8,6 +8,7 @@ import { BorderGlow } from "./BorderGlow"
 import TiltedCard from "./TiltedCard"
 import type { Tour } from "@/lib/types"
 import { cn } from "@/lib/utils"
+import { DirectMessageButton } from "@/components/common/DirectMessageButton"
 import {
  formatTourPrice,
  getHostInitials,
@@ -149,22 +150,33 @@ export const TourCard = memo(function TourCard({ tour, isWishlisted, onToggleWis
  </Avatar>
  </div>
  )}
- <div className="flex items-center flex-wrap gap-1.5">
- <span className="text-xs font-medium text-muted-foreground">{hostName}</span>
- {tour.host?.is_verified && (
- <BadgeCheck className="size-3.5 text-primary" />
- )}
- {tour.host?.verified_guide ? (
- <span className="text-[10px] bg-blue-500/10 border border-blue-500/30 text-blue-400 rounded-full px-2 py-0.5 font-bold flex items-center gap-1">
- <BadgeCheck className="size-3 text-blue-400" />
- Certified Guide
- </span>
- ) : (
- <span className="text-[10px] bg-teal-500/10 border border-teal-500/30 text-teal-400 rounded-full px-2 py-0.5 font-bold">
- Local Host
- </span>
- )}
- </div>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center flex-wrap gap-1.5 min-w-0">
+            <span className="text-xs font-medium text-muted-foreground truncate">{hostName}</span>
+            {tour.host?.is_verified && (
+              <BadgeCheck className="size-3.5 text-primary shrink-0" />
+            )}
+            {tour.host?.verified_guide ? (
+              <span className="text-[10px] bg-blue-500/10 border border-blue-500/30 text-blue-400 rounded-full px-2 py-0.5 font-bold flex items-center gap-1 shrink-0">
+                <BadgeCheck className="size-3 text-blue-400" />
+                Certified Guide
+              </span>
+            ) : (
+              <span className="text-[10px] bg-teal-500/10 border border-teal-500/30 text-teal-400 rounded-full px-2 py-0.5 font-bold shrink-0">
+                Local Host
+              </span>
+            )}
+          </div>
+          {tour.host_id && (
+            <DirectMessageButton
+              hostId={tour.host_id}
+              hostName={hostName}
+              tourId={tour.id}
+              variant="icon"
+              className="size-7 min-h-[28px] min-w-[28px] shrink-0"
+            />
+          )}
+        </div>
 
  <h3 className={cn("line-clamp-2 font-semibold leading-snug text-foreground transition-colors group-hover:text-primary", isList ? "text-lg" : "text-base")}>
  {tour.title}

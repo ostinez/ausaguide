@@ -8,6 +8,7 @@ import { SkeletonProfile } from "@/components/ui/Skeleton"
 import { supabase } from "@/lib/supabase"
 import { getHostInitials } from "@/lib/tour-utils"
 import { formatSocialLink } from "@/lib/utils"
+import { DirectMessageButton } from "@/components/common/DirectMessageButton"
 
 const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -246,9 +247,20 @@ export default function TravelerProfilePage() {
  )}
  </div>
  )}
- </div>
- </CardContent>
- </Card>
+              {id && (
+                <div className="pt-3 w-full">
+                  <DirectMessageButton
+                    hostId={id}
+                    hostName={profile.full_name}
+                    variant="outline"
+                    className="w-full justify-center"
+                    label={`Message ${profile.full_name.split(" ")[0]}`}
+                  />
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
  </div>
 
  {/* Main Profile Tabs Content */}

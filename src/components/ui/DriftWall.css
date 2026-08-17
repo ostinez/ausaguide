@@ -1,0 +1,178 @@
+/* DriftWall.css - React Bits Animated Drift Wall */
+
+.drift-wall-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  perspective: 1200px;
+  perspective-origin: 50% 50%;
+  user-select: none;
+}
+
+.drift-wall-viewport {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--dw-gap, 16px);
+  transform: rotateX(12deg) rotateZ(-6deg) skewX(4deg) scale(1.15);
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.drift-wall-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-gap, 16px);
+  will-change: transform;
+}
+
+/* Upward drift animation */
+.drift-wall-column.drift-up {
+  animation: driftUp var(--dw-speed, 35s) linear infinite;
+}
+
+/* Downward drift animation */
+.drift-wall-column.drift-down {
+  animation: driftDown var(--dw-speed, 35s) linear infinite;
+}
+
+/* Pause animation on hover if container hovered */
+.drift-wall-container:hover .drift-wall-column {
+  animation-play-state: paused;
+}
+
+@keyframes driftUp {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+@keyframes driftDown {
+  0% {
+    transform: translateY(-50%);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.drift-wall-tile {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--dw-radius, 14px);
+  width: var(--dw-tile-width, 200px);
+  height: var(--dw-tile-height, 130px);
+  flex-shrink: 0;
+  cursor: pointer;
+  background-color: var(--dw-bg, #06363d);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+              filter 0.35s ease,
+              opacity 0.35s ease,
+              box-shadow 0.35s ease,
+              border-color 0.35s ease;
+  transform: translateZ(0);
+}
+
+.drift-wall-tile.is-dimmed {
+  opacity: var(--dw-dim, 0.55);
+}
+
+.drift-wall-tile.is-grayscale img {
+  filter: grayscale(100%) contrast(1.05) brightness(0.9);
+}
+
+/* Lifting effect on hover */
+.drift-wall-tile:hover {
+  transform: translateZ(45px) scale(1.08);
+  opacity: 1 !important;
+  z-index: 50;
+  border-color: rgba(13, 111, 115, 0.8);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), 0 0 24px rgba(13, 111, 115, 0.45);
+}
+
+.drift-wall-tile:hover img {
+  filter: grayscale(0%) contrast(1.1) brightness(1.05) !important;
+  transform: scale(1.06);
+}
+
+.drift-wall-tile:hover .drift-wall-tile-overlay {
+  opacity: 0.15;
+}
+
+.drift-wall-tile:hover .drift-wall-tile-title {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.drift-wall-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+  transition: transform 0.4s ease, filter 0.35s ease;
+}
+
+.drift-wall-tile-overlay {
+  position: absolute;
+  inset: 0;
+  background-color: var(--dw-overlay-color, #0d6f73);
+  opacity: 0.3;
+  mix-blend-mode: multiply;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+
+.drift-wall-tile-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(6, 54, 61, 0.95) 0%, rgba(6, 54, 61, 0.2) 60%, transparent 100%);
+  pointer-events: none;
+}
+
+.drift-wall-tile-title {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 8px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.85;
+  transform: translateY(2px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  pointer-events: none;
+}
+
+/* Edge Fade Masks */
+.drift-wall-mask {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  background: radial-gradient(circle at center, transparent 30%, var(--dw-bg, #06363d) 85%);
+}
+
+.drift-wall-edge-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 11;
+  background: linear-gradient(to bottom, var(--dw-bg, #06363d) 0%, transparent 20%, transparent 80%, var(--dw-bg, #06363d) 100%),
+              linear-gradient(to right, var(--dw-bg, #06363d) 0%, transparent 15%, transparent 85%, var(--dw-bg, #06363d) 100%);
+}

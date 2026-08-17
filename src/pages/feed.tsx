@@ -13,6 +13,7 @@ import { toast } from "sonner"
 import { useSEO } from "@/hooks/useSEO"
 import { formatDistanceToNow } from "date-fns"
 import { SkeletonPostCard } from "@/components/ui/Skeleton"
+import { DirectMessageButton } from "@/components/common/DirectMessageButton"
 
 const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -673,13 +674,14 @@ const PostCard = memo(function PostCard({
  </div>
  </Link>
 
- {/* Follow Button */}
+ {/* Follow & Message Buttons */}
+ <div className="flex items-center gap-1.5">
  {!isOwn && currentUserId && (
  <button
  onClick={handleFollowClick}
  disabled={loadingFollow}
  className={cn(
- "ml-2 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full transition-all duration-200",
+ "text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full transition-all duration-200",
  isFollowing
  ? "bg-muted text-muted-foreground hover:bg-muted/85"
  : "bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon text-white hover:bg-[#6b47d6] shadow-sm"
@@ -688,6 +690,15 @@ const PostCard = memo(function PostCard({
  {loadingFollow ? "..." : isFollowing ? "Following" : "Follow"}
  </button>
  )}
+ {!isOwn && (
+ <DirectMessageButton
+ hostId={post.user_id}
+ hostName={post.author?.full_name}
+ variant="icon"
+ className="size-8 min-h-[32px] min-w-[32px]"
+ />
+ )}
+ </div>
  </div>
 
  {isOwn && (

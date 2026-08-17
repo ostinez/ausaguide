@@ -1,5 +1,5 @@
-﻿import { useState, useEffect, useCallback } from "react"
-import { useSearchParams, useNavigate } from "react-router-dom"
+import { useState, useEffect, useCallback } from "react"
+import { useSearchParams, useNavigate, useParams } from "react-router-dom"
 import {
   MessageSquare,
   ArrowLeft,
@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { createGeneralDailyRoom } from "@/lib/api/daily"
 
-// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface AuthUser {
   id: string
@@ -34,7 +34,7 @@ function initials(name: string) {
     .slice(0, 2)
 }
 
-// â”€â”€â”€ Empty State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Empty State ─────────────────────────────────────────────────────────────
 
 function EmptyConversationPane() {
   return (
@@ -49,7 +49,7 @@ function EmptyConversationPane() {
         </p>
       </div>
       <div className="flex flex-wrap gap-2 justify-center text-xs text-muted-foreground">
-        {["ðŸŒ Book an experience", "ðŸ“¸ Share photos", "âœ… Confirm bookings"].map((t) => (
+        {["🌍 Book an experience", "📸 Share photos", "✅ Confirm bookings"].map((t) => (
           <span
             key={t}
             className="px-3 py-1.5 rounded-full bg-muted/60 border border-border/60 font-medium"
@@ -62,7 +62,7 @@ function EmptyConversationPane() {
   )
 }
 
-// â”€â”€â”€ Chat Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Chat Header ─────────────────────────────────────────────────────────────
 
 interface ChatHeaderProps {
   name: string
@@ -126,7 +126,7 @@ function ChatHeader({
             </span>
             {hostTier === "certified_guide" && (
               <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold">
-                ðŸ… Guide
+                🎖️ Guide
               </span>
             )}
             {hostTier === "local_host" && (
@@ -176,7 +176,7 @@ function ChatHeader({
   )
 }
 
-// â”€â”€â”€ Profile Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Profile Sidebar ─────────────────────────────────────────────────────────
 
 interface ProfileSidebarProps {
   userId: string
@@ -250,11 +250,11 @@ function ProfileSidebar({ userId, onClose }: ProfileSidebarProps) {
             <div className="text-center">
               <h3 className="font-bold text-foreground text-base">{profile.full_name}</h3>
               {profile.location && (
-                <p className="text-xs text-muted-foreground mt-0.5">ðŸ“ {profile.location}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">📍 {profile.location}</p>
               )}
               {profile.host_tier && (
                 <span className="inline-block mt-1.5 text-[11px] px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold">
-                  {profile.host_tier === "certified_guide" ? "ðŸ… Certified Guide" : "Local Host"}
+                  {profile.host_tier === "certified_guide" ? "🎖️ Certified Guide" : "Local Host"}
                 </span>
               )}
             </div>
@@ -277,7 +277,7 @@ function ProfileSidebar({ userId, onClose }: ProfileSidebarProps) {
               <p className="text-lg font-bold text-foreground">
                 {tours.length
                   ? (tours.reduce((acc, t) => acc + (t.rating || 0), 0) / tours.length).toFixed(1)
-                  : "â€”"}
+                  : "—"}
               </p>
             </div>
           </div>
@@ -311,13 +311,14 @@ function ProfileSidebar({ userId, onClose }: ProfileSidebarProps) {
   )
 }
 
-// â”€â”€â”€ Main Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function MessagesPage() {
+  const { conversationId: routeConvId } = useParams()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
 
-  const preselectedConvId = searchParams.get("conversationId") || ""
+  const preselectedConvId = routeConvId || searchParams.get("conversationId") || ""
   const paramHostId = searchParams.get("hostId") || searchParams.get("userId") || ""
   const paramBookingId = searchParams.get("bookingId") || ""
 
