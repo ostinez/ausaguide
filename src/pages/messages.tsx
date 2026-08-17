@@ -1,923 +1,651 @@
-import { useState, useEffect, useRef, useCallback } from "react"
-import { useSearchParams } from "react-router-dom"
-import { Send, Search, MessageSquare, Video, Image as ImageIcon, ArrowLeft, Loader2, Star, X } from "lucide-react"
-import { format, isToday, isYesterday } from "date-fns"
+﻿import { useState, useEffect, useCallback } from "react"
+import { useSearchParams, useNavigate } from "react-router-dom"
+import {
+  MessageSquare,
+  ArrowLeft,
+  Video,
+  Plus,
+  Info,
+  Loader2,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ChatWindow } from "@/components/chat/ChatWindow"
+import { useConversations } from "@/hooks/useConversations"
+import { useRealtimePresence } from "@/lib/hooks/useRealtimePresence"
 import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { createGeneralDailyRoom } from "@/lib/api/daily"
-import { useRealtimePresence } from "@/lib/hooks/useRealtimePresence"
-import { BackButton } from "@/components/ui/BackButton"
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-interface Participant {
- id: string
- full_name: string
- avatar_url: string | null
- host_tier: string | null
- bio?: string | null
-}
+// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-interface DirectMessage {
- id: string
- conversation_id: string
- sender_id: string | null
- receiver_id: string
- message: string
- image_url: string | null
- created_at: string
- read: boolean
- sender_type?: "user" | "system"
- metadata?: {
- type?: string
- booking_id?: string
- tour_name?: string
- date?: string
- time?: string
- guests?: number
- total?: number
- currency?: string
- payment_id?: string
- confirmed_at?: string
- } | null
-}
-
-interface Conversation {
- id: string
- participant_a: string
- participant_b: string
- last_message: string | null
- last_message_at: string | null
- created_at: string
- other: Participant
- unreadCount: number
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-function formatMsgTime(ts: string) {
- const d = new Date(ts)
- if (isToday(d)) return format(d, "HH:mm")
- if (isYesterday(d)) return "Yesterday"
- return format(d, "MMM d")
+interface AuthUser {
+  id: string
+  role: "traveler" | "host" | "admin" | "user"
 }
 
 function initials(name: string) {
- return name
- .split(" ")
- .map((n) => n[0])
- .join("")
- .toUpperCase()
- .slice(0, 2)
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2)
 }
 
-// ─── Sub-component: Booking Receipt Card ────────────────────────────────────
-function BookingReceiptCard({ msg }: { msg: DirectMessage }) {
- const m = msg.metadata ?? {}
- const fmtCurrency = (val: number, currency = "KES") =>
- new Intl.NumberFormat("en-KE", { style: "currency", currency, maximumFractionDigits: 0 }).format(val)
+// â”€â”€â”€ Empty State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
- return (
- <div className="flex justify-center my-3">
- <div className="w-full max-w-sm rounded-2xl border border-emerald-500/30 bg-emerald-500/5 overflow-hidden shadow-lg">
- {/* Header */}
- <div className="flex items-center gap-2.5 px-4 py-3 bg-emerald-500/10 border-b border-emerald-500/20">
- <div className="size-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
- <svg viewBox="0 0 24 24" className="size-4 text-emerald-400" fill="none" stroke="currentColor" strokeWidth={2.5}>
- <polyline points="20 6 9 17 4 12" />
- </svg>
- </div>
- <div>
- <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Booking Confirmed</p>
- <p className="text-[10px] text-white/40">{m.confirmed_at ? new Date(m.confirmed_at).toLocaleString() : "Just now"}</p>
- </div>
- </div>
-
- {/* Body */}
- <div className="px-4 py-3 space-y-2.5">
- {m.tour_name && (
- <p className="text-sm font-bold text-white leading-snug">{m.tour_name}</p>
- )}
- <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
- {m.date && (
- <><span className="text-white/40">Date</span><span className="text-white font-medium text-right">{m.date}</span></>
- )}
- {m.time && (
- <><span className="text-white/40">Time</span><span className="text-white font-medium text-right">{m.time}</span></>
- )}
- {m.guests && (
- <><span className="text-white/40">Guests</span><span className="text-white font-medium text-right">{m.guests}</span></>
- )}
- {m.total != null && (
- <><span className="text-white/40">Total Paid</span><span className="text-emerald-400 font-bold text-right">{fmtCurrency(m.total, m.currency)}</span></>
- )}
- </div>
- {m.booking_id && (
- <p className="text-[10px] text-white/30 font-mono"># {m.booking_id.slice(0, 8)}…</p>
- )}
- </div>
- </div>
- </div>
- )
+function EmptyConversationPane() {
+  return (
+    <div className="flex flex-col items-center justify-center h-full gap-5 text-center px-8 select-none">
+      <div className="size-24 rounded-3xl bg-gradient-to-br from-primary/20 to-brand-light/10 border border-primary/20 flex items-center justify-center shadow-modern">
+        <MessageSquare className="size-11 text-primary/70" />
+      </div>
+      <div className="space-y-2">
+        <h2 className="text-xl font-bold text-foreground">Your messages</h2>
+        <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
+          Select a conversation to start chatting with guides and local hosts.
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-2 justify-center text-xs text-muted-foreground">
+        {["ðŸŒ Book an experience", "ðŸ“¸ Share photos", "âœ… Confirm bookings"].map((t) => (
+          <span
+            key={t}
+            className="px-3 py-1.5 rounded-full bg-muted/60 border border-border/60 font-medium"
+          >
+            {t}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
 }
 
-// ─── Sub-component: Secure Private Image Renderer ───────────────────────────
-function ChatImage({ src }: { src: string }) {
- const [signedUrl, setSignedUrl] = useState<string | null>(null)
+// â”€â”€â”€ Chat Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
- useEffect(() => {
- async function load() {
- try {
- let path = src
- if (src.includes("/object/public/chat-images/")) {
- path = src.split("/object/public/chat-images/")[1]
- } else if (src.includes("/object/sign/chat-images/")) {
- path = src.split("/object/sign/chat-images/")[1]?.split("?")[0]
- }
- const { data, error } = await supabase.storage.from("chat-images").createSignedUrl(path, 3600)
- if (!error && data?.signedUrl) {
- setSignedUrl(data.signedUrl)
- } else {
- setSignedUrl(src)
- }
- } catch {
- setSignedUrl(src)
- }
- }
- if (src) load()
- }, [src])
-
- if (!signedUrl) {
- return <div className="w-48 h-32 bg-muted/20 animate-pulse rounded-xl" />
- }
-
- return (
- <img
- src={signedUrl}
- alt="Shared media"
- className="rounded-xl max-w-[200px] mb-1 cursor-pointer hover:opacity-90 transition-opacity"
- onClick={() => window.open(signedUrl, "_blank")}
- />
- )
+interface ChatHeaderProps {
+  name: string
+  avatarUrl: string | null
+  hostTier?: string | null
+  isOnline: boolean
+  isTyping: boolean
+  onBack: () => void
+  onVideoCall: () => void
+  onViewProfile: () => void
+  showBack: boolean
 }
 
-// ─── Sub-component: Partner Profile Modal ────────────────────────────────────
-function ProfileModal({ userId, onClose }: { userId: string; onClose: () => void }) {
- const [profile, setProfile] = useState<any>(null)
- const [tours, setTours] = useState<any[]>([])
- const [loading, setLoading] = useState(true)
+function ChatHeader({
+  name,
+  avatarUrl,
+  hostTier,
+  isOnline,
+  isTyping,
+  onBack,
+  onVideoCall,
+  onViewProfile,
+  showBack,
+}: ChatHeaderProps) {
+  return (
+    <div className="flex items-center gap-3 px-4 py-3 border-b border-border/60 bg-card shrink-0 shadow-modern">
+      {showBack && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted shrink-0 md:hidden"
+          onClick={onBack}
+        >
+          <ArrowLeft className="size-4" />
+        </Button>
+      )}
 
- useEffect(() => {
- async function loadProfile() {
- try {
- const { data: prof } = await supabase
- .from("profiles")
- .select("*")
- .eq("id", userId)
- .single()
- setProfile(prof)
+      <button
+        onClick={onViewProfile}
+        className="flex items-center gap-3 min-w-0 flex-1 hover:opacity-80 transition-opacity"
+        title="View profile"
+      >
+        <div className="relative shrink-0">
+          <Avatar className="size-10 border-2 border-border/60 ring-2 ring-primary/10">
+            {avatarUrl && (
+              <AvatarImage src={avatarUrl} alt={name} className="object-cover" />
+            )}
+            <AvatarFallback className="bg-gradient-to-br from-primary/30 to-brand-light/20 text-primary font-bold text-sm">
+              {initials(name || "U")}
+            </AvatarFallback>
+          </Avatar>
+          {isOnline && (
+            <span className="absolute bottom-0 right-0 size-3 rounded-full bg-emerald-500 ring-2 ring-card animate-pulse" />
+          )}
+        </div>
 
- const { data: tourList } = await supabase
- .from("tours")
- .select("*")
- .eq("host_id", userId)
- .eq("is_published", true)
- setTours(tourList ?? [])
- } catch (err) {
- console.error(err)
- } finally {
- setLoading(false)
- }
- }
- loadProfile()
- }, [userId])
+        <div className="min-w-0 text-left">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-sm text-foreground truncate max-w-[160px] sm:max-w-xs">
+              {name}
+            </span>
+            {hostTier === "certified_guide" && (
+              <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold">
+                ðŸ… Guide
+              </span>
+            )}
+            {hostTier === "local_host" && (
+              <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold">
+                Local Host
+              </span>
+            )}
+          </div>
+          <p className="text-[11px] text-muted-foreground leading-tight">
+            {isTyping ? (
+              <span className="text-primary font-medium">
+                typing
+                <span className="animate-bounce inline-block ml-0.5">.</span>
+                <span className="animate-bounce inline-block delay-100">.</span>
+                <span className="animate-bounce inline-block delay-200">.</span>
+              </span>
+            ) : isOnline ? (
+              <span className="text-emerald-500 font-medium">Active now</span>
+            ) : (
+              "Direct Message"
+            )}
+          </p>
+        </div>
+      </button>
 
- if (loading) {
- return (
- <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 ">
- <Loader2 className="size-8 animate-spin text-primary" />
- </div>
- )
- }
-
- if (!profile) return null
-
- // Calculate average rating
- const avgRating = tours.length ? tours.reduce((acc, t) => acc + (t.rating || 0), 0) / tours.length : 0
-
- return (
- <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in duration-200">
- <Card className="w-full max-w-md border-border/80 bg-card text-white overflow-hidden shadow-2xl relative">
- <button
- onClick={onClose}
- className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-card shadow-modern text-muted-foreground hover:text-white transition-colors"
- >
- <X className="size-5" />
- </button>
-
- <CardHeader className="text-center pt-8 pb-4">
- <Avatar className="size-20 mx-auto border-2 border-[#0D6F73]">
- <AvatarImage src={profile.avatar_url ?? ""} />
- <AvatarFallback className="bg-primary/20 text-primary text-xl font-bold">
- {initials(profile.full_name || "U")}
- </AvatarFallback>
- </Avatar>
- <CardTitle className="text-xl font-black mt-3 flex items-center justify-center gap-2">
- {profile.full_name}
- {profile.host_tier === "certified_guide" && (
- <span className="text-[10px] bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon/15 border border-[#0D6F73]/40 text-[#a78bfa] rounded-full px-2 py-0.5 font-bold">
- 🏅 Certified Guide
- </span>
- )}
- {profile.host_tier === "local_host" && (
- <span className="text-[10px] bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon/15 border border-[#0D6F73]/40 text-[#0D6F73] rounded-full px-2 py-0.5 font-bold">
- Local Host
- </span>
- )}
- </CardTitle>
- <p className="text-xs text-muted-foreground">{profile.location || "Kenya"}</p>
- </CardHeader>
-
- <CardContent className="space-y-4 px-6 pb-6">
- <div className="space-y-1">
- <h4 className="text-xs font-bold text-[#0D6F73] uppercase tracking-wider">Bio</h4>
- <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap">
- {profile.bio || "No bio added yet."}
- </p>
- </div>
-
- <div className="grid grid-cols-2 gap-4 border-t border-b border-white/5 py-3">
- <div className="text-center">
- <span className="text-xs text-muted-foreground block">Rating</span>
- <span className="text-base font-bold flex items-center justify-center gap-1 mt-0.5">
- <Star className="size-4 fill-primary text-primary" />
- {avgRating ? avgRating.toFixed(1) : "N/A"}
- </span>
- </div>
- <div className="text-center">
- <span className="text-xs text-muted-foreground block">Tours Hosted</span>
- <span className="text-base font-bold block mt-0.5">{tours.length}</span>
- </div>
- </div>
-
- {tours.length > 0 && (
- <div className="space-y-2">
- <h4 className="text-xs font-bold text-[#0D6F73] uppercase tracking-wider">Tours</h4>
- <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1">
- {tours.map((t) => (
- <a
- key={t.id}
- href={`/tours/${t.id}`}
- target="_blank"
- rel="noreferrer"
- className="flex items-center justify-between text-xs p-2 rounded bg-card shadow-modern hover:bg-card shadow-modern transition-colors border border-white/5"
- >
- <span className="font-semibold truncate max-w-[200px]">{t.title}</span>
- <span className="text-[#0D6F73] font-bold shrink-0">{t.currency} {t.price}</span>
- </a>
- ))}
- </div>
- </div>
- )}
- </CardContent>
- </Card>
- </div>
- )
+      <div className="flex items-center gap-1 shrink-0">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onVideoCall}
+          className="size-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted"
+          title="Video call"
+        >
+          <Video className="size-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onViewProfile}
+          className="size-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted"
+          title="View profile"
+        >
+          <Info className="size-4" />
+        </Button>
+      </div>
+    </div>
+  )
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Profile Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+interface ProfileSidebarProps {
+  userId: string
+  onClose: () => void
+}
+
+function ProfileSidebar({ userId, onClose }: ProfileSidebarProps) {
+  const [profile, setProfile] = useState<any>(null)
+  const [tours, setTours] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", userId)
+          .single()
+        setProfile(prof)
+
+        const { data: tourList } = await supabase
+          .from("tours")
+          .select("id, title, price, currency, rating")
+          .eq("host_id", userId)
+          .eq("is_published", true)
+          .limit(5)
+        setTours(tourList ?? [])
+      } catch (err) {
+        console.error("ProfileSidebar load error:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [userId])
+
+  return (
+    <div className="w-72 shrink-0 border-l border-border/60 bg-card flex flex-col h-full overflow-hidden shadow-modern">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/60 shrink-0">
+        <span className="text-sm font-semibold text-foreground">Profile</span>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onClose}
+          className="size-8 rounded-full text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="size-4" />
+        </Button>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center flex-1">
+          <Loader2 className="size-6 animate-spin text-primary" />
+        </div>
+      ) : !profile ? (
+        <div className="flex items-center justify-center flex-1 text-muted-foreground text-sm">
+          Profile unavailable
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          <div className="flex flex-col items-center gap-3 px-4 py-6 border-b border-border/60">
+            <Avatar className="size-20 border-2 border-primary/30 ring-4 ring-primary/10">
+              {profile.avatar_url && (
+                <AvatarImage src={profile.avatar_url} alt={profile.full_name} className="object-cover" />
+              )}
+              <AvatarFallback className="bg-gradient-to-br from-primary/30 to-brand-light/20 text-primary font-bold text-xl">
+                {initials(profile.full_name || "U")}
+              </AvatarFallback>
+            </Avatar>
+            <div className="text-center">
+              <h3 className="font-bold text-foreground text-base">{profile.full_name}</h3>
+              {profile.location && (
+                <p className="text-xs text-muted-foreground mt-0.5">ðŸ“ {profile.location}</p>
+              )}
+              {profile.host_tier && (
+                <span className="inline-block mt-1.5 text-[11px] px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold">
+                  {profile.host_tier === "certified_guide" ? "ðŸ… Certified Guide" : "Local Host"}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {profile.bio && (
+            <div className="px-4 py-4 border-b border-border/60">
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Bio</p>
+              <p className="text-sm text-foreground leading-relaxed">{profile.bio}</p>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-px bg-border/60 border-b border-border/60">
+            <div className="bg-card px-4 py-3 text-center">
+              <p className="text-xs text-muted-foreground">Tours</p>
+              <p className="text-lg font-bold text-foreground">{tours.length}</p>
+            </div>
+            <div className="bg-card px-4 py-3 text-center">
+              <p className="text-xs text-muted-foreground">Rating</p>
+              <p className="text-lg font-bold text-foreground">
+                {tours.length
+                  ? (tours.reduce((acc, t) => acc + (t.rating || 0), 0) / tours.length).toFixed(1)
+                  : "â€”"}
+              </p>
+            </div>
+          </div>
+
+          {tours.length > 0 && (
+            <div className="px-4 py-4">
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                Active Tours
+              </p>
+              <div className="space-y-2">
+                {tours.map((t) => (
+                  <a
+                    key={t.id}
+                    href={`/tours/${t.id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-muted/50 border border-border/60 hover:bg-muted transition-colors"
+                  >
+                    <span className="text-sm font-medium text-foreground truncate max-w-[140px]">{t.title}</span>
+                    <span className="text-xs font-bold text-primary shrink-0 ml-2">
+                      {t.currency} {t.price}
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// â”€â”€â”€ Main Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
 export default function MessagesPage() {
- const [searchParams] = useSearchParams()
- const preselectedConvId = searchParams.get("conversationId") || ""
- const paramHostId = searchParams.get("hostId") || searchParams.get("userId") || ""
- const paramBookingId = searchParams.get("bookingId") || ""
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
 
- const [currentUserId, setCurrentUserId] = useState<string | null>(null)
- const { isUserOnline } = useRealtimePresence(currentUserId)
- const [conversations, setConversations] = useState<Conversation[]>([])
- const [selectedConvId, setSelectedConvId] = useState<string>(preselectedConvId)
- const [messages, setMessages] = useState<DirectMessage[]>([])
- const [inputValue, setInputValue] = useState("")
- const [searchQuery, setSearchQuery] = useState("")
- const [otherTyping, setOtherTyping] = useState(false)
- const [loading, setLoading] = useState(true)
- const [sending, setSending] = useState(false)
- const [mobileView, setMobileView] = useState<"list" | "chat">(preselectedConvId || paramHostId || paramBookingId ? "chat" : "list")
- const [uploadProgress, setUploadProgress] = useState<number | null>(null)
- const [showProfileUserId, setShowProfileUserId] = useState<string | null>(null)
- const fileInputRef = useRef<HTMLInputElement>(null)
- const messagesEndRef = useRef<HTMLDivElement>(null)
- const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
- const typingTimeoutRef = useRef<any>(null)
+  const preselectedConvId = searchParams.get("conversationId") || ""
+  const paramHostId = searchParams.get("hostId") || searchParams.get("userId") || ""
+  const paramBookingId = searchParams.get("bookingId") || ""
 
- // ─── Load current user ──────────────────────────────────────────────────────
- useEffect(() => {
- supabase.auth.getUser().then(({ data }) => {
- setCurrentUserId(data.user?.id ?? null)
- })
- }, [])
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null)
+  const [selectedConvId, setSelectedConvId] = useState<string>(preselectedConvId)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [mobileView, setMobileView] = useState<"list" | "chat">(
+    preselectedConvId || paramHostId || paramBookingId ? "chat" : "list"
+  )
+  const [showProfile, setShowProfile] = useState(false)
+  const [otherTyping] = useState(false)
 
- // ─── Load conversations ─────────────────────────────────────────────────────
- const loadConversations = useCallback(async () => {
- if (!currentUserId) return
- setLoading(true)
- try {
- let targetOtherId = paramHostId
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data.user) return
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", data.user.id)
+        .maybeSingle()
+      setAuthUser({
+        id: data.user.id,
+        role: (profile?.role as AuthUser["role"]) || "user",
+      })
+    })
+  }, [])
 
- if (!targetOtherId && paramBookingId) {
- const { data: bData } = await supabase
- .from("bookings")
- .select("host_id, guest_id")
- .eq("id", paramBookingId)
- .maybeSingle()
- if (bData) {
- targetOtherId = bData.host_id === currentUserId ? bData.guest_id : bData.host_id
- }
- }
+  const { conversations, loading: convsLoading, createOrGetConversation } =
+    useConversations(authUser?.id ?? null)
 
- const { data: convRows, error } = await supabase
- .from("conversations")
- .select("id, participant_a, participant_b, last_message, last_message_at, created_at")
- .or(`participant_a.eq.${currentUserId},participant_b.eq.${currentUserId}`)
- .order("last_message_at", { ascending: false })
+  const { isUserOnline } = useRealtimePresence(authUser?.id ?? null)
 
- if (error) throw error
+  const resolveDeepLink = useCallback(async () => {
+    if (!authUser?.id) return
+    if (!paramHostId && !paramBookingId) return
 
- let allConvRows = convRows ?? []
+    let targetUserId = paramHostId
+    if (!targetUserId && paramBookingId) {
+      const { data: bData } = await supabase
+        .from("bookings")
+        .select("host_id, guest_id")
+        .eq("id", paramBookingId)
+        .maybeSingle()
+      if (bData) {
+        targetUserId = bData.host_id === authUser.id ? bData.guest_id : bData.host_id
+      }
+    }
 
- // If target user specified and no existing conversation, create one automatically
- if (targetOtherId && targetOtherId !== currentUserId) {
- const [pA, pB] = [currentUserId, targetOtherId].sort()
- let existing = allConvRows.find(
- (c) =>
- (c.participant_a === pA && c.participant_b === pB) ||
- (c.participant_a === pB && c.participant_b === pA)
- )
+    if (targetUserId && targetUserId !== authUser.id) {
+      const convId = await createOrGetConversation(targetUserId)
+      if (convId) {
+        setSelectedConvId(convId)
+        setMobileView("chat")
+      }
+    }
+  }, [authUser?.id, paramHostId, paramBookingId, createOrGetConversation])
 
- if (!existing) {
- const { data: newConv, error: createErr } = await supabase
- .from("conversations")
- .insert({
- participant_a: pA,
- participant_b: pB,
- last_message: "Started conversation",
- last_message_at: new Date().toISOString(),
- })
- .select()
- .single()
+  useEffect(() => {
+    resolveDeepLink()
+  }, [resolveDeepLink])
 
- if (!createErr && newConv) {
- allConvRows.unshift(newConv)
- setSelectedConvId(newConv.id)
- setMobileView("chat")
- }
- } else if (!selectedConvId) {
- setSelectedConvId(existing.id)
- setMobileView("chat")
- }
- }
+  useEffect(() => {
+    if (!selectedConvId && conversations.length > 0 && !paramHostId && !paramBookingId) {
+      setSelectedConvId(conversations[0].id)
+    }
+  }, [conversations, selectedConvId, paramHostId, paramBookingId])
 
- const enriched: Conversation[] = await Promise.all(
- allConvRows.map(async (row) => {
- const otherId = row.participant_a === currentUserId ? row.participant_b : row.participant_a
- const { data: profile } = await supabase
- .from("profiles")
- .select("id, full_name, avatar_url, host_tier, bio")
- .eq("id", otherId)
- .maybeSingle()
+  const selectedConv = conversations.find((c) => c.id === selectedConvId)
 
- const { count: unreadCount } = await supabase
- .from("messages")
- .select("*", { count: "exact", head: true })
- .eq("conversation_id", row.id)
- .eq("receiver_id", currentUserId)
- .eq("read", false)
+  const handleSelectConversation = (convId: string) => {
+    setSelectedConvId(convId)
+    setMobileView("chat")
+    setShowProfile(false)
+    if (paramHostId || paramBookingId || preselectedConvId) {
+      navigate("/messages", { replace: true })
+    }
+  }
 
- return {
- ...row,
- other: (profile as Participant) ?? { id: otherId, full_name: "User", avatar_url: null, host_tier: null },
- unreadCount: unreadCount ?? 0,
- }
- })
- )
+  const handleBack = () => {
+    setMobileView("list")
+    setShowProfile(false)
+  }
 
- enriched.sort((a, b) => {
- const at = a.last_message_at ?? a.created_at
- const bt = b.last_message_at ?? b.created_at
- return new Date(bt).getTime() - new Date(at).getTime()
- })
+  const handleVideoCall = async () => {
+    if (!selectedConvId) return
+    const loadingToast = toast.loading("Creating video roomâ€¦")
+    try {
+      const roomUrl = await createGeneralDailyRoom(selectedConvId)
+      toast.dismiss(loadingToast)
+      window.open(roomUrl, "_blank")
+    } catch (err: any) {
+      toast.dismiss(loadingToast)
+      toast.error(err.message || "Failed to start video call.")
+    }
+  }
 
- setConversations(enriched)
- if (!selectedConvId && enriched.length > 0) {
- setSelectedConvId(enriched[0].id)
- }
- } catch (err) {
- console.error("Error loading conversations:", err)
- } finally {
- setLoading(false)
- }
- }, [currentUserId, paramHostId, paramBookingId, selectedConvId])
+  if (!authUser) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center bg-background pt-16">
+        <Loader2 className="size-8 animate-spin text-primary" />
+      </div>
+    )
+  }
 
- useEffect(() => {
- loadConversations()
- }, [loadConversations])
+  const otherUserId = selectedConv
+    ? selectedConv.participant_a === authUser.id
+      ? selectedConv.participant_b
+      : selectedConv.participant_a
+    : null
 
- // ─── Load messages for selected conversation ────────────────────────────────
- const loadMessages = useCallback(async () => {
- if (!selectedConvId || !currentUserId) return
- const { data, error } = await supabase
- .from("messages")
- .select("*")
- .eq("conversation_id", selectedConvId)
- .order("created_at", { ascending: true })
- if (!error) {
- setMessages((data ?? []) as DirectMessage[])
- }
+  return (
+    <div className="flex h-[calc(100vh-4rem)] bg-background overflow-hidden pt-16">
+      {/* â”€â”€ Conversation Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      <aside
+        className={cn(
+          "w-full md:w-[320px] xl:w-[360px] shrink-0",
+          "flex flex-col border-r border-border/60 bg-card",
+          "md:flex",
+          mobileView === "chat" ? "hidden" : "flex"
+        )}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-4 border-b border-border/60 bg-card/95 shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="size-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+              <MessageSquare className="size-4 text-primary" />
+            </div>
+            <h1 className="text-lg font-bold text-foreground tracking-tight">Messages</h1>
+          </div>
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-muted text-muted-foreground border border-border/60">
+            {conversations.length}
+          </span>
+        </div>
 
- // Mark messages read in this thread
- await supabase
- .from("messages")
- .update({ read: true })
- .eq("conversation_id", selectedConvId)
- .eq("receiver_id", currentUserId)
- .eq("read", false)
- }, [selectedConvId, currentUserId])
+        {/* Search */}
+        <div className="px-3 py-3 border-b border-border/60 shrink-0">
+          <div className="relative">
+            <svg
+              className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.35-4.35" />
+            </svg>
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search messagesâ€¦"
+              className="w-full pl-8 pr-3 py-2 text-sm bg-muted/60 border border-border/60 rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition"
+            />
+          </div>
+        </div>
 
- useEffect(() => {
- loadMessages()
- }, [loadMessages])
+        {/* Conversation list */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          {convsLoading && conversations.length === 0 ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="size-5 animate-spin text-primary" />
+            </div>
+          ) : conversations.length === 0 ? (
+            <div className="flex flex-col items-center gap-4 py-16 px-6 text-center">
+              <MessageSquare className="size-12 text-muted-foreground/30" />
+              <div>
+                <p className="text-sm font-semibold text-foreground">No conversations yet</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Start chatting by visiting a tour or a host profile.
+                </p>
+              </div>
+            </div>
+          ) : (
+            conversations
+              .filter(
+                (c) =>
+                  (c.other?.full_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  (c.last_message || "").toLowerCase().includes(searchQuery.toLowerCase())
+              )
+              .map((conv) => {
+                const isSelected = conv.id === selectedConvId
+                const online = isUserOnline(conv.other.id)
 
- // ─── Realtime message & typing listener ─────────────────────────────────────
- useEffect(() => {
- if (!selectedConvId || !currentUserId) return
+                return (
+                  <button
+                    key={conv.id}
+                    id={`conv-item-${conv.id}`}
+                    onClick={() => handleSelectConversation(conv.id)}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-4 py-3.5 text-left transition-all duration-150 border-b border-border/40",
+                      isSelected
+                        ? "bg-primary/[0.08] border-r-2 border-r-primary"
+                        : "hover:bg-muted/60"
+                    )}
+                  >
+                    <div className="relative shrink-0">
+                      <Avatar className="size-11 border border-border/60">
+                        {conv.other.avatar_url && (
+                          <AvatarImage src={conv.other.avatar_url} alt={conv.other.full_name} className="object-cover" />
+                        )}
+                        <AvatarFallback className="bg-gradient-to-br from-primary/20 to-brand-light/10 text-primary font-bold text-sm">
+                          {initials(conv.other.full_name || "U")}
+                        </AvatarFallback>
+                      </Avatar>
+                      {online && (
+                        <span className="absolute bottom-0 right-0 size-3 rounded-full bg-emerald-500 ring-2 ring-card" />
+                      )}
+                      {conv.unreadCount > 0 && !isSelected && (
+                        <span className="absolute -top-1 -right-1 size-5 rounded-full bg-primary text-[10px] text-primary-foreground font-black flex items-center justify-center">
+                          {conv.unreadCount > 9 ? "9+" : conv.unreadCount}
+                        </span>
+                      )}
+                    </div>
 
- const channel = supabase
- .channel(`conv:${selectedConvId}`)
- .on(
- "postgres_changes",
- { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${selectedConvId}` },
- (payload) => {
- const newMsg = payload.new as DirectMessage
- setMessages((prev) => {
- if (prev.some((m) => m.id === newMsg.id)) return prev
- return [...prev, newMsg]
- })
- if (newMsg.sender_id !== currentUserId) {
- supabase
- .from("messages")
- .update({ read: true })
- .eq("id", newMsg.id)
- }
- loadConversations()
- }
- )
- .on("broadcast", { event: "typing" }, (payload) => {
- if (payload.payload.senderId !== currentUserId) {
- setOtherTyping(payload.payload.isTyping)
- }
- })
- .subscribe()
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-1 mb-0.5">
+                        <span
+                          className={cn(
+                            "text-sm truncate",
+                            conv.unreadCount > 0 ? "font-bold text-foreground" : "font-semibold text-foreground/90",
+                            isSelected && "text-primary"
+                          )}
+                        >
+                          {conv.other.full_name}
+                        </span>
+                        {conv.last_message_at && (
+                          <span className="text-[10px] text-muted-foreground shrink-0">
+                            {(() => {
+                              try {
+                                const d = new Date(conv.last_message_at)
+                                const now = new Date()
+                                const diff = now.getTime() - d.getTime()
+                                if (diff < 60000) return "now"
+                                if (diff < 3600000) return `${Math.floor(diff / 60000)}m`
+                                if (d.toDateString() === now.toDateString())
+                                  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                                return d.toLocaleDateString([], { month: "short", day: "numeric" })
+                              } catch {
+                                return ""
+                              }
+                            })()}
+                          </span>
+                        )}
+                      </div>
+                      <p
+                        className={cn(
+                          "text-xs truncate leading-tight",
+                          conv.unreadCount > 0 ? "font-semibold text-foreground" : "text-muted-foreground"
+                        )}
+                      >
+                        {conv.last_message || "No messages yet"}
+                      </p>
+                    </div>
+                  </button>
+                )
+              })
+          )}
+        </div>
 
- channelRef.current = channel
+        {/* Footer CTA */}
+        <div className="px-3 py-3 border-t border-border/60 shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full gap-2 rounded-xl text-muted-foreground border-dashed hover:border-primary/50 hover:text-primary hover:bg-primary/5"
+            onClick={() => navigate("/tours")}
+          >
+            <Plus className="size-3.5" />
+            <span className="text-xs">Find a guide to message</span>
+          </Button>
+        </div>
+      </aside>
 
- return () => {
- supabase.removeChannel(channel)
- }
- }, [selectedConvId, currentUserId, loadConversations])
+      {/* â”€â”€ Main Chat Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      <main
+        className={cn(
+          "flex-1 flex flex-col min-w-0",
+          "md:flex",
+          mobileView === "list" ? "hidden" : "flex"
+        )}
+      >
+        {!selectedConvId || !selectedConv ? (
+          <EmptyConversationPane />
+        ) : (
+          <div className="flex flex-col h-full min-h-0">
+            <ChatHeader
+              name={selectedConv.other.full_name}
+              avatarUrl={selectedConv.other.avatar_url}
+              hostTier={selectedConv.other.host_tier}
+              isOnline={isUserOnline(selectedConv.other.id)}
+              isTyping={otherTyping}
+              onBack={handleBack}
+              onVideoCall={handleVideoCall}
+              onViewProfile={() => setShowProfile((v) => !v)}
+              showBack={mobileView === "chat"}
+            />
 
- const broadcastTyping = (val: string) => {
- setInputValue(val)
- if (!channelRef.current || !currentUserId) return
+            <div className="flex flex-1 min-h-0 overflow-hidden">
+              <div className="flex-1 min-w-0 flex flex-col min-h-0">
+                {authUser && selectedConv && otherUserId && (
+                  <ChatWindow
+                    conversationId={selectedConvId}
+                    currentUserId={authUser.id}
+                    otherUser={{
+                      id: otherUserId,
+                      full_name: selectedConv.other.full_name,
+                      avatar_url: selectedConv.other.avatar_url,
+                      host_tier: selectedConv.other.host_tier,
+                      isOnline: isUserOnline(selectedConv.other.id),
+                    }}
+                    currentUserRole={authUser.role}
+                    className="flex-1 min-h-0 rounded-none border-0 shadow-none bg-background"
+                  />
+                )}
+              </div>
 
- channelRef.current.send({
- type: "broadcast",
- event: "typing",
- payload: { senderId: currentUserId, isTyping: val.length > 0 },
- })
-
- if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
- typingTimeoutRef.current = setTimeout(() => {
- channelRef.current?.send({
- type: "broadcast",
- event: "typing",
- payload: { senderId: currentUserId, isTyping: false },
- })
- }, 2000)
- }
-
- // ─── Auto-scroll ────────────────────────────────────────────────────────────
- useEffect(() => {
- messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
- }, [messages])
-
- const selectedConv = conversations.find((c) => c.id === selectedConvId)
- const otherId = selectedConv
- ? selectedConv.participant_a === currentUserId
- ? selectedConv.participant_b
- : selectedConv.participant_a
- : null
-
- // ─── Send message ───────────────────────────────────────────────────────────
- const sendMsg = async (content: string, imageUrl?: string) => {
- if (!selectedConvId || !currentUserId || !otherId) return
- if (!content.trim() && !imageUrl) return
- setSending(true)
- try {
- const { error } = await supabase.from("messages").insert({
- conversation_id: selectedConvId,
- sender_id: currentUserId,
- receiver_id: otherId,
- message: content.trim(),
- image_url: imageUrl || null,
- read: false,
- })
- if (error) throw error
-
- // Update last message in thread
- await supabase
- .from("conversations")
- .update({
- last_message: content.trim() || "📷 Photo",
- last_message_at: new Date().toISOString(),
- })
- .eq("id", selectedConvId)
-
- setInputValue("")
- // Notify other user we are no longer typing
- channelRef.current?.send({
- type: "broadcast",
- event: "typing",
- payload: { senderId: currentUserId, isTyping: false },
- })
- } catch (err: any) {
- toast.error(err.message ?? "Failed to send message.")
- } finally {
- setSending(false)
- }
- }
-
- // ─── Image upload ───────────────────────────────────────────────────────────
- const handleImageUpload = async (file: File) => {
- if (!currentUserId || !otherId) return
- // Validate type & size
- if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
- toast.error("Invalid image format. Please select JPEG, PNG, or WebP.")
- return
- }
- if (file.size > 10 * 1024 * 1024) {
- toast.error("File size exceeds 10 MB limit.")
- return
- }
-
- setUploadProgress(10)
- try {
- const ext = file.name.split(".").pop()
- const path = `${currentUserId}/${Date.now()}.${ext}`
-
- setUploadProgress(30)
- const { error: upErr } = await supabase.storage.from("chat-images").upload(path, file)
- if (upErr) throw upErr
-
- setUploadProgress(70)
- const { data: { publicUrl } } = supabase.storage.from("chat-images").getPublicUrl(path)
- 
- setUploadProgress(90)
- await sendMsg("", publicUrl)
- } catch (err: any) {
- toast.error("Failed to upload image.")
- } finally {
- setUploadProgress(null)
- }
- }
-
- // ─── Video calling integration ──────────────────────────────────────────────
- const handleVideoCall = async () => {
- if (!selectedConvId) return
- const loadingToast = toast.loading("Creating video room...")
- try {
- const roomUrl = await createGeneralDailyRoom(selectedConvId)
- toast.dismiss(loadingToast)
- window.open(roomUrl, "_blank")
- } catch (err: any) {
- toast.dismiss(loadingToast)
- toast.error(err.message || "Failed to start video call.")
- }
- }
-
- const filteredConvs = conversations.filter((c) =>
- c.other.full_name.toLowerCase().includes(searchQuery.toLowerCase())
- )
-
- return (
- <div className="flex h-[calc(100vh-4rem)] bg-[#0d0d12] text-foreground overflow-hidden pt-16">
- {/* ── Sidebar ── */}
- <div
- className={cn(
- "w-full md:w-80 flex-shrink-0 border-r border-white/5 bg-card shadow-modern flex flex-col",
- "md:flex",
- mobileView === "chat" ? "hidden" : "flex"
- )}
- >
- <div className="px-4 pt-5 pb-3 border-b border-white/5 space-y-3">
- <div className="flex items-center gap-2">
- <BackButton fallback="/dashboard" label="" className="p-1 min-h-[36px] min-w-[36px]" />
- <h1 className="text-xl font-black tracking-tight text-white">Direct Messages</h1>
- </div>
- <div className="relative">
- <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-white/40" />
- <Input
- id="messages-search"
- placeholder="Search conversations…"
- value={searchQuery}
- onChange={(e) => setSearchQuery(e.target.value)}
- className="pl-9 bg-card shadow-modern border-white/5 text-sm rounded-full text-white placeholder:text-white/30 focus-visible:ring-[#0D6F73]"
- />
- </div>
- </div>
-
- <div className="flex-1 overflow-y-auto divide-y divide-white/5">
- {loading ? (
- <div className="flex items-center justify-center py-16">
- <Loader2 className="size-5 animate-spin text-primary" />
- </div>
- ) : filteredConvs.length === 0 ? (
- <div className="flex flex-col items-center gap-3 py-16 text-center px-6">
- <MessageSquare className="size-10 text-white/20" />
- <p className="text-xs text-white/50">No conversations yet.</p>
- </div>
- ) : (
- filteredConvs.map((conv) => (
- <button
- key={conv.id}
- id={`conv-${conv.id}`}
- className={cn(
- "w-full flex items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-card shadow-modern",
- conv.id === selectedConvId && "bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon/10 border-r-2 border-[#0D6F73]"
- )}
- onClick={() => {
- setSelectedConvId(conv.id)
- setMobileView("chat")
- }}
- >
- <div className="relative flex-shrink-0">
- <Avatar className="size-12 border border-white/10">
- <AvatarImage src={conv.other.avatar_url ?? ""} />
- <AvatarFallback className="bg-primary/20 text-primary text-sm font-semibold">
- {initials(conv.other.full_name)}
- </AvatarFallback>
- </Avatar>
- {isUserOnline(conv.other.id) && (
- <span className="absolute bottom-0 right-0 size-3 rounded-full bg-emerald-500 border-2 border-[#16161A]" title="Online" />
- )}
- {conv.unreadCount > 0 && (
- <span className="absolute -top-1 -right-1 size-5 rounded-full bg-primary text-[10px] text-white font-black flex items-center justify-center animate-pulse">
- {conv.unreadCount}
- </span>
- )}
- </div>
- <div className="flex-1 min-w-0">
- <div className="flex items-center justify-between gap-1 mb-0.5">
- <span className={cn("text-sm font-semibold truncate text-white", conv.unreadCount > 0 && "text-[#0D6F73]")}>
- {conv.other.full_name}
- </span>
- {conv.last_message_at && (
- <span className="text-[10px] text-white/30 flex-shrink-0">
- {formatMsgTime(conv.last_message_at)}
- </span>
- )}
- </div>
- <p className={cn("text-xs truncate text-white/60", conv.unreadCount > 0 && "text-white font-bold")}>
- {conv.last_message ?? "Sent an attachment"}
- </p>
- </div>
- </button>
- ))
- )}
- </div>
- </div>
-
- {/* ── Chat panel ── */}
- <div
- className={cn(
- "flex-1 flex flex-col bg-card shadow-modern",
- "md:flex",
- mobileView === "list" ? "hidden" : "flex"
- )}
- >
- {!selectedConvId ? (
- <div className="flex flex-col items-center justify-center flex-1 gap-4 text-center p-8">
- <div className="size-20 rounded-full bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon/10 flex items-center justify-center">
- <MessageSquare className="size-10 text-[#0D6F73]" />
- </div>
- <h2 className="text-xl font-bold text-white">Start Chatting</h2>
- <p className="text-sm text-white/50 max-w-xs leading-relaxed">
- Connect with guides and local hosts to schedule experiences and ask questions.
- </p>
- </div>
- ) : (
- <>
- {/* Header */}
- <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/5 bg-card shadow-modern ">
- <button
- className="md:hidden text-white/60 hover:text-white transition-colors mr-1"
- onClick={() => setMobileView("list")}
- aria-label="Back to conversations"
- >
- <ArrowLeft className="size-5" />
- </button>
-
- {selectedConv && (
- <>
- <button
- onClick={() => setShowProfileUserId(selectedConv.other.id)}
- className="flex items-center gap-3 hover:opacity-85 transition-opacity"
- title="View Profile"
- >
- <div className="relative">
- <Avatar className="size-10 border border-white/10">
- <AvatarImage src={selectedConv.other.avatar_url ?? ""} />
- <AvatarFallback className="bg-primary/20 text-primary text-sm font-semibold">
- {initials(selectedConv.other.full_name)}
- </AvatarFallback>
- </Avatar>
- {otherId && isUserOnline(otherId) && (
- <span className="absolute bottom-0 right-0 size-2.5 rounded-full bg-emerald-500 border-2 border-[#16161A]" />
- )}
- </div>
- <div className="text-left min-w-0">
- <div className="flex items-center gap-1.5">
- <p className="font-semibold text-sm leading-tight text-white">{selectedConv.other.full_name}</p>
- {selectedConv.other.host_tier === "certified_guide" && (
- <span className="text-[9px] bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon/10 border border-[#0D6F73]/40 text-[#a78bfa] rounded-full px-1.5 py-0.25 font-bold">
- 🏅 Certified Guide
- </span>
- )}
- {selectedConv.other.host_tier === "local_host" && (
- <span className="text-[9px] bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon/10 border border-[#0D6F73]/40 text-[#0D6F73] rounded-full px-1.5 py-0.25 font-bold">
- Local Host
- </span>
- )}
- </div>
- </div>
- </button>
-
- <div className="flex-1" />
-
- <Button
- variant="ghost"
- size="icon"
- onClick={handleVideoCall}
- className="text-white/60 hover:text-[#0D6F73] hover:bg-card shadow-modern rounded-full"
- title="Video Call"
- >
- <Video className="size-5" />
- </Button>
- </>
- )}
- </div>
-
- {/* Chat Messages */}
- <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3" id="messages-list">
- {messages.map((msg, i) => {
- const isMine = msg.sender_id === currentUserId
- const showDate =
- i === 0 ||
- new Date(msg.created_at).toDateString() !== new Date(messages[i - 1].created_at).toDateString()
-
- // System messages render as a receipt card, centered
- if (msg.sender_type === "system") {
- return (
- <div key={msg.id}>
- {showDate && (
- <div className="flex items-center justify-center my-4">
- <span className="text-[10px] text-white/40 bg-card shadow-modern rounded-full px-3 py-0.5 tracking-wider font-semibold">
- {isToday(new Date(msg.created_at))
- ? "TODAY"
- : isYesterday(new Date(msg.created_at))
- ? "YESTERDAY"
- : format(new Date(msg.created_at), "MMMM d, yyyy").toUpperCase()}
- </span>
- </div>
- )}
- {msg.metadata?.type === "booking_receipt" ? (
- <BookingReceiptCard msg={msg} />
- ) : (
- <div className="flex justify-center my-2">
- <span className="text-[11px] text-white/40 bg-card shadow-modern rounded-full px-3 py-1 italic">{msg.message}</span>
- </div>
- )}
- </div>
- )
- }
-
- return (
- <div key={msg.id}>
- {showDate && (
- <div className="flex items-center justify-center my-4">
- <span className="text-[10px] text-white/40 bg-card shadow-modern rounded-full px-3 py-0.5 tracking-wider font-semibold">
- {isToday(new Date(msg.created_at))
- ? "TODAY"
- : isYesterday(new Date(msg.created_at))
- ? "YESTERDAY"
- : format(new Date(msg.created_at), "MMMM d, yyyy").toUpperCase()}
- </span>
- </div>
- )}
- <div className={cn("flex", isMine ? "justify-end" : "justify-start")}>
- <div
- className={cn(
- "max-w-[70%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-md border border-white/5",
- isMine
- ? "bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon text-white rounded-br-none border-0"
- : "bg-card text-white/90 rounded-bl-none"
- )}
- >
- {msg.image_url && <ChatImage src={msg.image_url} />}
- {msg.message && <p className="break-words">{msg.message}</p>}
- <div className={cn("text-[9px] mt-1 text-right font-medium", isMine ? "text-white/60" : "text-white/30")}>
- {format(new Date(msg.created_at), "HH:mm")}
- </div>
- </div>
- </div>
- </div>
- )
- })}
- {otherTyping && (
- <div className="flex items-center gap-2">
- <span className="text-xs text-white/40 italic">Someone is typing...</span>
- </div>
- )}
- <div ref={messagesEndRef} />
- </div>
-
- {/* Input bar */}
- <div className="px-4 py-3.5 border-t border-white/5 bg-card shadow-modern ">
- {uploadProgress !== null && (
- <div className="mb-2 flex items-center justify-between text-xs text-[#0D6F73]">
- <span>Uploading image...</span>
- <span>{uploadProgress}%</span>
- </div>
- )}
-
- <div className="flex items-center gap-2">
- <input
- ref={fileInputRef}
- type="file"
- accept="image/jpeg,image/png,image/webp"
- className="hidden"
- onChange={(e) => {
- const file = e.target.files?.[0]
- if (file) handleImageUpload(file)
- e.target.value = ""
- }}
- />
- <Button
- variant="ghost"
- size="icon"
- className="rounded-full text-white/55 hover:text-white hover:bg-card shadow-modern flex-shrink-0"
- onClick={() => fileInputRef.current?.click()}
- disabled={uploadProgress !== null}
- >
- <ImageIcon className="size-5" />
- </Button>
-
- <Input
- id="message-input"
- value={inputValue}
- onChange={(e) => broadcastTyping(e.target.value)}
- onKeyDown={(e) => {
- if (e.key === "Enter" && !e.shiftKey) {
- e.preventDefault()
- sendMsg(inputValue)
- }
- }}
- placeholder="Message…"
- className="flex-1 rounded-full bg-card shadow-modern border-white/5 text-sm text-white placeholder:text-white/30 focus-visible:ring-[#0D6F73]"
- disabled={sending}
- />
-
- <Button
- id="send-message-btn"
- size="icon"
- className="rounded-full size-9 bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon hover:bg-[#6b47d6] text-white shadow-md shadow-[#0D6F73]/10 flex-shrink-0"
- onClick={() => sendMsg(inputValue)}
- disabled={sending || !inputValue.trim()}
- >
- {sending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
- </Button>
- </div>
- </div>
- </>
- )}
- </div>
-
- {/* Profile popover modal */}
- {showProfileUserId && (
- <ProfileModal userId={showProfileUserId} onClose={() => setShowProfileUserId(null)} />
- )}
- </div>
- )
+              {showProfile && otherUserId && (
+                <div className="hidden lg:flex">
+                  <ProfileSidebar
+                    userId={otherUserId}
+                    onClose={() => setShowProfile(false)}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  )
 }
