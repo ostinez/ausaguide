@@ -42,7 +42,7 @@
 }
 
 .stepper-step-item.completed:not(:last-child)::after {
-  background: linear-gradient(90deg, #2cb67d, #7f5af0);
+  background: linear-gradient(90deg, #0D6F73, #0D6F73);
 }
 
 /* Circle */
@@ -66,18 +66,18 @@
 }
 
 .stepper-step-item.active .stepper-circle {
-  background: linear-gradient(135deg, #7f5af0, #a78bfa);
-  border-color: #7f5af0;
+  background: linear-gradient(135deg, #0D6F73, #a78bfa);
+  border-color: #0D6F73;
   color: #fff;
-  box-shadow: 0 0 0 4px rgba(127, 90, 240, 0.2), 0 4px 16px rgba(127, 90, 240, 0.4);
+  box-shadow: 0 0 0 4px rgba(13, 111, 115, 0.2), 0 4px 16px rgba(13, 111, 115, 0.4);
   transform: scale(1.1);
 }
 
 .stepper-step-item.completed .stepper-circle {
-  background: linear-gradient(135deg, #2cb67d, #34d399);
-  border-color: #2cb67d;
+  background: linear-gradient(135deg, #0D6F73, #34d399);
+  border-color: #0D6F73;
   color: #fff;
-  box-shadow: 0 2px 8px rgba(44, 182, 125, 0.3);
+  box-shadow: 0 2px 8px rgba(13, 111, 115, 0.3);
 }
 
 /* Label */
@@ -97,7 +97,7 @@
 }
 
 .stepper-step-item.completed .stepper-label {
-  color: #2cb67d;
+  color: #0D6F73;
 }
 
 /* ── Step content area ────────────────────────────────── */

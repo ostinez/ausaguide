@@ -2,58 +2,58 @@ import React from "react"
 import "./GlassIcons.css"
 
 export interface GlassIconsItem {
-  icon: React.ReactElement
-  color: string
-  label: string
-  customClass?: string
-  onClick?: () => void
-  active?: boolean
+ icon: React.ReactElement
+ color: string
+ label: string
+ customClass?: string
+ onClick?: () => void
+ active?: boolean
 }
 
 export interface GlassIconsProps {
-  items: GlassIconsItem[]
-  className?: string
+ items: GlassIconsItem[]
+ className?: string
 }
 
 const gradientMapping: Record<string, string> = {
-  blue: "linear-gradient(hsl(223, 90%, 50%), hsl(208, 90%, 50%))",
-  purple: "linear-gradient(hsl(260, 80%, 55%), hsl(250, 80%, 45%))",
-  red: "linear-gradient(hsl(3, 90%, 50%), hsl(348, 90%, 50%))",
-  indigo: "linear-gradient(hsl(253, 90%, 50%), hsl(238, 90%, 50%))",
-  orange: "linear-gradient(hsl(43, 90%, 50%), hsl(28, 90%, 50%))",
-  green: "linear-gradient(hsl(123, 90%, 40%), hsl(108, 90%, 40%))",
-  teal: "linear-gradient(hsl(160, 70%, 45%), hsl(170, 60%, 35%))",
+  blue: "linear-gradient(135deg, #0B3037 0%, #134E5E 100%)",
+  purple: "linear-gradient(135deg, #0D6F73 0%, #06363D 100%)",
+  red: "linear-gradient(135deg, #0B3037 0%, #134E5E 100%)",
+  indigo: "linear-gradient(135deg, #0D6F73 0%, #06363D 100%)",
+  orange: "linear-gradient(135deg, #0B3037 0%, #134E5E 100%)",
+  green: "linear-gradient(135deg, #0D6F73 0%, #84BABF 100%)",
+  teal: "linear-gradient(135deg, #0D6F73 0%, #06363D 100%)",
 }
 
 export const GlassIcons: React.FC<GlassIconsProps> = ({ items, className = "" }) => {
-  const getBackgroundStyle = (color: string): React.CSSProperties => {
-    if (gradientMapping[color]) {
-      return { background: gradientMapping[color] }
-    }
-    return { background: color }
-  }
+ const getBackgroundStyle = (color: string): React.CSSProperties => {
+ if (gradientMapping[color]) {
+ return { background: gradientMapping[color] }
+ }
+ return { background: color }
+ }
 
-  return (
-    <div className={`icon-btns ${className}`}>
-      {items.map((item, index) => (
-        <button
-          key={index}
-          type="button"
-          onClick={item.onClick}
-          className={`icon-btn ${item.active ? "is-active" : ""} ${item.customClass || ""}`}
-          aria-label={item.label}
-        >
-          <span className="icon-btn__back" style={getBackgroundStyle(item.color)}></span>
-          <span className="icon-btn__front">
-            <span className="icon-btn__icon" aria-hidden="true">
-              {item.icon}
-            </span>
-          </span>
-          <span className="icon-btn__label">{item.label}</span>
-        </button>
-      ))}
-    </div>
-  )
+ return (
+ <div className={`icon-btns ${className}`}>
+ {items.map((item, index) => (
+ <button
+ key={index}
+ type="button"
+ onClick={item.onClick}
+ className={`icon-btn ${item.active ? "is-active" : ""} ${item.customClass || ""}`}
+ aria-label={item.label}
+ >
+ <span className="icon-btn__back" style={getBackgroundStyle(item.color)}></span>
+ <span className="icon-btn__front">
+ <span className="icon-btn__icon" aria-hidden="true">
+ {item.icon}
+ </span>
+ </span>
+ <span className="icon-btn__label">{item.label}</span>
+ </button>
+ ))}
+ </div>
+ )
 }
 
 export default GlassIcons

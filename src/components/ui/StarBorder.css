@@ -18,10 +18,10 @@
   transform: translate(-50%, -50%);
   background: conic-gradient(
     from 0deg,
-    var(--border-color, #7F5AF0) 0deg,
+    var(--border-color, #0D6F73) 0deg,
     transparent 40deg,
     transparent 320deg,
-    var(--border-color, #7F5AF0) 360deg
+    var(--border-color, #0D6F73) 360deg
   );
   animation: star-border-rotate var(--animation-speed, 4s) linear infinite;
   z-index: -2;

@@ -6,26 +6,23 @@ import { BorderGlow } from "@/components/ui/BorderGlow"
 
 export function ImpactPreview() {
   return (
-    <section className="py-24 bg-[#16161A] relative overflow-hidden">
-      {/* Background Accent Glow */}
-      <div className="absolute top-1/2 right-1/4 -translate-y-1/2 h-[400px] w-[500px] rounded-full bg-[#2CB67D]/2 blur-3xl pointer-events-none" />
-
+    <section className="py-24 bg-background relative overflow-hidden border-b border-border">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="mb-16 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#2CB67D]/35 bg-[#2CB67D]/10 text-xs font-bold uppercase tracking-wider text-[#2CB67D] mb-3">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-brand/20 bg-brand/10 text-xs font-bold uppercase tracking-wider text-brand mb-3">
             Sustain & Restore
           </div>
           
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-foreground leading-tight">
             <GradientText
-              colors={["#7F5AF0", "#2CB67D", "#FFFFFE"]}
+              colors={["#06363D", "#0D6F73", "#06363D"]}
               animationSpeed={4}
               yoyo={true}
             >
               Donation & Sponsorship
             </GradientText>
           </h2>
-          <p className="mt-4 text-white/60 max-w-xl mx-auto text-sm sm:text-base leading-relaxed">
+          <p className="mt-4 text-muted-foreground max-w-xl mx-auto text-sm sm:text-base leading-relaxed font-medium">
             Every booking fuels real-world change. Partner with local hosts to restore deforested reserves or sponsor mental health initiatives across Kenya.
           </p>
         </div>
@@ -34,13 +31,12 @@ export function ImpactPreview() {
           
           {/* Card 1: Tree Planting Initiative */}
           <BorderGlow
-            glowColor="160 70 45" // Teal/green color code proxy
-            glowIntensity={0.7}
+            glowColor="183 70 25"
+            glowIntensity={0.5}
             borderRadius={16}
-            backgroundColor="#121214"
-            colors={["#2CB67D", "#2CB67D", "#FFFFFE"]}
+            className="w-full h-full"
           >
-            <div className="flex flex-col h-full bg-[#121214]/80 border border-border rounded-2xl overflow-hidden group">
+            <div className="flex flex-col h-full bg-card shadow-modern border border-border rounded-2xl overflow-hidden group">
               {/* Image header */}
               <div className="h-48 overflow-hidden relative">
                 <img
@@ -49,9 +45,9 @@ export function ImpactPreview() {
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   loading="lazy"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#121214] to-transparent" />
-                <span className="absolute top-4 right-4 flex items-center gap-1.5 text-[9px] bg-[#2CB67D]/20 text-[#2CB67D] border border-[#2CB67D]/30 px-3 py-1 rounded-full font-black tracking-wider uppercase">
-                  <span className="size-1.5 rounded-full bg-[#2CB67D] animate-ping" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                <span className="absolute top-4 right-4 flex items-center gap-1.5 text-[9px] bg-brand/90 text-white px-3 py-1 rounded-full font-black tracking-wider uppercase shadow">
+                  <span className="size-1.5 rounded-full bg-white animate-ping" />
                   BETA
                 </span>
               </div>
@@ -60,18 +56,18 @@ export function ImpactPreview() {
               <div className="p-8 flex-1 flex flex-col justify-between space-y-6">
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <TreePine className="size-5 text-[#2CB67D]" />
-                    <h3 className="text-xl font-bold text-white group-hover:text-[#2CB67D] transition-colors">
+                    <TreePine className="size-5 text-brand" />
+                    <h3 className="text-xl font-bold text-foreground group-hover:text-brand transition-colors">
                       Tree Planting Initiative
                     </h3>
                   </div>
-                  <p className="text-xs sm:text-sm text-white/50 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                     Offset the carbon footprint of your Kenyan travels. For every sponsored package, we work hand-in-hand with local conservation communities to plant indigenous saplings in degraded forests.
                   </p>
                 </div>
 
                 <Link to="/tree-planting" className="inline-block self-start w-full sm:w-auto">
-                  <Button className="bg-[#2CB67D] text-[#16161A] hover:bg-[#2CB67D]/95 gap-1.5 font-bold rounded-xl px-6 py-2.5 text-xs cursor-pointer shadow-lg w-full sm:w-auto">
+                  <Button className="h-10 px-6 rounded-full bg-gradient-to-r from-[#0B3037] to-[#0D6F73] hover:from-[#06363D] hover:to-[#0B3037] text-white font-bold shadow-neo-pill border border-white/15 gap-1.5 text-xs transition cursor-pointer w-full sm:w-auto">
                     Plant Trees
                     <ArrowRight className="size-3.5 group-hover:translate-x-0.5 transition-transform" />
                   </Button>
@@ -82,13 +78,12 @@ export function ImpactPreview() {
 
           {/* Card 2: Mental Health Sponsorship */}
           <BorderGlow
-            glowColor="260 70 60" // Purple color code proxy
-            glowIntensity={0.7}
+            glowColor="183 70 25"
+            glowIntensity={0.5}
             borderRadius={16}
-            backgroundColor="#121214"
-            colors={["#7F5AF0", "#7F5AF0", "#FFFFFE"]}
+            className="w-full h-full"
           >
-            <div className="flex flex-col h-full bg-[#121214]/80 border border-border rounded-2xl overflow-hidden group">
+            <div className="flex flex-col h-full bg-card shadow-modern border border-border rounded-2xl overflow-hidden group">
               {/* Image header */}
               <div className="h-48 overflow-hidden relative">
                 <img
@@ -97,9 +92,9 @@ export function ImpactPreview() {
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   loading="lazy"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#121214] to-transparent" />
-                <span className="absolute top-4 right-4 flex items-center gap-1.5 text-[9px] bg-[#7F5AF0]/20 text-[#7F5AF0] border border-[#7F5AF0]/30 px-3 py-1 rounded-full font-black tracking-wider uppercase">
-                  <span className="size-1.5 rounded-full bg-[#7F5AF0] animate-ping" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                <span className="absolute top-4 right-4 flex items-center gap-1.5 text-[9px] bg-brand/90 text-white px-3 py-1 rounded-full font-black tracking-wider uppercase shadow">
+                  <span className="size-1.5 rounded-full bg-white animate-ping" />
                   LIVE
                 </span>
               </div>
@@ -108,18 +103,18 @@ export function ImpactPreview() {
               <div className="p-8 flex-1 flex flex-col justify-between space-y-6">
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <Heart className="size-5 text-[#7F5AF0]" />
-                    <h3 className="text-xl font-bold text-white group-hover:text-[#7F5AF0] transition-colors">
+                    <Heart className="size-5 text-brand" />
+                    <h3 className="text-xl font-bold text-foreground group-hover:text-brand transition-colors">
                       Mental Health Sponsorship
                     </h3>
                   </div>
-                  <p className="text-xs sm:text-sm text-white/50 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                     Sponsor healing retreats for local community helpers and guides. Your sponsorship supports holistic mental health wellness journeys that allow local caregivers to heal, recharge, and connect in nature.
                   </p>
                 </div>
 
                 <Link to="/mental-health" className="inline-block self-start w-full sm:w-auto">
-                  <Button className="bg-[#7F5AF0] text-white hover:bg-[#7F5AF0]/95 gap-1.5 font-bold rounded-xl px-6 py-2.5 text-xs cursor-pointer shadow-lg w-full sm:w-auto">
+                  <Button className="h-10 px-6 rounded-full bg-gradient-to-r from-[#0B3037] to-[#0D6F73] hover:from-[#06363D] hover:to-[#0B3037] text-white font-bold shadow-neo-pill border border-white/15 gap-1.5 text-xs transition cursor-pointer w-full sm:w-auto">
                     Sponsor Mental Health
                     <ArrowRight className="size-3.5 group-hover:translate-x-0.5 transition-transform" />
                   </Button>

@@ -10,6 +10,27 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 16px);
+  
+  /* Ausaguide Deep Teal Silk Palette */
+  --color-brand: #0D6F73;
+  --color-brand-deep: #06363D;
+  --color-brand-silk: #0B3037;
+  --color-brand-light: #84BABF;
+  --color-brand-ice: #E0EDE9;
+  --color-carbon-dark: #06363D;
+  --color-carbon: #0B3037;
+  --color-carbon-light: #134E5E;
+  --color-accent-coral: #FF5252;
+  --color-accent-amber: #F59E0B;
+
+  /* Neo-Apple High-Performance Tactile Shadows (Zero GPU blur overhead) */
+  --shadow-modern: 0 2px 6px rgba(6, 54, 61, 0.04), 0 16px 36px -6px rgba(6, 54, 61, 0.09);
+  --shadow-modern-glow: 0 4px 16px -2px rgba(13, 111, 115, 0.35);
+  --shadow-neo-pill: 0 4px 12px rgba(6, 54, 61, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+  --shadow-neo-inset: inset 0 2px 4px rgba(6, 54, 61, 0.08);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -47,12 +68,12 @@
 }
 
 /*
-  Ausaguide Brand Theme
-  Dark-first: #16161A base, #7F5AF0 purple, #2CB67D teal, #FFFFFE white, #94A1B2 grey
+  Ausaguide Deep Teal Silk & Mineral Ice Theme
+  Neo-Apple Tactile Styling · High Performance · Zero Glassmorphism Lag
 */
 
 :root {
-  --radius: 0.625rem;
+  --radius: 1rem;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -61,77 +82,96 @@
   --space-6: 32px;
   --space-7: 48px;
   --space-8: 64px;
-  --background: oklch(0.156 0.005 285);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.195 0.005 285);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.195 0.005 285);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.541 0.217 292);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.235 0.008 285);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.235 0.008 285);
-  --muted-foreground: oklch(0.7 0.02 260);
-  --accent: oklch(0.275 0.012 285);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.3 0.01 285);
-  --input: oklch(0.3 0.01 285);
-  --ring: oklch(0.541 0.217 292);
-  --teal: oklch(0.696 0.17 162);
-  --teal-foreground: oklch(0.985 0 0);
-  --chart-1: oklch(0.541 0.217 292);
-  --chart-2: oklch(0.696 0.17 162);
-  --chart-3: oklch(0.828 0.189 84.429);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.175 0.005 285);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.541 0.217 292);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.235 0.008 285);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.3 0.01 285);
-  --sidebar-ring: oklch(0.541 0.217 292);
+  
+  /* Mineral Ice Canvas */
+  --background: #E8F1EE;
+  --foreground: #06363D;
+  
+  /* Tactile Elevated Neo Cards (Crisp White over Mineral Canvas) */
+  --card: #FFFFFF;
+  --card-foreground: #06363D;
+  --popover: #FFFFFF;
+  --popover-foreground: #06363D;
+  
+  /* Deep Teal Silk & Primary Actions */
+  --primary: #0D6F73;
+  --primary-foreground: #FFFFFF;
+  --secondary: #D4E5E0;
+  --secondary-foreground: #06363D;
+  --muted: #D8E7E3;
+  --muted-foreground: #599D9C;
+  
+  /* Accents */
+  --accent: #0D6F73;
+  --accent-foreground: #FFFFFF;
+  --destructive: #FF5252;
+  --destructive-foreground: #FFFFFF;
+  
+  --border: #C8DCD7;
+  --input: #C8DCD7;
+  --ring: #0D6F73;
+  --teal: #0D6F73;
+  --teal-foreground: #FFFFFF;
+  
+  --chart-1: #0D6F73;
+  --chart-2: #84BABF;
+  --chart-3: #06363D;
+  --chart-4: #F59E0B;
+  --chart-5: #FF5252;
+  
+  --sidebar: #E0EDE9;
+  --sidebar-foreground: #06363D;
+  --sidebar-primary: #0D6F73;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #D4E5E0;
+  --sidebar-accent-foreground: #06363D;
+  --sidebar-border: #C8DCD7;
+  --sidebar-ring: #0D6F73;
 }
 
 .dark {
-  --background: oklch(0.156 0.005 285);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.195 0.005 285);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.195 0.005 285);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.541 0.217 292);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.235 0.008 285);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.235 0.008 285);
-  --muted-foreground: oklch(0.7 0.02 260);
-  --accent: oklch(0.275 0.012 285);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.3 0.01 285);
-  --input: oklch(0.3 0.01 285);
-  --ring: oklch(0.541 0.217 292);
-  --teal: oklch(0.696 0.17 162);
-  --teal-foreground: oklch(0.985 0 0);
-  --chart-1: oklch(0.541 0.217 292);
-  --chart-2: oklch(0.696 0.17 162);
-  --chart-3: oklch(0.828 0.189 84.429);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.175 0.005 285);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.541 0.217 292);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.235 0.008 285);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.3 0.01 285);
-  --sidebar-ring: oklch(0.541 0.217 292);
+  /* Midnight Petrol Deep Teal Canvas */
+  --background: #06363D;
+  --foreground: #E0EDE9;
+  
+  /* Deep Teal Silk Elevated Surfaces */
+  --card: #0B3037;
+  --card-foreground: #E0EDE9;
+  --popover: #0B3037;
+  --popover-foreground: #E0EDE9;
+  
+  --primary: #84BABF;
+  --primary-foreground: #06363D;
+  --secondary: #134E5E;
+  --secondary-foreground: #E0EDE9;
+  --muted: #134E5E;
+  --muted-foreground: #84BABF;
+  
+  --accent: #84BABF;
+  --accent-foreground: #06363D;
+  --destructive: #FF5252;
+  --destructive-foreground: #FFFFFF;
+  
+  --border: #134E5E;
+  --input: #134E5E;
+  --ring: #84BABF;
+  --teal: #84BABF;
+  --teal-foreground: #06363D;
+  
+  --chart-1: #84BABF;
+  --chart-2: #0D6F73;
+  --chart-3: #E0EDE9;
+  --chart-4: #F59E0B;
+  --chart-5: #FF5252;
+  
+  --sidebar: #06363D;
+  --sidebar-foreground: #E0EDE9;
+  --sidebar-primary: #84BABF;
+  --sidebar-primary-foreground: #06363D;
+  --sidebar-accent: #0B3037;
+  --sidebar-accent-foreground: #E0EDE9;
+  --sidebar-border: #134E5E;
+  --sidebar-ring: #84BABF;
 }
 
 
@@ -408,18 +448,44 @@ img {
   will-change: transform, opacity;
 }
 
-/* ── depth effects & glassmorphism ──────────────────────────────────────── */
+/* ── High-Performance Neo-Apple Tactile Depth (Zero GPU Lag) ────────── */
 
 .tour-card,
 .post-card,
 [data-slot="dialog-content"],
 [data-slot="dropdown-menu-content"],
 .group[data-sonner-toast] {
-  backdrop-filter: blur(10px) !important;
-  -webkit-backdrop-filter: blur(10px) !important;
-  background: rgba(255, 255, 255, 0.05) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+  background: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow-modern) !important;
+  border-radius: var(--radius-2xl) !important;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+.tour-card:hover,
+.post-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(6, 54, 61, 0.06), 0 20px 40px -8px rgba(6, 54, 61, 0.14) !important;
+}
+
+/* Neo-Apple Tactile Pill Buttons */
+.neo-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #0B3037 0%, #134E5E 100%);
+  color: #FFFFFF;
+  font-weight: 500;
+  box-shadow: var(--shadow-neo-pill);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.neo-pill-btn:active {
+  transform: scale(0.97);
+  box-shadow: var(--shadow-neo-inset);
+}
+
 
 

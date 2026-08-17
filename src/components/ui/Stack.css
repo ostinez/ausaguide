@@ -30,8 +30,8 @@
 
 /* Card hover glow border */
 .stack-card:hover {
-  border-color: rgba(127, 90, 240, 0.4);
-  box-shadow: 0 15px 40px -10px rgba(127, 90, 240, 0.15),
+  border-color: rgba(13, 111, 115, 0.4);
+  box-shadow: 0 15px 40px -10px rgba(13, 111, 115, 0.15),
               0 10px 30px -10px rgba(0, 0, 0, 0.7);
 }
 
@@ -55,18 +55,18 @@
 }
 
 .stack-card.top-card:hover {
-  border-color: rgba(127, 90, 240, 0.6);
+  border-color: rgba(13, 111, 115, 0.6);
 }
 
 /* Micro-animations and controls styling */
 .stack-badge-price {
-  background: rgba(44, 182, 125, 0.2);
-  border: 1px solid rgba(44, 182, 125, 0.4);
-  color: #2CB67D;
+  background: rgba(13, 111, 115, 0.2);
+  border: 1px solid rgba(13, 111, 115, 0.4);
+  color: #0D6F73;
 }
 
 .stack-badge-location {
-  background: rgba(127, 90, 240, 0.2);
-  border: 1px solid rgba(127, 90, 240, 0.4);
-  color: #7F5AF0;
+  background: rgba(13, 111, 115, 0.2);
+  border: 1px solid rgba(13, 111, 115, 0.4);
+  color: #0D6F73;
 }

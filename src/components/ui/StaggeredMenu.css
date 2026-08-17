@@ -36,18 +36,16 @@
   position: relative;
   width: calc(100% - 2rem);
   max-width: 1200px;
-  height: 4rem; /* Slightly shorter for a compact floating feel */
-  margin: 1rem auto 0 auto; /* Float 1rem from the top, centered */
+  height: 3.75rem;
+  margin: 1rem auto 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 1.75rem;
-  background-color: rgba(22, 22, 26, 0.55); /* Translucent glass background */
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08); /* Clean thin border */
-  border-radius: 20px; /* Floating rounded card look */
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+  box-shadow: var(--shadow-modern);
   z-index: 30;
   pointer-events: auto;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);

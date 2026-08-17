@@ -22,8 +22,8 @@
   border-radius: inherit;
   background: radial-gradient(
     circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
-    rgba(127, 90, 240, 0.15) 0%,
-    rgba(44, 182, 125, 0.05) 50%,
+    rgba(13, 111, 115, 0.15) 0%,
+    rgba(13, 111, 115, 0.05) 50%,
     transparent 100%
   );
   opacity: 0;
@@ -37,8 +37,8 @@
 
 /* Active card highlight border */
 .carousel-3d-item.active {
-  box-shadow: 0 0 25px -5px rgba(127, 90, 240, 0.3), 
-              0 0 15px -5px rgba(44, 182, 125, 0.2);
+  box-shadow: 0 0 25px -5px rgba(13, 111, 115, 0.3), 
+              0 0 15px -5px rgba(13, 111, 115, 0.2);
 }
 
 /* Pulse animation for category icons */
@@ -51,7 +51,7 @@
   position: absolute;
   inset: -4px;
   border-radius: 50%;
-  border: 1px solid rgba(127, 90, 240, 0.4);
+  border: 1px solid rgba(13, 111, 115, 0.4);
   animation: pulse-ring 2s cubic-bezier(0.215, 0.610, 0.355, 1) infinite;
   pointer-events: none;
 }

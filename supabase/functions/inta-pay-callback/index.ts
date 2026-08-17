@@ -99,12 +99,13 @@ serve(async (req) => {
 
     if (travelerId && hostId) {
       let convId: string | null = null;
+      const [pA, pB] = [travelerId, hostId].sort();
 
       const { data: existingConv } = await supabase
         .from("conversations")
         .select("id")
         .or(
-          `and(participant1_id.eq.${travelerId},participant2_id.eq.${hostId}),and(participant1_id.eq.${hostId},participant2_id.eq.${travelerId})`
+          `and(participant_a.eq.${pA},participant_b.eq.${pB}),and(participant_a.eq.${pB},participant_b.eq.${pA})`
         )
         .maybeSingle();
 
@@ -114,8 +115,8 @@ serve(async (req) => {
         const { data: newConv } = await supabase
           .from("conversations")
           .insert({
-            participant1_id: travelerId,
-            participant2_id: hostId,
+            participant_a: pA,
+            participant_b: pB,
             last_message: "🧾 Booking confirmed",
             last_message_at: new Date().toISOString(),
           })

@@ -157,6 +157,30 @@ serve(async (req) => {
           type: "booking_request",
           read: false,
         })
+
+        // Auto-create chat conversation thread if not already created
+        if (booking.host_id && booking.guest_id) {
+          try {
+            const [pA, pB] = [booking.host_id, booking.guest_id].sort()
+            const { data: existingConv } = await supabase
+              .from("conversations")
+              .select("id")
+              .or(`and(participant_a.eq.${pA},participant_b.eq.${pB}),and(participant_a.eq.${pB},participant_b.eq.${pA})`)
+              .maybeSingle()
+
+            if (!existingConv) {
+              await supabase.from("conversations").insert({
+                participant_a: pA,
+                participant_b: pB,
+                last_message: `Booking confirmed for ${tourTitle}`,
+                last_message_at: new Date().toISOString(),
+              })
+              console.log(`Created chat thread between host ${booking.host_id} and guest ${booking.guest_id}`)
+            }
+          } catch (convErr) {
+            console.warn("Failed to auto-create conversation in stripe-webhook:", convErr)
+          }
+        }
       } else if (newStatus === "declined") {
         if (booking.guest_id) {
           notifications.push({

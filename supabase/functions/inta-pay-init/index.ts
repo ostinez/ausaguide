@@ -49,13 +49,18 @@ serve(async (req) => {
       ? "https://payment.intasend.com/api/v1"
       : "https://sandbox.intasend.com/api/v1";
 
-    // 1. Parse and validate input
+    // 1. Parse and validate input (support both camelCase and snake_case)
     const body = await req.json();
-    const { amount, phone, email, bookingId, currency = "KES", method = "STK_PUSH" } = body;
+    const amount = body.amount;
+    const email = body.email || body.guest_email || body.customer_email;
+    const bookingId = body.bookingId || body.booking_id;
+    const phone = body.phone || body.guest_phone || body.phone_number;
+    const currency = body.currency || "KES";
+    const method = body.method || (phone ? "STK_PUSH" : "CARD");
 
     if (!amount || !email || !bookingId) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields: amount, email, bookingId" }),
+        JSON.stringify({ error: "Missing required fields: amount, email, bookingId (or booking_id)" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

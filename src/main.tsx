@@ -10,57 +10,61 @@ import { initPostHog } from "./lib/posthog"
 
 const consent = localStorage.getItem("cookie-consent")
 if (consent === "accepted") {
-  initSentry()
-  initPostHog()
+ initSentry()
+ initPostHog()
 } else {
-  window.addEventListener("cookies-accepted", () => {
-    initSentry()
-    initPostHog()
-  })
+ window.addEventListener("cookies-accepted", () => {
+ initSentry()
+ initPostHog()
+ })
 }
 
-// Enforce dark mode globally
-document.documentElement.classList.remove("light", "light-mode")
-document.documentElement.classList.add("dark")
+// Theme initialization (defaults to crisp mineral light canvas)
+const savedTheme = localStorage.getItem("ausaguide_theme")
+if (savedTheme === "dark") {
+  document.documentElement.classList.add("dark")
+} else {
+  document.documentElement.classList.remove("dark")
+}
 
 // Platform detection — add CSS class hooks for adaptive styles
 ;(function detectPlatformClasses() {
-  const ua = navigator.userAgent
-  const html = document.documentElement
+ const ua = navigator.userAgent
+ const html = document.documentElement
 
-  if (/iP(hone|od|ad)/.test(ua)) html.classList.add("is-ios")
-  else if (/Android/.test(ua)) html.classList.add("is-android")
+ if (/iP(hone|od|ad)/.test(ua)) html.classList.add("is-ios")
+ else if (/Android/.test(ua)) html.classList.add("is-android")
 
-  const cores = (navigator as any).hardwareConcurrency ?? 4
-  const mem = (navigator as any).deviceMemory ?? 4
-  if (cores < 4 || mem < 2) html.classList.add("low-end-device")
+ const cores = (navigator as any).hardwareConcurrency ?? 4
+ const mem = (navigator as any).deviceMemory ?? 4
+ if (cores < 4 || mem < 2) html.classList.add("low-end-device")
 
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    html.classList.add("reduced-motion")
-  }
+ if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+ html.classList.add("reduced-motion")
+ }
 })()
 
 // Register Service Worker for offline support
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js")
-      .then((reg) => {
-        console.log("Service Worker registered successfully with scope:", reg.scope)
-      })
-      .catch((err) => {
-        console.error("Service Worker registration failed:", err)
-      })
-  })
+ window.addEventListener("load", () => {
+ navigator.serviceWorker.register("/sw.js")
+ .then((reg) => {
+ console.log("Service Worker registered successfully with scope:", reg.scope)
+ })
+ .catch((err) => {
+ console.error("Service Worker registration failed:", err)
+ })
+ })
 }
 
 
 createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-      <BrowserRouter>
-        <Sentry.ErrorBoundary fallback={<div>Something went wrong. Please try again.</div>}>
-          <App />
-        </Sentry.ErrorBoundary>
-        <Toaster />
-      </BrowserRouter>
-  </StrictMode>
+ <StrictMode>
+ <BrowserRouter>
+ <Sentry.ErrorBoundary fallback={<div>Something went wrong. Please try again.</div>}>
+ <App />
+ </Sentry.ErrorBoundary>
+ <Toaster />
+ </BrowserRouter>
+ </StrictMode>
 )

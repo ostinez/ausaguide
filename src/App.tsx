@@ -54,13 +54,13 @@ import NotificationsPage from "@/pages/notifications"
 import PaymentSuccessPage from "@/pages/PaymentSuccess"
 
 function ScrollToTop() {
-  const { pathname } = useLocation()
+ const { pathname } = useLocation()
 
-  useEffect(() => {
-    window.scrollTo(0, 0)
-  }, [pathname])
+ useEffect(() => {
+ window.scrollTo(0, 0)
+ }, [pathname])
 
-  return null
+ return null
 }
 
 /**
@@ -70,91 +70,91 @@ function ScrollToTop() {
  * layout wrappers, and authentication protection gates.
  */
 export default function App() {
-  const location = useLocation()
+ const location = useLocation()
 
-  useEffect(() => {
-    trackEvent("$pageview", {
-      path: location.pathname,
-      search: location.search,
-      url: window.location.href,
-    })
-  }, [location])
+ useEffect(() => {
+ trackEvent("$pageview", {
+ path: location.pathname,
+ search: location.search,
+ url: window.location.href,
+ })
+ }, [location])
 
-  return (
-    <>
-      <ScrollToTop />
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<Home />} />
-          <Route path="/tours" element={<ToursPage />} />
-          <Route path="/tours/:id" element={<TourDetailPage />} />
-          <Route path="/checkout/:tourId" element={<CheckoutPage />} />
-          <Route path="/payment-success" element={<PaymentSuccessPage />} />
-          <Route path="/confirmation/:bookingId" element={<ConfirmationPage />} />
-          <Route path="/auth" element={<AuthPage />} />
-          <Route path="/auth/callback" element={<AuthCallbackPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/onboarding" element={<OnboardingPage />} />
-          <Route path="/host/signup" element={<Navigate to="/onboarding?become-host=true" replace />} />
-          <Route path="/host/:id" element={<HostProfilePage />} />
-          <Route path="/admin/*" element={<Navigate to="/admin2" replace />} />
-          <Route path="/notifications" element={<NotificationsPage />} />
+ return (
+ <>
+ <ScrollToTop />
+ <Routes>
+ <Route element={<Layout />}>
+ <Route path="/" element={<Home />} />
+ <Route path="/tours" element={<ToursPage />} />
+ <Route path="/tours/:id" element={<TourDetailPage />} />
+ <Route path="/checkout/:tourId" element={<CheckoutPage />} />
+ <Route path="/payment-success" element={<PaymentSuccessPage />} />
+ <Route path="/confirmation/:bookingId" element={<ConfirmationPage />} />
+ <Route path="/auth" element={<AuthPage />} />
+ <Route path="/auth/callback" element={<AuthCallbackPage />} />
+ <Route path="/reset-password" element={<ResetPasswordPage />} />
+ <Route path="/onboarding" element={<OnboardingPage />} />
+ <Route path="/host/signup" element={<Navigate to="/onboarding?become-host=true" replace />} />
+ <Route path="/host/:id" element={<HostProfilePage />} />
+ <Route path="/admin/*" element={<Navigate to="/admin2" replace />} />
+ <Route path="/notifications" element={<NotificationsPage />} />
 
-          {/* Host routes */}
-          <Route element={<ProtectedRoute allowedRoles={["host"]} />}>
-            <Route path="/host/dashboard" element={<DashboardPage />} />
-            <Route path="/dashboard/earnings" element={<EarningsDashboard />} />
-            <Route path="/host/tours/new" element={<NewTourPage />} />
-            <Route path="/host/tours/:id/edit" element={<EditTourPage />} />
-          </Route>
+ {/* Host routes */}
+ <Route element={<ProtectedRoute allowedRoles={["host"]} />}>
+ <Route path="/host/dashboard" element={<DashboardPage />} />
+ <Route path="/dashboard/earnings" element={<EarningsDashboard />} />
+ <Route path="/host/tours/new" element={<NewTourPage />} />
+ <Route path="/host/tours/:id/edit" element={<EditTourPage />} />
+ </Route>
 
-          {/* General/Traveler routes */}
-          <Route element={<ProtectedRoute allowedRoles={["traveler", "host", "admin"]} />}>
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/profile/edit" element={<SettingsPage />} />
-            <Route path="/wishlist" element={<WishlistPage />} />
-            <Route path="/journal" element={<JournalPage />} />
-            <Route path="/messages" element={<MessagesPage />} />
-          </Route>
+ {/* General/Traveler routes */}
+ <Route element={<ProtectedRoute allowedRoles={["traveler", "host", "admin"]} />}>
+ <Route path="/dashboard" element={<DashboardPage />} />
+ <Route path="/settings" element={<SettingsPage />} />
+ <Route path="/profile/edit" element={<SettingsPage />} />
+ <Route path="/wishlist" element={<WishlistPage />} />
+ <Route path="/journal" element={<JournalPage />} />
+ <Route path="/messages" element={<MessagesPage />} />
+ </Route>
 
-          {/* Public routes */}
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/help" element={<HelpPage />} />
-          <Route path="/map" element={<MapPage />} />
-          <Route path="/host-waitlist" element={<HostWaitlistPage />} />
-          <Route path="/waitlist" element={<WaitlistPage />} />
-          <Route path="/email-preferences" element={<EmailPreferencesPage />} />
+ {/* Public routes */}
+ <Route path="/about" element={<AboutPage />} />
+ <Route path="/help" element={<HelpPage />} />
+ <Route path="/map" element={<MapPage />} />
+ <Route path="/host-waitlist" element={<HostWaitlistPage />} />
+ <Route path="/waitlist" element={<WaitlistPage />} />
+ <Route path="/email-preferences" element={<EmailPreferencesPage />} />
 
-          {/* Temporary admin setup page - remove after first login */}
-          <Route path="/admin-setup" element={<AdminSetupPage />} />
-          <Route path="/logout" element={<LogoutPage />} />
-          <Route path="/feed" element={<FeedPage />} />
-          <Route path="/traveler/:id" element={<TravelerProfilePage />} />
-          <Route path="/terms" element={<TermsPage />} />
-          <Route path="/privacy" element={<PrivacyPage />} />
-          <Route path="/tree-planting" element={<TreePlantingPage />} />
-          <Route path="/tree-planted" element={<TreePlantedPage />} />
-          <Route path="/mental-health" element={<MentalHealthPage />} />
-          <Route path="/travel-commitment-thank-you" element={<TravelCommitmentThankYouPage />} />
-          <Route path="/thank-you" element={<ThankYouPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Route>
+ {/* Temporary admin setup page - remove after first login */}
+ <Route path="/admin-setup" element={<AdminSetupPage />} />
+ <Route path="/logout" element={<LogoutPage />} />
+ <Route path="/feed" element={<FeedPage />} />
+ <Route path="/traveler/:id" element={<TravelerProfilePage />} />
+ <Route path="/terms" element={<TermsPage />} />
+ <Route path="/privacy" element={<PrivacyPage />} />
+ <Route path="/tree-planting" element={<TreePlantingPage />} />
+ <Route path="/tree-planted" element={<TreePlantedPage />} />
+ <Route path="/mental-health" element={<MentalHealthPage />} />
+ <Route path="/travel-commitment-thank-you" element={<TravelCommitmentThankYouPage />} />
+ <Route path="/thank-you" element={<ThankYouPage />} />
+ <Route path="*" element={<NotFound />} />
+ </Route>
 
-        {/* Admin v2 Dashboard (Standalone Layout) */}
-        <Route path="/admin2" element={<ProtectedRoute allowedRoles={["admin"]} />}>
-          <Route element={<Admin2Layout />}>
-            <Route index element={<Admin2Overview />} />
-            <Route path="users" element={<Admin2Users />} />
-            <Route path="tours" element={<Admin2Tours />} />
-            <Route path="bookings" element={<Admin2Bookings />} />
-            <Route path="waitlist" element={<Admin2Waitlist />} />
-            <Route path="verifications" element={<Admin2Verifications />} />
-            <Route path="settings" element={<Admin2Settings />} />
-          </Route>
-        </Route>
-      </Routes>
-      <CookieConsent />
-    </>
-  )
+ {/* Admin v2 Dashboard (Standalone Layout) */}
+ <Route path="/admin2" element={<ProtectedRoute allowedRoles={["admin"]} />}>
+ <Route element={<Admin2Layout />}>
+ <Route index element={<Admin2Overview />} />
+ <Route path="users" element={<Admin2Users />} />
+ <Route path="tours" element={<Admin2Tours />} />
+ <Route path="bookings" element={<Admin2Bookings />} />
+ <Route path="waitlist" element={<Admin2Waitlist />} />
+ <Route path="verifications" element={<Admin2Verifications />} />
+ <Route path="settings" element={<Admin2Settings />} />
+ </Route>
+ </Route>
+ </Routes>
+ <CookieConsent />
+ </>
+ )
 }
