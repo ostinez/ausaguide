@@ -142,42 +142,58 @@ export function MPesaCheckout({
  // ── Initiate payment ────────────────────────────────────────────────────────
 
  async function handlePay() {
- if (!isValidKenyanPhone(phone)) {
- setPhoneError("Please enter a valid Kenyan phone number (e.g. 0712 345 678).")
- return
- }
+  if (!isValidKenyanPhone(phone)) {
+  setPhoneError("Please enter a valid Kenyan phone number (e.g. 0712 345 678 or 0114 785 412).")
+  return
+  }
 
- setStep("processing")
- setErrorMessage(null)
+  setStep("processing")
+  setErrorMessage(null)
 
- try {
- const { data, error: fnErr } = await supabase.functions.invoke("inta-pay-init", {
- body: {
- amount,
- currency,
- email: email.trim().toLowerCase(),
- phone: normalizePhone(phone),
- bookingId,
- method: "STK_PUSH",
- },
- })
+  try {
+  const normalized = normalizePhone(phone)
+  const { data, error: fnErr } = await supabase.functions.invoke("inta-pay-init", {
+  body: {
+  amount,
+  currency,
+  email: email.trim().toLowerCase(),
+  phone: normalized,
+  bookingId,
+  method: "STK_PUSH",
+  },
+  })
 
- if (fnErr) throw new Error(fnErr.message || "Failed to reach IntaSend")
- if (data?.error) throw new Error(data.error)
+  if (fnErr) {
+  let msg = fnErr.message || "Failed to reach IntaSend payment function"
+  if ((fnErr as any).context) {
+  try {
+  const bodyText = await (fnErr as any).context.text()
+  if (bodyText) {
+  const parsed = JSON.parse(bodyText)
+  msg = parsed.error || parsed.detail || parsed.message || msg
+  }
+  } catch (_) {}
+  }
+  throw new Error(msg)
+  }
 
- const pid = data?.payment_id || `IS_${bookingId}`
- setPaymentId(pid)
- setStep("waiting")
- startPolling(pid)
- } catch (err: any) {
- const msg = err?.message?.includes("fetch")
- ? "Connection lost. Please check your internet and try again."
- : err?.message || "Could not initiate payment. Please try again."
- setErrorMessage(msg)
- setStep("failed")
- onError?.(msg)
- }
- }
+  if (data?.error) throw new Error(typeof data.error === "string" ? data.error : JSON.stringify(data.error))
+  if (data?.detail) throw new Error(typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail))
+
+  const pid = data?.payment_id || data?.invoice_id || `IS_${bookingId}`
+  setPaymentId(pid)
+  setStep("waiting")
+  startPolling(pid)
+  } catch (err: any) {
+  console.error("[MPesaCheckout] Payment error:", err)
+  const msg = err?.message?.includes("Failed to fetch")
+  ? "Connection lost. Please check your internet connection and try again."
+  : err?.message || "Could not initiate payment. Please try again."
+  setErrorMessage(msg)
+  setStep("failed")
+  onError?.(msg)
+  }
+  }
 
  // ── Poll for verification ───────────────────────────────────────────────────
 
@@ -330,16 +346,22 @@ export function MPesaCheckout({
  )}
  />
  </div>
- {phoneError ? (
- <p className="flex items-center gap-1.5 text-[11px] text-red-400">
- <AlertCircle className="size-3" /> {phoneError}
- </p>
- ) : (
- <p className="text-[11px] text-muted-foreground">
- Enter the phone number registered with your M-PESA account.
- </p>
- )}
- </div>
+  {phoneError ? (
+  <p className="flex items-center gap-1.5 text-[11px] text-red-400">
+  <AlertCircle className="size-3" /> {phoneError}
+  </p>
+  ) : (
+  <div className="space-y-1">
+  <p className="text-[11px] text-muted-foreground">
+  Enter the phone number registered with your M-PESA account.
+  </p>
+  <p className="text-[10px] text-amber-500/90 font-medium">
+  💡 Sandbox mode: Use test number <code className="px-1 py-0.5 rounded bg-amber-500/10 font-bold">254708374149</code> (PIN: 12345) to test STK Push simulation.
+  </p>
+  </div>
+  )}
+  </div>
+
 
  {/* What to expect */}
  <div className="space-y-2 rounded-xl border border-white/8 bg-white/[0.02] p-4">

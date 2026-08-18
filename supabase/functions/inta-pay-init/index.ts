@@ -131,14 +131,16 @@ serve(async (req) => {
 
       if (!response.ok) {
         console.error("❌ IntaSend STK Push error:", responseData);
+        const detailMsg = responseData.detail || responseData.message || (typeof responseData === "string" ? responseData : JSON.stringify(responseData));
         return new Response(
           JSON.stringify({
-            error: "IntaSend STK Push failed",
-            details: responseData.detail || responseData.message || responseData,
+            error: `IntaSend STK Push failed: ${detailMsg}`,
+            details: responseData,
           }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
 
       paymentId = responseData.invoice?.invoice_id || responseData.tracking_id || responseData.id || `IS_${bookingId}`;
       status = responseData.invoice?.state || responseData.status || "PROCESSING";
