@@ -42,10 +42,12 @@ import { addDays } from "date-fns"
 import { useSEO } from "@/hooks/useSEO"
 import { JsonLd } from "@/components/seo/JsonLd"
 import { DirectMessageButton } from "@/components/common/DirectMessageButton"
+import { useUser } from "@/hooks/useUser"
 
 export default function TourDetailPage() {
- const { id } = useParams<{ id: string }>()
- const navigate = useNavigate()
+  const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const { user, isHost } = useUser()
  const [tour, setTour] = useState<Tour | null>(null)
  const [loading, setLoading] = useState(true)
  const [error, setError] = useState<string | null>(null)
@@ -777,7 +779,52 @@ export default function TourDetailPage() {
  </div>
  )}
 
- {selectedDayStatus === "fully_booked" ? (
+ {isHost ? (
+ <div className="mt-5 space-y-3 rounded-2xl border border-primary/30 bg-primary/5 p-4 text-center">
+ {user?.id === tour.host_id ? (
+ <>
+ <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-primary">
+ <CheckCircle2 className="size-4" />
+ <span>You are the Host of this tour</span>
+ </div>
+ <p className="text-[11px] text-muted-foreground">
+ Manage your listing details, schedules, and active bookings.
+ </p>
+ <div className="flex flex-col gap-2 pt-2">
+ <Button
+ className="w-full rounded-full py-5 text-sm font-bold bg-primary text-primary-foreground"
+ onClick={() => navigate(`/host/tours/${tour.id}/edit`)}
+ >
+ ✏️ Edit Tour Details
+ </Button>
+ <Button
+ variant="outline"
+ className="w-full rounded-full py-5 text-sm font-semibold border-primary/30"
+ onClick={() => navigate("/host/dashboard?tab=tours")}
+ >
+ 📊 View in Host Dashboard
+ </Button>
+ </div>
+ </>
+ ) : (
+ <>
+ <p className="text-xs font-semibold text-foreground">
+ Viewing in Host Mode
+ </p>
+ <p className="text-[11px] text-muted-foreground">
+ Host accounts cannot book other host experiences. Switch to your Host Dashboard to manage your tours.
+ </p>
+ <Button
+ variant="outline"
+ className="w-full rounded-full py-5 text-xs font-semibold mt-2"
+ onClick={() => navigate("/host/dashboard")}
+ >
+ Go to Host Dashboard
+ </Button>
+ </>
+ )}
+ </div>
+ ) : selectedDayStatus === "fully_booked" ? (
  <div className="mt-5 space-y-3">
  <div className="rounded-lg bg-amber-500/10 p-3 text-center text-sm text-amber-500 border border-amber-500/20">
  Fully booked for this slot

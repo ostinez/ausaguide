@@ -1,29 +1,71 @@
 import { useLocation, useNavigate } from "react-router-dom"
-import { Home, Compass, Calendar, MessageSquare, User } from "lucide-react"
+import {
+  Home,
+  Compass,
+  Calendar,
+  MessageSquare,
+  User,
+  LayoutDashboard,
+  CalendarCheck,
+  Palmtree,
+  Wallet,
+  ShieldCheck,
+  Users,
+  Settings,
+} from "lucide-react"
+import { useUser } from "@/hooks/useUser"
 import { cn } from "@/lib/utils"
 
 export function MobileNav() {
   const location = useLocation()
   const navigate = useNavigate()
   const path = location.pathname
+  const { role, user } = useUser()
 
-  const userId = localStorage.getItem("user_id")
-  const userRole = localStorage.getItem("user_role")
+  // Exclude from full-screen flows (auth, onboarding, call)
+  const isExcluded =
+    path === "/auth" ||
+    path === "/onboarding" ||
+    path === "/onboarding/interests" ||
+    path.startsWith("/video-call")
+  if (isExcluded) return null
 
-  const dashboardPath = userRole === "host" ? "/host/dashboard" : userRole === "admin" ? "/admin2" : "/dashboard"
-  const profilePath = userId ? (userRole === "host" ? "/host-profile" : "/profile") : "/auth"
+  // ===== ROLE-BASED NAVIGATION ITEMS =====
 
-  const navItems = [
+  // 1. Host Navigation: Dashboard, Bookings, Messages, Tours, Earnings
+  const hostNavItems = [
+    { icon: LayoutDashboard, label: "Dashboard", path: "/host/dashboard" },
+    { icon: CalendarCheck, label: "Bookings", path: "/host/dashboard?tab=bookings" },
+    { icon: MessageSquare, label: "Messages", path: "/messages" },
+    { icon: Palmtree, label: "Tours", path: "/host/dashboard?tab=tours" },
+    { icon: Wallet, label: "Earnings", path: "/dashboard/earnings" },
+  ]
+
+  // 2. Admin Navigation: Overview, Users, Tours, Bookings, Settings
+  const adminNavItems = [
+    { icon: ShieldCheck, label: "Overview", path: "/admin2" },
+    { icon: Users, label: "Users", path: "/admin2/users" },
+    { icon: Compass, label: "Tours", path: "/admin2/tours" },
+    { icon: Calendar, label: "Bookings", path: "/admin2/bookings" },
+    { icon: Settings, label: "Settings", path: "/admin2/settings" },
+  ]
+
+  // 3. Traveler Navigation: Home, Explore, Bookings, Messages, Profile
+  const profilePath = user ? "/settings" : "/auth"
+  const travelerNavItems = [
     { icon: Home, label: "Home", path: "/" },
     { icon: Compass, label: "Explore", path: "/tours" },
-    { icon: Calendar, label: "Bookings", path: dashboardPath },
+    { icon: Calendar, label: "Bookings", path: "/dashboard" },
     { icon: MessageSquare, label: "Messages", path: "/messages" },
     { icon: User, label: "Profile", path: profilePath },
   ]
 
-  // Hide on auth or full-screen video pages
-  const isExcluded = path === "/auth" || path === "/onboarding" || path.startsWith("/video-call")
-  if (isExcluded) return null
+  const navItems =
+    role === "host"
+      ? hostNavItems
+      : role === "admin"
+      ? adminNavItems
+      : travelerNavItems
 
   return (
     <nav
@@ -35,7 +77,9 @@ export function MobileNav() {
           const isActive =
             item.path === "/"
               ? path === "/"
-              : path.startsWith(item.path)
+              : item.path.includes("?")
+              ? `${location.pathname}${location.search}` === item.path
+              : path === item.path || (item.path !== "/" && path.startsWith(item.path))
 
           const Icon = item.icon
 

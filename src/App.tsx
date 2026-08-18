@@ -108,6 +108,9 @@ export default function App() {
           {/* Host routes */}
           <Route element={<ProtectedRoute allowedRoles={["host"]} />}>
             <Route path="/host/dashboard" element={<DashboardPage />} />
+            <Route path="/host/bookings" element={<Navigate to="/host/dashboard?tab=bookings" replace />} />
+            <Route path="/host/tours" element={<Navigate to="/host/dashboard?tab=tours" replace />} />
+            <Route path="/host/earnings" element={<Navigate to="/dashboard/earnings" replace />} />
             <Route path="/dashboard/earnings" element={<EarningsDashboard />} />
             <Route path="/host/tours/new" element={<NewTourPage />} />
             <Route path="/host/tours/:id/edit" element={<EditTourPage />} />
@@ -116,6 +119,9 @@ export default function App() {
           {/* General/Traveler routes */}
           <Route element={<ProtectedRoute allowedRoles={["traveler", "host", "admin"]} />}>
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/bookings" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/explore" element={<Navigate to="/tours" replace />} />
+            <Route path="/profile" element={<Navigate to="/settings" replace />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/profile/edit" element={<SettingsPage />} />
             <Route path="/wishlist" element={<WishlistPage />} />
@@ -125,6 +131,7 @@ export default function App() {
           </Route>
 
           {/* Public routes */}
+          <Route path="/explore" element={<Navigate to="/tours" replace />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/help" element={<HelpPage />} />
           <Route path="/map" element={<MapPage />} />

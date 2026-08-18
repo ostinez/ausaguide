@@ -1,5 +1,6 @@
-import { useState } from "react"
-import { Link } from "react-router-dom"
+import { useState, useEffect } from "react"
+import { Link, useNavigate } from "react-router-dom"
+import { useUser } from "@/hooks/useUser"
 import { HeroSection } from "@/components/landing/HeroSection"
 import { UrgentMatchModal } from "@/components/ui/UrgentMatchModal"
 import { ToursPreview } from "@/components/landing/tours-preview"
@@ -19,12 +20,26 @@ import { checkRateLimit } from "@/lib/api/rate-limit"
 import { Sparkles, User, Mail, Loader2, CheckCircle2, ArrowRight } from "lucide-react"
 
 export default function Home() {
- const [urgentMatchOpen, setUrgentMatchOpen] = useState(false)
- useSEO({
- title: "Live tours with real locals in Kenya",
- description:
- "Ausaguide connects you with authentic local guides for unforgettable experiences across Kenya. Book private safaris, cultural walks, and city tours.",
- })
+  const navigate = useNavigate()
+  const { role, loading: userLoading } = useUser()
+  const [urgentMatchOpen, setUrgentMatchOpen] = useState(false)
+
+  // Redirect hosts and admins directly to their dedicated workspaces
+  useEffect(() => {
+    if (!userLoading && role) {
+      if (role === "host") {
+        navigate("/host/dashboard", { replace: true })
+      } else if (role === "admin") {
+        navigate("/admin2", { replace: true })
+      }
+    }
+  }, [role, userLoading, navigate])
+
+  useSEO({
+    title: "Live tours with real locals in Kenya",
+    description:
+      "Ausaguide connects you with authentic local guides for unforgettable experiences across Kenya. Book private safaris, cultural walks, and city tours.",
+  })
 
  const [waitlistName, setWaitlistName] = useState("")
  const [waitlistEmail, setWaitlistEmail] = useState("")
