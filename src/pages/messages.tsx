@@ -375,13 +375,14 @@ export default function MessagesPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
 
+  const paramBookingId = searchParams.get("bookingId") || ""
   const preselectedConvId = routeConvId || searchParams.get("conversationId") || searchParams.get("chatId") || ""
 
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
   const [selectedConvId, setSelectedConvId] = useState<string>(preselectedConvId)
   const [searchQuery, setSearchQuery] = useState("")
   const [mobileView, setMobileView] = useState<"list" | "chat">(
-    preselectedConvId ? "chat" : "list"
+    preselectedConvId || paramBookingId ? "chat" : "list"
   )
   const [showProfile, setShowProfile] = useState(false)
   const [otherTyping] = useState(false)
@@ -405,20 +406,35 @@ export default function MessagesPage() {
   const { conversations, loading: convsLoading } = useConversations(authUser?.id ?? null)
   const { isUserOnline } = useRealtimePresence(authUser?.id ?? null)
 
-  // Auto-select first conversation when list loads
+  // Auto-select conversation based on route params, query params, or first item
   useEffect(() => {
+    if (conversations.length === 0) return
+
+    // 1. If bookingId is provided, find conversation by bookingId
+    if (paramBookingId) {
+      const matchByBooking = conversations.find(c => c.bookingId === paramBookingId)
+      if (matchByBooking) {
+        setSelectedConvId(matchByBooking.id)
+        setMobileView("chat")
+        return
+      }
+    }
+
+    // 2. If preselectedConvId is provided, match by ID
+    if (preselectedConvId) {
+      const matchById = conversations.find(c => c.id === preselectedConvId)
+      if (matchById) {
+        setSelectedConvId(matchById.id)
+        setMobileView("chat")
+        return
+      }
+    }
+
+    // 3. Fallback: select first conversation if none is selected
     if (!selectedConvId && conversations.length > 0) {
       setSelectedConvId(conversations[0].id)
     }
-  }, [conversations, selectedConvId])
-
-  // Auto-select from URL param if matched
-  useEffect(() => {
-    if (preselectedConvId && conversations.some(c => c.id === preselectedConvId)) {
-      setSelectedConvId(preselectedConvId)
-      setMobileView("chat")
-    }
-  }, [preselectedConvId, conversations])
+  }, [conversations, preselectedConvId, paramBookingId, selectedConvId])
 
   const selectedConv = conversations.find((c) => c.id === selectedConvId)
 
