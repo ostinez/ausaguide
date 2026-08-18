@@ -236,19 +236,19 @@ export function ImageStreamHero() {
   ]
 
   return (
-    <section className="relative overflow-hidden w-full bg-[#0a1f0e] text-white py-12 sm:py-20 px-4 sm:px-6 lg:px-8 border-b border-[#2d4a35]">
-      {/* Neumorphic Ambient Soft Lighting */}
+    <section className="relative overflow-hidden w-full bg-[#06363D] text-white py-12 sm:py-20 px-4 sm:px-6 lg:px-8 border-b border-[#134E5E]">
+      {/* Ambient Soft Lighting */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute top-0 left-1/4 h-[500px] w-[500px] rounded-full bg-[#13331a]/60 blur-[130px]" />
-        <div className="absolute bottom-0 right-1/4 h-[450px] w-[450px] rounded-full bg-[#1d3d24]/50 blur-[120px]" />
+        <div className="absolute top-0 left-1/4 h-[500px] w-[500px] rounded-full bg-[#0B3037]/60 blur-[130px]" />
+        <div className="absolute bottom-0 right-1/4 h-[450px] w-[450px] rounded-full bg-[#134E5E]/50 blur-[120px]" />
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto space-y-10 sm:space-y-14">
         {/* ── Header & Headline ── */}
         <div className="text-center space-y-5 max-w-3xl mx-auto">
           {/* Top Pill */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full neumorph-pill-green text-[#a3d9b1] text-xs sm:text-sm font-semibold">
-            <Sparkles className="size-4 text-[#2ecc71]" />
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full neumorph-pill-green text-[#84BABF] text-xs sm:text-sm font-semibold">
+            <Sparkles className="size-4 text-[#0D6F73]" />
             <span>Try Kenya Live Before You Fly</span>
           </div>
 
@@ -261,7 +261,7 @@ export function ImageStreamHero() {
           </h1>
 
           {/* Subtitle */}
-          <p className="text-[#a3d9b1] text-base sm:text-lg md:text-xl leading-relaxed max-w-2xl mx-auto font-normal">
+          <p className="text-[#84BABF] text-base sm:text-lg md:text-xl leading-relaxed max-w-2xl mx-auto font-normal">
             Explore Kenya through a local's eyes before you book. Live video reconnaissance tours with vetted local guides. Skip the scams.
           </p>
 
@@ -278,18 +278,18 @@ export function ImageStreamHero() {
               to="/tours"
               className="w-full sm:w-auto px-8 py-3.5 neumorph-btn-secondary font-bold rounded-2xl text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer min-h-[48px]"
             >
-              <Compass className="size-4 text-[#2ecc71]" />
+              <Compass className="size-4 text-[#0D6F73]" />
               <span>Explore Live Tours</span>
-              <ArrowRight className="size-4 text-[#a3d9b1]" />
+              <ArrowRight className="size-4 text-[#84BABF]" />
             </Link>
           </div>
         </div>
 
         {/* ── Interactive Scenario Filter Tabs & Play/Pause Controls ── */}
-        <div className="flex flex-wrap items-center justify-between gap-3 max-w-5xl mx-auto border-b border-[#2d4a35] pb-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 max-w-5xl mx-auto border-b border-[#134E5E] pb-4">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold text-[#6b8c73] uppercase tracking-wider flex items-center gap-1.5 mr-1">
-              <SlidersHorizontal className="size-3.5 text-[#2ecc71]" />
+            <span className="text-xs font-semibold text-[#84BABF] uppercase tracking-wider flex items-center gap-1.5 mr-1">
+              <SlidersHorizontal className="size-3.5 text-[#0D6F73]" />
               Compare:
             </span>
             {categories.map((cat) => {
@@ -311,10 +311,10 @@ export function ImageStreamHero() {
           <div className="flex items-center gap-2 ml-auto">
             <button
               onClick={() => setIsPaused(!isPaused)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl neumorph-pill-green text-xs font-semibold text-[#a3d9b1] hover:text-white cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl neumorph-pill-green text-xs font-semibold text-[#84BABF] hover:text-white cursor-pointer"
               title={isPaused ? "Resume streaming" : "Pause streaming"}
             >
-              {isPaused ? <Play className="size-3.5 text-[#2ecc71]" /> : <Pause className="size-3.5 text-[#a3d9b1]" />}
+              {isPaused ? <Play className="size-3.5 text-[#0D6F73]" /> : <Pause className="size-3.5 text-[#84BABF]" />}
               <span>{isPaused ? "Resume" : "Pause"}</span>
             </button>
           </div>
@@ -323,19 +323,19 @@ export function ImageStreamHero() {
         {/* ── 3D Image Stream Corridor (Two Perspective Rails) ── */}
         <div
           ref={corridorRef}
-          className={`corridor-container relative overflow-hidden rounded-3xl p-4 sm:p-6 bg-[#0a1f0e] border border-[#2d4a35] shadow-[inset_0_4px_16px_#05120a] ${
+          className={`corridor-container relative overflow-hidden rounded-3xl p-4 sm:p-6 bg-[#06363D] border border-[#134E5E] shadow-[inset_0_4px_16px_#030f12] ${
             isPaused ? "corridor-paused" : ""
           }`}
           style={{ maxHeight: "680px" }}
         >
-          {/* Corridor Top & Bottom Fade Gradients (Soft Neumorphic Depth) */}
-          <div className="pointer-events-none absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-[#0a1f0e] via-[#0a1f0e]/80 to-transparent z-20" />
-          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#0a1f0e] via-[#0a1f0e]/80 to-transparent z-20" />
+          {/* Corridor Top & Bottom Fade Gradients (Teal Depth) */}
+          <div className="pointer-events-none absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-[#06363D] via-[#06363D]/80 to-transparent z-20" />
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#06363D] via-[#06363D]/80 to-transparent z-20" />
 
           {/* Column Header Banners */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4 relative z-30">
             {/* Left Header */}
-            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#1c2b1e] border border-[#4a2828] shadow-[4px_4px_12px_#05120a]">
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#0B3037] border border-[#3a1a1a] shadow-[4px_4px_12px_#030f12]">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-lg bg-red-500/20 text-red-400">
                   <XCircle className="size-4" />
@@ -350,16 +350,16 @@ export function ImageStreamHero() {
             </div>
 
             {/* Right Header */}
-            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#1d3d24] border border-[#2d4a35] shadow-[4px_4px_12px_#05120a]">
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#0B3037] border border-[#134E5E] shadow-[4px_4px_12px_#030f12]">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-[#2ecc71]/20 text-[#2ecc71]">
+                <div className="p-1.5 rounded-lg bg-[#0D6F73]/20 text-[#0D6F73]">
                   <CheckCircle2 className="size-4" />
                 </div>
-                <span className="font-extrabold text-sm sm:text-base text-[#2ecc71] font-headline">
+                <span className="font-extrabold text-sm sm:text-base text-[#84BABF] font-headline">
                   The Smart Way (Ausaguide)
                 </span>
               </div>
-              <span className="px-2.5 py-0.5 rounded-full bg-[#2ecc71]/20 border border-[#2ecc71]/40 text-[#a4e95c] text-[10px] font-bold uppercase tracking-wider">
+              <span className="px-2.5 py-0.5 rounded-full bg-[#0D6F73]/20 border border-[#0D6F73]/40 text-[#84BABF] text-[10px] font-bold uppercase tracking-wider">
                 Verified Local
               </span>
             </div>
@@ -396,7 +396,7 @@ export function ImageStreamHero() {
                           loading="lazy"
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#0a1f0e]/90 via-transparent to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#06363D]/90 via-transparent to-transparent" />
                         <div className="absolute bottom-2 left-2 right-2">
                           <p className="text-[11px] font-bold text-white truncate drop-shadow-md">
                             {item.trap.title}
@@ -408,12 +408,12 @@ export function ImageStreamHero() {
                       </div>
 
                       {/* Problem Description */}
-                      <p className="text-xs text-[#a3d9b1]/90 line-clamp-2 leading-relaxed">
+                      <p className="text-xs text-[#84BABF]/90 line-clamp-2 leading-relaxed">
                         {item.trap.problem}
                       </p>
 
                       {/* Inspect Indicator */}
-                      <div className="flex items-center justify-between pt-1 border-t border-[#4a2828]/60 text-[10px] text-red-400/80">
+                      <div className="flex items-center justify-between pt-1 border-t border-[#3a1a1a]/60 text-[10px] text-red-400/80">
                         <span className="flex items-center gap-1">
                           <XCircle className="size-3" /> Click to compare
                         </span>
@@ -437,29 +437,29 @@ export function ImageStreamHero() {
                     <div className="space-y-3">
                       {/* Scenario Top Info */}
                       <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-[#2ecc71] flex items-center gap-1.5">
-                          <CheckCircle2 className="size-3.5 text-[#2ecc71]" />
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-[#84BABF] flex items-center gap-1.5">
+                          <CheckCircle2 className="size-3.5 text-[#0D6F73]" />
                           {item.smart.scenario}
                         </span>
-                        <span className="px-2 py-0.5 rounded-full bg-[#13331a] border border-[#2ecc71]/40 text-[#a4e95c] text-[10px] font-bold">
+                        <span className="px-2 py-0.5 rounded-full bg-[#0B3037] border border-[#0D6F73]/40 text-[#84BABF] text-[10px] font-bold">
                           {item.smart.badge}
                         </span>
                       </div>
 
                       {/* Image Thumbnail */}
-                      <div className="relative aspect-video rounded-xl overflow-hidden border border-[#2d4a35] shadow-md">
+                      <div className="relative aspect-video rounded-xl overflow-hidden border border-[#134E5E] shadow-md">
                         <img
                           src={item.smart.image}
                           alt={item.smart.title}
                           loading="lazy"
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#0a1f0e]/90 via-transparent to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#06363D]/90 via-transparent to-transparent" />
                         <div className="absolute bottom-2 left-2 right-2">
                           <p className="text-[11px] font-bold text-white truncate drop-shadow-md">
                             {item.smart.title}
                           </p>
-                          <p className="text-[10px] text-[#a3d9b1] truncate">
+                          <p className="text-[10px] text-[#84BABF] truncate">
                             {item.smart.location}
                           </p>
                         </div>
@@ -471,11 +471,11 @@ export function ImageStreamHero() {
                       </p>
 
                       {/* Inspect Indicator */}
-                      <div className="flex items-center justify-between pt-1 border-t border-[#2d4a35] text-[10px] text-[#2ecc71]">
+                      <div className="flex items-center justify-between pt-1 border-t border-[#134E5E] text-[10px] text-[#0D6F73]">
                         <span className="flex items-center gap-1">
                           <Check className="size-3" /> Ausaguide Solution
                         </span>
-                        <Maximize2 className="size-3 opacity-0 group-hover:opacity-100 transition-opacity text-[#a4e95c]" />
+                        <Maximize2 className="size-3 opacity-0 group-hover:opacity-100 transition-opacity text-[#84BABF]" />
                       </div>
                     </div>
                   </div>
@@ -486,7 +486,7 @@ export function ImageStreamHero() {
         </div>
 
         {/* ── Neumorphic Trust Badges Bar ── */}
-        <div className="p-4 sm:p-6 rounded-3xl bg-[#13331a] border border-[#2d4a35] shadow-[6px_6px_16px_#05120a,-4px_-4px_12px_#1d3d24] max-w-5xl mx-auto">
+        <div className="p-4 sm:p-6 rounded-3xl bg-[#0B3037] border border-[#134E5E] shadow-[6px_6px_16px_#030f12,-4px_-4px_12px_#06363D] max-w-5xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 text-center">
             {[
               { icon: ShieldCheck, label: "Vetted Local Guides", desc: "100% background checked" },
@@ -497,11 +497,11 @@ export function ImageStreamHero() {
               const Icon = badge.icon
               return (
                 <div key={idx} className="flex flex-col items-center justify-center gap-1.5 p-2">
-                  <div className="p-2.5 rounded-2xl bg-[#1d3d24] border border-[#2d4a35] text-[#2ecc71] shadow-[3px_3px_8px_#05120a,-2px_-2px_6px_#13331a]">
+                  <div className="p-2.5 rounded-2xl bg-[#134E5E] border border-[#0D6F73]/40 text-[#0D6F73] shadow-[3px_3px_8px_#030f12,-2px_-2px_6px_#0B3037]">
                     <Icon className="size-5" />
                   </div>
                   <span className="text-xs sm:text-sm font-bold text-white mt-1">{badge.label}</span>
-                  <span className="text-[11px] text-[#6b8c73]">{badge.desc}</span>
+                  <span className="text-[11px] text-[#84BABF]">{badge.desc}</span>
                 </div>
               )
             })}
@@ -512,11 +512,11 @@ export function ImageStreamHero() {
       {/* ── Interactive Scenario Comparison Modal ── */}
       {selectedScenario && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 animate-in fade-in duration-200">
-          <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#0a1f0e] border border-[#2d4a35] p-6 sm:p-8 shadow-[12px_12px_36px_#05120a] space-y-6">
+          <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#06363D] border border-[#134E5E] p-6 sm:p-8 shadow-[12px_12px_36px_#030f12] space-y-6">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-[#2d4a35] pb-4">
+            <div className="flex items-center justify-between border-b border-[#134E5E] pb-4">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#2ecc71]">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#0D6F73]">
                   Scenario Breakdown: {selectedScenario.categoryLabel}
                 </span>
                 <h3 className="text-xl sm:text-2xl font-extrabold text-white font-headline">
@@ -525,7 +525,7 @@ export function ImageStreamHero() {
               </div>
               <button
                 onClick={() => setSelectedScenario(null)}
-                className="p-2 rounded-xl neumorph-pill-green text-[#a3d9b1] hover:text-white cursor-pointer"
+                className="p-2 rounded-xl neumorph-pill-green text-[#84BABF] hover:text-white cursor-pointer"
               >
                 <X className="size-5" />
               </button>
@@ -546,10 +546,10 @@ export function ImageStreamHero() {
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <p className="text-xs text-[#a3d9b1] leading-relaxed">
+                <p className="text-xs text-[#84BABF] leading-relaxed">
                   {selectedScenario.trap.problem}
                 </p>
-                <ul className="space-y-2 pt-2 border-t border-[#4a2828]/60">
+                <ul className="space-y-2 pt-2 border-t border-[#3a1a1a]/60">
                   {selectedScenario.trap.details.map((pt, i) => (
                     <li key={i} className="flex items-start gap-2 text-xs text-red-200">
                       <XCircle className="size-3.5 text-red-400 shrink-0 mt-0.5" />
@@ -561,11 +561,11 @@ export function ImageStreamHero() {
 
               {/* Smart Side */}
               <div className="neumorph-card-green p-5 space-y-4">
-                <div className="flex items-center gap-2 text-[#2ecc71] font-bold text-base">
-                  <CheckCircle2 className="size-5" />
+                <div className="flex items-center gap-2 text-[#84BABF] font-bold text-base">
+                  <CheckCircle2 className="size-5 text-[#0D6F73]" />
                   <h4>{selectedScenario.smart.title}</h4>
                 </div>
-                <div className="aspect-video rounded-xl overflow-hidden border border-[#2d4a35]">
+                <div className="aspect-video rounded-xl overflow-hidden border border-[#134E5E]">
                   <img
                     src={selectedScenario.smart.image}
                     alt={selectedScenario.smart.title}
@@ -575,10 +575,10 @@ export function ImageStreamHero() {
                 <p className="text-xs text-white leading-relaxed">
                   {selectedScenario.smart.solution}
                 </p>
-                <ul className="space-y-2 pt-2 border-t border-[#2d4a35]">
+                <ul className="space-y-2 pt-2 border-t border-[#134E5E]">
                   {selectedScenario.smart.details.map((pt, i) => (
-                    <li key={i} className="flex items-start gap-2 text-xs text-[#a3d9b1]">
-                      <Check className="size-3.5 text-[#2ecc71] shrink-0 mt-0.5" />
+                    <li key={i} className="flex items-start gap-2 text-xs text-[#84BABF]">
+                      <Check className="size-3.5 text-[#0D6F73] shrink-0 mt-0.5" />
                       <span>{pt}</span>
                     </li>
                   ))}
@@ -587,8 +587,8 @@ export function ImageStreamHero() {
             </div>
 
             {/* Modal Bottom Action */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-[#2d4a35]">
-              <p className="text-xs text-[#6b8c73]">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-[#134E5E]">
+              <p className="text-xs text-[#84BABF]">
                 Ready to experience Kenya without tourist traps?
               </p>
               <div className="flex gap-3 w-full sm:w-auto">
@@ -605,7 +605,7 @@ export function ImageStreamHero() {
                   onClick={() => setSelectedScenario(null)}
                   className="w-full sm:w-auto px-6 py-2.5 neumorph-btn-secondary text-xs font-bold rounded-xl flex items-center justify-center gap-1.5"
                 >
-                  <Compass className="size-3.5 text-[#2ecc71]" />
+                  <Compass className="size-3.5 text-[#0D6F73]" />
                   Explore Tours
                 </Link>
               </div>

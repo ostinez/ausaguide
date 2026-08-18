@@ -1,21 +1,24 @@
-/* ── Image Stream Corridor Hero: 3D Perspective & Green Neumorphism ── */
+/* ── Image Stream Corridor Hero: 3D Perspective & Ausaguide Deep Teal Silk ── */
+
+/*
+  Site Brand Palette (must match index.css / :root theme):
+  --color-brand:       #0D6F73  ← primary teal action
+  --color-brand-deep:  #06363D  ← darkest bg / section base
+  --color-brand-silk:  #0B3037  ← card bg / elevated surface
+  --color-carbon:      #0B3037  ← same as silk
+  --color-carbon-light:#134E5E  ← lighter card / border
+  --color-brand-light: #84BABF  ← light teal / secondary text
+  --color-brand-ice:   #E0EDE9  ← very light ice for highlights
+*/
 
 @keyframes corridorScrollUp {
-  0% {
-    transform: translateY(0);
-  }
-  100% {
-    transform: translateY(-50%);
-  }
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(-50%); }
 }
 
 @keyframes corridorScrollDown {
-  0% {
-    transform: translateY(-50%);
-  }
-  100% {
-    transform: translateY(0);
-  }
+  0%   { transform: translateY(-50%); }
+  100% { transform: translateY(0); }
 }
 
 .corridor-container {
@@ -52,104 +55,105 @@
   animation-play-state: paused;
 }
 
-/* Green Neumorphic Card Styling (Apple Tactile Depth) */
+/* ── Teal Neumorphic Cards (Ausaguide Smart Way) ── */
 .neumorph-card-green {
-  background-color: #1d3d24;
-  border: 1px solid #2d4a35;
-  box-shadow: 8px 8px 20px #05120a, -6px -6px 16px #13331a;
+  background-color: #0B3037;
+  border: 1px solid #134E5E;
+  box-shadow: 8px 8px 20px #030f12, -6px -6px 16px #0e3b43;
   border-radius: 1.25rem;
   transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s ease;
 }
 
 .neumorph-card-green:hover {
   transform: translateY(-4px) scale(1.02);
-  box-shadow: 12px 12px 28px #05120a, -8px -8px 22px #184221;
+  box-shadow: 12px 12px 28px #030f12, -8px -8px 22px #134E5E;
 }
 
+/* ── Trap Cards (Tourist Trap side, keep danger red contrast) ── */
 .neumorph-card-trap {
-  background-color: #1c2b1e;
+  background-color: #0e2428;
   border: 1px solid #4a2828;
-  box-shadow: 8px 8px 20px #05120a, -6px -6px 16px #13331a;
+  box-shadow: 8px 8px 20px #030f12, -6px -6px 16px #0B3037;
   border-radius: 1.25rem;
   transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s ease;
 }
 
 .neumorph-card-trap:hover {
   transform: translateY(-4px) scale(1.02);
-  box-shadow: 12px 12px 28px #05120a, -8px -8px 22px #2d1818;
+  box-shadow: 12px 12px 28px #030f12, -8px -8px 22px #2d1818;
   border-color: #ef4444;
 }
 
+/* ── Teal Pill / Filter Tag ── */
 .neumorph-pill-green {
-  background-color: #13331a;
-  border: 1px solid #2d4a35;
-  box-shadow: 4px 4px 10px #05120a, -3px -3px 8px #1d3d24;
+  background-color: #0B3037;
+  border: 1px solid #134E5E;
+  box-shadow: 4px 4px 10px #030f12, -3px -3px 8px #0e3b43;
 }
 
+/* ── Primary Teal CTA Button ── */
 .neumorph-btn-emerald {
-  background-color: #2ecc71;
+  background-color: #0D6F73;
   color: #ffffff;
-  box-shadow: 5px 5px 14px #05120a, -4px -4px 12px #184221;
+  box-shadow: 5px 5px 14px #030f12, -4px -4px 12px #0e3b43;
   transition: all 0.2s ease;
 }
 
 .neumorph-btn-emerald:hover {
-  background-color: #27ae60;
-  box-shadow: 3px 3px 8px #05120a, -2px -2px 6px #184221;
+  background-color: #0b5f63;
+  box-shadow: 3px 3px 8px #030f12, -2px -2px 6px #0e3b43;
   transform: translateY(-1px);
 }
 
 .neumorph-btn-emerald:active {
-  box-shadow: inset 3px 3px 6px #1b683a, inset -3px -3px 6px #34d97b;
+  box-shadow: inset 3px 3px 6px #052224, inset -3px -3px 6px #14888d;
   transform: translateY(1px);
 }
 
+/* ── Secondary Outlined Button ── */
 .neumorph-btn-secondary {
-  background-color: #1d3d24;
-  color: #ffffff;
-  border: 1px solid #2d4a35;
-  box-shadow: 5px 5px 14px #05120a, -4px -4px 10px #13331a;
+  background-color: #0B3037;
+  color: #E0EDE9;
+  border: 1px solid #134E5E;
+  box-shadow: 5px 5px 14px #030f12, -4px -4px 10px #0e3b43;
   transition: all 0.2s ease;
 }
 
 .neumorph-btn-secondary:hover {
-  background-color: #244b2d;
-  border-color: #3e6849;
+  background-color: #134E5E;
+  border-color: #0D6F73;
   transform: translateY(-1px);
 }
 
 .neumorph-btn-secondary:active {
-  box-shadow: inset 3px 3px 6px #0d1e11, inset -3px -3px 6px #244b2d;
+  box-shadow: inset 3px 3px 6px #030f12, inset -3px -3px 6px #134E5E;
   transform: translateY(1px);
 }
 
+/* ── Filter Tab Active (Teal) ── */
 .neumorph-tab-active {
-  background-color: #2ecc71;
-  color: #0a1f0e;
+  background-color: #0D6F73;
+  color: #ffffff;
   font-weight: 700;
-  box-shadow: inset 2px 2px 4px rgba(0,0,0,0.2), 0 2px 8px rgba(46, 204, 113, 0.4);
+  box-shadow: inset 2px 2px 4px rgba(0,0,0,0.3), 0 2px 8px rgba(13, 111, 115, 0.45);
 }
 
+/* ── Filter Tab Inactive ── */
 .neumorph-tab-inactive {
-  background-color: #13331a;
-  color: #a3d9b1;
-  border: 1px solid #2d4a35;
-  box-shadow: 3px 3px 8px #05120a, -2px -2px 6px #1d3d24;
+  background-color: #0B3037;
+  color: #84BABF;
+  border: 1px solid #134E5E;
+  box-shadow: 3px 3px 8px #030f12, -2px -2px 6px #0e3b43;
 }
 
 .neumorph-tab-inactive:hover {
-  background-color: #1a4223;
-  color: #ffffff;
+  background-color: #134E5E;
+  color: #E0EDE9;
 }
 
+/* ── Mobile: remove 3D perspective for performance ── */
 @media (max-width: 768px) {
-  .corridor-rail-left {
-    transform: none;
-  }
-  .corridor-rail-right {
-    transform: none;
-  }
-  .corridor-container {
-    perspective: none;
-  }
+  .corridor-rail-left  { transform: none; }
+  .corridor-rail-right { transform: none; }
+  .corridor-container  { perspective: none; }
 }

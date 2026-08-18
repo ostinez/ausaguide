@@ -66,7 +66,7 @@ export default function Home() {
           }
         }}
       />
-      <div id="hero" className="w-full bg-[#0a1f0e]">
+      <div id="hero" className="w-full bg-[#06363D]">
         <HeroSection />
       </div>
 
