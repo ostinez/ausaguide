@@ -1,0 +1,155 @@
+/* ── Image Stream Corridor Hero: 3D Perspective & Green Neumorphism ── */
+
+@keyframes corridorScrollUp {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+@keyframes corridorScrollDown {
+  0% {
+    transform: translateY(-50%);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.corridor-container {
+  perspective: 1200px;
+  perspective-origin: 50% 50%;
+  transform-style: preserve-3d;
+  container-type: inline-size;
+}
+
+.corridor-rail-left {
+  transform: rotateY(12deg) rotateX(4deg) translateZ(0);
+  transform-style: preserve-3d;
+}
+
+.corridor-rail-right {
+  transform: rotateY(-12deg) rotateX(4deg) translateZ(0);
+  transform-style: preserve-3d;
+}
+
+.corridor-scroll-up {
+  animation: corridorScrollUp 40s linear infinite;
+  will-change: transform;
+}
+
+.corridor-scroll-down {
+  animation: corridorScrollDown 40s linear infinite;
+  will-change: transform;
+}
+
+.corridor-container:hover .corridor-scroll-up,
+.corridor-container:hover .corridor-scroll-down,
+.corridor-paused .corridor-scroll-up,
+.corridor-paused .corridor-scroll-down {
+  animation-play-state: paused;
+}
+
+/* Green Neumorphic Card Styling (Apple Tactile Depth) */
+.neumorph-card-green {
+  background-color: #1d3d24;
+  border: 1px solid #2d4a35;
+  box-shadow: 8px 8px 20px #05120a, -6px -6px 16px #13331a;
+  border-radius: 1.25rem;
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s ease;
+}
+
+.neumorph-card-green:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 12px 12px 28px #05120a, -8px -8px 22px #184221;
+}
+
+.neumorph-card-trap {
+  background-color: #1c2b1e;
+  border: 1px solid #4a2828;
+  box-shadow: 8px 8px 20px #05120a, -6px -6px 16px #13331a;
+  border-radius: 1.25rem;
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s ease;
+}
+
+.neumorph-card-trap:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 12px 12px 28px #05120a, -8px -8px 22px #2d1818;
+  border-color: #ef4444;
+}
+
+.neumorph-pill-green {
+  background-color: #13331a;
+  border: 1px solid #2d4a35;
+  box-shadow: 4px 4px 10px #05120a, -3px -3px 8px #1d3d24;
+}
+
+.neumorph-btn-emerald {
+  background-color: #2ecc71;
+  color: #ffffff;
+  box-shadow: 5px 5px 14px #05120a, -4px -4px 12px #184221;
+  transition: all 0.2s ease;
+}
+
+.neumorph-btn-emerald:hover {
+  background-color: #27ae60;
+  box-shadow: 3px 3px 8px #05120a, -2px -2px 6px #184221;
+  transform: translateY(-1px);
+}
+
+.neumorph-btn-emerald:active {
+  box-shadow: inset 3px 3px 6px #1b683a, inset -3px -3px 6px #34d97b;
+  transform: translateY(1px);
+}
+
+.neumorph-btn-secondary {
+  background-color: #1d3d24;
+  color: #ffffff;
+  border: 1px solid #2d4a35;
+  box-shadow: 5px 5px 14px #05120a, -4px -4px 10px #13331a;
+  transition: all 0.2s ease;
+}
+
+.neumorph-btn-secondary:hover {
+  background-color: #244b2d;
+  border-color: #3e6849;
+  transform: translateY(-1px);
+}
+
+.neumorph-btn-secondary:active {
+  box-shadow: inset 3px 3px 6px #0d1e11, inset -3px -3px 6px #244b2d;
+  transform: translateY(1px);
+}
+
+.neumorph-tab-active {
+  background-color: #2ecc71;
+  color: #0a1f0e;
+  font-weight: 700;
+  box-shadow: inset 2px 2px 4px rgba(0,0,0,0.2), 0 2px 8px rgba(46, 204, 113, 0.4);
+}
+
+.neumorph-tab-inactive {
+  background-color: #13331a;
+  color: #a3d9b1;
+  border: 1px solid #2d4a35;
+  box-shadow: 3px 3px 8px #05120a, -2px -2px 6px #1d3d24;
+}
+
+.neumorph-tab-inactive:hover {
+  background-color: #1a4223;
+  color: #ffffff;
+}
+
+@media (max-width: 768px) {
+  .corridor-rail-left {
+    transform: none;
+  }
+  .corridor-rail-right {
+    transform: none;
+  }
+  .corridor-container {
+    perspective: none;
+  }
+}
