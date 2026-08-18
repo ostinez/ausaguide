@@ -1,17 +1,17 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { useSearchParams, useNavigate, useParams } from "react-router-dom"
 import {
   MessageSquare,
   ArrowLeft,
   Video,
-  Plus,
   Info,
   Loader2,
+  CalendarDays,
+  MapPin,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ChatWindow } from "@/components/chat/ChatWindow"
-import { NewConversationModal } from "@/components/chat/NewConversationModal"
 import { JournalButton } from "@/components/chat/JournalButton"
 import { useConversations } from "@/hooks/useConversations"
 import { useRealtimePresence } from "@/lib/hooks/useRealtimePresence"
@@ -19,6 +19,7 @@ import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { createGeneralDailyRoom } from "@/lib/api/daily"
+import { Link } from "react-router-dom"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -38,11 +39,7 @@ function initials(name: string) {
 
 // ─── Empty State ─────────────────────────────────────────────────────────────
 
-interface EmptyConversationPaneProps {
-  onNewChat?: () => void
-}
-
-function EmptyConversationPane({ onNewChat }: EmptyConversationPaneProps) {
+function EmptyConversationPane({ userRole }: { userRole?: string }) {
   return (
     <div className="flex flex-col items-center justify-center h-full gap-5 text-center px-8 select-none">
       <div className="size-24 rounded-3xl bg-gradient-to-br from-primary/20 to-brand-light/10 border border-primary/20 flex items-center justify-center shadow-modern">
@@ -51,22 +48,12 @@ function EmptyConversationPane({ onNewChat }: EmptyConversationPaneProps) {
       <div className="space-y-2">
         <h2 className="text-xl font-bold text-foreground">Your messages</h2>
         <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
-          Select a conversation or start a new chat with a local host or guide.
+          Conversations appear here after a host accepts your booking request.
         </p>
       </div>
 
-      {onNewChat && (
-        <Button
-          onClick={onNewChat}
-          className="rounded-full px-6 py-3 font-bold gap-2 shadow-modern-glow min-h-[44px]"
-        >
-          <Plus className="size-4" />
-          <span>+ Start New Chat</span>
-        </Button>
-      )}
-
       <div className="flex flex-wrap gap-2 justify-center text-xs text-muted-foreground pt-2">
-        {["🌍 Book an experience", "📸 Share photos", "✅ Confirm bookings"].map((t) => (
+        {["📅 Book a tour", "✅ Host accepts", "💬 Chat opens"].map((t) => (
           <span
             key={t}
             className="px-3 py-1.5 rounded-full bg-muted/60 border border-border/60 font-medium"
@@ -75,10 +62,33 @@ function EmptyConversationPane({ onNewChat }: EmptyConversationPaneProps) {
           </span>
         ))}
       </div>
+
+      {userRole === "traveler" && (
+        <Link
+          to="/tours"
+          className="mt-2 inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90 transition-all shadow-modern-glow min-h-[44px]"
+        >
+          Browse Tours
+        </Link>
+      )}
     </div>
   )
 }
 
+// ─── No Conversation Selected ─────────────────────────────────────────────────
+
+function NoChatSelected() {
+  return (
+    <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-8 select-none">
+      <div className="size-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+        <MessageSquare className="size-8 text-primary/50" />
+      </div>
+      <p className="text-sm text-muted-foreground max-w-xs">
+        Select a conversation to start messaging.
+      </p>
+    </div>
+  )
+}
 
 // ─── Chat Header ─────────────────────────────────────────────────────────────
 
@@ -88,10 +98,13 @@ interface ChatHeaderProps {
   hostTier?: string | null
   isOnline: boolean
   isTyping: boolean
+  tourName?: string | null
+  bookingDate?: string | null
   onBack: () => void
   onVideoCall: () => void
   onViewProfile: () => void
   showBack: boolean
+  hostName: string
 }
 
 function ChatHeader({
@@ -100,10 +113,13 @@ function ChatHeader({
   hostTier,
   isOnline,
   isTyping,
+  tourName,
+  bookingDate,
   onBack,
   onVideoCall,
   onViewProfile,
   showBack,
+  hostName,
 }: ChatHeaderProps) {
   return (
     <div className="flex items-center gap-3 px-4 py-3 border-b border-border/60 bg-card shrink-0 shadow-modern">
@@ -153,26 +169,42 @@ function ChatHeader({
               </span>
             )}
           </div>
-          <p className="text-[11px] text-muted-foreground leading-tight">
-            {isTyping ? (
-              <span className="text-primary font-medium">
-                typing
-                <span className="animate-bounce inline-block ml-0.5">.</span>
-                <span className="animate-bounce inline-block delay-100">.</span>
-                <span className="animate-bounce inline-block delay-200">.</span>
-              </span>
-            ) : isOnline ? (
-              <span className="text-emerald-500 font-medium">Active now</span>
-            ) : (
-              "Direct Message"
-            )}
-          </p>
+
+          {/* Booking context pill */}
+          {tourName ? (
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <MapPin className="size-2.5 shrink-0" />
+              <span className="truncate max-w-[180px]">{tourName}</span>
+              {bookingDate && (
+                <>
+                  <span className="text-border">·</span>
+                  <CalendarDays className="size-2.5 shrink-0" />
+                  <span>{new Date(bookingDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                </>
+              )}
+            </div>
+          ) : (
+            <p className="text-[11px] text-muted-foreground leading-tight">
+              {isTyping ? (
+                <span className="text-primary font-medium">
+                  typing
+                  <span className="animate-bounce inline-block ml-0.5">.</span>
+                  <span className="animate-bounce inline-block delay-100">.</span>
+                  <span className="animate-bounce inline-block delay-200">.</span>
+                </span>
+              ) : isOnline ? (
+                <span className="text-emerald-500 font-medium">Active now</span>
+              ) : (
+                "Confirmed Booking"
+              )}
+            </p>
+          )}
         </div>
       </button>
 
       <div className="flex items-center gap-1 shrink-0">
         <JournalButton
-          hostName={name}
+          hostName={hostName}
           variant="ghost"
           className="h-9 px-2.5 sm:px-3 text-xs"
           showText={true}
@@ -344,20 +376,17 @@ export default function MessagesPage() {
   const navigate = useNavigate()
 
   const preselectedConvId = routeConvId || searchParams.get("conversationId") || searchParams.get("chatId") || ""
-  const paramHostId = searchParams.get("hostId") || searchParams.get("userId") || ""
-  const paramBookingId = searchParams.get("bookingId") || ""
 
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
   const [selectedConvId, setSelectedConvId] = useState<string>(preselectedConvId)
   const [searchQuery, setSearchQuery] = useState("")
   const [mobileView, setMobileView] = useState<"list" | "chat">(
-    preselectedConvId || paramHostId || paramBookingId ? "chat" : "list"
+    preselectedConvId ? "chat" : "list"
   )
   const [showProfile, setShowProfile] = useState(false)
-  const [showNewChatModal, setShowNewChatModal] = useState(false)
   const [otherTyping] = useState(false)
 
-
+  // Load the authenticated user
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return
@@ -373,66 +402,31 @@ export default function MessagesPage() {
     })
   }, [])
 
-  const { conversations, loading: convsLoading, createOrGetConversation } =
-    useConversations(authUser?.id ?? null)
-
+  const { conversations, loading: convsLoading } = useConversations(authUser?.id ?? null)
   const { isUserOnline } = useRealtimePresence(authUser?.id ?? null)
 
-  const resolveDeepLink = useCallback(async () => {
-    if (!authUser?.id) return
-    if (!paramHostId && !paramBookingId) return
-
-    let targetUserId = paramHostId
-    if (!targetUserId && paramBookingId) {
-      const { data: bData } = await supabase
-        .from("bookings")
-        .select("host_id, guest_id")
-        .eq("id", paramBookingId)
-        .maybeSingle()
-      if (bData) {
-        targetUserId = bData.host_id === authUser.id ? bData.guest_id : bData.host_id
-      }
-    }
-
-    if (targetUserId && targetUserId !== authUser.id) {
-      const convId = await createOrGetConversation(targetUserId)
-      if (convId) {
-        setSelectedConvId(convId)
-        setMobileView("chat")
-      }
-    }
-  }, [authUser?.id, paramHostId, paramBookingId, createOrGetConversation])
-
+  // Auto-select first conversation when list loads
   useEffect(() => {
-    resolveDeepLink()
-  }, [resolveDeepLink])
-
-  useEffect(() => {
-    if (!selectedConvId && conversations.length > 0 && !paramHostId && !paramBookingId) {
+    if (!selectedConvId && conversations.length > 0) {
       setSelectedConvId(conversations[0].id)
     }
-  }, [conversations, selectedConvId, paramHostId, paramBookingId])
+  }, [conversations, selectedConvId])
+
+  // Auto-select from URL param if matched
+  useEffect(() => {
+    if (preselectedConvId && conversations.some(c => c.id === preselectedConvId)) {
+      setSelectedConvId(preselectedConvId)
+      setMobileView("chat")
+    }
+  }, [preselectedConvId, conversations])
 
   const selectedConv = conversations.find((c) => c.id === selectedConvId)
-
-  const handleStartHostChat = async (hostId: string) => {
-    if (!authUser?.id) return
-    const convId = await createOrGetConversation(hostId)
-    if (convId) {
-      setSelectedConvId(convId)
-      setMobileView("chat")
-      setShowProfile(false)
-      navigate(`/messages/${convId}`)
-    }
-  }
 
   const handleSelectConversation = (convId: string) => {
     setSelectedConvId(convId)
     setMobileView("chat")
     setShowProfile(false)
-    if (paramHostId || paramBookingId || preselectedConvId) {
-      navigate("/messages", { replace: true })
-    }
+    navigate(`/messages/${convId}`, { replace: true })
   }
 
   const handleBack = () => {
@@ -469,7 +463,8 @@ export default function MessagesPage() {
 
   return (
     <div className="flex h-[calc(100vh-4rem)] bg-background overflow-hidden pt-16">
-      {/* ── Conversation Sidebar ─────────────────────────────────────────── */}
+
+      {/* ── Conversation Sidebar ───────────────────────────────────────── */}
       <aside
         className={cn(
           "w-full md:w-[320px] xl:w-[360px] shrink-0",
@@ -486,20 +481,9 @@ export default function MessagesPage() {
             </div>
             <h1 className="text-lg font-bold text-foreground tracking-tight">Messages</h1>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              onClick={() => setShowNewChatModal(true)}
-              className="rounded-full text-xs font-bold gap-1 px-3 h-8 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm min-h-[32px]"
-              title="Start New Conversation"
-            >
-              <Plus className="size-3.5" />
-              <span>New Chat</span>
-            </Button>
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-muted text-muted-foreground border border-border/60">
-              {conversations.length}
-            </span>
-          </div>
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-muted text-muted-foreground border border-border/60">
+            {conversations.length}
+          </span>
         </div>
 
         {/* Search */}
@@ -535,25 +519,26 @@ export default function MessagesPage() {
               <MessageSquare className="size-12 text-muted-foreground/30" />
               <div>
                 <p className="text-sm font-semibold text-foreground">No conversations yet</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Start chatting by clicking "+ New Chat" or visiting a host profile.
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  Book a tour and once the host accepts, your chat will appear here.
                 </p>
               </div>
-              <Button
-                size="sm"
-                onClick={() => setShowNewChatModal(true)}
-                className="rounded-full font-bold gap-1.5 px-4 h-9 min-h-[36px]"
-              >
-                <Plus className="size-4" />
-                <span>Start New Chat</span>
-              </Button>
+              {authUser.role === "traveler" && (
+                <Link
+                  to="/tours"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground font-bold text-xs hover:bg-primary/90 transition min-h-[36px]"
+                >
+                  Explore Tours
+                </Link>
+              )}
             </div>
           ) : (
             conversations
               .filter(
                 (c) =>
                   (c.other?.full_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  (c.last_message || "").toLowerCase().includes(searchQuery.toLowerCase())
+                  (c.last_message || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  (c.tourName || "").toLowerCase().includes(searchQuery.toLowerCase())
               )
               .map((conv) => {
                 const isSelected = conv.id === selectedConvId
@@ -620,6 +605,15 @@ export default function MessagesPage() {
                           </span>
                         )}
                       </div>
+
+                      {/* Tour context */}
+                      {conv.tourName && (
+                        <p className="text-[10px] text-primary/80 font-medium truncate mb-0.5 flex items-center gap-1">
+                          <MapPin className="size-2.5 shrink-0" />
+                          {conv.tourName}
+                        </p>
+                      )}
+
                       <p
                         className={cn(
                           "text-xs truncate leading-tight",
@@ -634,19 +628,6 @@ export default function MessagesPage() {
               })
           )}
         </div>
-
-        {/* Footer CTA */}
-        <div className="px-3 py-3 border-t border-border/60 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full gap-2 rounded-xl text-muted-foreground border-dashed hover:border-primary/50 hover:text-primary hover:bg-primary/5 min-h-[44px]"
-            onClick={() => setShowNewChatModal(true)}
-          >
-            <Plus className="size-3.5" />
-            <span className="text-xs font-semibold">Start New Conversation</span>
-          </Button>
-        </div>
       </aside>
 
       {/* ── Main Chat Panel ──────────────────────────────────────────────── */}
@@ -658,7 +639,9 @@ export default function MessagesPage() {
         )}
       >
         {!selectedConvId || !selectedConv ? (
-          <EmptyConversationPane onNewChat={() => setShowNewChatModal(true)} />
+          conversations.length > 0
+            ? <NoChatSelected />
+            : <EmptyConversationPane userRole={authUser.role} />
         ) : (
           <div className="flex flex-col h-full min-h-0">
             <ChatHeader
@@ -667,10 +650,13 @@ export default function MessagesPage() {
               hostTier={selectedConv.other.host_tier}
               isOnline={isUserOnline(selectedConv.other.id)}
               isTyping={otherTyping}
+              tourName={selectedConv.tourName}
+              bookingDate={selectedConv.bookingDate}
               onBack={handleBack}
               onVideoCall={handleVideoCall}
               onViewProfile={() => setShowProfile((v) => !v)}
               showBack={mobileView === "chat"}
+              hostName={selectedConv.other.full_name}
             />
 
             <div className="flex flex-1 min-h-0 overflow-hidden">
@@ -704,15 +690,6 @@ export default function MessagesPage() {
           </div>
         )}
       </main>
-
-      {/* New Conversation Modal */}
-      <NewConversationModal
-        isOpen={showNewChatModal}
-        onClose={() => setShowNewChatModal(false)}
-        onSelectHost={handleStartHostChat}
-        currentUserId={authUser?.id ?? null}
-      />
     </div>
   )
 }
-

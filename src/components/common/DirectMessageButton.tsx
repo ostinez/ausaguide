@@ -1,8 +1,14 @@
+/**
+ * DirectMessageButton
+ *
+ * Navigates the user to the Messages page.
+ * Chat is only available after a host accepts a booking.
+ * This button redirects to /messages so users can see their confirmed booking chats.
+ */
 import { useState, useEffect } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { MessageSquare, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useConversations } from "@/hooks/useConversations"
 import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
@@ -23,7 +29,6 @@ export interface DirectMessageButtonProps {
 export function DirectMessageButton({
   hostId,
   hostName,
-  tourId,
   bookingId,
   className,
   variant = "outline",
@@ -35,7 +40,7 @@ export function DirectMessageButton({
   const navigate = useNavigate()
   const location = useLocation()
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
-  const [isStartingChat, setIsStartingChat] = useState(false)
+  const [isNavigating, setIsNavigating] = useState(false)
 
   // Fetch authenticated user ID
   useEffect(() => {
@@ -51,8 +56,6 @@ export function DirectMessageButton({
       subscription.unsubscribe()
     }
   }, [])
-
-  const { createOrGetConversation } = useConversations(currentUserId)
 
   // Hide button if current user is the host themselves or if hostId is missing
   if (!hostId || (currentUserId && currentUserId === hostId)) {
@@ -74,34 +77,18 @@ export function DirectMessageButton({
       return
     }
 
-    setIsStartingChat(true)
+    setIsNavigating(true)
     try {
-      const conversationId = await createOrGetConversation(hostId)
-
-      if (!conversationId) {
-        // Fallback: navigate to messages with hostId search param if direct ID generation fails
-        let targetUrl = `/messages?hostId=${hostId}`
-        if (tourId) targetUrl += `&tourId=${tourId}`
-        if (bookingId) targetUrl += `&bookingId=${bookingId}`
-        navigate(targetUrl)
+      // If there's a specific booking, link to that conversation
+      if (bookingId) {
+        navigate(`/messages?bookingId=${bookingId}`)
         return
       }
 
-      // Navigate to dedicated message conversation route
-      let targetUrl = `/messages/${conversationId}`
-      const params = new URLSearchParams()
-      if (tourId) params.set("tourId", tourId)
-      if (bookingId) params.set("bookingId", bookingId)
-      if (params.toString()) {
-        targetUrl += `?${params.toString()}`
-      }
-
-      navigate(targetUrl)
-    } catch (err: any) {
-      console.error("[DirectMessageButton] Failed to start conversation:", err)
-      toast.error(err.message || "Failed to start chat. Please try again.")
+      // Otherwise go to messages and show the empty state guidance
+      navigate("/messages")
     } finally {
-      setIsStartingChat(false)
+      setIsNavigating(false)
     }
   }
 
@@ -111,7 +98,7 @@ export function DirectMessageButton({
       <button
         type="button"
         onClick={handleClick}
-        disabled={isStartingChat}
+        disabled={isNavigating}
         title={resolvedTooltip}
         aria-label={resolvedTooltip}
         className={cn(
@@ -119,7 +106,7 @@ export function DirectMessageButton({
           className
         )}
       >
-        {isStartingChat ? (
+        {isNavigating ? (
           <Loader2 className="size-4 animate-spin text-primary" />
         ) : (
           <MessageSquare className="size-4 text-primary" />
@@ -134,7 +121,7 @@ export function DirectMessageButton({
       <button
         type="button"
         onClick={handleClick}
-        disabled={isStartingChat}
+        disabled={isNavigating}
         title={resolvedTooltip}
         aria-label={resolvedTooltip}
         className={cn(
@@ -142,7 +129,7 @@ export function DirectMessageButton({
           className
         )}
       >
-        {isStartingChat ? (
+        {isNavigating ? (
           <Loader2 className="size-3.5 animate-spin" />
         ) : (
           <MessageSquare className="size-3.5" />
@@ -159,7 +146,7 @@ export function DirectMessageButton({
       variant={variant === "outline" ? "outline" : variant === "ghost" ? "ghost" : variant === "secondary" ? "secondary" : "default"}
       size={size || "sm"}
       onClick={handleClick}
-      disabled={isStartingChat}
+      disabled={isNavigating}
       title={resolvedTooltip}
       aria-label={resolvedTooltip}
       className={cn(
@@ -168,7 +155,7 @@ export function DirectMessageButton({
         className
       )}
     >
-      {isStartingChat ? (
+      {isNavigating ? (
         <Loader2 className="size-4 animate-spin" />
       ) : (
         <MessageSquare className="size-4" />

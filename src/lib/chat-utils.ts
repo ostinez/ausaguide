@@ -1,20 +1,37 @@
 // ============================================================
-// Chat Utilities
+// Chat Utilities — Booking-based chat only
+// Conversations are ONLY created when a host accepts a booking.
 // ============================================================
 
 import { supabase } from "./supabase"
 
 /**
- * Find or create a conversation thread for a booking / participants
+ * Find or create a conversation thread for a CONFIRMED booking.
+ * This is called by acceptBooking() in booking-utils.ts.
+ * Stores the booking_id on the conversation so the messages page
+ * can show booking context (tour name, date).
  */
 export async function findOrCreateChat(
-  _bookingId: string,
+  bookingId: string,
   travelerId: string,
   hostId: string
 ): Promise<string> {
   const [pA, pB] = [travelerId, hostId].sort()
 
-  // 1. Check if conversation already exists between participants
+  // 1. Check if a conversation already exists for this booking
+  if (bookingId) {
+    const { data: byBooking } = await supabase
+      .from("conversations")
+      .select("id")
+      .eq("booking_id", bookingId)
+      .maybeSingle()
+
+    if (byBooking?.id) {
+      return byBooking.id
+    }
+  }
+
+  // 2. Check if a conversation already exists between participants (legacy)
   const { data: existingConv } = await supabase
     .from("conversations")
     .select("id")
@@ -22,18 +39,32 @@ export async function findOrCreateChat(
     .maybeSingle()
 
   if (existingConv?.id) {
+    // Attach booking_id to the existing conversation if not already set
+    if (bookingId) {
+      await supabase
+        .from("conversations")
+        .update({ booking_id: bookingId })
+        .eq("id", existingConv.id)
+        .is("booking_id", null)
+    }
     return existingConv.id
   }
 
-  // 2. Create new conversation thread
+  // 3. Create new conversation thread with booking_id
+  const insertPayload: Record<string, any> = {
+    participant_a: pA,
+    participant_b: pB,
+    last_message: "Booking confirmed — start chatting!",
+    last_message_at: new Date().toISOString(),
+  }
+
+  if (bookingId) {
+    insertPayload.booking_id = bookingId
+  }
+
   const { data: newConv, error } = await supabase
     .from("conversations")
-    .insert({
-      participant_a: pA,
-      participant_b: pB,
-      last_message: "New booking request",
-      last_message_at: new Date().toISOString(),
-    })
+    .insert(insertPayload)
     .select("id")
     .single()
 
@@ -44,19 +75,10 @@ export async function findOrCreateChat(
   return newConv.id
 }
 
-/**
- * Find or create a direct chat between traveler and host (without requiring a booking)
- */
-export async function findOrCreateDirectChat(
-  travelerId: string,
-  hostId: string
-): Promise<string> {
-  return findOrCreateChat("", travelerId, hostId)
-}
-
 
 /**
- * Send a system message to a conversation thread
+ * Send a system message to a conversation thread.
+ * Used for booking_request, booking_confirmed, booking_declined cards.
  */
 export async function sendSystemMessage(
   chatId: string,

@@ -1,3 +1,10 @@
+/**
+ * useConversations
+ *
+ * Loads conversations that are tied to CONFIRMED bookings only.
+ * No direct messaging, no free-form "New Chat" creation.
+ * A conversation only exists because a host accepted a booking.
+ */
 import { useState, useEffect, useCallback, useRef } from "react"
 import { supabase } from "@/lib/supabase"
 
@@ -18,6 +25,10 @@ export interface ConversationItem {
   created_at: string
   other: Participant
   unreadCount: number
+  // Booking context
+  bookingId?: string | null
+  tourName?: string | null
+  bookingDate?: string | null
 }
 
 export function useConversations(currentUserId: string | null) {
@@ -33,22 +44,47 @@ export function useConversations(currentUserId: string | null) {
 
     setLoading(true)
     setError(null)
+
     try {
+      // 1. Load conversations joined with confirmed booking context
+      //    A conversation is only valid if it has a confirmed booking
       const { data: convRows, error: convErr } = await supabase
         .from("conversations")
-        .select("id, participant_a, participant_b, last_message, last_message_at, created_at")
+        .select(`
+          id,
+          participant_a,
+          participant_b,
+          last_message,
+          last_message_at,
+          created_at,
+          booking_id,
+          bookings!conversations_booking_id_fkey(
+            id,
+            status,
+            booking_date,
+            tour:tours(title)
+          )
+        `)
         .or(`participant_a.eq.${currentUserId},participant_b.eq.${currentUserId}`)
         .order("last_message_at", { ascending: false, nullsFirst: false })
 
       if (convErr) throw convErr
 
-      const rawRows = convRows || []
+      // 2. Filter: only keep conversations with a confirmed booking
+      //    If booking_id is null (legacy), still show it (backwards compat)
+      const validRows = (convRows || []).filter((row: any) => {
+        if (!row.booking_id) return true // legacy conversations without booking link
+        const b = row.bookings
+        return b && b.status === "confirmed"
+      })
 
+      // 3. Enrich with the other participant's profile + unread count
       const enriched: ConversationItem[] = await Promise.all(
-        rawRows.map(async (row) => {
+        validRows.map(async (row: any) => {
           const otherId =
             row.participant_a === currentUserId ? row.participant_b : row.participant_a
 
+          // Fetch the other user's profile
           let profile: any = null
           try {
             const { data } = await supabase
@@ -61,6 +97,7 @@ export function useConversations(currentUserId: string | null) {
             console.warn("[useConversations] Profile fetch notice:", pErr)
           }
 
+          // Count unread messages
           let unreadCount = 0
           try {
             const { count } = await supabase
@@ -71,8 +108,12 @@ export function useConversations(currentUserId: string | null) {
               .eq("read", false)
             unreadCount = count ?? 0
           } catch (_) {
-            // Safe fallback if count query encounters permission/column difference
+            // Safe fallback
           }
+
+          const booking = row.bookings
+          const tourTitle = booking?.tour?.title ?? null
+          const bookingDate = booking?.booking_date ?? null
 
           return {
             id: row.id,
@@ -81,6 +122,9 @@ export function useConversations(currentUserId: string | null) {
             last_message: row.last_message,
             last_message_at: row.last_message_at,
             created_at: row.created_at,
+            bookingId: row.booking_id ?? null,
+            tourName: tourTitle,
+            bookingDate,
             other: (profile as Participant) ?? {
               id: otherId,
               full_name: "Ausaguide User",
@@ -110,17 +154,15 @@ export function useConversations(currentUserId: string | null) {
 
     const topicName = `user-conversations-${currentUserId}`
 
-    // 1. Purge any pre-existing channel with this topic from Supabase client registry
+    // Clean up any pre-existing channel
     try {
       const existingChannels = supabase.getChannels()
       const existing = existingChannels.find(
         (ch) => ch.topic === `realtime:${topicName}` || ch.topic === topicName
       )
-      if (existing) {
-        supabase.removeChannel(existing)
-      }
+      if (existing) supabase.removeChannel(existing)
     } catch (e) {
-      console.warn("[useConversations] Error cleaning up pre-existing channel:", e)
+      console.warn("[useConversations] Channel cleanup notice:", e)
     }
 
     if (channelRef.current) {
@@ -130,19 +172,13 @@ export function useConversations(currentUserId: string | null) {
       channelRef.current = null
     }
 
-    // 2. Realtime channel on conversations and messages
+    // Subscribe to conversation + message changes
     const channel = supabase
       .channel(topicName)
       .on(
         "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "conversations",
-        },
-        () => {
-          loadConversations()
-        }
+        { event: "*", schema: "public", table: "conversations" },
+        () => { loadConversations() }
       )
       .on(
         "postgres_changes",
@@ -152,9 +188,18 @@ export function useConversations(currentUserId: string | null) {
           table: "messages",
           filter: `receiver_id=eq.${currentUserId}`,
         },
-        () => {
-          loadConversations()
-        }
+        () => { loadConversations() }
+      )
+      // Also listen for booking status changes (host accept auto-creates chat)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "bookings",
+          filter: `status=eq.confirmed`,
+        },
+        () => { loadConversations() }
       )
       .subscribe()
 
@@ -169,60 +214,11 @@ export function useConversations(currentUserId: string | null) {
     }
   }, [currentUserId, loadConversations])
 
-
-
-  const createOrGetConversation = useCallback(
-    async (otherUserId: string): Promise<string | null> => {
-      if (!currentUserId || !otherUserId || currentUserId === otherUserId) {
-        return null
-      }
-
-      try {
-        const [pA, pB] = [currentUserId, otherUserId].sort()
-
-        // Check if existing conversation exists
-        const { data: existing, error: findErr } = await supabase
-          .from("conversations")
-          .select("id")
-          .or(
-            `and(participant_a.eq.${pA},participant_b.eq.${pB}),and(participant_a.eq.${pB},participant_b.eq.${pA})`
-          )
-          .maybeSingle()
-
-        if (!findErr && existing) {
-          return existing.id
-        }
-
-        // Insert new conversation with sorted participant_a and participant_b
-        const { data: newConv, error: createErr } = await supabase
-          .from("conversations")
-          .insert({
-            participant_a: pA,
-            participant_b: pB,
-            last_message: "Started conversation",
-            last_message_at: new Date().toISOString(),
-          })
-          .select("id")
-          .single()
-
-        if (createErr) throw createErr
-
-        await loadConversations()
-        return newConv.id
-      } catch (err) {
-        console.error("[useConversations] Error creating/getting conversation:", err)
-        return null
-      }
-    },
-    [currentUserId, loadConversations]
-  )
-
   return {
     conversations,
     loading,
     error,
     refreshConversations: loadConversations,
-    createOrGetConversation,
   }
 }
 

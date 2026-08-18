@@ -29,36 +29,20 @@ describe("useConversations Hook", () => {
  vi.clearAllMocks()
  })
 
- it("handles participant sorting consistently in createOrGetConversation", async () => {
- const mockInsert = vi.fn().mockReturnValue({
- select: vi.fn().mockReturnValue({
- single: vi.fn().mockResolvedValue({ data: { id: "new-conv-id" }, error: null }),
- }),
- })
-
- const mockSelect = vi.fn().mockReturnValue({
- or: vi.fn().mockReturnValue({
- order: vi.fn().mockResolvedValue({ data: [], error: null }),
- maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
- }),
- })
-
+ it("returns conversations with correct shape (confirmed bookings only)", async () => {
  ;(supabase.from as any).mockImplementation((table: string) => {
  if (table === "conversations") {
  return {
- select: mockSelect,
- insert: mockInsert,
- }
- }
- return {
  select: vi.fn().mockReturnValue({
  or: vi.fn().mockReturnValue({
  order: vi.fn().mockResolvedValue({ data: [], error: null }),
  }),
- eq: vi.fn().mockReturnValue({
- eq: vi.fn().mockReturnValue({
- eq: vi.fn().mockResolvedValue({ count: 0, error: null }),
  }),
+ }
+ }
+ return {
+ select: vi.fn().mockReturnValue({
+ eq: vi.fn().mockReturnValue({
  maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
  }),
  }),
@@ -67,18 +51,14 @@ describe("useConversations Hook", () => {
 
  const { result } = renderHook(() => useConversations("user-b"))
 
- let convId: string | null = null
- await act(async () => {
- convId = await result.current.createOrGetConversation("user-a")
- })
-
- expect(convId).toBe("new-conv-id")
- expect(mockInsert).toHaveBeenCalledWith(
- expect.objectContaining({
- participant_a: "user-a",
- participant_b: "user-b",
- })
- )
+ // Verify the hook returns the expected shape
+ expect(result.current).toHaveProperty("conversations")
+ expect(result.current).toHaveProperty("loading")
+ expect(result.current).toHaveProperty("error")
+ expect(result.current).toHaveProperty("refreshConversations")
+ // createOrGetConversation is intentionally removed — chats only via confirmed bookings
+ expect(result.current).not.toHaveProperty("createOrGetConversation")
+ expect(Array.isArray(result.current.conversations)).toBe(true)
  })
 })
 
