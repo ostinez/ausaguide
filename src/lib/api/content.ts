@@ -229,28 +229,47 @@ export async function toggleSave(postId: string, userId: string, saved: boolean)
 }
 
 export async function toggleFollow(followerId: string, followingId: string, following: boolean): Promise<void> {
- if (following) {
- const { error } = await supabase
- .from("follows")
- .insert({ follower_id: followerId, following_id: followingId })
- if (error && error.code !== "23505") throw error
- } else {
- const { error } = await supabase
- .from("follows")
- .delete()
- .eq("follower_id", followerId)
- .eq("following_id", followingId)
- if (error) throw error
- }
+  if (following) {
+    const { data: targetProfile } = await supabase
+      .from("profiles")
+      .select("is_private")
+      .eq("id", followingId)
+      .maybeSingle()
+
+    const isPrivate = targetProfile?.is_private ?? true
+    const status = isPrivate ? "pending" : "accepted"
+
+    const { error } = await supabase
+      .from("follows")
+      .upsert(
+        {
+          follower_id: followerId,
+          following_id: followingId,
+          status,
+          is_private: isPrivate,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "follower_id,following_id" }
+      )
+    if (error && error.code !== "23505") throw error
+  } else {
+    const { error } = await supabase
+      .from("follows")
+      .delete()
+      .eq("follower_id", followerId)
+      .eq("following_id", followingId)
+    if (error) throw error
+  }
 }
 
 export async function fetchUserFollows(userId: string): Promise<string[]> {
- const { data, error } = await supabase
- .from("follows")
- .select("following_id")
- .eq("follower_id", userId)
- if (error) throw error
- return (data ?? []).map((r: any) => r.following_id)
+  const { data, error } = await supabase
+    .from("follows")
+    .select("following_id")
+    .eq("follower_id", userId)
+    .eq("status", "accepted")
+  if (error) throw error
+  return (data ?? []).map((r: any) => r.following_id)
 }
 
 export async function trackView(targetType: "tour" | "post" | "journal" | "host", targetId: string, userId: string | null): Promise<boolean> {

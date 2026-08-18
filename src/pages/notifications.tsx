@@ -184,7 +184,10 @@ export default function NotificationsPage() {
             {notifications.map((notif) => (
               <div
                 key={notif.id}
-                onClick={() => handleNotificationClick(notif)}
+                onClick={() => {
+                  handleNotificationClick(notif)
+                  handleActionClick(notif)
+                }}
                 className={`relative flex items-start gap-4 p-4 rounded-2xl transition-all duration-300 border cursor-pointer group shadow-sm ${
                   notif.read
                     ? "border-border/60 bg-card hover:bg-muted/40 text-muted-foreground"

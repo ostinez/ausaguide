@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabase"
 import { getHostInitials } from "@/lib/tour-utils"
 import { formatSocialLink } from "@/lib/utils"
 import { DirectMessageButton } from "@/components/common/DirectMessageButton"
+import { FollowButton } from "@/components/common/FollowButton"
 
 const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -248,7 +249,13 @@ export default function TravelerProfilePage() {
  </div>
  )}
               {id && (
-                <div className="pt-3 w-full">
+                <div className="pt-3 w-full space-y-2">
+                  <FollowButton
+                    targetUserId={id}
+                    targetUserName={profile.full_name}
+                    targetIsPrivate={(profile as any).is_private}
+                    className="w-full justify-center"
+                  />
                   <DirectMessageButton
                     hostId={id}
                     hostName={profile.full_name}

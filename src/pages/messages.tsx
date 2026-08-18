@@ -11,6 +11,8 @@ import {
   CheckCircle2,
   MapPin,
   Award,
+  Users,
+  UserPlus,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -23,6 +25,12 @@ import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { createGeneralDailyRoom } from "@/lib/api/daily"
 import { Link } from "react-router-dom"
+import {
+  fetchReachableConnections,
+  findOrCreateDirectConversation,
+  fetchPendingFollowRequests,
+  type ReachableConnection,
+} from "@/lib/api/follows"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -394,16 +402,19 @@ export default function MessagesPage() {
   const navigate = useNavigate()
 
   const paramBookingId = searchParams.get("bookingId") || ""
+  const paramUserId = searchParams.get("userId") || ""
   const preselectedConvId = routeConvId || searchParams.get("conversationId") || searchParams.get("chatId") || ""
 
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
   const [selectedConvId, setSelectedConvId] = useState<string>(preselectedConvId)
   const [searchQuery, setSearchQuery] = useState("")
   const [mobileView, setMobileView] = useState<"list" | "chat">(
-    preselectedConvId || paramBookingId ? "chat" : "list"
+    preselectedConvId || paramBookingId || paramUserId ? "chat" : "list"
   )
   const [showProfile, setShowProfile] = useState(false)
   const [otherTyping] = useState(false)
+  const [connections, setConnections] = useState<ReachableConnection[]>([])
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0)
 
   // Load the authenticated user
   useEffect(() => {
@@ -423,6 +434,41 @@ export default function MessagesPage() {
 
   const { conversations, loading: convsLoading } = useConversations(authUser?.id ?? null)
   const { isUserOnline } = useRealtimePresence(authUser?.id ?? null)
+
+  // Handle ?userId=... direct messaging from profile / follow actions
+  useEffect(() => {
+    if (!authUser?.id || !paramUserId || paramUserId === authUser.id) return
+
+    async function initUserChat() {
+      try {
+        const { id: directConvId } = await findOrCreateDirectConversation(authUser!.id, paramUserId)
+        setSelectedConvId(directConvId)
+        setMobileView("chat")
+      } catch (err) {
+        console.error("Failed to start direct conversation with user:", err)
+      }
+    }
+    initUserChat()
+  }, [authUser?.id, paramUserId])
+
+  // Load reachable connections and pending requests count
+  useEffect(() => {
+    if (!authUser?.id) return
+
+    async function loadSocialContext() {
+      try {
+        const [connList, pendingList] = await Promise.all([
+          fetchReachableConnections(authUser!.id),
+          fetchPendingFollowRequests(authUser!.id),
+        ])
+        setConnections(connList)
+        setPendingRequestsCount(pendingList.length)
+      } catch (err) {
+        console.warn("[MessagesPage] Social context notice:", err)
+      }
+    }
+    loadSocialContext()
+  }, [authUser?.id])
 
   // Auto-select conversation based on route params, query params, or first item
   useEffect(() => {
@@ -449,10 +495,10 @@ export default function MessagesPage() {
     }
 
     // 3. Fallback: select first conversation if none is selected
-    if (!selectedConvId && conversations.length > 0) {
+    if (!selectedConvId && conversations.length > 0 && !paramUserId) {
       setSelectedConvId(conversations[0].id)
     }
-  }, [conversations, preselectedConvId, paramBookingId, selectedConvId])
+  }, [conversations, preselectedConvId, paramBookingId, paramUserId, selectedConvId])
 
   const selectedConv = conversations.find((c) => c.id === selectedConvId)
 
@@ -541,6 +587,75 @@ export default function MessagesPage() {
             />
           </div>
         </div>
+
+        {/* Follow Requests Alert Banner */}
+        {pendingRequestsCount > 0 && (
+          <div className="px-3 pt-2.5">
+            <Link
+              to="/follow-requests"
+              className="flex items-center justify-between p-2.5 rounded-xl bg-primary/10 border border-primary/20 text-xs font-semibold text-primary hover:bg-primary/15 transition-all"
+            >
+              <div className="flex items-center gap-2">
+                <UserPlus className="size-3.5" />
+                <span>
+                  {pendingRequestsCount} pending follow {pendingRequestsCount === 1 ? "request" : "requests"}
+                </span>
+              </div>
+              <span className="text-[10px] underline font-bold">Review</span>
+            </Link>
+          </div>
+        )}
+
+        {/* Reachable Connections Strip */}
+        {connections.length > 0 && (
+          <div className="px-3 pt-3 pb-1 border-b border-border/40 shrink-0">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <Users className="size-3 text-primary" />
+                <span>Connections ({connections.length})</span>
+              </span>
+              <Link to="/follow-requests" className="text-[10px] text-primary hover:underline font-semibold">
+                Manage
+              </Link>
+            </div>
+            <div className="flex items-center gap-2.5 overflow-x-auto pb-2 scrollbar-none">
+              {connections.map((c) => {
+                const online = isUserOnline(c.user_id)
+                return (
+                  <button
+                    key={c.user_id}
+                    onClick={async () => {
+                      if (!authUser) return
+                      if (c.conversation_id) {
+                        handleSelectConversation(c.conversation_id)
+                      } else {
+                        const { id: newConvId } = await findOrCreateDirectConversation(authUser.id, c.user_id)
+                        handleSelectConversation(newConvId)
+                      }
+                    }}
+                    className="flex flex-col items-center gap-1 shrink-0 group focus:outline-none"
+                    title={`Message ${c.full_name}`}
+                  >
+                    <div className="relative">
+                      <Avatar className="size-10 border border-border group-hover:border-primary transition-colors">
+                        <AvatarImage src={c.avatar_url || undefined} alt={c.full_name} className="object-cover" />
+                        <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                          {initials(c.full_name || "U")}
+                        </AvatarFallback>
+                      </Avatar>
+                      {online && (
+                        <span className="absolute bottom-0 right-0 size-2.5 rounded-full bg-emerald-500 ring-2 ring-card" />
+                      )}
+                    </div>
+                    <span className="text-[10px] text-muted-foreground group-hover:text-foreground truncate max-w-[52px]">
+                      {c.full_name.split(" ")[0]}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Conversation list */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">

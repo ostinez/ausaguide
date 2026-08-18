@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link, useLocation } from "react-router-dom"
-import { Menu, X, Globe, LogOut, Settings, LayoutDashboard, ChevronDown, MessageSquare } from "lucide-react"
+import { Menu, X, Globe, LogOut, Settings, LayoutDashboard, ChevronDown, MessageSquare, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
  Sheet,
@@ -239,6 +239,12 @@ export function Navbar() {
  <Link to="/dashboard" className="flex items-center gap-2.5 px-2 py-2">
  <LayoutDashboard className="size-4 text-[#0D6F73]" />
  Dashboard
+ </Link>
+ </DropdownMenuItem>
+ <DropdownMenuItem asChild className="text-white/70 hover:text-white hover:bg-accent/ cursor-pointer rounded-lg mx-1">
+ <Link to="/follow-requests" className="flex items-center gap-2.5 px-2 py-2">
+ <Users className="size-4 text-[#0D6F73]" />
+ Connections & Requests
  </Link>
  </DropdownMenuItem>
  <DropdownMenuItem asChild className="text-white/70 hover:text-white hover:bg-accent/ cursor-pointer rounded-lg mx-1">

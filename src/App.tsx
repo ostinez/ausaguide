@@ -54,6 +54,7 @@ import EmailPreferencesPage from "@/pages/email-preferences"
 import AdminSetupPage from "@/pages/AdminSetup"
 import LogoutPage from "@/pages/Logout"
 import NotificationsPage from "@/pages/notifications"
+import FollowRequestsPage from "@/pages/follow-requests"
 import PaymentSuccessPage from "@/pages/PaymentSuccess"
 import HealthPage from "@/pages/Health"
 
@@ -126,6 +127,7 @@ export default function App() {
             <Route path="/profile/edit" element={<SettingsPage />} />
             <Route path="/wishlist" element={<WishlistPage />} />
             <Route path="/journal" element={<JournalPage />} />
+            <Route path="/follow-requests" element={<FollowRequestsPage />} />
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/messages/:conversationId" element={<MessagesPage />} />
           </Route>

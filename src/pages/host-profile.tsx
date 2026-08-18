@@ -17,6 +17,7 @@ import { toast } from "sonner"
 import { formatSocialLink } from "@/lib/utils"
 import { trackView } from "@/lib/api/content"
 import { DirectMessageButton } from "@/components/common/DirectMessageButton"
+import { FollowButton } from "@/components/common/FollowButton"
 
 const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -281,16 +282,26 @@ export default function HostProfilePage() {
  <span className="text-xs opacity-80">{busyReason}</span>
  )}
  </div>
-          {id && (
-            <DirectMessageButton
-              hostId={id}
-              hostName={profile.full_name}
-              variant="outline"
-              size="default"
-              className="rounded-full gap-2 border-primary/40 text-primary hover:bg-primary/10 px-5 shadow-sm"
-              label="Message Host"
-            />
-          )}
+          <div className="flex items-center gap-2.5 flex-wrap justify-center md:justify-end">
+            {id && (
+              <FollowButton
+                targetUserId={id}
+                targetUserName={profile.full_name}
+                targetIsPrivate={(profile as any).is_private}
+                size="default"
+              />
+            )}
+            {id && (
+              <DirectMessageButton
+                hostId={id}
+                hostName={profile.full_name}
+                variant="outline"
+                size="default"
+                className="rounded-full gap-2 border-primary/40 text-primary hover:bg-primary/10 px-5 shadow-sm"
+                label="Message Host"
+              />
+            )}
+          </div>
         </div>
       </div>
 

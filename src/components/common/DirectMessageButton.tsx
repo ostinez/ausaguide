@@ -85,8 +85,8 @@ export function DirectMessageButton({
         return
       }
 
-      // Otherwise go to messages and show the empty state guidance
-      navigate("/messages")
+      // Link directly to user conversation thread
+      navigate(`/messages?userId=${hostId}`)
     } finally {
       setIsNavigating(false)
     }

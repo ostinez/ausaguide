@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link, useLocation } from "react-router-dom"
-import { Menu, X, Globe, LogOut, Settings, LayoutDashboard, ChevronDown, MessageSquare } from "lucide-react"
+import { Menu, X, Globe, LogOut, Settings, LayoutDashboard, ChevronDown, MessageSquare, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -212,6 +212,12 @@ export function GlassmorphismNavbar({ className, ...props }: GlassmorphismNavbar
                       <Link to="/dashboard" className="flex items-center gap-2.5 px-3 py-2">
                         <LayoutDashboard className="size-4 text-primary" />
                         Dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild className="text-foreground hover:text-primary hover:bg-muted cursor-pointer rounded-xl mx-1 my-0.5">
+                      <Link to="/follow-requests" className="flex items-center gap-2.5 px-3 py-2">
+                        <Users className="size-4 text-primary" />
+                        Connections & Requests
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild className="text-foreground hover:text-primary hover:bg-muted cursor-pointer rounded-xl mx-1 my-0.5">

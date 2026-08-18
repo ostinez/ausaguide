@@ -316,6 +316,7 @@ export default function SettingsPage() {
  setInstagram((p as any).instagram || "")
  setFacebook((p as any).facebook || "")
  setReddit((p as any).reddit || "")
+ setPublicProfile((p as any).is_private === false)
  }
 
  // Load traveler preferences from local storage
@@ -397,6 +398,7 @@ export default function SettingsPage() {
  instagram: instagram.trim() || null,
  facebook: facebook.trim() || null,
  reddit: reddit.trim() || null,
+ is_private: !publicProfile,
  } as any)
 
  const notifs: string[] = []
@@ -728,16 +730,33 @@ export default function SettingsPage() {
  {/* Public Profile toggle */}
  <div className="flex items-start justify-between rounded-xl border border-border/50 bg-card shadow-modern px-5 py-4">
  <div>
- <p className="text-sm font-semibold text-foreground">Public Profile</p>
+ <p className="text-sm font-semibold text-foreground">
+ {publicProfile ? "Public Account" : "Private Account"}
+ </p>
  <p className="text-xs text-muted-foreground mt-0.5">
  {publicProfile
- ? "Your profile is visible to other users and hosts."
- : "Your profile is hidden. Only you can see it."}
+ ? "Anyone can follow you instantly and start conversations."
+ : "Followers must send a request and be approved before connecting."}
  </p>
  </div>
  <button
  type="button"
- onClick={() => setPublicProfile(!publicProfile)}
+ onClick={async () => {
+ const nextPublic = !publicProfile
+ setPublicProfile(nextPublic)
+ if (userId) {
+ try {
+ await supabase.from("profiles").update({ is_private: !nextPublic }).eq("id", userId)
+ toast.success(
+ nextPublic
+ ? "Account is now Public. Follows will be accepted automatically."
+ : "Account is now Private. Follows will require your approval."
+ )
+ } catch (err) {
+ console.error("Failed to update privacy:", err)
+ }
+ }
+ }}
  className={cn(
  "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200",
  publicProfile ? "bg-primary" : "bg-muted"
