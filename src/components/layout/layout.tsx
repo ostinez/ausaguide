@@ -145,40 +145,45 @@ export function Layout() {
  window.addEventListener("storage", handleStorage)
  const interval = setInterval(handleStorage, 1000)
 
- // Load initial maintenance mode status
- async function checkMaintenance() {
- try {
- const { data, error } = await supabase
- .from("system_settings")
- .select("value")
- .eq("key", "system_maintenance_mode")
- .maybeSingle()
- if (!error && data) {
- setMaintenanceMode(data.value === "true")
- }
- } catch (err) {
- console.warn("Failed to check maintenance mode status:", err)
- }
- }
- checkMaintenance()
+  // Load initial maintenance mode status (silent fallback if table not yet migrated)
+  async function checkMaintenance() {
+    try {
+      const { data, error } = await supabase
+        .from("system_settings")
+        .select("value")
+        .eq("key", "system_maintenance_mode")
+        .maybeSingle()
+      if (!error && data) {
+        setMaintenanceMode(data.value === "true")
+      }
+    } catch (_) {
+      // Silent fallback
+    }
+  }
+  checkMaintenance()
 
- // Real-time subscription to system_settings
- const settingsChannel = supabase
- .channel("system-settings-maintenance")
- .on(
- "postgres_changes",
- {
- event: "*",
- schema: "public",
- table: "system_settings",
- },
- (payload: any) => {
- if (payload.new && payload.new.key === "system_maintenance_mode") {
- setMaintenanceMode(payload.new.value === "true")
- }
- }
- )
- .subscribe()
+  // Real-time subscription to system_settings
+  let settingsChannel: ReturnType<typeof supabase.channel> | null = null
+  try {
+    settingsChannel = supabase
+      .channel("system-settings-maintenance")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "system_settings",
+        },
+        (payload: any) => {
+          if (payload.new && payload.new.key === "system_maintenance_mode") {
+            setMaintenanceMode(payload.new.value === "true")
+          }
+        }
+      )
+      .subscribe()
+  } catch (_) {
+    // Silent fallback
+  }
 
  // Track active presence on site
  const anonId = "anon-" + Math.random().toString(36).substring(2, 9)
@@ -217,15 +222,17 @@ export function Layout() {
  }
  })
 
- return () => {
- subscription.unsubscribe()
- presenceChannel.unsubscribe()
- supabase.removeChannel(presenceChannel)
- settingsChannel.unsubscribe()
- supabase.removeChannel(settingsChannel)
- window.removeEventListener("storage", handleStorage)
- clearInterval(interval)
- }
+    return () => {
+      subscription.unsubscribe()
+      presenceChannel.unsubscribe()
+      supabase.removeChannel(presenceChannel)
+      if (settingsChannel) {
+        settingsChannel.unsubscribe()
+        supabase.removeChannel(settingsChannel)
+      }
+      window.removeEventListener("storage", handleStorage)
+      clearInterval(interval)
+    }
  }, [])
 
  async function handleSignOut() {

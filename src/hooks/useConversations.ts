@@ -34,49 +34,20 @@ export function useConversations(currentUserId: string | null) {
     setLoading(true)
     setError(null)
     try {
-      // 1. First attempt: participant_a and participant_b
-      let rawRows: any[] = []
-
-      const { data: convRowsAB, error: convErrAB } = await supabase
+      const { data: convRows, error: convErr } = await supabase
         .from("conversations")
         .select("id, participant_a, participant_b, last_message, last_message_at, created_at")
         .or(`participant_a.eq.${currentUserId},participant_b.eq.${currentUserId}`)
         .order("last_message_at", { ascending: false, nullsFirst: false })
 
-      if (convErrAB) {
-        // Check if error is due to participant_a column not existing in legacy schema
-        if (
-          convErrAB.message?.includes("participant_a") ||
-          convErrAB.message?.includes("column") ||
-          convErrAB.code === "42703"
-        ) {
-          const { data: convRows12, error: convErr12 } = await supabase
-            .from("conversations")
-            .select("id, participant1_id, participant2_id, last_message, last_message_at, created_at")
-            .or(`participant1_id.eq.${currentUserId},participant2_id.eq.${currentUserId}`)
-            .order("last_message_at", { ascending: false, nullsFirst: false })
+      if (convErr) throw convErr
 
-          if (convErr12) {
-            console.warn("[useConversations] Query fallback failed:", convErr12)
-            throw convErr12
-          }
-          rawRows = (convRows12 || []).map((r) => ({
-            ...r,
-            participant_a: r.participant1_id,
-            participant_b: r.participant2_id,
-          }))
-        } else {
-          throw convErrAB
-        }
-      } else {
-        rawRows = convRowsAB || []
-      }
+      const rawRows = convRows || []
 
       const enriched: ConversationItem[] = await Promise.all(
         rawRows.map(async (row) => {
-          const pA = row.participant_a || row.participant1_id
-          const pB = row.participant_b || row.participant2_id
-          const otherId = pA === currentUserId ? pB : pA
+          const otherId =
+            row.participant_a === currentUserId ? row.participant_b : row.participant_a
 
           let profile: any = null
           try {
@@ -100,13 +71,13 @@ export function useConversations(currentUserId: string | null) {
               .eq("read", false)
             unreadCount = count ?? 0
           } catch (_) {
-            // Safe fallback if receiver_id or read column is not present
+            // Safe fallback if count query encounters permission/column difference
           }
 
           return {
             id: row.id,
-            participant_a: pA,
-            participant_b: pB,
+            participant_a: row.participant_a,
+            participant_b: row.participant_b,
             last_message: row.last_message,
             last_message_at: row.last_message_at,
             created_at: row.created_at,
@@ -155,6 +126,7 @@ export function useConversations(currentUserId: string | null) {
           event: "*",
           schema: "public",
           table: "messages",
+          filter: `receiver_id=eq.${currentUserId}`,
         },
         () => {
           loadConversations()
@@ -177,8 +149,8 @@ export function useConversations(currentUserId: string | null) {
       try {
         const [pA, pB] = [currentUserId, otherUserId].sort()
 
-        // 1. Try finding conversation with participant_a and participant_b
-        const { data: existingAB, error: findErrAB } = await supabase
+        // Check if existing conversation exists
+        const { data: existing, error: findErr } = await supabase
           .from("conversations")
           .select("id")
           .or(
@@ -186,27 +158,12 @@ export function useConversations(currentUserId: string | null) {
           )
           .maybeSingle()
 
-        if (!findErrAB && existingAB) {
-          return existingAB.id
+        if (!findErr && existing) {
+          return existing.id
         }
 
-        // Try finding with participant1_id / participant2_id fallback
-        if (findErrAB) {
-          const { data: existing12 } = await supabase
-            .from("conversations")
-            .select("id")
-            .or(
-              `and(participant1_id.eq.${pA},participant2_id.eq.${pB}),and(participant1_id.eq.${pB},participant2_id.eq.${pA})`
-            )
-            .maybeSingle()
-
-          if (existing12) {
-            return existing12.id
-          }
-        }
-
-        // 2. Insert new conversation (try participant_a / participant_b first, fallback to participant1_id / participant2_id)
-        const { data: newConvAB, error: insertErrAB } = await supabase
+        // Insert new conversation with sorted participant_a and participant_b
+        const { data: newConv, error: createErr } = await supabase
           .from("conversations")
           .insert({
             participant_a: pA,
@@ -217,27 +174,10 @@ export function useConversations(currentUserId: string | null) {
           .select("id")
           .single()
 
-        if (!insertErrAB && newConvAB) {
-          await loadConversations()
-          return newConvAB.id
-        }
-
-        // Fallback insert
-        const { data: newConv12, error: insertErr12 } = await supabase
-          .from("conversations")
-          .insert({
-            participant1_id: pA,
-            participant2_id: pB,
-            last_message: "Started conversation",
-            last_message_at: new Date().toISOString(),
-          })
-          .select("id")
-          .single()
-
-        if (insertErr12) throw insertErr12
+        if (createErr) throw createErr
 
         await loadConversations()
-        return newConv12.id
+        return newConv.id
       } catch (err) {
         console.error("[useConversations] Error creating/getting conversation:", err)
         return null
