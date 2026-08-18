@@ -45,6 +45,17 @@ export async function findOrCreateChat(
 }
 
 /**
+ * Find or create a direct chat between traveler and host (without requiring a booking)
+ */
+export async function findOrCreateDirectChat(
+  travelerId: string,
+  hostId: string
+): Promise<string> {
+  return findOrCreateChat("", travelerId, hostId)
+}
+
+
+/**
  * Send a system message to a conversation thread
  */
 export async function sendSystemMessage(

@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ChatWindow } from "@/components/chat/ChatWindow"
+import { NewConversationModal } from "@/components/chat/NewConversationModal"
 import { useConversations } from "@/hooks/useConversations"
 import { useRealtimePresence } from "@/lib/hooks/useRealtimePresence"
 import { supabase } from "@/lib/supabase"
@@ -36,7 +37,11 @@ function initials(name: string) {
 
 // ─── Empty State ─────────────────────────────────────────────────────────────
 
-function EmptyConversationPane() {
+interface EmptyConversationPaneProps {
+  onNewChat?: () => void
+}
+
+function EmptyConversationPane({ onNewChat }: EmptyConversationPaneProps) {
   return (
     <div className="flex flex-col items-center justify-center h-full gap-5 text-center px-8 select-none">
       <div className="size-24 rounded-3xl bg-gradient-to-br from-primary/20 to-brand-light/10 border border-primary/20 flex items-center justify-center shadow-modern">
@@ -45,10 +50,21 @@ function EmptyConversationPane() {
       <div className="space-y-2">
         <h2 className="text-xl font-bold text-foreground">Your messages</h2>
         <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
-          Select a conversation to start chatting with guides and local hosts.
+          Select a conversation or start a new chat with a local host or guide.
         </p>
       </div>
-      <div className="flex flex-wrap gap-2 justify-center text-xs text-muted-foreground">
+
+      {onNewChat && (
+        <Button
+          onClick={onNewChat}
+          className="rounded-full px-6 py-3 font-bold gap-2 shadow-modern-glow min-h-[44px]"
+        >
+          <Plus className="size-4" />
+          <span>+ Start New Chat</span>
+        </Button>
+      )}
+
+      <div className="flex flex-wrap gap-2 justify-center text-xs text-muted-foreground pt-2">
         {["🌍 Book an experience", "📸 Share photos", "✅ Confirm bookings"].map((t) => (
           <span
             key={t}
@@ -61,6 +77,7 @@ function EmptyConversationPane() {
     </div>
   )
 }
+
 
 // ─── Chat Header ─────────────────────────────────────────────────────────────
 
@@ -318,7 +335,7 @@ export default function MessagesPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
 
-  const preselectedConvId = routeConvId || searchParams.get("conversationId") || ""
+  const preselectedConvId = routeConvId || searchParams.get("conversationId") || searchParams.get("chatId") || ""
   const paramHostId = searchParams.get("hostId") || searchParams.get("userId") || ""
   const paramBookingId = searchParams.get("bookingId") || ""
 
@@ -329,7 +346,9 @@ export default function MessagesPage() {
     preselectedConvId || paramHostId || paramBookingId ? "chat" : "list"
   )
   const [showProfile, setShowProfile] = useState(false)
+  const [showNewChatModal, setShowNewChatModal] = useState(false)
   const [otherTyping] = useState(false)
+
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -388,6 +407,17 @@ export default function MessagesPage() {
 
   const selectedConv = conversations.find((c) => c.id === selectedConvId)
 
+  const handleStartHostChat = async (hostId: string) => {
+    if (!authUser?.id) return
+    const convId = await createOrGetConversation(hostId)
+    if (convId) {
+      setSelectedConvId(convId)
+      setMobileView("chat")
+      setShowProfile(false)
+      navigate(`/messages/${convId}`)
+    }
+  }
+
   const handleSelectConversation = (convId: string) => {
     setSelectedConvId(convId)
     setMobileView("chat")
@@ -404,7 +434,7 @@ export default function MessagesPage() {
 
   const handleVideoCall = async () => {
     if (!selectedConvId) return
-    const loadingToast = toast.loading("Creating video roomâ€¦")
+    const loadingToast = toast.loading("Creating video room…")
     try {
       const roomUrl = await createGeneralDailyRoom(selectedConvId)
       toast.dismiss(loadingToast)
@@ -431,7 +461,7 @@ export default function MessagesPage() {
 
   return (
     <div className="flex h-[calc(100vh-4rem)] bg-background overflow-hidden pt-16">
-      {/* â”€â”€ Conversation Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Conversation Sidebar ─────────────────────────────────────────── */}
       <aside
         className={cn(
           "w-full md:w-[320px] xl:w-[360px] shrink-0",
@@ -448,9 +478,20 @@ export default function MessagesPage() {
             </div>
             <h1 className="text-lg font-bold text-foreground tracking-tight">Messages</h1>
           </div>
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-muted text-muted-foreground border border-border/60">
-            {conversations.length}
-          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => setShowNewChatModal(true)}
+              className="rounded-full text-xs font-bold gap-1 px-3 h-8 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm min-h-[32px]"
+              title="Start New Conversation"
+            >
+              <Plus className="size-3.5" />
+              <span>New Chat</span>
+            </Button>
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-muted text-muted-foreground border border-border/60">
+              {conversations.length}
+            </span>
+          </div>
         </div>
 
         {/* Search */}
@@ -469,7 +510,7 @@ export default function MessagesPage() {
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search messagesâ€¦"
+              placeholder="Search messages…"
               className="w-full pl-8 pr-3 py-2 text-sm bg-muted/60 border border-border/60 rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition"
             />
           </div>
@@ -487,9 +528,17 @@ export default function MessagesPage() {
               <div>
                 <p className="text-sm font-semibold text-foreground">No conversations yet</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Start chatting by visiting a tour or a host profile.
+                  Start chatting by clicking "+ New Chat" or visiting a host profile.
                 </p>
               </div>
+              <Button
+                size="sm"
+                onClick={() => setShowNewChatModal(true)}
+                className="rounded-full font-bold gap-1.5 px-4 h-9 min-h-[36px]"
+              >
+                <Plus className="size-4" />
+                <span>Start New Chat</span>
+              </Button>
             </div>
           ) : (
             conversations
@@ -583,16 +632,16 @@ export default function MessagesPage() {
           <Button
             variant="outline"
             size="sm"
-            className="w-full gap-2 rounded-xl text-muted-foreground border-dashed hover:border-primary/50 hover:text-primary hover:bg-primary/5"
-            onClick={() => navigate("/tours")}
+            className="w-full gap-2 rounded-xl text-muted-foreground border-dashed hover:border-primary/50 hover:text-primary hover:bg-primary/5 min-h-[44px]"
+            onClick={() => setShowNewChatModal(true)}
           >
             <Plus className="size-3.5" />
-            <span className="text-xs">Find a guide to message</span>
+            <span className="text-xs font-semibold">Start New Conversation</span>
           </Button>
         </div>
       </aside>
 
-      {/* â”€â”€ Main Chat Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Main Chat Panel ──────────────────────────────────────────────── */}
       <main
         className={cn(
           "flex-1 flex flex-col min-w-0",
@@ -601,7 +650,7 @@ export default function MessagesPage() {
         )}
       >
         {!selectedConvId || !selectedConv ? (
-          <EmptyConversationPane />
+          <EmptyConversationPane onNewChat={() => setShowNewChatModal(true)} />
         ) : (
           <div className="flex flex-col h-full min-h-0">
             <ChatHeader
@@ -647,6 +696,15 @@ export default function MessagesPage() {
           </div>
         )}
       </main>
+
+      {/* New Conversation Modal */}
+      <NewConversationModal
+        isOpen={showNewChatModal}
+        onClose={() => setShowNewChatModal(false)}
+        onSelectHost={handleStartHostChat}
+        currentUserId={authUser?.id ?? null}
+      />
     </div>
   )
 }
+
