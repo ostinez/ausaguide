@@ -36,7 +36,6 @@ export function useConversations(currentUserId: string | null) {
     try {
       // 1. First attempt: participant_a and participant_b
       let rawRows: any[] = []
-      let schemaType: "ab" | "12" = "ab"
 
       const { data: convRowsAB, error: convErrAB } = await supabase
         .from("conversations")
@@ -66,7 +65,6 @@ export function useConversations(currentUserId: string | null) {
             participant_a: r.participant1_id,
             participant_b: r.participant2_id,
           }))
-          schemaType = "12"
         } else {
           throw convErrAB
         }
