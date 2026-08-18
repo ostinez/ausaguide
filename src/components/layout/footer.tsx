@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase"
 const footerLinks = {
  explore: [
  { href: "/tours", label: "Tours" },
+ { href: "/waitlist", label: "Join Waitlist" },
  { href: "/map", label: "Live Map" },
  { href: "/feed", label: "Community Feed" },
  ],

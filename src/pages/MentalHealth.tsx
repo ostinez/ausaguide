@@ -27,7 +27,7 @@ const TIERS = [
     price: "$100",
     description: "2-day wellness retreat",
     details: "Includes accommodation, meditation class, and forest walking activities.",
-    color: "7F5AF0",
+    color: "3b82f6",
   },
   {
     icon: <Waves className="size-6 text-blue-500" />,
@@ -35,15 +35,15 @@ const TIERS = [
     price: "$250",
     description: "5-day Swahili Coast break",
     details: "Full local community stay, coastal sailing, and traditional healing foods.",
-    color: "3b82f6",
+    color: "0ea5e9",
   },
   {
-    icon: <Mountain className="size-6 text-pink-500" />,
+    icon: <Mountain className="size-6 text-emerald-500" />,
     title: "Healing Journey",
     price: "$500",
     description: "7-day Mount Kenya retreat",
     details: "All-inclusive mountain lodge, professional guide wellness sessions, and scenic hikes.",
-    color: "ec4899",
+    color: "22c55e",
   },
 ]
 

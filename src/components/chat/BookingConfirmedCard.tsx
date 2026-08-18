@@ -44,7 +44,7 @@ export default function BookingConfirmedCard({ content }: BookingConfirmedCardPr
             <div className="pt-2 border-t border-border/60">
               <Button
                 asChild
-                className="w-full h-10 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold gap-2 shadow-sm"
+                className="w-full h-10 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-semibold gap-2 shadow-sm"
               >
                 <a href={roomUrl} target="_blank" rel="noopener noreferrer">
                   <Video className="size-4" />

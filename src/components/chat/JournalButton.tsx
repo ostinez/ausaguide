@@ -33,11 +33,11 @@ export function JournalButton({
         size={showText ? "sm" : "icon"}
         onClick={() => setIsOpen(true)}
         className={`rounded-full gap-1.5 font-semibold text-xs transition-colors min-h-[36px] ${
-          variant === "ghost" ? "hover:bg-purple-500/10 hover:text-purple-400 text-muted-foreground" : ""
+          variant === "ghost" ? "hover:bg-blue-500/10 hover:text-blue-400 text-muted-foreground" : ""
         } ${className}`}
         title="Save Travel Notes & Tips"
       >
-        <BookOpen className="size-4 text-purple-400 shrink-0" />
+        <BookOpen className="size-4 text-blue-400 shrink-0" />
         {showText && <span>Save Notes</span>}
       </Button>
 

@@ -159,7 +159,7 @@ export function MentalHealth({ onComplete, className }: MentalHealthProps) {
         <Shield className="size-64 md:size-80 text-blue-400" />
       </div>
       <div className="absolute bottom-0 left-0 opacity-5 pointer-events-none">
-        <Flower2 className="size-48 md:size-64 text-purple-400" />
+        <Flower2 className="size-48 md:size-64 text-blue-400" />
       </div>
 
       <div className="relative z-10">

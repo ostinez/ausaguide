@@ -17,9 +17,9 @@ export interface BorderGlowProps {
 }
 
 function parseHSL(hslStr: string): { h: number; s: number; l: number } {
- const match = hslStr.match(/([\d.]+)\s+([\d.]+)\s+([\d.]+)/)
- if (!match) return { h: 260, s: 70, l: 60 } // Default to purple 260 70 60
- return { h: parseFloat(match[1]), s: parseFloat(match[2]), l: parseFloat(match[3]) }
+  const match = hslStr.match(/([\d.]+)\s+([\d.]+)\s+([\d.]+)/)
+  if (!match) return { h: 183, s: 70, l: 25 } // Default to teal 183 70 25 (#0D6F73)
+  return { h: parseFloat(match[1]), s: parseFloat(match[2]), l: parseFloat(match[3]) }
 }
 
 function buildGlowVars(glowColor: string, intensity: number): Record<string, string> {
@@ -97,7 +97,7 @@ export const BorderGlow: React.FC<BorderGlowProps> = ({
  children,
  className = "",
  edgeSensitivity = 30,
- glowColor = "260 70 60", // Default to purple 260 70 60 (#0D6F73)
+ glowColor = "183 70 25", // Default to brand teal 183 70 25 (#0D6F73)
  backgroundColor = "#16161A",
  borderRadius = 28,
  glowRadius = 40,

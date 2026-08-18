@@ -105,7 +105,7 @@ export function JournalModal({
         <DialogHeader className="space-y-1.5 pb-2 border-b border-border/50">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <div className="size-8 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+              <div className="size-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
                 <BookOpen className="size-4" />
               </div>
               <span>Travel Journal & Host Notes</span>
@@ -183,7 +183,7 @@ export function JournalModal({
               <Button
                 type="submit"
                 disabled={saving}
-                className="flex-1 rounded-full font-bold gap-2 py-3 bg-gradient-to-r from-[#0D6F73] to-purple-600 hover:from-[#095255] hover:to-purple-700 text-white shadow-lg min-h-[44px]"
+                className="flex-1 rounded-full font-bold gap-2 py-3 bg-gradient-to-r from-[#0D6F73] to-blue-600 hover:from-[#095255] hover:to-blue-700 text-white shadow-lg min-h-[44px]"
               >
                 {saving ? (
                   <>

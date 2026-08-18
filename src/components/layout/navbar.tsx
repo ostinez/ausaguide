@@ -116,11 +116,14 @@ export function Navbar() {
  let navLinks: { href: string; label: string }[] = []
 
  if (!userId) {
- navLinks = [
- { href: "/tours", label: "Explore Tours" },
- { href: "/map", label: "Map" },
- { href: "/help", label: "Help" },
- ]
+    navLinks = [
+      { href: "/tours", label: "Explore Tours" },
+      { href: "/waitlist", label: "Waitlist" },
+      { href: "/tree-planting", label: "Tree Planting" },
+      { href: "/mental-health", label: "Mental Health" },
+      { href: "/map", label: "Map" },
+      { href: "/help", label: "Help" },
+    ]
  } else if (userRole === "admin") {
  navLinks = [
  { href: "/admin2", label: "Dashboard" },
