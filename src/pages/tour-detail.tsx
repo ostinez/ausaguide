@@ -54,13 +54,36 @@ export default function TourDetailPage() {
  const [activePhotoIndex, setActivePhotoIndex] = useState<number | null>(null)
 
  // Dynamic SEO — updates as soon as tour loads
- useSEO({
- title: tour ? `${tour.title} | Live Tour in Kenya` : "Tour Details",
- description: tour?.description || "Explore a unique live tour experience in Kenya with real local guides.",
- image: tour?.images?.[0] || "https://ausaguide.com/og-image.png",
- url: `https://ausaguide.com/tours/${id}`,
- type: "article",
- })
+  useSEO({
+    title: tour ? `${tour.title} | Live Tour in Kenya` : "Tour Details",
+    description: tour?.description || "Explore a unique live tour experience in Kenya with real local guides.",
+    keywords: tour ? `${tour.title}, ${tour.location_name || 'Kenya'}, Kenya tours, local guide, ${tour.category || 'experience'}` : undefined,
+    image: tour?.images?.[0] || "https://ausaguide.com/og-image.png",
+    url: `https://ausaguide.com/tours/${id}`,
+    type: "product",
+    jsonLd: tour ? {
+      "@context": "https://schema.org",
+      "@type": "TouristTrip",
+      "name": tour.title,
+      "description": tour.description,
+      "image": tour.images || [],
+      "url": `https://ausaguide.com/tours/${tour.id}`,
+      "offers": {
+        "@type": "Offer",
+        "price": tour.price,
+        "priceCurrency": tour.currency || "KES",
+        "availability": "https://schema.org/InStock"
+      },
+      "provider": {
+        "@type": "Person",
+        "name": (tour as any).host?.full_name || "Ausaguide Host"
+      },
+      "location": {
+        "@type": "Place",
+        "name": tour.location_name || "Kenya"
+      }
+    } : undefined
+  })
  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
  const [selectedTime, setSelectedTime] = useState<string | undefined>(undefined)
  const [guests, setGuests] = useState(1)

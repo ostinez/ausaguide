@@ -51,12 +51,13 @@ function matchesPrice(price: number, filter: PriceFilter): boolean {
 
 
 export default function ToursPage() {
- useSEO({
- title: "Explore Local Tours in Kenya",
- description:
- "Browse live and in-person tours guided by real local experts across Kenya.",
- url: "https://ausaguide.com/tours",
- })
+  useSEO({
+    title: "Explore Local Tours & Experiences in Kenya",
+    description:
+      "Browse live virtual previews and in-person tours guided by verified local experts across Nairobi, Mombasa, Maasai Mara, and Diani.",
+    keywords: "Kenya tours, Nairobi excursions, Maasai Mara safaris, Mombasa cultural walks, Diani beach tours, local guides Kenya, book Kenya experiences",
+    url: "https://ausaguide.com/tours",
+  })
  const [searchParams] = useSearchParams()
  const navigate = useNavigate()
  const [urgentMatchOpen, setUrgentMatchOpen] = useState(false)

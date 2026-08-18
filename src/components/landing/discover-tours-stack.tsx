@@ -117,7 +117,7 @@ export function DiscoverToursStack() {
  onSwipeRight={handleSwipeRight}
  />
  ) : (
- <div className="flex h-[440px] w-[320px] items-center justify-center rounded-2xl border border-border bg-card shadow-modern text-sm text-white/40">
+ <div className="flex h-[440px] w-[320px] items-center justify-center rounded-2xl border border-border bg-card shadow-modern text-sm text-muted-foreground font-medium">
  No tours available for stacking
  </div>
  )}

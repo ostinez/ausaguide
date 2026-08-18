@@ -1,0 +1,15 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /admin2/
+Disallow: /host/dashboard/
+Disallow: /dashboard/
+Disallow: /settings/
+Disallow: /messages/
+Disallow: /checkout/
+Disallow: /confirmation/
+Disallow: /auth/callback/
+
+# Sitemaps
+Sitemap: https://ausaguide.com/sitemap.xml

@@ -36,9 +36,22 @@ export default function Home() {
   }, [role, userLoading, navigate])
 
   useSEO({
-    title: "Live tours with real locals in Kenya",
+    title: "Live tours with real locals in Kenya — Try Before You Fly",
     description:
       "Ausaguide connects you with authentic local guides for unforgettable experiences across Kenya. Book private safaris, cultural walks, and city tours.",
+    keywords: "Kenya tours, local guides Kenya, Nairobi tours, live video tours, try before you fly, Kenya safaris, Maasai Mara, Mombasa travel, virtual tours",
+    url: "https://ausaguide.com",
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Ausaguide",
+      "url": "https://ausaguide.com",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://ausaguide.com/tours?search={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
   })
 
  const [waitlistName, setWaitlistName] = useState("")
@@ -300,34 +313,34 @@ export default function Home() {
  <CTASection />
  </div>
 
- {/* Founder Section */}
- <section className="bg-card py-20 px-6 border-t border-white/5 relative overflow-hidden flex flex-col items-center">
- {/* Subtle background effects */}
- <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
+  {/* Founder Section */}
+  <section className="bg-card py-20 px-6 border-t border-border relative overflow-hidden flex flex-col items-center">
+    {/* Subtle background effects */}
+    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
 
- <div className="text-center mb-8 relative z-10">
- <h2 className="text-3xl md:text-4xl font-bold text-white tracking-tight">Meet the Founder</h2>
- <p className="text-gray-400 mt-2 text-sm sm:text-base">Built for connection, powered by people</p>
- </div>
- 
- <div className="flex justify-center w-full max-w-sm relative z-10">
- <ProfileCard
- name="Austin M. Mbote"
- title="Founder & Lead Developer"
- status="Building connections 🌍"
- contactText="Let's Connect"
- avatarUrl={founderPhoto}
- showUserInfo={true}
- enableTilt={true}
- enableMobileTilt={true}
- behindGlowEnabled={true}
- behindGlowColor="rgba(13, 111, 115, 0.4)"
- innerGradient="linear-gradient(145deg, rgba(13, 111, 115, 0.2), rgba(13, 111, 115, 0.1))"
- onContactClick={() => window.open('https://www.linkedin.com/in/austin-murithi-5343aa402', '_blank')}
- onAvatarClick={() => window.location.href = '/about#founder-story'}
- />
- </div>
- </section>
+    <div className="text-center mb-8 relative z-10">
+      <h2 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight">Meet the Founder</h2>
+      <p className="text-muted-foreground mt-2 text-sm sm:text-base font-semibold">Built for connection, powered by people</p>
+    </div>
+    
+    <div className="flex justify-center w-full max-w-sm relative z-10">
+      <ProfileCard
+        name="Austin M. Mbote"
+        title="Founder & Lead Developer"
+        status="Building connections 🌍"
+        contactText="Let's Connect"
+        avatarUrl={founderPhoto}
+        showUserInfo={true}
+        enableTilt={true}
+        enableMobileTilt={true}
+        behindGlowEnabled={true}
+        behindGlowColor="rgba(13, 111, 115, 0.4)"
+        innerGradient="linear-gradient(145deg, rgba(13, 111, 115, 0.2), rgba(13, 111, 115, 0.1))"
+        onContactClick={() => window.open('https://www.linkedin.com/in/austin-murithi-5343aa402', '_blank')}
+        onAvatarClick={() => window.location.href = '/about#founder-story'}
+      />
+    </div>
+  </section>
  </div>
  )
 }

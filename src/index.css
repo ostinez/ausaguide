@@ -200,17 +200,49 @@
   }
 }
 
-/* ── Dark Section Utility ───────────────────────────────────────────────── */
+/* ── Dark Section & Contrast Utilities ───────────────────────────────────── */
 /* Use on sections that must always remain dark (hero globe, special pages) */
-.dark-section {
-  --background: oklch(0.156 0.005 285);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.195 0.005 285);
-  --card-foreground: oklch(0.985 0 0);
-  --border: oklch(0.3 0.01 285);
-  --muted-foreground: oklch(0.7 0.02 260);
-  background-color: oklch(0.156 0.005 285);
-  color: oklch(0.985 0 0);
+.dark-section,
+.dark-bg {
+  --background: #06363D;
+  --foreground: #FFFFFF;
+  --card: #0B3037;
+  --card-foreground: #FFFFFF;
+  --border: #134E5E;
+  --muted-foreground: #D1D5DB;
+  background-color: #06363D !important;
+  color: #FFFFFF !important;
+}
+
+.dark-bg h1, .dark-bg h2, .dark-bg h3, .dark-bg h4 {
+  color: #FFFFFF !important;
+}
+
+.dark-bg p, .dark-bg span, .dark-bg .subtitle {
+  color: #D1D5DB !important;
+}
+
+.dark-bg .highlight {
+  color: #84BABF !important;
+}
+
+.light-bg {
+  --background: #FFFFFF;
+  --foreground: #06363D;
+  --card: #F9FAFB;
+  --card-foreground: #06363D;
+  --border: #C8DCD7;
+  --muted-foreground: #235E60;
+  background-color: #FFFFFF !important;
+  color: #06363D !important;
+}
+
+.light-bg h1, .light-bg h2, .light-bg h3, .light-bg h4 {
+  color: #06363D !important;
+}
+
+.light-bg p, .light-bg span {
+  color: #235E60 !important;
 }
 
 
