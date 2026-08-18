@@ -5,18 +5,19 @@ import { BrowserRouter } from "react-router-dom"
 import "./index.css"
 import App from "./App.tsx"
 import { Toaster } from "@/components/ui/sonner.tsx"
-import { initSentry, Sentry } from "./lib/sentry"
+import { initSentry } from "./lib/sentry"
 import { initPostHog } from "./lib/posthog"
+import { GlobalErrorBoundary } from "@/components/common/GlobalErrorBoundary"
 
 const consent = localStorage.getItem("cookie-consent")
 if (consent === "accepted") {
- initSentry()
- initPostHog()
+  initSentry()
+  initPostHog()
 } else {
- window.addEventListener("cookies-accepted", () => {
- initSentry()
- initPostHog()
- })
+  window.addEventListener("cookies-accepted", () => {
+    initSentry()
+    initPostHog()
+  })
 }
 
 // Theme initialization (defaults to crisp mineral light canvas)
@@ -29,42 +30,41 @@ if (savedTheme === "dark") {
 
 // Platform detection — add CSS class hooks for adaptive styles
 ;(function detectPlatformClasses() {
- const ua = navigator.userAgent
- const html = document.documentElement
+  const ua = navigator.userAgent
+  const html = document.documentElement
 
- if (/iP(hone|od|ad)/.test(ua)) html.classList.add("is-ios")
- else if (/Android/.test(ua)) html.classList.add("is-android")
+  if (/iP(hone|od|ad)/.test(ua)) html.classList.add("is-ios")
+  else if (/Android/.test(ua)) html.classList.add("is-android")
 
- const cores = (navigator as any).hardwareConcurrency ?? 4
- const mem = (navigator as any).deviceMemory ?? 4
- if (cores < 4 || mem < 2) html.classList.add("low-end-device")
+  const cores = (navigator as any).hardwareConcurrency ?? 4
+  const mem = (navigator as any).deviceMemory ?? 4
+  if (cores < 4 || mem < 2) html.classList.add("low-end-device")
 
- if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
- html.classList.add("reduced-motion")
- }
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    html.classList.add("reduced-motion")
+  }
 })()
 
 // Register Service Worker for offline support
 if ("serviceWorker" in navigator) {
- window.addEventListener("load", () => {
- navigator.serviceWorker.register("/sw.js")
- .then((reg) => {
- console.log("Service Worker registered successfully with scope:", reg.scope)
- })
- .catch((err) => {
- console.error("Service Worker registration failed:", err)
- })
- })
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js")
+      .then((reg) => {
+        console.log("Service Worker registered successfully with scope:", reg.scope)
+      })
+      .catch((err) => {
+        console.error("Service Worker registration failed:", err)
+      })
+  })
 }
 
-
 createRoot(document.getElementById("root")!).render(
- <StrictMode>
- <BrowserRouter>
- <Sentry.ErrorBoundary fallback={<div>Something went wrong. Please try again.</div>}>
- <App />
- </Sentry.ErrorBoundary>
- <Toaster />
- </BrowserRouter>
- </StrictMode>
+  <StrictMode>
+    <GlobalErrorBoundary>
+      <BrowserRouter>
+        <App />
+        <Toaster />
+      </BrowserRouter>
+    </GlobalErrorBoundary>
+  </StrictMode>
 )
