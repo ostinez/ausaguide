@@ -12,6 +12,9 @@ export interface DirectMessage {
   created_at: string
   read: boolean
   sender_type?: "user" | "system" | "traveler" | "host"
+  deleted_for_traveler?: boolean
+  deleted_for_host?: boolean
+  deleted_by_users?: string[]
   notification_type?: "booking_request" | "booking_confirmed" | "booking_declined" | "daily_room_shared" | string | null
   metadata?: {
     type?: string
@@ -37,48 +40,60 @@ export interface DirectMessage {
 
 
 export function useMessages(
- conversationId: string | null,
- currentUserId: string | null,
- otherUserId: string | null
+  conversationId: string | null,
+  currentUserId: string | null,
+  otherUserId: string | null,
+  userRole: "traveler" | "host" | "admin" | "user" = "user"
 ) {
- const [messages, setMessages] = useState<DirectMessage[]>([])
- const [loading, setLoading] = useState(false)
- const [sending, setSending] = useState(false)
- const [otherTyping, setOtherTyping] = useState(false)
- const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
- const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [messages, setMessages] = useState<DirectMessage[]>([])
+  const [loading, setLoading] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [otherTyping, setOtherTyping] = useState(false)
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
- // 1. Load message history
- const loadMessages = useCallback(async () => {
- if (!conversationId || !currentUserId) {
- setMessages([])
- return
- }
+  // 1. Load message history
+  const loadMessages = useCallback(async () => {
+    if (!conversationId || !currentUserId) {
+      setMessages([])
+      return
+    }
 
- setLoading(true)
- try {
- const { data, error } = await supabase
- .from("messages")
- .select("*")
- .eq("conversation_id", conversationId)
- .order("created_at", { ascending: true })
+    setLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: true })
 
- if (error) throw error
- setMessages((data ?? []) as DirectMessage[])
+      if (error) throw error
 
- // Automatically mark received messages in this conversation as read
- await supabase
- .from("messages")
- .update({ read: true })
- .eq("conversation_id", conversationId)
- .eq("receiver_id", currentUserId)
- .eq("read", false)
- } catch (err: any) {
- console.error("[useMessages] Error loading messages:", err)
- } finally {
- setLoading(false)
- }
- }, [conversationId, currentUserId])
+      let list = (data ?? []) as DirectMessage[]
+      // Filter out soft-deleted messages for current user
+      list = list.filter((m) => {
+        if (m.deleted_by_users && m.deleted_by_users.includes(currentUserId)) return false
+        if (userRole === "host" && m.deleted_for_host) return false
+        if (userRole === "traveler" && m.deleted_for_traveler) return false
+        return true
+      })
+
+      setMessages(list)
+
+      // Automatically mark received messages in this conversation as read
+      await supabase
+        .from("messages")
+        .update({ read: true })
+        .eq("conversation_id", conversationId)
+        .eq("receiver_id", currentUserId)
+        .eq("read", false)
+    } catch (err: any) {
+      console.error("[useMessages] Error loading messages:", err)
+    } finally {
+      setLoading(false)
+    }
+  }, [conversationId, currentUserId, userRole])
+
 
  useEffect(() => {
  loadMessages()
@@ -121,6 +136,11 @@ export function useMessages(
   },
   (payload) => {
   const newMsg = payload.new as DirectMessage
+  // Filter out if message was soft deleted for current user
+  if (newMsg.deleted_by_users && newMsg.deleted_by_users.includes(currentUserId)) return
+  if (userRole === "host" && newMsg.deleted_for_host) return
+  if (userRole === "traveler" && newMsg.deleted_for_traveler) return
+
   setMessages((prev) => {
   if (prev.some((m) => m.id === newMsg.id)) return prev
   return [...prev, newMsg]
@@ -146,6 +166,16 @@ export function useMessages(
   },
   (payload) => {
   const updatedMsg = payload.new as DirectMessage
+  // If updated message was soft-deleted for current user, remove from list
+  if (
+    (updatedMsg.deleted_by_users && updatedMsg.deleted_by_users.includes(currentUserId)) ||
+    (userRole === "host" && updatedMsg.deleted_for_host) ||
+    (userRole === "traveler" && updatedMsg.deleted_for_traveler)
+  ) {
+    setMessages((prev) => prev.filter((m) => m.id !== updatedMsg.id))
+    return
+  }
+
   setMessages((prev) =>
   prev.map((m) => (m.id === updatedMsg.id ? updatedMsg : m))
   )
@@ -167,7 +197,7 @@ export function useMessages(
     } catch (_) {}
     channelRef.current = null
   }
-  }, [conversationId, currentUserId])
+  }, [conversationId, currentUserId, userRole])
 
  // 3. Typing broadcast
  const broadcastTyping = useCallback(
@@ -213,7 +243,9 @@ export function useMessages(
  message: content.trim(),
  image_url: imageUrl || null,
  read: false,
- sender_type: senderType || "user",
+ sender_type: senderType || (userRole === "host" ? "host" : userRole === "traveler" ? "traveler" : "user"),
+ deleted_for_traveler: false,
+ deleted_for_host: false,
  }
 
  const { error } = await supabase
@@ -243,7 +275,7 @@ export function useMessages(
  setSending(false)
  }
  },
- [conversationId, currentUserId, otherUserId, broadcastTyping]
+ [conversationId, currentUserId, otherUserId, broadcastTyping, userRole]
  )
 
  // 5. Mark conversation read
@@ -261,12 +293,41 @@ export function useMessages(
  }
  }, [conversationId, currentUserId])
 
+ // 6. Clear chat on user's side (soft delete)
+ const clearChat = useCallback(async () => {
+   if (!conversationId || !currentUserId) return false
+   try {
+     const updateData: Record<string, any> = {}
+     if (userRole === "host") {
+       updateData.deleted_for_host = true
+     } else {
+       updateData.deleted_for_traveler = true
+     }
+
+     const { error } = await supabase
+       .from("messages")
+       .update(updateData)
+       .eq("conversation_id", conversationId)
+
+     if (error) throw error
+
+     setMessages([])
+     toast.success("Chat cleared on your side.")
+     return true
+   } catch (err: any) {
+     console.error("[useMessages] Error clearing chat:", err)
+     toast.error("Failed to clear chat.")
+     return false
+   }
+ }, [conversationId, currentUserId, userRole])
+
  return {
  messages,
  loading,
  sending,
  otherTyping,
  sendMessage,
+ clearChat,
  broadcastTyping,
  markConversationRead,
  refreshMessages: loadMessages,

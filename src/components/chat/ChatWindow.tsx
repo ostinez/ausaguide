@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { Send, Image as ImageIcon, ArrowLeft, Check, CheckCheck, Loader2, Video, Star } from "lucide-react"
+import { Send, Image as ImageIcon, ArrowLeft, Check, CheckCheck, Loader2, Video, Star, Trash2 } from "lucide-react"
 import { format, isToday, isYesterday } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -149,10 +149,16 @@ export function ChatWindow({
     sending,
     otherTyping,
     sendMessage,
+    clearChat,
     broadcastTyping,
     refreshMessages,
-  } = useMessages(conversationId, currentUserId, otherUser.id)
+  } = useMessages(conversationId, currentUserId, otherUser.id, currentUserRole)
 
+  const handleClearChat = async () => {
+    if (window.confirm("Clear all messages on your side? You will still be able to receive new messages.")) {
+      await clearChat()
+    }
+  }
 
   const [inputVal, setInputVal] = useState("")
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -280,8 +286,20 @@ export function ChatWindow({
               <Video className="size-4" />
             </Button>
           )}
+          {messages.length > 0 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8 rounded-full text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
+              onClick={handleClearChat}
+              title="Clear chat on your side"
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          )}
         </div>
       </div>
+
 
       {/* ─── Message Bubbles Container ─── */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 custom-scrollbar bg-background/50">

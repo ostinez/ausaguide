@@ -371,20 +371,49 @@ export default function ConfirmationPage() {
       </div>
       )}
 
- {/* Live Location Map for In-Person Tours */}
- {tour && !isVirtual && (
- <div className="mt-4">
- <LiveLocationMap
- hostId={booking.host_id}
- hostName={hostName}
- tourLatitude={Number(tour.latitude || -1.2863)}
- tourLongitude={Number(tour.longitude || 36.8172)}
- tourTitle={tour.title}
- />
- </div>
- )}
+        {/* Live Location Map for In-Person Tours */}
+        {tour && !isVirtual && (
+          <div className="mt-4">
+            <LiveLocationMap
+              hostId={booking.host_id}
+              hostName={hostName}
+              tourLatitude={Number(tour.latitude || -1.2863)}
+              tourLongitude={Number(tour.longitude || 36.8172)}
+              tourTitle={tour.title}
+            />
+          </div>
+        )}
 
- {/* Video room card */}
+        {/* 🎯 Direct Chat with Host Card */}
+        {booking.host_id && (
+          <div className="mt-4 rounded-2xl border border-primary/25 bg-card p-5 shadow-sm">
+            <div className="flex items-start justify-between gap-4 flex-col sm:flex-row sm:items-center">
+              <div className="flex items-start gap-3">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <MessageSquare className="size-5" />
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground">Direct Chat with {hostName}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Ask questions, coordinate meeting points, and stay connected with your host.
+                  </p>
+                </div>
+              </div>
+              <DirectMessageButton
+                hostId={booking.host_id}
+                hostName={hostName}
+                bookingId={booking.id}
+                tourId={tour?.id}
+                variant="default"
+                size="default"
+                label="💬 Start Chat with Host"
+                className="w-full sm:w-auto shrink-0 bg-primary text-primary-foreground font-bold shadow-md hover:shadow-lg min-h-[44px]"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Video room card */}
  <div className="mt-4 rounded-2xl border border-border bg-card p-5">
  <div className="flex items-start gap-3">
  <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
