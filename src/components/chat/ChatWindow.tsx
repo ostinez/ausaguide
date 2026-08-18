@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useMessages, type DirectMessage } from "@/hooks/useMessages"
+import BookingRequestCard from "./BookingRequestCard"
+import BookingConfirmedCard from "./BookingConfirmedCard"
+import BookingDeclinedCard from "./BookingDeclinedCard"
 import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
@@ -147,7 +150,9 @@ export function ChatWindow({
     otherTyping,
     sendMessage,
     broadcastTyping,
+    refreshMessages,
   } = useMessages(conversationId, currentUserId, otherUser.id)
+
 
   const [inputVal, setInputVal] = useState("")
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -306,11 +311,75 @@ export function ChatWindow({
         ) : (
           messages.map((msg, index) => {
             const isMe = msg.sender_id === currentUserId
-            const isSystemReceipt = msg.sender_type === "system" || msg.metadata?.type === "booking_confirmation"
+            const isSystem = msg.sender_type === "system"
+            const notifType = msg.notification_type || msg.metadata?.type
 
-            if (isSystemReceipt) {
-              return <BookingReceiptBubble key={msg.id || index} msg={msg} />
+            if (isSystem || notifType) {
+              if (notifType === "booking_request") {
+                return (
+                  <BookingRequestCard
+                    key={msg.id || index}
+                    booking={{
+                      booking_id: msg.metadata?.booking_id || msg.id,
+                      tour_name: msg.metadata?.tour_name || "Experience",
+                      traveler_name: msg.metadata?.traveler_name || otherUser.full_name,
+                      date: msg.metadata?.date || "Selected Date",
+                      time: msg.metadata?.time || "Scheduled Time",
+                      guests: msg.metadata?.guests || 1,
+                      amount: msg.metadata?.amount || msg.metadata?.total || 0,
+                      currency: msg.metadata?.currency || "KES",
+                      status: msg.metadata?.status,
+                    }}
+                    hostId={currentUserId}
+                    currentUserId={currentUserId}
+                    isHost={currentUserRole === "host"}
+                    onActionComplete={refreshMessages}
+                  />
+                )
+              }
+
+              if (notifType === "booking_confirmed") {
+                return (
+                  <BookingConfirmedCard
+                    key={msg.id || index}
+                    content={{
+                      booking_id: msg.metadata?.booking_id,
+                      tour_name: msg.metadata?.tour_name,
+                      daily_room_url: msg.metadata?.daily_room_url,
+                      daily_room_id: msg.metadata?.daily_room_id,
+                      message: msg.message || msg.metadata?.message,
+                    }}
+                  />
+                )
+              }
+
+              if (notifType === "booking_declined") {
+                return (
+                  <BookingDeclinedCard
+                    key={msg.id || index}
+                    content={{
+                      booking_id: msg.metadata?.booking_id,
+                      tour_name: msg.metadata?.tour_name,
+                      decline_reason: msg.metadata?.decline_reason,
+                      message: msg.message || msg.metadata?.message,
+                    }}
+                  />
+                )
+              }
+
+              if (notifType === "booking_confirmation") {
+                return <BookingReceiptBubble key={msg.id || index} msg={msg} />
+              }
+
+              return (
+                <div key={msg.id || index} className="flex justify-center my-2.5 w-full">
+                  <div className="rounded-full bg-muted/80 border border-border/60 px-3.5 py-1 text-center text-[11px] text-muted-foreground max-w-sm">
+                    {msg.message || JSON.stringify(msg.metadata)}
+                  </div>
+                </div>
+              )
             }
+
 
             return (
               <div

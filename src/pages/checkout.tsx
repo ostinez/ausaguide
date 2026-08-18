@@ -28,6 +28,7 @@ import { formatTourPrice, getHostInitials, getTourGradient } from "@/lib/tour-ut
 import { cn } from "@/lib/utils"
 import { MPesaCheckout } from "@/components/Checkout/MPesaCheckout"
 import { CheckoutStepper } from "@/components/Checkout/CheckoutStepper"
+import IntaSendTrustBadge from "@/components/IntaSendTrustBadge"
 import { supabase } from "@/lib/supabase"
 import {
  validateName,
@@ -270,24 +271,7 @@ export default function CheckoutPage() {
  </div>
  </div>
 
-  {/* IntaSend Trust Badge */}
-  <div className="text-center">
-    <a href="https://intasend.com/security" target="_blank" rel="noopener noreferrer">
-      <img
-        src="https://intasend-prod-static.s3.amazonaws.com/img/trust-badges/intasend-trust-badge-v-light.png"
-        alt="IntaSend Secure Payments (PCI-DSS Compliant)"
-        className="mx-auto w-full max-w-[260px] rounded-lg"
-      />
-    </a>
-    <a
-      href="https://intasend.com/security"
-      target="_blank"
-      rel="noopener noreferrer"
-      className="mt-1.5 block text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-    >
-      Secured by IntaSend Payments
-    </a>
-  </div>
+ <IntaSendTrustBadge />
  </aside>
  )
 
@@ -542,15 +526,7 @@ export default function CheckoutPage() {
  <>Pay {formatTourPrice(total, tour.currency)} with M-PESA</>
  )}
  </Button>
- <div className="text-center pt-2">
-    <a href="https://intasend.com/security" target="_blank" rel="noopener noreferrer">
-      <img
-        src="https://intasend-prod-static.s3.amazonaws.com/img/trust-badges/intasend-trust-badge-v-light.png"
-        alt="IntaSend Secure Payments (PCI-DSS Compliant)"
-        className="mx-auto w-full max-w-[220px] rounded-lg opacity-90"
-      />
-    </a>
-  </div>
+ <IntaSendTrustBadge />
  </section>
  ) : (
  <MPesaCheckout

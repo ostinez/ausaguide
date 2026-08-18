@@ -59,27 +59,30 @@ import { usePlatform } from "@/hooks/use-platform"
 
 function statusColorClass(status: BookingStatus) {
   const map: Record<BookingStatus, string> = {
-    pending:   "bg-amber-500/20 text-amber-300 border-amber-500/40",
-    confirmed: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
-    completed: "bg-sky-500/20 text-sky-300 border-sky-500/40",
-    declined:  "bg-rose-500/20 text-rose-300 border-rose-500/40",
-    cancelled: "bg-zinc-500/20 text-zinc-300 border-zinc-500/40",
-    checked_in: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+    pending:               "bg-amber-500/20 text-amber-300 border-amber-500/40",
+    awaiting_confirmation: "bg-amber-500/20 text-amber-300 border-amber-500/40",
+    confirmed:             "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+    completed:             "bg-sky-500/20 text-sky-300 border-sky-500/40",
+    declined:              "bg-rose-500/20 text-rose-300 border-rose-500/40",
+    cancelled:             "bg-zinc-500/20 text-zinc-300 border-zinc-500/40",
+    checked_in:            "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
   }
   return map[status] || "bg-zinc-500/20 text-zinc-300 border-zinc-500/40"
 }
 
 function statusLabel(status: BookingStatus) {
- const map: Record<BookingStatus, string> = {
- confirmed: "Confirmed",
- pending: "Pending",
- completed: "Completed",
- cancelled: "Cancelled",
- checked_in: "Checked In",
- declined: "Declined",
- }
- return map[status]
+  const map: Record<BookingStatus, string> = {
+    confirmed:             "Confirmed",
+    pending:               "Pending",
+    awaiting_confirmation: "Awaiting Confirmation",
+    completed:             "Completed",
+    cancelled:             "Cancelled",
+    checked_in:            "Checked In",
+    declined:              "Declined",
+  }
+  return map[status] || status
 }
+
 
 function StatCard({
  icon: Icon,

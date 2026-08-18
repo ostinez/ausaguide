@@ -2,7 +2,7 @@ export type UserRole = "traveler" | "host" | "admin"
 export type HostType = "local_host" | "certified_guide"
 export type TourCategory = "culture" | "food" | "adventure" | "nature" | "city" | "nightlife"
 export type TourType = "virtual" | "in_person"
-export type BookingStatus = "pending" | "confirmed" | "cancelled" | "completed" | "checked_in" | "declined"
+export type BookingStatus = "pending" | "awaiting_confirmation" | "confirmed" | "cancelled" | "completed" | "checked_in" | "declined"
 export type ApplicationStatus = "pending" | "approved" | "rejected"
 
 export interface Profile {

@@ -3,28 +3,38 @@ import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 
 export interface DirectMessage {
- id: string
- conversation_id: string
- sender_id: string | null
- receiver_id: string
- message: string
- image_url: string | null
- created_at: string
- read: boolean
- sender_type?: "user" | "system" | "traveler" | "host"
- metadata?: {
- type?: string
- booking_id?: string
- tour_name?: string
- date?: string
- time?: string
- guests?: number
- total?: number
- currency?: string
- payment_id?: string
- confirmed_at?: string
- } | null
+  id: string
+  conversation_id: string
+  sender_id: string | null
+  receiver_id?: string | null
+  message: string
+  image_url?: string | null
+  created_at: string
+  read: boolean
+  sender_type?: "user" | "system" | "traveler" | "host"
+  notification_type?: "booking_request" | "booking_confirmed" | "booking_declined" | "daily_room_shared" | string | null
+  metadata?: {
+    type?: string
+    booking_id?: string
+    tour_name?: string
+    traveler_name?: string
+    date?: string
+    time?: string
+    guests?: number
+    amount?: number
+    total?: number
+    currency?: string
+    payment_id?: string
+    confirmed_at?: string
+    decline_reason?: string
+    daily_room_url?: string | null
+    daily_room_id?: string | null
+    message?: string
+    status?: string
+    [key: string]: any
+  } | null
 }
+
 
 export function useMessages(
  conversationId: string | null,

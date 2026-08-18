@@ -6,6 +6,7 @@ import { trackEvent } from "@/lib/posthog"
 import type { Booking, Tour, Profile, TourCategory, TourType, BookingStatus } from "@/lib/types"
 import type { BookingRow, TourRow, ProfileRow } from "@/lib/database.types"
 import { sendBookingRequestEmail, sendBookingConfirmationEmail } from "@/lib/api/emails"
+import { createDailyRoom } from "@/lib/daily"
 
 // ── Input type for creating a new booking ────────────────────────────────────
 
@@ -228,6 +229,26 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
  input.booking_date
  ).catch(err => console.error("Failed to send booking request email:", err))
  }
+
+ // Automatically send booking_request into the chat thread
+ if (input.guest_id && input.host_id) {
+ sendBookingSystemMessage(
+ input.host_id,
+ input.guest_id,
+ data.id,
+ tourTitle,
+ "booking_request",
+ undefined,
+ {
+ travelerName: input.guest_name,
+ bookingDate: input.booking_date,
+ bookingTime: input.booking_time,
+ guestCount: input.guest_count,
+ amount: input.total_price,
+ currency: input.currency || "KES",
+ }
+ ).catch(err => console.warn("Failed to inject booking_request system message into chat:", err))
+ }
  } catch (notifErr) {
  console.error("Failed to process booking creation notifications:", notifErr)
  }
@@ -265,15 +286,25 @@ export async function fetchBookingById(id: string): Promise<Booking | null> {
 
 /**
  * Send a system message into the conversation between host and traveler
- * when a booking is accepted or declined.
+ * when a booking is requested, accepted, or declined.
  */
-async function sendBookingSystemMessage(
+export async function sendBookingSystemMessage(
   hostId: string,
   travelerId: string,
   bookingId: string,
   tourTitle: string,
-  type: "booking_confirmed" | "booking_declined",
-  declineReason?: string
+  type: "booking_request" | "booking_confirmed" | "booking_declined",
+  declineReason?: string,
+  extraDetails?: {
+    travelerName?: string
+    bookingDate?: string
+    bookingTime?: string
+    guestCount?: number
+    amount?: number
+    currency?: string
+    dailyRoomUrl?: string | null
+    dailyRoomId?: string | null
+  }
 ): Promise<void> {
   try {
     const [pA, pB] = [hostId, travelerId].sort()
@@ -293,6 +324,8 @@ async function sendBookingSystemMessage(
       const messagePreview =
         type === "booking_confirmed"
           ? `Booking confirmed for ${tourTitle} 🎉`
+          : type === "booking_request"
+          ? `New booking request for ${tourTitle}`
           : `Booking declined for ${tourTitle}`
       const { data: newConv, error: convErr } = await supabase
         .from("conversations")
@@ -314,20 +347,31 @@ async function sendBookingSystemMessage(
     const systemText =
       type === "booking_confirmed"
         ? `✅ Your booking for "${tourTitle}" has been confirmed by the host! 🎉 Get ready for an amazing experience.`
+        : type === "booking_request"
+        ? `🆕 New booking request from ${extraDetails?.travelerName || "Traveler"} for "${tourTitle}".`
         : `❌ Your booking for "${tourTitle}" was declined by the host.${declineReason ? ` Reason: ${declineReason}` : ""}`
 
     // Insert system message into messages table
     const { error: msgErr } = await supabase.from("messages").insert({
       conversation_id: conversationId,
-      sender_id: hostId, // host is the sender for system context
+      sender_id: null,
       receiver_id: travelerId,
       message: systemText,
       read: false,
       sender_type: "system",
+      notification_type: type,
       metadata: {
         type,
         booking_id: bookingId,
         tour_name: tourTitle,
+        traveler_name: extraDetails?.travelerName,
+        date: extraDetails?.bookingDate,
+        time: extraDetails?.bookingTime,
+        guests: extraDetails?.guestCount,
+        amount: extraDetails?.amount,
+        currency: extraDetails?.currency,
+        daily_room_url: extraDetails?.dailyRoomUrl,
+        daily_room_id: extraDetails?.dailyRoomId,
         ...(declineReason ? { decline_reason: declineReason } : {}),
       },
     })
@@ -350,6 +394,7 @@ async function sendBookingSystemMessage(
     console.warn("[sendBookingSystemMessage] Error:", err)
   }
 }
+
 
 /**
  * Update the status of a booking.
@@ -456,15 +501,37 @@ export async function updateBookingStatus(
     // Send automatic system chat message on accept or decline
     if ((status === "confirmed" || status === "declined") && booking.host_id && travelerId) {
       const tourTitle = booking.tour?.title || "your tour"
+      let dailyRoomUrl = booking.daily_room_url
+      let dailyRoomId = (booking as any)?.daily_room_id
+
+      if (status === "confirmed" && !dailyRoomUrl) {
+        try {
+          const room = await createDailyRoom(tourTitle)
+          dailyRoomUrl = room.url
+          dailyRoomId = room.id
+          await supabase
+            .from("bookings")
+            .update({ daily_room_url: room.url, daily_room_id: room.id })
+            .eq("id", id)
+        } catch (roomErr) {
+          console.warn("[updateBookingStatus] Daily room generation warning:", roomErr)
+        }
+      }
+
       await sendBookingSystemMessage(
         booking.host_id,
         travelerId,
         id,
         tourTitle,
         status === "confirmed" ? "booking_confirmed" : "booking_declined",
-        declineReason
+        declineReason,
+        {
+          dailyRoomUrl,
+          dailyRoomId,
+        }
       )
     }
+
 
     if (status === "confirmed" && booking.guest_email) {
       sendBookingConfirmationEmail(
