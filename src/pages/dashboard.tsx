@@ -58,15 +58,15 @@ import { usePlatform } from "@/hooks/use-platform"
 
 
 function statusColorClass(status: BookingStatus) {
- const map: Record<BookingStatus, string> = {
- pending: "bg-yellow-500/20 text-yellow-500 border-yellow-500/20 hover:bg-yellow-500/30",
- confirmed: "bg-green-500/20 text-green-500 border-green-500/20 hover:bg-green-500/30",
- completed: "bg-blue-500/20 text-blue-500 border-blue-500/20 hover:bg-blue-500/30",
- declined: "bg-red-500/20 text-red-500 border-red-500/20 hover:bg-red-500/30",
- cancelled: "bg-gray-500/20 text-gray-500 border-gray-500/20 hover:bg-gray-500/30",
- checked_in: "bg-green-500/20 text-green-500 border-green-500/20 hover:bg-green-500/30",
- }
- return map[status] || "bg-gray-500/20 text-gray-500 border-gray-500/20"
+  const map: Record<BookingStatus, string> = {
+    pending:   "bg-amber-500/20 text-amber-300 border-amber-500/40",
+    confirmed: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+    completed: "bg-sky-500/20 text-sky-300 border-sky-500/40",
+    declined:  "bg-rose-500/20 text-rose-300 border-rose-500/40",
+    cancelled: "bg-zinc-500/20 text-zinc-300 border-zinc-500/40",
+    checked_in: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+  }
+  return map[status] || "bg-zinc-500/20 text-zinc-300 border-zinc-500/40"
 }
 
 function statusLabel(status: BookingStatus) {
@@ -115,8 +115,8 @@ function StatCard({
  <Icon className={`size-5 ${accent ? "text-teal" : "text-primary"}`} />
  </div>
  <div>
- <p className="text-2xl font-bold text-foreground">{value}</p>
- <p className="text-sm text-muted-foreground">{label}</p>
+ <p className="text-2xl font-bold text-white">{value}</p>
+ <p className="text-sm text-gray-400">{label}</p>
  </div>
  </CardContent>
  </Card>

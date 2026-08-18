@@ -263,143 +263,221 @@ export async function fetchBookingById(id: string): Promise<Booking | null> {
 }
 
 /**
+ * Send a system message into the conversation between host and traveler
+ * when a booking is accepted or declined.
+ */
+async function sendBookingSystemMessage(
+  hostId: string,
+  travelerId: string,
+  bookingId: string,
+  tourTitle: string,
+  type: "booking_confirmed" | "booking_declined",
+  declineReason?: string
+): Promise<void> {
+  try {
+    const [pA, pB] = [hostId, travelerId].sort()
+
+    // Find or create conversation between host and traveler
+    let conversationId: string | null = null
+    const { data: existingConv } = await supabase
+      .from("conversations")
+      .select("id")
+      .or(`and(participant_a.eq.${pA},participant_b.eq.${pB}),and(participant_a.eq.${pB},participant_b.eq.${pA})`)
+      .maybeSingle()
+
+    if (existingConv?.id) {
+      conversationId = existingConv.id
+    } else {
+      // Create a new conversation thread
+      const messagePreview =
+        type === "booking_confirmed"
+          ? `Booking confirmed for ${tourTitle} 🎉`
+          : `Booking declined for ${tourTitle}`
+      const { data: newConv, error: convErr } = await supabase
+        .from("conversations")
+        .insert({
+          participant_a: pA,
+          participant_b: pB,
+          last_message: messagePreview,
+          last_message_at: new Date().toISOString(),
+        })
+        .select("id")
+        .single()
+      if (convErr) throw convErr
+      conversationId = newConv.id
+    }
+
+    if (!conversationId) return
+
+    // Build the system message text
+    const systemText =
+      type === "booking_confirmed"
+        ? `✅ Your booking for "${tourTitle}" has been confirmed by the host! 🎉 Get ready for an amazing experience.`
+        : `❌ Your booking for "${tourTitle}" was declined by the host.${declineReason ? ` Reason: ${declineReason}` : ""}`
+
+    // Insert system message into messages table
+    const { error: msgErr } = await supabase.from("messages").insert({
+      conversation_id: conversationId,
+      sender_id: hostId, // host is the sender for system context
+      receiver_id: travelerId,
+      message: systemText,
+      read: false,
+      sender_type: "system",
+      metadata: {
+        type,
+        booking_id: bookingId,
+        tour_name: tourTitle,
+        ...(declineReason ? { decline_reason: declineReason } : {}),
+      },
+    })
+
+    if (msgErr) {
+      console.warn("[sendBookingSystemMessage] Failed to insert system message:", msgErr.message)
+      return
+    }
+
+    // Update last_message on conversation
+    await supabase
+      .from("conversations")
+      .update({
+        last_message: systemText.substring(0, 120),
+        last_message_at: new Date().toISOString(),
+      })
+      .eq("id", conversationId)
+  } catch (err) {
+    // Never block the booking action because of chat issues
+    console.warn("[sendBookingSystemMessage] Error:", err)
+  }
+}
+
+/**
  * Update the status of a booking.
  */
 export async function updateBookingStatus(
- id: string,
- status: BookingStatus,
- declineReason?: string
+  id: string,
+  status: BookingStatus,
+  declineReason?: string
 ): Promise<Booking> {
- // 1. Fetch current status_history & created_at
- const { data: current, error: fetchError } = await supabase
- .from("bookings")
- .select("status_history, created_at")
- .eq("id", id)
- .maybeSingle()
+  // 1. Fetch current status_history & created_at
+  const { data: current, error: fetchError } = await supabase
+    .from("bookings")
+    .select("status_history, created_at")
+    .eq("id", id)
+    .maybeSingle()
 
- if (fetchError) throw fetchError
+  if (fetchError) throw fetchError
 
- let currentHistory: any[] = []
- if (current) {
- if (Array.isArray(current.status_history)) {
- currentHistory = [...current.status_history]
- } else {
- currentHistory = [
- { status: "pending", timestamp: current.created_at || new Date().toISOString() }
- ]
- }
- }
+  let currentHistory: any[] = []
+  if (current) {
+    if (Array.isArray(current.status_history)) {
+      currentHistory = [...current.status_history]
+    } else {
+      currentHistory = [
+        { status: "pending", timestamp: current.created_at || new Date().toISOString() }
+      ]
+    }
+  }
 
- // 2. Append new status change
- currentHistory.push({
- status: status,
- timestamp: new Date().toISOString()
- })
+  // 2. Append new status change
+  currentHistory.push({
+    status: status,
+    timestamp: new Date().toISOString()
+  })
 
- // 3. Delegate to Edge Function for confirmed/declined to handle status notifications and chat
- if (status === "confirmed" || status === "declined") {
- const action = status === "confirmed" ? "confirm" : "reject"
- try {
- const { data: fnData, error: fnError } = await supabase.functions.invoke("manage-booking-payment", {
- body: { bookingId: id, action, declineReason }
- })
- if (fnError) {
- console.warn("[updateBookingStatus] Edge function returned error, proceeding with direct fallback:", fnError.message)
- } else if (fnData?.error) {
- console.warn("[updateBookingStatus] Edge function payload warning:", fnData.error)
- }
- } catch (invokeErr: any) {
- console.warn("[updateBookingStatus] Failed to invoke manage-booking-payment edge function, proceeding with direct database update:", invokeErr?.message)
- }
- }
+  // 3. Delegate to Edge Function for confirmed/declined to handle status notifications and chat
+  if (status === "confirmed" || status === "declined") {
+    const action = status === "confirmed" ? "confirm" : "reject"
+    try {
+      const { data: fnData, error: fnError } = await supabase.functions.invoke("manage-booking-payment", {
+        body: { bookingId: id, action, declineReason }
+      })
+      if (fnError) {
+        console.warn("[updateBookingStatus] Edge function returned error, proceeding with direct fallback:", fnError.message)
+      } else if (fnData?.error) {
+        console.warn("[updateBookingStatus] Edge function payload warning:", fnData.error)
+      }
+    } catch (invokeErr: any) {
+      console.warn("[updateBookingStatus] Failed to invoke manage-booking-payment edge function:", invokeErr?.message)
+    }
+  }
 
- // 4. Update database (status history and any other statuses like 'completed')
- // We still run this update to ensure status_history is updated. The edge function already updated 'status', 
- // but updating it again here with status_history ensures consistency.
- const { data, error } = await supabase
- .from("bookings")
- .update({ 
- status,
- status_history: currentHistory,
- ...(declineReason ? { decline_reason: declineReason } : {})
- })
- .eq("id", id)
- .select(`
- *,
- tour:tours (
- *,
- host:profiles (*)
- )
- `)
- .single()
+  // 4. Update database (status history and any other statuses like 'completed')
+  const { data, error } = await supabase
+    .from("bookings")
+    .update({
+      status,
+      status_history: currentHistory,
+      ...(declineReason ? { decline_reason: declineReason } : {})
+    })
+    .eq("id", id)
+    .select(`
+      *,
+      tour:tours (
+        *,
+        host:profiles (*)
+      )
+    `)
+    .single()
 
- if (error) throw error
+  if (error) throw error
 
- try {
- const booking = mapBooking(data as BookingRow & { tour?: (TourRow & { host?: ProfileRow | null }) | null })
- const travelerId = booking.guest_id
+  try {
+    const booking = mapBooking(data as BookingRow & { tour?: (TourRow & { host?: ProfileRow | null }) | null })
+    const travelerId = booking.guest_id
 
- let message = ""
- let type: "booking_request" | "booking_accepted" | "booking_declined" | "booking_completed" | "new_message" = "booking_request"
+    let message = ""
+    let type: "booking_request" | "booking_accepted" | "booking_declined" | "booking_completed" | "new_message" = "booking_request"
 
- if (status === "confirmed") {
- message = "Host accepted your booking"
- type = "booking_accepted"
- trackEvent("booking_created", {
- booking_id: id,
- tour_id: booking.tour_id,
- host_id: booking.host_id,
- guest_id: booking.guest_id,
- total_price: booking.total_price,
- })
- } else if (status === "declined") {
- message = "Host declined your booking"
- type = "booking_declined"
- } else if (status === "completed") {
- message = "Tour complete! Leave a review"
- type = "booking_completed"
- }
+    if (status === "confirmed") {
+      message = "Host accepted your booking"
+      type = "booking_accepted"
+      trackEvent("booking_created", {
+        booking_id: id,
+        tour_id: booking.tour_id,
+        host_id: booking.host_id,
+        guest_id: booking.guest_id,
+        total_price: booking.total_price,
+      })
+    } else if (status === "declined") {
+      message = "Host declined your booking"
+      type = "booking_declined"
+    } else if (status === "completed") {
+      message = "Tour complete! Leave a review"
+      type = "booking_completed"
+    }
 
- // The edge function already creates notifications for 'confirmed' and 'declined'.
- // So we only create them for other statuses.
- if (message && travelerId && status !== "confirmed" && status !== "declined") {
- await createNotification(travelerId, message, type, id)
- }
+    // The edge function already creates notifications for 'confirmed' and 'declined'.
+    // So we only create them for other statuses.
+    if (message && travelerId && status !== "confirmed" && status !== "declined") {
+      await createNotification(travelerId, message, type, id)
+    }
 
- if (status === "confirmed" && booking.host_id && travelerId) {
- try {
- const [pA, pB] = [booking.host_id, travelerId].sort()
- const { data: existingConv } = await supabase
- .from("conversations")
- .select("id")
- .or(`and(participant_a.eq.${pA},participant_b.eq.${pB}),and(participant_a.eq.${pB},participant_b.eq.${pA})`)
- .maybeSingle()
+    // Send automatic system chat message on accept or decline
+    if ((status === "confirmed" || status === "declined") && booking.host_id && travelerId) {
+      const tourTitle = booking.tour?.title || "your tour"
+      await sendBookingSystemMessage(
+        booking.host_id,
+        travelerId,
+        id,
+        tourTitle,
+        status === "confirmed" ? "booking_confirmed" : "booking_declined",
+        declineReason
+      )
+    }
 
- if (!existingConv) {
- await supabase.from("conversations").insert({
- participant_a: pA,
- participant_b: pB,
- last_message: `Booking confirmed for ${booking.tour?.title || "tour"}`,
- last_message_at: new Date().toISOString(),
- })
- }
- } catch (convErr) {
- console.warn("Failed to ensure conversation thread:", convErr)
- }
- }
+    if (status === "confirmed" && booking.guest_email) {
+      sendBookingConfirmationEmail(
+        booking.guest_email,
+        booking.guest_name,
+        booking.tour?.title || "your tour",
+        booking.booking_date,
+        `$${booking.total_price.toLocaleString()} USD`
+      ).catch(err => console.error("Failed to send booking confirmation email:", err))
+    }
+  } catch (notifErr) {
+    console.error("Failed to process status notification/events:", notifErr)
+  }
 
- if (status === "confirmed" && booking.guest_email) {
- sendBookingConfirmationEmail(
- booking.guest_email,
- booking.guest_name,
- booking.tour?.title || "your tour",
- booking.booking_date,
- `$${booking.total_price.toLocaleString()} USD`
- ).catch(err => console.error("Failed to send booking confirmation email:", err))
- }
- } catch (notifErr) {
- console.error("Failed to process status notification/events:", notifErr)
- }
-
- return mapBooking(data as BookingRow & { tour?: TourRow | null })
+  return mapBooking(data as BookingRow & { tour?: TourRow | null })
 }
+
