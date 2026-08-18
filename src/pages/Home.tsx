@@ -12,6 +12,7 @@ import { TikTokWidget } from "@/components/home/TikTokWidget"
 import { useSEO } from "@/hooks/useSEO"
 import { JsonLd } from "@/components/seo/JsonLd"
 import { WaitlistHero } from "@/components/home/WaitlistHero"
+import { TreePlanting } from "@/components/TreePlanting"
 import ProfileCard from "@/components/ui/ProfileCard"
 import founderPhoto from "../assets/images/founder/austin-mbote.webp"
 import { ArrowRight } from "lucide-react"
@@ -138,6 +139,11 @@ export default function Home() {
       <div className="defer-render">
         <ImpactPreview />
       </div>
+      <section className="py-16 bg-background border-b border-border">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <TreePlanting />
+        </div>
+      </section>
       <div className="defer-render">
         <TikTokWidget />
       </div>

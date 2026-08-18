@@ -545,5 +545,40 @@ img {
   box-shadow: var(--shadow-neo-inset);
 }
 
+/* ── Tree Planting Social Impact Section Styles ── */
+.tree-planting-input {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(34, 197, 94, 0.35) !important;
+  color: #ffffff !important;
+  transition: all 0.2s ease;
+}
+
+.tree-planting-input::placeholder {
+  color: rgba(167, 243, 208, 0.55) !important;
+}
+
+.tree-planting-input:focus {
+  outline: none !important;
+  border-color: #22c55e !important;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3) !important;
+}
+
+.tree-planting-button {
+  background: linear-gradient(135deg, #16a34a, #15803d) !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.tree-planting-button:hover {
+  background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+}
+
+.tree-planting-button:disabled {
+  background: rgba(22, 163, 74, 0.35) !important;
+  cursor: not-allowed;
+}
+
+
 
 

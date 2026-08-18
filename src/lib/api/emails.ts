@@ -450,3 +450,42 @@ export async function sendGuideRevokedEmail(
  return dispatchEmail({ to, subject, html })
 }
 
+export async function sendTreePlantingConfirmationEmail(
+  to: string,
+  name: string,
+  trees: number,
+  treeId: string
+): Promise<boolean> {
+  const subject = `Thank You for Planting ${trees} Tree${trees > 1 ? "s" : ""} with Ausaguide`
+  const html = `
+  <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #166534; border-radius: 24px; background: linear-gradient(135deg, #0a1a0f 0%, #1a3a2a 100%); color: #ffffff; line-height: 1.6;">
+    <div style="text-align: center; margin-bottom: 32px;">
+      <img src="https://ausaguide.com/logo-primary.png" alt="Ausaguide" style="height: 36px; width: auto; display: inline-block;" />
+    </div>
+    <p style="font-size: 18px; font-weight: 700; color: #4ade80; margin-bottom: 8px;">Thank you, ${name}!</p>
+    <p style="font-size: 16px; color: #ffffff; margin-bottom: 20px;">
+      You have successfully pledged to plant <strong style="color: #86efac;">${trees} indigenous tree${trees > 1 ? "s" : ""}</strong> to support community reforestation in Kenya.
+    </p>
+    
+    <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(74,222,128,0.3); border-radius: 16px; padding: 20px; margin-bottom: 24px;">
+      <p style="font-size: 13px; font-weight: 600; color: #86efac; margin: 0 0 6px; text-transform: uppercase; letter-spacing: 0.05em;">Your Certificate & Tree Identifier</p>
+      <p style="font-size: 20px; font-weight: 800; color: #ffffff; margin: 0; font-family: monospace; letter-spacing: 0.1em;">${treeId}</p>
+    </div>
+    
+    <p style="font-size: 14px; color: #a7d4b8; margin-bottom: 24px;">
+      Every indigenous sapling is nurtured by local community guides and conservation stewards in highland water towers across Kenya.
+    </p>
+    
+    <div style="text-align: center; margin-bottom: 28px;">
+      <a href="https://ausaguide.com/tree-planting" style="background: linear-gradient(135deg, #16a34a, #15803d); color: #ffffff; padding: 14px 32px; border-radius: 9999px; text-decoration: none; font-weight: bold; display: inline-block; font-size: 15px;">View Tree Planting Project →</a>
+    </div>
+
+    <p style="font-size: 15px; color: #ffffff; margin-bottom: 0; font-weight: 600;">– The Ausaguide Conservation Team</p>
+    <hr style="border: 0; border-top: 1px solid rgba(74, 222, 128, 0.2); margin: 32px 0;" />
+    <p style="font-size: 13px; color: #4ade80; font-weight: 700; text-align: center; margin-bottom: 4px;">Ausaguide — Social Impact & Reforestation</p>
+    <p style="font-size: 11px; color: #86efac; text-align: center; margin: 0;">© 2026 Ausaguide. Nairobi, Kenya.</p>
+  </div>
+  `
+  return dispatchEmail({ to, subject, html, name })
+}
+

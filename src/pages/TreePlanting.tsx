@@ -1,12 +1,12 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { TreePine, Sprout, Globe, Leaf, TrendingUp, Heart, ShieldCheck, Mail, Building, User, FileText, ArrowRight, Camera, CheckCircle2 } from "lucide-react"
+import { TreePine, Globe, Leaf, TrendingUp, Heart, ShieldCheck, Mail, Building, User, FileText, ArrowRight, Camera, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { GradientText } from "@/components/ui/GradientText"
 import { BorderGlow } from "@/components/ui/BorderGlow"
 import { WaitlistSection } from "@/components/ui/WaitlistSection"
+import { TreePlanting } from "@/components/TreePlanting"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 import { useSEO } from "@/hooks/useSEO"
@@ -63,15 +63,6 @@ export default function TreePlantingPage() {
  description: "Building a network of local reforestation initiatives in Kenya. Support sustainable tree planting and local guide communities.",
  })
 
- const navigate = useNavigate()
-
- // Virtual Tree Form State
- const [treeName, setTreeName] = useState("")
- const [dedication, setDedication] = useState("")
- const [fullName, setFullName] = useState("")
- const [treeEmail, setTreeEmail] = useState("")
- const [submittingTree, setSubmittingTree] = useState(false)
-
  // Partnership form state
  const [orgName, setOrgName] = useState("")
  const [contactName, setContactName] = useState("")
@@ -79,91 +70,6 @@ export default function TreePlantingPage() {
  const [partnerMessage, setPartnerMessage] = useState("")
  const [submittingPartner, setSubmittingPartner] = useState(false)
  const [partnerSuccess, setPartnerSuccess] = useState(false)
-
- const handlePlantTree = async (e: React.FormEvent) => {
- e.preventDefault()
- if (!fullName.trim() || !treeEmail.trim()) {
- toast.error("Please enter your name and email.")
- return
- }
-
- setSubmittingTree(true)
- try {
- let finalTreeId = ""
-
- // 1. Try to invoke edge function
- try {
- const { data, error } = await supabase.functions.invoke("generate-tree-id", {
- method: "GET"
- })
- if (data && data.tree_id) {
- finalTreeId = data.tree_id
- } else {
- console.warn("Edge function didn't return tree_id:", error)
- }
- } catch (err) {
- console.warn("Failed to call generate-tree-id edge function, falling back to local generation:", err)
- }
-
- // 2. Client-side fallback if edge function failed/not deployed
- if (!finalTreeId) {
- try {
- const { count, error } = await supabase
- .from("tree_commitments")
- .select("*", { count: "exact", head: true })
- 
- if (error) throw error
- 
- const nextIndex = (count || 0) + 1
- finalTreeId = `AUS-TREE-${nextIndex.toString().padStart(4, "0")}`
- } catch (dbErr) {
- console.warn("Database count failed, generating random tree ID:", dbErr)
- const randomNum = Math.floor(1000 + Math.random() * 9000)
- finalTreeId = `AUS-TREE-${randomNum}`
- }
- }
-
- const userId = localStorage.getItem("user_id")
-
- // 3. Save to database
- const { error } = await supabase
- .from("tree_commitments")
- .insert({
- user_id: userId || null,
- email: treeEmail.trim(),
- name: fullName.trim(),
- tree_name: treeName.trim() || null,
- dedication: dedication.trim() || null,
- tree_id: finalTreeId,
- status: "pending",
- })
-
- if (error) throw error
-
- toast.success("Your virtual tree has been planted! Tree ID: " + finalTreeId)
- 
- // Redirect to thank you page with state
- navigate("/tree-planted", {
- state: {
- name: fullName.trim(),
- email: treeEmail.trim(),
- treeId: finalTreeId,
- treeName: treeName.trim() || "Unnamed",
- dedication: dedication.trim() || "None",
- date: new Date().toLocaleDateString("en-US", {
- year: "numeric",
- month: "long",
- day: "numeric",
- })
- }
- })
- } catch (err: any) {
- console.error(err)
- toast.error(err.message || "Failed to plant virtual tree. Please try again.")
- } finally {
- setSubmittingTree(false)
- }
- }
 
  const handlePartnerSubmit = async (e: React.FormEvent) => {
  e.preventDefault()
@@ -333,96 +239,7 @@ export default function TreePlantingPage() {
         </div>
 
         {/* 4. Plant a Virtual Tree (Commitment) */}
-        <div className="p-8 border border-border bg-card shadow-modern rounded-3xl space-y-6">
-          <div className="flex items-center gap-2.5">
-            <Sprout className="size-6 text-brand" />
-            <h3 className="text-xl font-bold text-foreground font-accent">
-              <GradientText colors={["#06363D", "#0D6F73", "#06363D"]} animationSpeed={4}>
-                Commit to Reforestation
-              </GradientText>
-            </h3>
-          </div>
-          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-2xl font-medium">
-            Pledge a virtual tree today at no cost. Give it a name and a dedication message. Once submitted, a unique Tree ID and digital certificate will be generated to certify your commitment to local reforestation in Kenya.
-          </p>
-
-          <form onSubmit={handlePlantTree} className="space-y-4 pt-2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-foreground/80">Your Name *</label>
-                <div className="relative">
-                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    placeholder="Enter your name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    disabled={submittingTree}
-                    required
-                    className="pl-10 h-11 bg-secondary/50 border-border text-xs rounded-xl focus:border-brand focus:ring-1 focus:ring-brand text-foreground placeholder:text-muted-foreground font-medium"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-foreground/80">Email Address *</label>
-                <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                  <Input
-                    type="email"
-                    placeholder="Enter your email"
-                    value={treeEmail}
-                    onChange={(e) => setTreeEmail(e.target.value)}
-                    disabled={submittingTree}
-                    required
-                    className="pl-10 h-11 bg-secondary/50 border-border text-xs rounded-xl focus:border-brand focus:ring-1 focus:ring-brand text-foreground placeholder:text-muted-foreground font-medium"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-foreground/80">Tree Name (Optional)</label>
-                <div className="relative">
-                  <TreePine className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    placeholder="e.g. Acacia Sunrise"
-                    value={treeName}
-                    onChange={(e) => setTreeName(e.target.value)}
-                    disabled={submittingTree}
-                    className="pl-10 h-11 bg-secondary/50 border-border text-xs rounded-xl focus:border-brand focus:ring-1 focus:ring-brand text-foreground placeholder:text-muted-foreground font-medium"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-foreground/80">Dedication (Optional)</label>
-                <div className="relative">
-                  <FileText className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    placeholder="e.g. In memory of loved ones"
-                    value={dedication}
-                    onChange={(e) => setDedication(e.target.value)}
-                    disabled={submittingTree}
-                    className="pl-10 h-11 bg-secondary/50 border-border text-xs rounded-xl focus:border-brand focus:ring-1 focus:ring-brand text-foreground placeholder:text-muted-foreground font-medium"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <Button
-              type="submit"
-              disabled={submittingTree}
-              className="w-full h-11 rounded-full bg-gradient-to-r from-[#0B3037] to-[#0D6F73] hover:from-[#06363D] hover:to-[#0B3037] text-white font-bold shadow-neo-pill border border-white/15 cursor-pointer flex items-center justify-center gap-1.5 text-xs"
-            >
-              {submittingTree ? "Planting Tree..." : "Plant My Tree"}
-              <ArrowRight className="size-3.5" />
-            </Button>
-          </form>
-        </div>
+        <TreePlanting />
 
         {/* 5. Aspirational Commitment block */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
