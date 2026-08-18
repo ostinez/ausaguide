@@ -3,7 +3,7 @@ import {
   type FormEvent,
 } from "react"
 import { useNavigate, Link } from "react-router-dom"
-import { Search, Compass, Users } from "lucide-react"
+import { Search, Compass } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { TextType } from "@/components/ui/TextType"
 import { RippleGrid } from "@/components/ui/RippleGrid"
@@ -57,31 +57,31 @@ export function HeroSection() {
       <div className="relative z-10 max-w-3xl text-center space-y-6 pointer-events-auto my-auto py-6">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-xs font-semibold text-white/95 shadow-sm animate-in fade-in duration-500">
           <span className="size-2 rounded-full bg-[#34e0a1] animate-ping" />
-          <span>Live Kenyan Experiences & Verified Local Hosts</span>
+          <span>Live Video Tours &amp; Vetted Local Guides</span>
         </div>
 
         <h1 className="text-4xl sm:text-6xl md:text-7xl font-black text-white tracking-tight leading-[1.08] drop-shadow-lg">
-          Be a Local.{" "}
+          Stop Wasting Money on{" "}
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#34e0a1] via-[#0D6F73] to-[#80e5e9]">
-            Share Your World.
+            Tourist Traps.
           </span>
         </h1>
 
         <div className="flex items-center justify-center min-h-[32px]">
           <TextType
             text={[
-              "Discover hidden gems with verified Maasai guides.",
-              "Live street food walks through Nairobi's culture hubs.",
-              "Explore Diani, Lamu, and Serengeti off the beaten path.",
+              "Explore Kenya through a local's eyes before you book.",
+              "Live video reconnaissance tours with vetted guides. Skip the scams.",
+              "Scout your destination live before you travel.",
             ]}
-            typingSpeed={50}
+            typingSpeed={45}
             pauseDuration={2400}
             deletingSpeed={25}
             loop={true}
             textColors={["#ffffff", "#34e0a1", "#80e5e9"]}
             showCursor={true}
             cursorCharacter="|"
-            className="text-xs sm:text-sm md:text-base font-medium text-white/90 drop-shadow-sm"
+            className="text-xs sm:text-sm md:text-base font-medium text-white/90 drop-shadow-sm max-w-xl mx-auto"
           />
         </div>
 
@@ -127,19 +127,19 @@ export function HeroSection() {
 
         {/* Quick Action CTA Buttons */}
         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+          <a
+            href="#waitlist"
+            className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-gradient-to-r from-[#0D6F73] to-[#06363D] hover:from-[#0B3037] hover:to-[#0D6F73] text-white text-xs sm:text-sm font-bold shadow-lg border border-white/20 transition-all duration-200 transform hover:scale-105 min-h-[44px]"
+          >
+            <span>Join the Waitlist</span>
+            <span className="text-xs opacity-80">›</span>
+          </a>
           <Link
             to="/tours"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-[#0D6F73] to-[#06363D] hover:from-[#0B3037] hover:to-[#0D6F73] text-white text-xs sm:text-sm font-bold shadow-lg border border-white/20 transition-all duration-200 transform hover:scale-105"
+            className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-bold backdrop-blur-md border border-white/20 transition-all duration-200 min-h-[44px]"
           >
             <Compass className="size-4" />
             <span>Explore Tours</span>
-          </Link>
-          <Link
-            to="/onboarding?become-host=true"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-bold backdrop-blur-md border border-white/20 transition-all duration-200"
-          >
-            <Users className="size-4" />
-            <span>Become a Host</span>
           </Link>
         </div>
       </div>

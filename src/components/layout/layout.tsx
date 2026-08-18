@@ -347,12 +347,12 @@ export function Layout() {
  <div className="flex min-h-svh flex-col bg-background text-foreground">
  {/* Beta Banner (hidden on Auth/Onboarding) */}
  {!isAuthOrOnboarding && (
- <div className="w-full bg-brand-deep text-white text-xs sm:text-sm font-semibold py-2.5 px-4 text-center z-50 relative flex flex-wrap items-center justify-center gap-1.5 shadow-md">
- <span>🚀 Early Access — We're testing with real users.</span>
- <Link to="/waitlist" className="underline hover:text-white/80 font-bold transition duration-200">
- Join the waitlist for launch.
- </Link>
- </div>
+        <div className="w-full bg-brand-deep text-white text-xs sm:text-sm font-semibold py-2.5 px-4 text-center z-50 relative flex flex-wrap items-center justify-center gap-1.5 shadow-md">
+          <span>◆ Early Access — We're testing with real users.</span>
+          <a href="/#waitlist" className="underline hover:text-white/80 font-bold transition duration-200">
+            Join the waitlist for launch.
+          </a>
+        </div>
  )}
  {impersonatedName && (
  <div className="w-full bg-amber-500 text-black text-xs font-bold py-2.5 px-4 text-center z-50 relative flex items-center justify-center gap-2 shadow-md">
