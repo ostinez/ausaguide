@@ -141,7 +141,7 @@ export default function MentalHealthPage() {
 
  if (error) throw error
 
- toast.success("🌅 Your travel getaway commitment has been registered! Commitment ID: " + finalCommitmentId)
+ toast.success("Your travel getaway pledge has been registered! Pledge ID: " + finalCommitmentId)
 
  // Redirect to thank you page with state
  navigate("/travel-commitment-thank-you", {

@@ -1,4 +1,5 @@
 import { useEffect } from "react"
+import { Music } from "lucide-react"
 
 export function TikTokWidget() {
   useEffect(() => {
@@ -63,7 +64,8 @@ export function TikTokWidget() {
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-black hover:bg-neutral-900 text-white rounded-xl font-bold text-sm sm:text-base transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] border border-white/20 min-h-[44px]"
           >
-            🎵 Follow @ausaguide on TikTok
+            <Music className="size-4" />
+            <span>Follow @ausaguide on TikTok</span>
           </a>
         </div>
       </div>

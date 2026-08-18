@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom"
 import {
  Shield, Users, Star, DollarSign, Search, ArrowLeft,
  CheckCircle2, BadgeAlert, TrendingUp, MapPin,
- Eye, Ban, UserCheck, Terminal, EyeOff,
+ Eye, Ban, UserCheck, Terminal, EyeOff, Lightbulb,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -354,7 +354,10 @@ export default function AdminSettingsPage() {
  </div>
  </div>
  <div className="rounded-xl bg-muted/10 border border-border/40 p-4 text-xs text-muted-foreground leading-normal space-y-1.5">
- <p><strong>💡 Operational Insights:</strong></p>
+ <p className="flex items-center gap-1.5 font-bold text-foreground">
+ <Lightbulb className="size-3.5 text-amber-400" />
+ <span>Operational Insights:</span>
+ </p>
  <p>· Your current Host ratio matches Lamu/Nairobi seasonal peaks, aligned with standard early supply loops.</p>
  <p>· User growth rate is trending +14% week-on-week, matching freelancer growth structures on other global marketplaces.</p>
  </div>

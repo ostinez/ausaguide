@@ -15,6 +15,9 @@ import {
  Smartphone,
  Wifi,
  WifiOff,
+ Calendar,
+ Users,
+ Lightbulb,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -315,8 +318,8 @@ export function MPesaCheckout({
  <span className="text-muted-foreground">{bookingSummary.tourTitle}</span>
  </div>
  <div className="flex justify-between text-xs text-muted-foreground">
- <span>📅 {bookingSummary.bookingDate}</span>
- <span>👥 {bookingSummary.guestCount} guest{bookingSummary.guestCount !== 1 ? "s" : ""}</span>
+ <span className="flex items-center gap-1.5"><Calendar className="size-3 text-primary" /> {bookingSummary.bookingDate}</span>
+ <span className="flex items-center gap-1.5"><Users className="size-3 text-primary" /> {bookingSummary.guestCount} guest{bookingSummary.guestCount !== 1 ? "s" : ""}</span>
  </div>
  <div className="flex justify-between border-t border-white/8 pt-2 font-semibold">
  <span>Total</span>
@@ -355,8 +358,9 @@ export function MPesaCheckout({
   <p className="text-[11px] text-muted-foreground">
   Enter the phone number registered with your M-PESA account.
   </p>
-  <p className="text-[10px] text-amber-500/90 font-medium">
-  💡 Sandbox mode: Use test number <code className="px-1 py-0.5 rounded bg-amber-500/10 font-bold">254708374149</code> (PIN: 12345) to test STK Push simulation.
+  <p className="text-[10px] text-amber-500/90 font-medium flex items-center gap-1.5">
+    <Lightbulb className="size-3 shrink-0" />
+    <span>Sandbox mode: Use test number <code className="px-1 py-0.5 rounded bg-amber-500/10 font-bold">254708374149</code> (PIN: 12345) to test STK Push simulation.</span>
   </p>
   </div>
   )}
@@ -523,7 +527,7 @@ export function MPesaCheckout({
  <CheckCircle2 className="size-8 text-green-400" />
  </motion.div>
  <div>
- <p className="text-lg font-bold text-foreground">Payment Confirmed! 🎉</p>
+ <p className="text-lg font-bold text-foreground">Payment Confirmed!</p>
  <p className="mt-1 text-sm text-muted-foreground">Your booking is now confirmed. Redirecting…</p>
  </div>
  </motion.div>

@@ -19,6 +19,8 @@ import {
  ChevronLeft,
  ChevronRight,
  Eye,
+ Pencil,
+ LayoutDashboard,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { GlareHover } from "@/components/ui/GlareHover"
@@ -815,17 +817,19 @@ export default function TourDetailPage() {
  </p>
  <div className="flex flex-col gap-2 pt-2">
  <Button
- className="w-full rounded-full py-5 text-sm font-bold bg-primary text-primary-foreground"
+ className="w-full rounded-full py-5 text-sm font-bold bg-primary text-primary-foreground flex items-center justify-center gap-2"
  onClick={() => navigate(`/host/tours/${tour.id}/edit`)}
  >
- ✏️ Edit Tour Details
+ <Pencil className="size-4" />
+ <span>Edit Tour Details</span>
  </Button>
  <Button
  variant="outline"
- className="w-full rounded-full py-5 text-sm font-semibold border-primary/30"
+ className="w-full rounded-full py-5 text-sm font-semibold border-primary/30 flex items-center justify-center gap-2"
  onClick={() => navigate("/host/dashboard?tab=tours")}
  >
- 📊 View in Host Dashboard
+ <LayoutDashboard className="size-4" />
+ <span>View in Host Dashboard</span>
  </Button>
  </div>
  </>

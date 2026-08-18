@@ -38,6 +38,7 @@ async function dispatchEmail({ to, subject, html, subscribeNewsletter, name }: E
  }
 }
 
+
 export async function sendWelcomeEmail(to: string, userName: string, subscribeNewsletter?: boolean): Promise<boolean> {
  const subject = "Welcome to Ausaguide — Confirm Your Email"
  const confirmationLink = "https://ausaguide.com/auth/callback"
@@ -222,7 +223,7 @@ export async function sendGeneralWaitlistEmail(
  <tr>
  <td align="center">
  <a href="https://ausaguide.com" style="display:inline-block; background-color:#1a1a1a; color:#ffffff; font-size:16px; font-weight:600; text-decoration:none; padding:14px 40px; border-radius:8px; letter-spacing:0.3px;">
- <span style="margin-right:8px;">🌐</span> Continue Exploring
+ Continue Exploring
  </a>
  </td>
  </tr>
@@ -284,14 +285,14 @@ export async function sendPasswordResetEmail(to: string, userName: string, reset
  * Call this in a loop over all waitlist rows on launch day.
  */
 export async function sendLaunchEmail(to: string, userName: string): Promise<boolean> {
- const subject = "🚀 Ausaguide is Live!"
+ const subject = "Ausaguide is Live!"
  const html = `
  <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 24px; background-color: #16161A; color: #fffffe; line-height: 1.6;">
  <div style="text-align: center; margin-bottom: 32px;">
  <img src="https://ausaguide.com/logo-primary.png" alt="Ausaguide" style="height: 36px; width: auto; display: inline-block;" />
  </div>
  <p style="font-size: 16px; margin-bottom: 20px; color: #fffffe;">Hi ${userName}, we have some exciting news!</p>
- <p style="font-size: 18px; font-weight: 700; margin-bottom: 24px; color: #0D6F73;">🚀 Ausaguide is officially live!</p>
+ <p style="font-size: 18px; font-weight: 700; margin-bottom: 24px; color: #0D6F73;">Ausaguide is officially live!</p>
  <p style="font-size: 16px; margin-bottom: 24px; color: #a7a9be;">You've been waiting patiently — and today is the day. Discover local guides, book authentic experiences, and explore Kenya like never before.</p>
  
  <div style="text-align: center; margin-bottom: 28px;">
@@ -353,21 +354,20 @@ export async function sendGuideApprovedEmail(
  to: string,
  hostName: string
 ): Promise<boolean> {
- const subject = `✅ Congratulations! You're a Verified Guide on Ausaguide`
+ const subject = `Congratulations! You're a Verified Guide on Ausaguide`
  const html = `
  <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 24px; background-color: #16161A; color: #fffffe; line-height: 1.6;">
  <div style="text-align: center; margin-bottom: 32px;">
  <img src="https://ausaguide.com/logo-primary.png" alt="Ausaguide" style="height: 36px; width: auto; display: inline-block;" />
  </div>
  <div style="text-align: center; margin-bottom: 24px;">
- <div style="font-size: 48px; margin-bottom: 8px;">✅</div>
  <p style="font-size: 22px; font-weight: 800; color: #fffffe; margin: 0;">You're a Verified Guide!</p>
  </div>
  <p style="font-size: 16px; color: #a7a9be; margin-bottom: 20px;">Hi ${hostName}, great news! Our admin team has verified your tour guide license and you now hold the <strong style="color: #3b82f6;">Verified Guide</strong> badge on Ausaguide.</p>
  <div style="background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.3); border-radius: 16px; padding: 20px; margin-bottom: 24px;">
  <p style="font-size: 15px; font-weight: 600; color: #3b82f6; margin: 0 0 6px;">What this means for you:</p>
  <ul style="color: #a7a9be; font-size: 14px; margin: 0; padding-left: 20px; line-height: 1.8;">
- <li>A ✅ Verified Guide blue badge appears on all your tours and your profile</li>
+ <li>A Verified Guide badge appears on all your tours and your profile</li>
  <li>Increased trust and visibility with travelers</li>
  <li>Priority placement in guide search results</li>
  </ul>

@@ -12,7 +12,7 @@ interface BookingDeclinedCardProps {
 export default function BookingDeclinedCard({ content }: BookingDeclinedCardProps) {
   const tourName = content.tour_name || "Tour"
   const reason = content.decline_reason || "Host is unavailable at this time"
-  const message = content.message || `❌ Your booking for "${tourName}" was declined by the host.`
+  const message = content.message || `Your booking for "${tourName}" was declined by the host.`
 
   return (
     <div className="flex justify-center my-3 w-full animate-in fade-in slide-in-from-bottom-2 duration-300">

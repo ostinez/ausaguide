@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link, useLocation } from "react-router-dom"
-import { Menu, X, Globe, LogOut, Settings, LayoutDashboard, ChevronDown } from "lucide-react"
+import { Menu, X, Globe, LogOut, Settings, LayoutDashboard, ChevronDown, MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
  Sheet,
@@ -202,7 +202,8 @@ export function Navbar() {
  {userId && <NotificationBell />}
  {userId && unreadCount > 0 && (
  <div className="hidden md:flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon/10 border border-[#0D6F73]/20 text-[#0D6F73] animate-pulse">
- 💬 {unreadCount}
+ <MessageSquare className="size-3" />
+ <span>{unreadCount}</span>
  </div>
  )}
 
@@ -349,7 +350,8 @@ export function Navbar() {
 
  {unreadCount > 0 && (
  <div className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-[#0D6F73] bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon/10 border border-[#0D6F73]/20 rounded-xl mb-2">
- 💬 {unreadCount} unread messages
+ <MessageSquare className="size-4" />
+ <span>{unreadCount} unread messages</span>
  </div>
  )}
 

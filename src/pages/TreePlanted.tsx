@@ -1,5 +1,5 @@
 import { useLocation, Link } from "react-router-dom"
-import { ShieldCheck, Printer, ArrowLeft, Heart } from "lucide-react"
+import { ShieldCheck, Printer, ArrowLeft, Heart, Trees } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { BorderGlow } from "@/components/ui/BorderGlow"
 import { supabase } from "@/lib/supabase"
@@ -7,107 +7,106 @@ import { toast } from "sonner"
 import { useSEO } from "@/hooks/useSEO"
 
 export default function TreePlantedPage() {
- useSEO({
- title: "Virtual Tree Planted! | Ausaguide",
- description: "Thank you for committing to plant a tree with Ausaguide. View and print your commitment certificate.",
- })
+  useSEO({
+    title: "Virtual Tree Planted! | Ausaguide",
+    description: "Thank you for committing to plant a tree with Ausaguide. View and print your commitment certificate.",
+  })
 
- const location = useLocation()
- 
- // Retrieve state or fallback to placeholder data
- const {
- name = "Eco Supporter",
- treeId = "AUS-TREE-XXXX",
- treeName = "Unnamed",
- dedication = "For the future of Kenya",
- date = new Date().toLocaleDateString("en-US", {
- year: "numeric",
- month: "long",
- day: "numeric",
- }),
- } = location.state || {}
+  const location = useLocation()
+  
+  // Retrieve state or fallback to placeholder data
+  const {
+    name = "Eco Supporter",
+    treeId = "AUS-TREE-XXXX",
+    treeName = "Unnamed",
+    dedication = "For the future of Kenya",
+    date = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }),
+  } = location.state || {}
 
- const handlePrint = async () => {
- toast.info("Generating your certificate...")
- 
- try {
- // 1. Try to call generate-certificate edge function
- const { data, error } = await supabase.functions.invoke("generate-certificate", {
- body: { name, tree_id: treeId, tree_name: treeName, dedication, date }
- })
+  const handlePrint = async () => {
+    toast.info("Generating your certificate...")
+    
+    try {
+      // 1. Try to call generate-certificate edge function
+      const { data, error } = await supabase.functions.invoke("generate-certificate", {
+        body: { name, tree_id: treeId, tree_name: treeName, dedication, date }
+      })
 
- if (data && data.html) {
- const printWindow = window.open("", "_blank")
- if (printWindow) {
- printWindow.document.write(data.html)
- printWindow.document.close()
- printWindow.focus()
- setTimeout(() => {
- printWindow.print()
- }, 600)
- return
- }
- } else {
- console.warn("Edge function didn't return html:", error)
- }
- } catch (err) {
- console.warn("Failed to call generate-certificate edge function, falling back to local print template:", err)
- }
+      if (data && data.html) {
+        const printWindow = window.open("", "_blank")
+        if (printWindow) {
+          printWindow.document.write(data.html)
+          printWindow.document.close()
+          printWindow.focus()
+          setTimeout(() => {
+            printWindow.print()
+          }, 600)
+          return
+        }
+      } else {
+        console.warn("Edge function didn't return html:", error)
+      }
+    } catch (err) {
+      console.warn("Failed to call generate-certificate edge function, falling back to local print template:", err)
+    }
 
- // 2. Client-side fallback: Open local template for printing
- const printWindow = window.open("", "_blank")
- if (printWindow) {
- const localHtml = `
- <!DOCTYPE html>
- <html>
- <head>
- <title>Ausaguide Tree Commitment Certificate</title>
- <style>
- body { background: #16161A; color: #FFFFFE; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
- .cert-card { text-align: center; border: 2px solid #0D6F73; border-radius: 20px; padding: 50px 30px; max-width: 650px; background: #121214; }
- h1 { color: #0D6F73; font-size: 28px; margin-bottom: 20px; text-transform: uppercase; }
- .name { font-size: 32px; font-weight: bold; margin: 15px 0; color: #FFFFFE; }
- .meta { margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; display: grid; grid-template-cols: 1fr 1fr; gap: 15px; text-align: left; }
- .meta-item { font-size: 13px; }
- .meta-label { color: rgba(255,255,255,0.4); text-transform: uppercase; font-size: 10px; }
- .meta-val { font-weight: bold; }
- @media print {
- body { background: white; color: black; }
- .cert-card { border: 2px solid black; background: white; color: black; }
- h1, .name, .meta-val { color: black; }
- .meta-label { color: #555; }
- .meta { border-top: 1px solid black; }
- }
- </style>
- </head>
- <body>
- <div class="cert-card">
- <div style="font-size: 50px; margin-bottom: 15px;">🌳</div>
- <div style="font-size: 12px; letter-spacing: 2px; color: #0D6F73; font-weight: bold; text-transform: uppercase;">Certificate of Commitment</div>
- <h1>Ausaguide Tree Initiative</h1>
- <p>This certifies that</p>
- <div class="name">${name}</div>
- <p style="color: rgba(255,255,255,0.6);">has committed to planting and caring for a virtual tree, contributing to the forest canopy restoration and ecological sustainability efforts in Kenya.</p>
- <div class="meta">
- <div class="meta-item"><div class="meta-label">Tree ID</div><div class="meta-val" style="color:#0D6F73;">${treeId}</div></div>
- <div class="meta-item"><div class="meta-label">Date</div><div class="meta-val">${date}</div></div>
- <div class="meta-item"><div class="meta-label">Tree Name</div><div class="meta-val">${treeName}</div></div>
- <div class="meta-item"><div class="meta-label">Dedication</div><div class="meta-val">${dedication}</div></div>
- </div>
- </div>
- </body>
- </html>
- `
- printWindow.document.write(localHtml)
- printWindow.document.close()
- printWindow.focus()
- setTimeout(() => {
- printWindow.print()
- }, 500)
- }
- }
+    // 2. Client-side fallback: Open local template for printing
+    const printWindow = window.open("", "_blank")
+    if (printWindow) {
+      const localHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ausaguide Tree Commitment Certificate</title>
+  <style>
+    body { background: #16161A; color: #FFFFFE; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+    .cert-card { text-align: center; border: 2px solid #0D6F73; border-radius: 20px; padding: 50px 30px; max-width: 650px; background: #121214; }
+    h1 { color: #0D6F73; font-size: 28px; margin-bottom: 20px; text-transform: uppercase; }
+    .name { font-size: 32px; font-weight: bold; margin: 15px 0; color: #FFFFFE; }
+    .meta { margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: left; }
+    .meta-item { font-size: 13px; }
+    .meta-label { color: rgba(255,255,255,0.4); text-transform: uppercase; font-size: 10px; }
+    .meta-val { font-weight: bold; }
+    @media print {
+      body { background: white; color: black; }
+      .cert-card { border: 2px solid black; background: white; color: black; }
+      h1, .name, .meta-val { color: black; }
+      .meta-label { color: #555; }
+      .meta { border-top: 1px solid black; }
+    }
+  </style>
+</head>
+<body>
+  <div class="cert-card">
+    <div style="font-size: 12px; letter-spacing: 2px; color: #0D6F73; font-weight: bold; text-transform: uppercase;">Certificate of Commitment</div>
+    <h1>Ausaguide Tree Initiative</h1>
+    <p>This certifies that</p>
+    <div class="name">${name}</div>
+    <p style="color: rgba(255,255,255,0.6);">has committed to planting and caring for a virtual tree, contributing to the forest canopy restoration and ecological sustainability efforts in Kenya.</p>
+    <div class="meta">
+      <div class="meta-item"><div class="meta-label">Tree ID</div><div class="meta-val" style="color:#0D6F73;">${treeId}</div></div>
+      <div class="meta-item"><div class="meta-label">Date</div><div class="meta-val">${date}</div></div>
+      <div class="meta-item"><div class="meta-label">Tree Name</div><div class="meta-val">${treeName}</div></div>
+      <div class="meta-item"><div class="meta-label">Dedication</div><div class="meta-val">${dedication}</div></div>
+    </div>
+  </div>
+</body>
+</html>
+      `
+      printWindow.document.write(localHtml)
+      printWindow.document.close()
+      printWindow.focus()
+      setTimeout(() => {
+        printWindow.print()
+      }, 500)
+    }
+  }
 
- return (
+  return (
     <div className="relative overflow-hidden min-h-screen bg-background text-foreground flex flex-col items-center">
       {/* Decorative Glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[350px] bg-gradient-to-b from-primary/10 via-primary/5 to-transparent blur-3xl pointer-events-none z-0" />
@@ -139,7 +138,7 @@ export default function TreePlantedPage() {
             <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
             
             <div className="space-y-2">
-              <span className="text-3xl">🌳</span>
+              <Trees className="size-10 text-emerald-400 mx-auto mb-1" />
               <p className="text-[10px] font-bold uppercase tracking-widest text-[#84BABF]">
                 Ausaguide Conservation & Wellness Network
               </p>
@@ -176,37 +175,32 @@ export default function TreePlantedPage() {
                 <span className="block text-xs font-semibold text-white/90 truncate">{dedication}</span>
               </div>
             </div>
+
+            <div className="pt-4 flex flex-col sm:flex-row gap-3 justify-center">
+              <Button
+                onClick={handlePrint}
+                className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-modern-glow flex items-center gap-2"
+              >
+                <Printer className="size-4" />
+                Print Certificate
+              </Button>
+              <Link to="/tree-planting">
+                <Button variant="outline" className="rounded-full border-white/20 text-white hover:bg-white/10 flex items-center gap-2">
+                  <Heart className="size-4 text-emerald-400" />
+                  Plant Another Tree
+                </Button>
+              </Link>
+            </div>
           </div>
         </BorderGlow>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
-          <Button
-            onClick={handlePrint}
-            className="flex-1 h-11 bg-primary hover:bg-primary/90 font-bold rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer text-primary-foreground shadow-md"
-          >
-            <Printer className="size-4" />
-            Print/Download Certificate
-          </Button>
-
-          <Link to="/tree-planting" className="flex-1">
-            <Button
-              variant="outline"
-              className="w-full h-11 border-border hover:bg-muted text-foreground font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <ArrowLeft className="size-3.5" />
-              Back to Initiative
-            </Button>
+        <div className="pt-6">
+          <Link to="/" className="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft className="size-4" />
+            Back to Home
           </Link>
         </div>
-
-        {/* Support Note */}
-        <p className="text-xs text-muted-foreground max-w-sm flex items-center justify-center gap-1">
-          <Heart className="size-3 text-red-500 fill-red-500" />
-          Thank you for making a difference. We will notify you when you can sponsor this tree in reality.
-        </p>
-
       </div>
     </div>
- )
+  )
 }

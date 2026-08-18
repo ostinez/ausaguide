@@ -94,7 +94,7 @@ export const WaitlistConfirmationEmail: React.FC<WaitlistConfirmationEmailProps>
  borderRadius: 8,
  letterSpacing: '0.3px',
  }}>
- <span style={{ marginRight: 8 }}>🌐</span> Continue Exploring
+ Continue Exploring
  </a>
  </td>
  </tr>

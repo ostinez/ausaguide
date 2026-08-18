@@ -88,12 +88,12 @@ export async function sendSystemMessage(
   const summaryText =
     content.message ||
     (notificationType === "booking_request"
-      ? `🆕 New booking request for ${content.tour_name || "tour"}`
+      ? `New booking request for ${content.tour_name || "tour"}`
       : notificationType === "booking_confirmed"
-      ? `✅ Booking confirmed for ${content.tour_name || "tour"} 🎉`
+      ? `Booking confirmed for ${content.tour_name || "tour"}`
       : notificationType === "booking_declined"
-      ? `❌ Booking declined for ${content.tour_name || "tour"}`
-      : `📹 Video room created`)
+      ? `Booking declined for ${content.tour_name || "tour"}`
+      : `Video room created`)
 
   const { error } = await supabase.from("messages").insert({
     conversation_id: chatId,

@@ -197,7 +197,7 @@ function SignInForm() {
  targetEmail = profileData.email
  }
 
- // ✅ Properly call Supabase Auth signInWithPassword
+ // Call Supabase Auth signInWithPassword
  const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
  email: targetEmail,
  password,

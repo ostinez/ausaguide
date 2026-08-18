@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, memo } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import useEmblaCarousel from "embla-carousel-react"
 import {
- Trash2, Edit3, Heart, Rss, Globe, ImageIcon, X, Check, Loader2, ChevronLeft, ChevronRight, ArrowLeft, Eye, AlertTriangle, Medal, MapPin, Shield
+ Trash2, Edit3, Heart, Rss, Globe, ImageIcon, X, Check, Loader2, ChevronLeft, ChevronRight, ArrowLeft, Eye, AlertTriangle, Medal, MapPin, Shield, Link2
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -251,9 +251,10 @@ function CreatePostCard({ currentUserId, onCreated }: { currentUserId: string; o
  <button
  type="button"
  onClick={() => setShowSocials(!showSocials)}
- className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 font-semibold"
+ className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5 font-semibold"
  >
- <span>🔗</span> {showSocials ? "Hide Social Links" : "Add Social Links"}
+ <Link2 className="size-3.5" />
+ <span>{showSocials ? "Hide Social Links" : "Add Social Links"}</span>
  </button>
  {showSocials && (
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-card shadow-modern rounded-xl border border-white/5 animate-in fade-in duration-200">
@@ -728,9 +729,10 @@ const PostCard = memo(function PostCard({
  <button
  type="button"
  onClick={() => setShowEditSocials(!showEditSocials)}
- className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 font-semibold"
+ className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5 font-semibold"
  >
- <span>🔗</span> {showEditSocials ? "Hide Social Links" : "Edit Social Links"}
+ <Link2 className="size-3.5" />
+ <span>{showEditSocials ? "Hide Social Links" : "Edit Social Links"}</span>
  </button>
  {showEditSocials && (
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-card shadow-modern rounded-xl border border-white/5 animate-in fade-in duration-200">

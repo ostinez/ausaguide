@@ -89,7 +89,7 @@ export function JournalModal({
         tips: tipsArray,
       })
 
-      toast.success("Travel notes saved to your private journal! 📓")
+      toast.success("Travel notes saved to your private journal!")
       onClose()
     } catch (err: any) {
       console.error("Failed to save journal:", err)

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
-import { Loader2, CheckSquare, XCircle, ExternalLink, History, AlertTriangle } from "lucide-react"
+import { Loader2, CheckSquare, XCircle, ExternalLink, History, AlertTriangle, CheckCircle2 } from "lucide-react"
 import { SkeletonTable } from "@/components/ui/Skeleton"
 import { sendGuideApprovedEmail, sendGuideRejectedEmail, sendGuideRevokedEmail } from "@/lib/api/emails"
 import { toast } from "sonner"
@@ -405,8 +405,9 @@ export default function Admin2Verifications() {
  </td>
  <td className="px-6 py-4">
  {user.verified_guide === true && user.host_tier === 'certified_guide' ? (
- <span className="inline-flex items-center px-2 py-0.5 bg-green-500/10 border border-green-500/20 text-green-400 rounded-full text-xs font-semibold">
- Certified Guide ✅
+ <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-500/10 border border-green-500/20 text-green-400 rounded-full text-xs font-semibold">
+ <CheckCircle2 className="size-3" />
+ <span>Certified Guide</span>
  </span>
  ) : user.license_status === 'pending' ? (
  <span className="inline-flex items-center px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-full text-xs font-semibold">

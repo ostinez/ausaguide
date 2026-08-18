@@ -43,7 +43,7 @@ export function CountdownTimer({ targetDate }: CountdownTimerProps) {
  <div className="size-12 rounded-full bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon/10 flex items-center justify-center text-[#0D6F73] animate-bounce">
  <Rocket className="size-6" />
  </div>
- <p className="text-xl font-black text-white tracking-tight">🎉 Ausaguide is now live!</p>
+ <p className="text-xl font-black text-white tracking-tight font-headline">Ausaguide is now live!</p>
  <Link
  to="/auth"
  className="mt-1 text-sm font-semibold text-[#0D6F73] underline hover:text-[#0D6F73]/80 transition-colors"

@@ -19,12 +19,12 @@ import Dropzone from "@/components/ui/Dropzone"
 import OtpInput from "@/components/ui/OtpInput"
 
 const INTEREST_OPTIONS = [
- { value: "food", label: "🍜 Food & Drink" },
- { value: "nature", label: "🌿 Nature & Wildlife" },
- { value: "culture", label: "🏛️ Culture & History" },
- { value: "adventure", label: "🧗 Adventure" },
- { value: "photography", label: "📷 Photography" },
- { value: "wellness", label: "🧘 Wellness" },
+ { value: "food", label: "Food & Drink" },
+ { value: "nature", label: "Nature & Wildlife" },
+ { value: "culture", label: "Culture & History" },
+ { value: "adventure", label: "Adventure" },
+ { value: "photography", label: "Photography" },
+ { value: "wellness", label: "Wellness" },
 ]
 
 /**
@@ -446,8 +446,8 @@ export default function SettingsPage() {
  pct = Math.round(((fields.length - missing.length) / fields.length) * 100)
  }
 
- toast.success("Profile updated! 🎉", {
- description: `Congratulations! Your profile is now ${pct}% complete.`
+ toast.success("Profile updated successfully", {
+ description: `Your profile is now ${pct}% complete.`
  })
 
  // Dispatch custom event to notify banners to update

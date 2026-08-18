@@ -10,6 +10,7 @@ import {
  Users,
  Star,
  BadgeCheck,
+ Sparkles,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -135,8 +136,9 @@ export default function HostSignupPage() {
  <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight text-foreground">
  Become a Host
  </h1>
- <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon/10 border border-[#0D6F73]/20 text-xs font-semibold text-[#0D6F73]">
- <span>🚀 Host applications are in beta. Limited spots available.</span>
+ <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon/10 text-xs font-semibold text-[#0D6F73]">
+ <Sparkles className="size-3.5" />
+ <span>Host applications are in beta. Limited spots available.</span>
  </div>
  <p className="mt-3 text-lg text-muted-foreground">
  Share your local knowledge and earn income by leading authentic Kenyan experiences

@@ -17,7 +17,7 @@ interface BookingConfirmedCardProps {
 
 export default function BookingConfirmedCard({ content }: BookingConfirmedCardProps) {
   const tourName = content.tour_name || "Tour"
-  const message = content.message || `🎉 Your booking for "${tourName}" has been confirmed by the host!`
+  const message = content.message || `Your booking for "${tourName}" has been confirmed by the host!`
   const roomUrl = content.daily_room_url
 
   return (
@@ -48,7 +48,7 @@ export default function BookingConfirmedCard({ content }: BookingConfirmedCardPr
               >
                 <a href={roomUrl} target="_blank" rel="noopener noreferrer">
                   <Video className="size-4" />
-                  📹 Join Video Room
+                  <span>Join Video Room</span>
                 </a>
               </Button>
               <p className="text-[10px] text-muted-foreground text-center mt-1.5">

@@ -7,7 +7,10 @@ import {
   Info,
   Loader2,
   CalendarDays,
+  Calendar,
+  CheckCircle2,
   MapPin,
+  Award,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -53,14 +56,18 @@ function EmptyConversationPane({ userRole }: { userRole?: string }) {
       </div>
 
       <div className="flex flex-wrap gap-2 justify-center text-xs text-muted-foreground pt-2">
-        {["📅 Book a tour", "✅ Host accepts", "💬 Chat opens"].map((t) => (
-          <span
-            key={t}
-            className="px-3 py-1.5 rounded-full bg-muted/60 border border-border/60 font-medium"
-          >
-            {t}
-          </span>
-        ))}
+        <span className="px-3 py-1.5 rounded-full bg-muted/60 border border-border/60 font-medium flex items-center gap-1.5">
+          <Calendar className="size-3.5 text-primary" />
+          <span>Book a tour</span>
+        </span>
+        <span className="px-3 py-1.5 rounded-full bg-muted/60 border border-border/60 font-medium flex items-center gap-1.5">
+          <CheckCircle2 className="size-3.5 text-emerald-500" />
+          <span>Host accepts</span>
+        </span>
+        <span className="px-3 py-1.5 rounded-full bg-muted/60 border border-border/60 font-medium flex items-center gap-1.5">
+          <MessageSquare className="size-3.5 text-primary" />
+          <span>Chat opens</span>
+        </span>
       </div>
 
       {userRole === "traveler" && (
@@ -159,8 +166,9 @@ function ChatHeader({
               {name}
             </span>
             {hostTier === "certified_guide" && (
-              <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold">
-                🎖️ Guide
+              <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold flex items-center gap-1">
+                <Award className="size-2.5" />
+                <span>Guide</span>
               </span>
             )}
             {hostTier === "local_host" && (
@@ -307,11 +315,21 @@ function ProfileSidebar({ userId, onClose }: ProfileSidebarProps) {
             <div className="text-center">
               <h3 className="font-bold text-foreground text-base">{profile.full_name}</h3>
               {profile.location && (
-                <p className="text-xs text-muted-foreground mt-0.5">📍 {profile.location}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 flex items-center justify-center gap-1">
+                  <MapPin className="size-3 text-primary" />
+                  <span>{profile.location}</span>
+                </p>
               )}
               {profile.host_tier && (
-                <span className="inline-block mt-1.5 text-[11px] px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold">
-                  {profile.host_tier === "certified_guide" ? "🎖️ Certified Guide" : "Local Host"}
+                <span className="inline-flex items-center gap-1 mt-1.5 text-[11px] px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold">
+                  {profile.host_tier === "certified_guide" ? (
+                    <>
+                      <Award className="size-3" />
+                      <span>Certified Guide</span>
+                    </>
+                  ) : (
+                    <span>Local Host</span>
+                  )}
                 </span>
               )}
             </div>

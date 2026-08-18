@@ -135,7 +135,7 @@ export async function acceptUrgentRequest(
  await supabase.from("notifications").insert({
  user_id: request.traveler_id,
  booking_id: booking.id,
- message: `🎉 Host ${hostProfile?.full_name || "Guide"} has accepted your urgent request! Your booking is confirmed.`,
+ message: `Host ${hostProfile?.full_name || "Guide"} has accepted your urgent request! Your booking is confirmed.`,
  type: "booking_accepted",
  })
 

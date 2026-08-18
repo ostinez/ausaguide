@@ -325,8 +325,9 @@ export default function MapPage() {
  )
  })}
  </div>
- <div className="absolute bottom-4 left-4 rounded-lg bg-card shadow-modern px-3 py-2 text-xs text-muted-foreground">
- 📍 Interactive map requires Mapbox token in .env (VITE_MAPBOX_TOKEN)
+ <div className="absolute bottom-4 left-4 rounded-lg bg-card shadow-modern px-3 py-2 text-xs text-muted-foreground flex items-center gap-1.5">
+ <MapPin className="size-3.5 text-primary" />
+ <span>Interactive map requires Mapbox token in .env (VITE_MAPBOX_TOKEN)</span>
  </div>
  </div>
  </div>

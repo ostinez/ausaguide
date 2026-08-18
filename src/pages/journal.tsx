@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { BookOpen, Plus, Edit3, Trash2, X, Check, Loader2, ImageIcon, ChevronRight, Eye } from "lucide-react"
+import { BookOpen, Plus, Edit3, Trash2, X, Check, Loader2, ImageIcon, ChevronRight, Eye, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -462,8 +462,9 @@ export default function JournalPage() {
  </div>
  <div>
  <h1 className="text-xl font-bold tracking-tight text-white font-accent">Personal Travel Diary</h1>
- <p className="text-xs text-amber-500/60 flex items-center gap-1">
- <span>🔒 Private memoirs</span>
+ <p className="text-xs text-amber-500/60 flex items-center gap-1.5">
+ <Lock className="size-3" />
+ <span>Private memoirs</span>
  <span>·</span>
  <span>{journals.length} {journals.length === 1 ? "entry" : "entries"}</span>
  </p>
@@ -516,8 +517,11 @@ export default function JournalPage() {
  )}
  <div className="flex flex-1 items-center px-5 py-4 gap-3 min-w-0">
  <button className="flex-1 text-left min-w-0 pr-16" onClick={() => openView(j)}>
- <div className="flex items-center gap-2">
- <span className="text-[9px] font-bold text-amber-500/70 bg-amber-500/10 border border-amber-500/20 rounded-full px-2 py-0.5">🔒 Private Memo</span>
+ <div className="flex items-center">
+ <span className="text-[9px] font-bold text-amber-500/70 bg-amber-500/10 border border-amber-500/20 rounded-full px-2 py-0.5 flex items-center gap-1">
+ <Lock className="size-2.5" />
+ <span>Private Memo</span>
+ </span>
  </div>
  <p className="font-semibold text-base text-amber-100 group-hover:text-amber-300 transition-colors font-accent mt-1.5 truncate">{j.title}</p>
  <p className="text-xs text-amber-100/60 mt-1 line-clamp-2 leading-relaxed">{j.content}</p>

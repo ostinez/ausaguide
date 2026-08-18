@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { Outlet, useLocation, Link } from "react-router-dom"
 import { StaggeredMenu } from "@/components/ui/StaggeredMenu"
 import { MobileNav } from "./MobileNav"
+import { AlertTriangle } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { Footer } from "./footer"
 import { ProfileCompletionBanner } from "@/components/ui/ProfileCompletionBanner"
@@ -355,12 +356,13 @@ export function Layout() {
         </div>
  )}
  {impersonatedName && (
- <div className="w-full bg-amber-500 text-black text-xs font-bold py-2.5 px-4 text-center z-50 relative flex items-center justify-center gap-2 shadow-md">
- <span>⚠️ Impersonating user: <strong>{impersonatedName}</strong> (actions will save as this user).</span>
- <button onClick={handleStopImpersonation} className="underline hover:text-black/80 font-black ml-2 transition duration-200">
- Stop Impersonation
- </button>
- </div>
+        <div className="w-full bg-amber-500 text-black text-xs font-bold py-2.5 px-4 text-center z-50 relative flex items-center justify-center gap-2 shadow-md">
+          <AlertTriangle className="size-4 shrink-0" />
+          <span>Impersonating user: <strong>{impersonatedName}</strong> (actions will save as this user).</span>
+          <button onClick={handleStopImpersonation} className="underline hover:text-black/80 font-black ml-2 transition duration-200">
+            Stop Impersonation
+          </button>
+        </div>
  )}
  <StaggeredMenu
  position="right"

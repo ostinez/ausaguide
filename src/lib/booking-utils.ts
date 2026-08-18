@@ -135,7 +135,7 @@ export async function acceptBooking(bookingId: string, hostId: string) {
         tour_name: tourTitle,
         daily_room_url: dailyRoom?.url || null,
         daily_room_id: dailyRoom?.id || null,
-        message: `🎉 Your booking for "${tourTitle}" has been confirmed by the host! Get ready for an amazing experience.`,
+        message: `Your booking for "${tourTitle}" has been confirmed by the host! Get ready for an amazing experience.`,
       }
     )
   }
@@ -201,7 +201,7 @@ export async function declineBooking(
         booking_id: bookingId,
         tour_name: tourTitle,
         decline_reason: declineReason,
-        message: `❌ Your booking for "${tourTitle}" was declined by the host. Reason: ${declineReason}`,
+        message: `Your booking for "${tourTitle}" was declined by the host. Reason: ${declineReason}`,
       }
     )
   }

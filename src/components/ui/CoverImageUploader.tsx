@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react"
-import { X, ImageIcon, Loader2, RefreshCw } from "lucide-react"
+import { X, ImageIcon, Loader2, RefreshCw, AlertTriangle } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -195,7 +195,7 @@ export default function CoverImageUploader({
  {/* Error message */}
  {error && (
  <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-xs text-destructive">
- <span className="shrink-0">⚠️</span>
+ <AlertTriangle className="size-3.5 shrink-0 mt-0.5" />
  <span>{error}</span>
  <button
  type="button"

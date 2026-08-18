@@ -332,7 +332,7 @@ export default function AboutPage() {
  Whether you're exploring or hosting, this is your space.
  </p>
  <p className="font-semibold text-white">
- Join me. 🚀
+ Join me.
  </p>
  </div>
  </div>

@@ -140,7 +140,7 @@ export default function TreePlantingPage() {
 
  if (error) throw error
 
- toast.success("🌳 Your tree has been planted! Tree ID: " + finalTreeId)
+ toast.success("Your virtual tree has been planted! Tree ID: " + finalTreeId)
  
  // Redirect to thank you page with state
  navigate("/tree-planted", {

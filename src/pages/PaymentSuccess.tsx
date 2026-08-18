@@ -32,7 +32,7 @@ async function ensureReceiptMessage(booking: Booking, userId: string) {
  .insert({
  participant_a: pA,
  participant_b: pB,
- last_message: "🧾 Booking confirmed",
+ last_message: "Booking confirmed",
  last_message_at: new Date().toISOString(),
  })
  .select("id")
@@ -59,7 +59,7 @@ async function ensureReceiptMessage(booking: Booking, userId: string) {
  conversation_id: convId,
  sender_id: null,
  receiver_id: guestId,
- message: `✅ Booking confirmed for ${tourName} on ${booking.booking_date}`,
+ message: `Booking confirmed for ${tourName} on ${booking.booking_date}`,
  sender_type: "system",
  metadata: {
  type: "booking_receipt",
@@ -79,7 +79,7 @@ async function ensureReceiptMessage(booking: Booking, userId: string) {
  await supabase
  .from("conversations")
  .update({
- last_message: "🧾 Booking confirmed",
+ last_message: "Booking confirmed",
  last_message_at: new Date().toISOString(),
  })
  .eq("id", convId)

@@ -3,19 +3,19 @@ import { Link, useLocation } from "react-router-dom"
 import { Menu, X, Globe, LogOut, Settings, LayoutDashboard, ChevronDown, MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
- Sheet,
- SheetContent,
- SheetHeader,
- SheetTitle,
- SheetTrigger,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
 } from "@/components/ui/sheet"
 import {
- DropdownMenu,
- DropdownMenuContent,
- DropdownMenuItem,
- DropdownMenuLabel,
- DropdownMenuSeparator,
- DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 import { fetchProfileById } from "@/lib/api/hosts"
@@ -28,80 +28,79 @@ import { useUnreadCount } from "@/hooks/useUnreadCount"
 export interface GlassmorphismNavbarProps extends React.ComponentProps<"nav"> {}
 
 export function GlassmorphismNavbar({ className, ...props }: GlassmorphismNavbarProps) {
- const [mobileOpen, setMobileOpen] = useState(false)
- const [scrolled, setScrolled] = useState(false)
- const location = useLocation()
- const isLanding = location.pathname === "/"
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+  const location = useLocation()
+  const isLanding = location.pathname === "/"
 
- const userId = localStorage.getItem("user_id")
- const [profile, setProfile] = useState<Profile | null>(null)
+  const userId = localStorage.getItem("user_id")
+  const [profile, setProfile] = useState<Profile | null>(null)
 
- // Scroll-aware glass intensification
- useEffect(() => {
- let ticking = false
- const onScroll = () => {
- if (!ticking) {
- window.requestAnimationFrame(() => {
- setScrolled(window.scrollY > 20)
- ticking = false
- })
- ticking = true
- }
- }
- window.addEventListener("scroll", onScroll, { passive: true })
- return () => window.removeEventListener("scroll", onScroll)
- }, [])
+  // Scroll-aware glass intensification
+  useEffect(() => {
+    let ticking = false
+    const onScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setScrolled(window.scrollY > 20)
+          ticking = false
+        })
+        ticking = true
+      }
+    }
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [])
 
- useEffect(() => {
- if (!userId) {
- setProfile(null)
- return
- }
- async function loadProfile() {
- try {
- const p = await fetchProfileById(userId!)
- setProfile(p)
- if (p) {
- localStorage.setItem("user_role", p.role)
- }
- } catch (err) {
- console.error("Failed to load profile in navbar", err)
- }
- }
- loadProfile()
- }, [userId, location.pathname])
+  useEffect(() => {
+    if (!userId) {
+      setProfile(null)
+      return
+    }
+    async function loadProfile() {
+      try {
+        const p = await fetchProfileById(userId!)
+        setProfile(p)
+        if (p) {
+          localStorage.setItem("user_role", p.role)
+        }
+      } catch (err) {
+        console.error("Failed to load profile in navbar", err)
+      }
+    }
+    loadProfile()
+  }, [userId, location.pathname])
 
- const { unreadCount } = useUnreadCount(userId)
+  const { unreadCount } = useUnreadCount(userId)
 
+  const userRole = profile?.role || localStorage.getItem("user_role") || "traveler"
+  const userInitials = profile?.full_name ? getHostInitials(profile.full_name) : "U"
 
- const userRole = profile?.role || localStorage.getItem("user_role") || "traveler"
- const userInitials = profile?.full_name ? getHostInitials(profile.full_name) : "U"
+  async function handleSignOut() {
+    try {
+      await supabase.auth.signOut()
+    } catch (e) {
+      console.warn("SignOut failed or session already cleared:", e)
+    }
+    localStorage.removeItem("user_id")
+    localStorage.removeItem("user_role")
+    window.location.href = "/"
+  }
 
- async function handleSignOut() {
- try {
- await supabase.auth.signOut()
- } catch (e) {
- console.warn("SignOut failed or session already cleared:", e)
- }
- localStorage.removeItem("user_id")
- localStorage.removeItem("user_role")
- window.location.href = "/"
- }
+  // Links: Home, Tours, Dashboard (if logged in), About
+  const navLinks = [
+    { href: "/", label: "Home" },
+    { href: "/tours", label: "Tours" },
+    ...(userId ? [{ href: "/dashboard", label: "Dashboard" }] : []),
+    { href: "/about", label: "About" },
+  ]
 
- // Links: Home, Tours, Dashboard (if logged in), About
- const navLinks = [
- { href: "/", label: "Home" },
- { href: "/tours", label: "Tours" },
- ...(userId ? [{ href: "/dashboard", label: "Dashboard" }] : []),
- { href: "/about", label: "About" },
- ]
-
- const isActive = (href: string) => {
- if (href === "/") {
- return location.pathname === "/"
- }
- return location.pathname.startsWith(href)
- }
+  const isActive = (href: string) => {
+    if (href === "/") {
+      return location.pathname === "/"
+    }
+    return location.pathname.startsWith(href)
+  }
 
   return (
     <header className="fixed top-0 right-0 left-0 z-50 w-full px-4 pt-4 transition-all duration-300">
@@ -332,8 +331,9 @@ export function GlassmorphismNavbar({ className, ...props }: GlassmorphismNavbar
 
                     {unreadCount > 0 && (
                       <Link to="/messages" onClick={() => setMobileOpen(false)}>
-                        <div className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-primary bg-primary/10 border border-primary/20 rounded-full justify-center">
-                          💬 {unreadCount} unread messages
+                        <div className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-primary bg-primary/10 border border-primary/20 rounded-full justify-center">
+                          <MessageSquare className="size-4" />
+                          <span>{unreadCount} unread messages</span>
                         </div>
                       </Link>
                     )}

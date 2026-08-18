@@ -18,9 +18,9 @@ export default function AdminDashboardTest() {
  <p className="text-sm text-white/50">This is a mock dashboard with no Supabase queries or realtime connections.</p>
  </div>
  <div className="p-4 rounded-xl bg-card shadow-modern border border-white/5 text-left text-xs font-mono space-y-1 text-white/80">
- <p>📍 Path: /admin/dashboard-test</p>
- <p>🔒 Access: Public Test</p>
- <p>🚀 Status: Active (No Crash)</p>
+ <p>Path: /admin/dashboard-test</p>
+ <p>Access: Public Test</p>
+ <p>Status: Active (No Crash)</p>
  </div>
  <div className="pt-4 border-t border-white/10 flex justify-between items-center">
  <Link to="/" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-white transition-colors">

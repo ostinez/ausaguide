@@ -323,7 +323,7 @@ export async function sendBookingSystemMessage(
       // Create a new conversation thread
       const messagePreview =
         type === "booking_confirmed"
-          ? `Booking confirmed for ${tourTitle} 🎉`
+          ? `Booking confirmed for ${tourTitle}`
           : type === "booking_request"
           ? `New booking request for ${tourTitle}`
           : `Booking declined for ${tourTitle}`
@@ -346,10 +346,10 @@ export async function sendBookingSystemMessage(
     // Build the system message text
     const systemText =
       type === "booking_confirmed"
-        ? `✅ Your booking for "${tourTitle}" has been confirmed by the host! 🎉 Get ready for an amazing experience.`
+        ? `Your booking for "${tourTitle}" has been confirmed by the host! Get ready for an amazing experience.`
         : type === "booking_request"
-        ? `🆕 New booking request from ${extraDetails?.travelerName || "Traveler"} for "${tourTitle}".`
-        : `❌ Your booking for "${tourTitle}" was declined by the host.${declineReason ? ` Reason: ${declineReason}` : ""}`
+        ? `New booking request from ${extraDetails?.travelerName || "Traveler"} for "${tourTitle}".`
+        : `Your booking for "${tourTitle}" was declined by the host.${declineReason ? ` Reason: ${declineReason}` : ""}`
 
     // Insert system message into messages table
     const { error: msgErr } = await supabase.from("messages").insert({

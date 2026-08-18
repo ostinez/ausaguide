@@ -1,5 +1,26 @@
 import { useState, useEffect } from "react"
-import { Check, Sparkles, Compass, ArrowRight, Loader2 } from "lucide-react"
+import {
+  Check,
+  Sparkles,
+  Compass,
+  ArrowRight,
+  Loader2,
+  Leaf,
+  Building,
+  Utensils,
+  Palette,
+  Waves,
+  Camera,
+  Flower2,
+  Music,
+  ShoppingBag,
+  Footprints,
+  Umbrella,
+  Mountain,
+  PawPrint,
+  Tent,
+  Coffee,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DEFAULT_INTERESTS, saveUserInterests, fetchUserInterests } from "@/lib/api/interests"
 import { toast } from "sonner"
@@ -9,6 +30,24 @@ interface OnboardingInterestsProps {
   onComplete: (selectedInterests: string[]) => void
   onSkip?: () => void
   isModal?: boolean
+}
+
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  Leaf,
+  Building,
+  Utensils,
+  Palette,
+  Waves,
+  Camera,
+  Flower2,
+  Music,
+  ShoppingBag,
+  Footprints,
+  Umbrella,
+  Mountain,
+  PawPrint,
+  Tent,
+  Coffee,
 }
 
 export function OnboardingInterests({
@@ -51,7 +90,7 @@ export function OnboardingInterests({
       if (userId) {
         await saveUserInterests(userId, selected)
       }
-      toast.success("Traveler profile personalized! 🌍")
+      toast.success("Traveler profile personalized!")
       onComplete(selected)
     } catch (err: any) {
       console.error("Save interests error:", err)
@@ -67,7 +106,7 @@ export function OnboardingInterests({
         <div className="inline-flex items-center justify-center size-12 rounded-2xl bg-primary/10 border border-primary/20 text-primary mb-1">
           <Compass className="size-6 animate-spin-slow" />
         </div>
-        <h2 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
+        <h2 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight font-headline">
           What kind of traveler are you?
         </h2>
         <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
@@ -85,6 +124,8 @@ export function OnboardingInterests({
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3">
             {DEFAULT_INTERESTS.map((interest) => {
               const isSelected = selected.includes(interest.id) || selected.includes(interest.name)
+              const IconComp = ICON_MAP[interest.icon] || Sparkles
+
               return (
                 <button
                   key={interest.id}
@@ -96,12 +137,12 @@ export function OnboardingInterests({
                       : "border-border/70 bg-card hover:border-primary/40 hover:bg-muted/50 text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <span className="text-xl sm:text-2xl shrink-0 select-none">
-                    {interest.icon}
-                  </span>
+                  <div className="size-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <IconComp className="size-4 text-primary" />
+                  </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-xs sm:text-sm font-bold text-foreground truncate">
-                      {interest.name.replace(/^[^\s]+\s*/, "")}
+                      {interest.name}
                     </p>
                     <span className="text-[10px] uppercase font-semibold text-muted-foreground/80 tracking-wider">
                       {interest.category}
@@ -139,7 +180,7 @@ export function OnboardingInterests({
                 </>
               ) : (
                 <>
-                  <span>Continue</span>
+                  <span>Complete Profile</span>
                   <ArrowRight className="size-4" />
                 </>
               )}
@@ -149,7 +190,7 @@ export function OnboardingInterests({
               <button
                 type="button"
                 onClick={onSkip}
-                className="text-xs text-muted-foreground hover:text-foreground transition underline-offset-2 hover:underline pt-1"
+                className="text-xs text-muted-foreground hover:text-foreground font-semibold py-1 transition-colors block mx-auto"
               >
                 Skip for now
               </button>

@@ -375,7 +375,7 @@ function BookingRow({
  if (fnErr) throw new Error(fnErr.message || "Payout failed")
  if (data?.error) throw new Error(data.error)
  setPayoutDone(true)
- toast.success("Tour marked complete & host payout initiated! 🎉")
+ toast.success("Tour marked complete and host payout initiated!")
  } catch (err: any) {
  toast.error(err?.message || "Failed to initiate host payout")
  } finally {
@@ -1671,7 +1671,7 @@ export default function DashboardPage() {
  <div className="flex items-center justify-between gap-3 mb-2 flex-wrap sm:flex-nowrap">
  <div className="flex items-center gap-3">
  <h1 className="text-2xl font-bold tracking-tight text-foreground">
- Welcome back, {profile?.full_name ? profile.full_name.split(" ")[0] : "there"} 👋
+ Welcome back, {profile?.full_name ? profile.full_name.split(" ")[0] : "there"}
  </h1>
  </div>
 
@@ -1815,7 +1815,8 @@ export default function DashboardPage() {
  <CardHeader className="flex flex-row items-center justify-between pb-2">
  <div className="space-y-1">
  <CardTitle className="text-base flex items-center gap-2">
- <span>🔔 Notifications</span>
+ <Bell className="size-4 text-primary" />
+ <span>Notifications</span>
  {unreadNotifications > 0 && (
  <Badge className="bg-destructive text-destructive-foreground text-[10px] px-1.5 py-0.5 rounded-full font-bold">
  {unreadNotifications} New

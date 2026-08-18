@@ -33,7 +33,7 @@ export function BookingConfirmationEmail({
                 </div>
 
                 <h1 style={{ fontSize: "24px", fontWeight: 700, color: "#1a1a1a", margin: "0 0 8px 0", textAlign: "center" }}>
-                  Booking Confirmed! 🎉
+                  Booking Confirmed!
                 </h1>
                 <p style={{ fontSize: "16px", color: "#4b5563", margin: "0 0 24px 0", textAlign: "center" }}>
                   Hi {name}, your booking {tourTitle ? `for "${tourTitle}"` : ""} has been confirmed by your host.

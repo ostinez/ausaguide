@@ -258,7 +258,7 @@ export function useMessages(
  await supabase
  .from("conversations")
  .update({
- last_message: content.trim() || "📷 Photo",
+        last_message: content.trim() || "Photo",
  last_message_at: new Date().toISOString(),
  })
  .eq("id", conversationId)

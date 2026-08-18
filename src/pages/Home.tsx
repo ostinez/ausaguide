@@ -11,13 +11,10 @@ import { CTASection } from "@/components/landing/cta-section"
 import { TikTokWidget } from "@/components/home/TikTokWidget"
 import { useSEO } from "@/hooks/useSEO"
 import { JsonLd } from "@/components/seo/JsonLd"
+import { WaitlistHero } from "@/components/home/WaitlistHero"
 import ProfileCard from "@/components/ui/ProfileCard"
 import founderPhoto from "../assets/images/founder/austin-mbote.webp"
-import { supabase } from "@/lib/supabase"
-import { toast } from "sonner"
-import { sendGeneralWaitlistEmail } from "@/lib/api/emails"
-import { checkRateLimit } from "@/lib/api/rate-limit"
-import { Sparkles, User, Mail, Loader2, CheckCircle2, ArrowRight } from "lucide-react"
+import { ArrowRight } from "lucide-react"
 
 export default function Home() {
   const navigate = useNavigate()
@@ -53,74 +50,6 @@ export default function Home() {
       }
     }
   })
-
-  const [waitlistName, setWaitlistName] = useState("")
-  const [waitlistEmail, setWaitlistEmail] = useState("")
-  const [waitlistRole, setWaitlistRole] = useState<"traveler" | "host" | "both">("traveler")
-  const [submitting, setSubmitting] = useState(false)
-  const [success, setSuccess] = useState(false)
-
-  const handleWaitlistSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!waitlistName.trim() || !waitlistEmail.trim()) {
-      toast.error("Please fill in Name and Email.")
-      return
-    }
-
-    setSubmitting(true)
-
-    // Rate limit check: max 3 waitlist submissions per hour per IP
-    let ipAddress = "local"
-    try {
-      const res = await fetch("https://api.ipify.org?format=json")
-      if (res.ok) {
-        const data = await res.json()
-        if (data && data.ip) ipAddress = data.ip
-      }
-    } catch (err) {
-      console.warn("IP fetch failed, falling back to local identifier", err)
-    }
-
-    try {
-      const rateLimitKey = `waitlist:${ipAddress}`
-      const limitResult = await checkRateLimit(rateLimitKey, { max: 3, windowMs: 60 * 60 * 1000 })
-      if (!limitResult.allowed) {
-        toast.error("Too many waitlist submissions. Please try again later.")
-        setSubmitting(false)
-        return
-      }
-    } catch (limitErr) {
-      console.error("Rate check failed, proceeding anyway", limitErr)
-    }
-
-    try {
-      const { error } = await supabase
-        .from("waitlist")
-        .insert({
-          name: waitlistName.trim(),
-          email: waitlistEmail.trim(),
-          role: waitlistRole,
-        })
-
-      if (error) {
-        if (error.code === "23505") {
-          toast.info("You've already signed up with this email! Thank you.")
-          setSuccess(true)
-          return
-        }
-        throw error
-      }
-
-      await sendGeneralWaitlistEmail(waitlistEmail.trim(), waitlistName.trim(), waitlistRole)
-      toast.success("Welcome to the waitlist!")
-      setSuccess(true)
-    } catch (err: any) {
-      console.error(err)
-      toast.error(err.message || "Failed to submit. Please try again.")
-    } finally {
-      setSubmitting(false)
-    }
-  }
 
   return (
     <div className="relative overflow-hidden min-h-screen bg-background">
@@ -194,134 +123,8 @@ export default function Home() {
 
       <UrgentMatchModal isOpen={urgentMatchOpen} onClose={() => setUrgentMatchOpen(false)} />
 
-      {/* Homepage Waitlist Section */}
-      <section id="waitlist" className="bg-background py-16 px-6 border-b border-border relative overflow-hidden flex flex-col items-center">
-        <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[350px] h-[350px] bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
-        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-teal/5 rounded-full blur-[120px] pointer-events-none" />
-
-        <div className="relative z-10 w-full max-w-xl mx-auto space-y-8">
-          <div className="text-center space-y-3">
-            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-brand/10 border border-brand/20 text-xs font-semibold text-brand">
-              <Sparkles className="size-3.5" />
-              <span>Early Access Launch</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight">
-              Stop Wasting Money on Tourist Traps.
-            </h2>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed font-medium">
-              Explore Kenya through a local's eyes before you book. Join the waitlist for early access.
-            </p>
-            <p className="text-xs text-muted-foreground/80 max-w-sm mx-auto">
-              Avoid scams, save money, and discover authentic Kenya experiences — all from your phone.
-            </p>
-          </div>
-
-          {success ? (
-            <div className="rounded-2xl border border-border p-8 bg-card shadow-modern text-center space-y-4 animate-in fade-in zoom-in duration-300">
-              <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-brand/10 border border-brand/20 text-brand">
-                <CheckCircle2 className="size-6 animate-pulse" />
-              </div>
-              <h3 className="text-base font-bold text-foreground">Welcome to the community!</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed max-w-sm mx-auto">
-                You'll be notified when early access goes live. Thank you for your support.
-              </p>
-            </div>
-          ) : (
-            <form onSubmit={handleWaitlistSubmit} className="rounded-3xl border border-border p-6 sm:p-8 bg-card shadow-modern space-y-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-foreground/80">Full Name *</label>
-                  <div className="relative">
-                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                    <input
-                      type="text"
-                      required
-                      value={waitlistName}
-                      onChange={(e) => setWaitlistName(e.target.value)}
-                      placeholder="Your name"
-                      className="w-full bg-secondary/50 border border-border rounded-xl pl-10 pr-4 py-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors font-medium min-h-[44px]"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-foreground/80">Email Address *</label>
-                  <div className="relative">
-                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                    <input
-                      type="email"
-                      required
-                      value={waitlistEmail}
-                      onChange={(e) => setWaitlistEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      className="w-full bg-secondary/50 border border-border rounded-xl pl-10 pr-4 py-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors font-medium min-h-[44px]"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-foreground/80">I am joining as a: *</label>
-                <div className="grid grid-cols-3 gap-3">
-                  {(["traveler", "host", "both"] as const).map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => setWaitlistRole(r)}
-                      className={`py-2.5 px-3 text-xs font-bold rounded-xl border transition-all cursor-pointer min-h-[44px] ${
-                        waitlistRole === r
-                          ? "border-[#06363D] bg-[#06363D] text-white shadow-md"
-                          : "border-border bg-secondary/60 text-foreground hover:border-brand/40"
-                      }`}
-                    >
-                      {r.toUpperCase()}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="pt-2 space-y-2">
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full py-4 rounded-full bg-gradient-to-r from-[#0B3037] to-[#0D6F73] hover:from-[#06363D] hover:to-[#0B3037] text-white text-sm font-bold shadow-neo-pill border border-white/15 disabled:opacity-50 transition duration-300 flex items-center justify-center gap-2 cursor-pointer min-h-[48px]"
-                >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="size-4 animate-spin" />
-                      <span>Joining Waitlist...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Join the Waitlist</span>
-                      <ArrowRight className="size-4" />
-                    </>
-                  )}
-                </button>
-                <p className="text-[11px] text-center text-muted-foreground">
-                  Get early access and exclusive launch discounts
-                </p>
-              </div>
-
-              {/* Trust Indicators */}
-              <div className="pt-4 border-t border-border/60 grid grid-cols-1 sm:grid-cols-3 gap-2 text-center text-[10px] font-semibold text-muted-foreground">
-                <div className="flex items-center justify-center gap-1">
-                  <span className="text-brand">◆</span>
-                  <span>Vetted local experiences</span>
-                </div>
-                <div className="flex items-center justify-center gap-1">
-                  <span className="text-brand">◆</span>
-                  <span>Exclusive member rates</span>
-                </div>
-                <div className="flex items-center justify-center gap-1">
-                  <span className="text-brand">◆</span>
-                  <span>Zero hidden booking fees</span>
-                </div>
-              </div>
-            </form>
-          )}
-        </div>
-      </section>
+      {/* Homepage Waitlist Hero Section */}
+      <WaitlistHero />
 
       <div className="defer-render">
         <ToursPreview />
@@ -356,7 +159,7 @@ export default function Home() {
           <ProfileCard
             name="Austin M. Mbote"
             title="Founder & Lead Developer"
-            status="Building connections 🌍"
+            status="Building connections"
             contactText="Let's Connect"
             avatarUrl={founderPhoto}
             showUserInfo={true}

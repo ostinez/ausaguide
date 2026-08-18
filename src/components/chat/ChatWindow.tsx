@@ -323,7 +323,7 @@ export function ChatWindow({
               This is the beginning of your direct conversation on Ausaguide.
             </p>
             <span className="inline-block text-[11px] px-3 py-1 rounded-full bg-muted text-muted-foreground border border-border">
-              Say hello 👋
+              Say hello
             </span>
           </div>
         ) : (

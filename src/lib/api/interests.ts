@@ -8,21 +8,21 @@ export interface Interest {
 }
 
 export const DEFAULT_INTERESTS: { id: string; name: string; icon: string; category: string }[] = [
-  { id: "nature-wildlife", name: "🌿 Nature & Wildlife", icon: "🌿", category: "adventure" },
-  { id: "history-culture", name: "🏛️ History & Culture", icon: "🏛️", category: "culture" },
-  { id: "food-dining", name: "🍽️ Food & Dining", icon: "🍽️", category: "lifestyle" },
-  { id: "arts-crafts", name: "🎨 Arts & Crafts", icon: "🎨", category: "culture" },
-  { id: "adventure-sports", name: "🏄 Adventure Sports", icon: "🏄", category: "adventure" },
-  { id: "photography", name: "📸 Photography", icon: "📸", category: "hobby" },
-  { id: "wellness", name: "🧘 Wellness & Relaxation", icon: "🧘", category: "lifestyle" },
-  { id: "music-nightlife", name: "🎵 Music & Nightlife", icon: "🎵", category: "entertainment" },
-  { id: "shopping", name: "🛍️ Shopping & Markets", icon: "🛍️", category: "lifestyle" },
-  { id: "walking-tours", name: "🚶 Walking Tours", icon: "🚶", category: "adventure" },
-  { id: "beaches", name: "🏖️ Beaches & Water", icon: "🏖️", category: "adventure" },
-  { id: "mountains", name: "🏔️ Mountains & Hiking", icon: "🏔️", category: "adventure" },
-  { id: "safari", name: "🐘 Safari & Wildlife", icon: "🐘", category: "adventure" },
-  { id: "camping", name: "🏕️ Camping & Glamping", icon: "🏕️", category: "adventure" },
-  { id: "coffee-tea", name: "☕ Coffee & Tea Tours", icon: "☕", category: "food" },
+  { id: "nature-wildlife", name: "Nature & Wildlife", icon: "Leaf", category: "adventure" },
+  { id: "history-culture", name: "History & Culture", icon: "Building", category: "culture" },
+  { id: "food-dining", name: "Food & Dining", icon: "Utensils", category: "lifestyle" },
+  { id: "arts-crafts", name: "Arts & Crafts", icon: "Palette", category: "culture" },
+  { id: "adventure-sports", name: "Adventure Sports", icon: "Waves", category: "adventure" },
+  { id: "photography", name: "Photography", icon: "Camera", category: "hobby" },
+  { id: "wellness", name: "Wellness & Relaxation", icon: "Flower2", category: "lifestyle" },
+  { id: "music-nightlife", name: "Music & Nightlife", icon: "Music", category: "entertainment" },
+  { id: "shopping", name: "Shopping & Markets", icon: "ShoppingBag", category: "lifestyle" },
+  { id: "walking-tours", name: "Walking Tours", icon: "Footprints", category: "adventure" },
+  { id: "beaches", name: "Beaches & Water", icon: "Umbrella", category: "adventure" },
+  { id: "mountains", name: "Mountains & Hiking", icon: "Mountain", category: "adventure" },
+  { id: "safari", name: "Safari & Wildlife", icon: "PawPrint", category: "adventure" },
+  { id: "camping", name: "Camping & Glamping", icon: "Tent", category: "adventure" },
+  { id: "coffee-tea", name: "Coffee & Tea Tours", icon: "Coffee", category: "food" },
 ]
 
 /**

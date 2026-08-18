@@ -192,7 +192,7 @@ export default function Admin2Settings() {
  <h3 className="text-white font-medium">Maintenance Mode</h3>
  <p className="text-sm text-gray-400 mt-1">
  {settings.maintenanceMode
- ? "⚠️ Maintenance mode is ON — platform is restricted to admins only."
+ ? "Maintenance mode is active — platform is restricted to admins only."
  : "Disable the platform for all users except admins. Useful for major upgrades."}
  </p>
  </div>

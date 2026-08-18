@@ -64,7 +64,7 @@ export default function ConfirmationPage() {
  const successParam = searchParams.get("success")
  const errorParam = searchParams.get("error")
  if (successParam === "tip" || errorParam === "tip_success") {
- toast.success("Thank you for tipping your host! 🎉")
+ toast.success("Thank you for tipping your host!")
  }
  }, [searchParams])
 
@@ -384,7 +384,7 @@ export default function ConfirmationPage() {
           </div>
         )}
 
-        {/* 🎯 Direct Chat with Host Card */}
+        {/* Direct Chat with Host Card */}
         {booking.host_id && (
           <div className="mt-4 rounded-2xl border border-primary/25 bg-card p-5 shadow-sm">
             <div className="flex items-start justify-between gap-4 flex-col sm:flex-row sm:items-center">
@@ -406,7 +406,7 @@ export default function ConfirmationPage() {
                 tourId={tour?.id}
                 variant="default"
                 size="default"
-                label="💬 Start Chat with Host"
+                label="Start Chat with Host"
                 className="w-full sm:w-auto shrink-0 bg-primary text-primary-foreground font-bold shadow-md hover:shadow-lg min-h-[44px]"
               />
             </div>
@@ -580,7 +580,7 @@ export default function ConfirmationPage() {
  {tipAmount > 0 && (
  <div className="space-y-3 pt-1">
  <p className="text-xs text-muted-foreground bg-muted/30 rounded-lg px-3 py-2 border border-border/45">
- 🙏 You're adding <strong className="text-foreground">{formatTourPrice(tipAmount, booking.currency || "KES")}</strong> tip. Your host will receive <strong className="text-foreground">{formatTourPrice(Math.round(tipAmount * 0.8), booking.currency || "KES")}</strong> after the platform fee.
+ You are adding <strong className="text-foreground">{formatTourPrice(tipAmount, booking.currency || "KES")}</strong> tip. Your host will receive <strong className="text-foreground">{formatTourPrice(Math.round(tipAmount * 0.8), booking.currency || "KES")}</strong> after the platform fee.
  </p>
  <Button
  onClick={handleSendTip}
