@@ -383,7 +383,7 @@ export default function Carousel({
  className={`h-2 w-2 rounded-full cursor-pointer border-0 p-0 appearance-none transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
  activeIndex === index
  ? "bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon"
- : "bg-accent/"
+ : "bg-white/20"
  }`}
  animate={{
  scale: activeIndex === index ? 1.25 : 1,

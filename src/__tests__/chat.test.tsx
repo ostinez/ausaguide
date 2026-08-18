@@ -17,6 +17,7 @@ vi.mock("@/lib/supabase", () => {
  from: vi.fn(),
  channel: vi.fn().mockReturnValue(channelMock),
  removeChannel: vi.fn(),
+ getChannels: vi.fn().mockReturnValue([]),
  auth: {
  getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-123" } } }),
  },

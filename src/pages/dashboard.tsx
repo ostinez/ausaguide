@@ -98,7 +98,7 @@ function StatCard({
  return (
  <BorderGlow
  edgeSensitivity={30}
- glowColor="260 70 60"
+ glowColor="183 70 25"
  backgroundColor="#16161A"
  borderRadius={16}
  glowRadius={40}

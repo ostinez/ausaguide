@@ -132,7 +132,7 @@ export default function NotificationBell() {
  <div className="relative" ref={dropdownRef}>
  <button
  onClick={() => setIsOpen(!isOpen)}
- className="relative flex items-center justify-center p-2 rounded-full hover:bg-accent/ text-foreground transition-all duration-300 focus:outline-none"
+ className="relative flex items-center justify-center p-2 rounded-full hover:bg-white/10 text-foreground transition-all duration-300 focus:outline-none"
  aria-label="Notifications"
  >
  {unreadCount > 0 ? (
@@ -212,7 +212,7 @@ export default function NotificationBell() {
  </div>
  <div className="flex flex-col items-center gap-2 shrink-0">
  {!notif.read && (
- <span className="size-2 rounded-full bg-primary shrink-0 shadow-[0_0_8px_#8b5cf6]" />
+ <span className="size-2 rounded-full bg-primary shrink-0 shadow-[0_0_8px_#0D6F73]" />
  )}
  {isExpanded ? (
  <ChevronUp className="size-3.5 text-muted-foreground" />

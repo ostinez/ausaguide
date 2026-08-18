@@ -139,7 +139,7 @@ export default function ThankYouPage() {
  </Link>
 
  <Link to="/" className="w-full sm:w-auto">
- <Button variant="outline" className="w-full sm:w-auto rounded-full border-border hover:bg-accent/ hover:text-white font-bold px-8 py-5 text-xs flex items-center justify-center gap-1.5 cursor-pointer">
+ <Button variant="outline" className="w-full sm:w-auto rounded-full border-border hover:bg-white/10 hover:text-white font-bold px-8 py-5 text-xs flex items-center justify-center gap-1.5 cursor-pointer">
  <Home className="size-3.5" />
  Return Home
  </Button>

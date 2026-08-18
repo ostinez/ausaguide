@@ -28,8 +28,8 @@ export async function getRecommendedTours(userId?: string): Promise<Tour[]> {
   try {
     let uid = userId
     if (!uid) {
-      const { data: authData } = await supabase.auth.getUser()
-      uid = authData.user?.id
+      const { data: authData } = (await supabase.auth?.getUser?.()) ?? { data: { user: null } }
+      uid = authData?.user?.id
     }
 
     // 1. Fetch user interests

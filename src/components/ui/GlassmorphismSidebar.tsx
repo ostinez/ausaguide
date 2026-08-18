@@ -278,7 +278,7 @@ export function GlassmorphismSidebar({
  "relative group w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 text-left font-accent",
  active
  ? "bg-gradient-to-r from-[#0D6F73]/25 to-[#0D6F73]/10 text-white border border-[#0D6F73]/25 shadow-sm shadow-[#0D6F73]/10"
- : "text-white/55 hover:text-white hover:bg-card shadow-modern border border-transparent"
+ : "text-white/55 hover:text-white hover:bg-white/5 border border-transparent"
  )}
  >
  <span
@@ -322,7 +322,7 @@ export function GlassmorphismSidebar({
  onClose();
  navigate("/profile/edit");
  }}
- className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-accent/ border border-white/8 cursor-pointer hover:bg-accent/ hover:border-white/15 transition-all duration-200"
+ className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/5 border border-white/8 cursor-pointer hover:bg-white/10 hover:border-white/15 transition-all duration-200"
  >
  {profile.avatar_url ? (
  <img
@@ -350,7 +350,7 @@ export function GlassmorphismSidebar({
  <Link
  to="/profile/edit"
  onClick={onClose}
- className="flex w-full items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-white/50 hover:text-white hover:bg-accent/ transition-all duration-200"
+ className="flex w-full items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-white/50 hover:text-white hover:bg-white/10 transition-all duration-200"
  >
  <Settings className="size-4 text-[#0D6F73]" />
  Settings

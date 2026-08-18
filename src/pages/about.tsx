@@ -89,7 +89,7 @@ export default function AboutPage() {
 
  <SpotlightCard className="p-8 border border-border bg-card shadow-modern rounded-2xl space-y-4 flex flex-col justify-between">
  <div className="space-y-4">
- <div className="flex size-12 items-center justify-center rounded-xl bg-accent/ text-white">
+ <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-white">
  <Globe className="size-6" />
  </div>
  <h3 className="text-base font-bold text-white leading-snug">
@@ -127,7 +127,7 @@ export default function AboutPage() {
  </div>
  
  <BorderGlow
- glowColor="7F5AF0"
+ glowColor="183 70 25"
  glowIntensity={0.5}
  borderRadius={20}
  backgroundColor="#121214"
@@ -276,7 +276,7 @@ export default function AboutPage() {
  </SpotlightCard>
 
  <SpotlightCard className="flex flex-col items-center p-6 border border-border bg-card shadow-modern rounded-2xl">
- <div className="flex size-14 items-center justify-center rounded-full bg-accent/ border border-border text-white text-xl font-bold mb-4">
+ <div className="flex size-14 items-center justify-center rounded-full bg-card border border-border text-white text-xl font-bold mb-4">
  3
  </div>
  <h3 className="text-sm font-bold text-white mb-2">Explore Kenya Live</h3>
@@ -290,7 +290,7 @@ export default function AboutPage() {
  {/* Founder Section */}
  <section className="w-full">
  <BorderGlow
- glowColor="7F5AF0"
+ glowColor="183 70 25"
  glowIntensity={0.5}
  borderRadius={24}
  backgroundColor="#121214"
@@ -343,7 +343,7 @@ export default function AboutPage() {
  {/* Call to Action Section with BorderGlow */}
  <section className="w-full">
  <BorderGlow
- glowColor="7F5AF0"
+ glowColor="183 70 25"
  glowIntensity={0.6}
  borderRadius={28}
  backgroundColor="#121214"

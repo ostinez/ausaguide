@@ -217,7 +217,7 @@ export function Navbar() {
  {/* Profile Avatar Dropdown */}
  <DropdownMenu>
  <DropdownMenuTrigger asChild>
- <button className="flex items-center gap-2 rounded-xl border border-border bg-accent/ px-3 py-1.5 hover:bg-accent/ hover:border-[#0D6F73]/40 transition-all duration-200 group">
+ <button className="flex items-center gap-2 rounded-xl border border-border bg-white/5 px-3 py-1.5 hover:bg-white/10 hover:border-[#0D6F73]/40 transition-all duration-200 group">
  {/* Avatar circle */}
  <span className="flex size-7 items-center justify-center rounded-full bg-linear-to-br from-[#0D6F73] to-[#0D6F73] text-xs font-bold text-white shrink-0">
  {userInitials}
@@ -237,26 +237,26 @@ export function Navbar() {
  <p className="text-sm font-semibold text-white truncate">{profile?.full_name || "Account"}</p>
  <p className="text-xs text-white/40 capitalize mt-0.5">{userRole}</p>
  </DropdownMenuLabel>
- <DropdownMenuSeparator className="bg-accent/" />
- <DropdownMenuItem asChild className="text-white/70 hover:text-white hover:bg-accent/ cursor-pointer rounded-lg mx-1">
+ <DropdownMenuSeparator className="bg-white/10" />
+ <DropdownMenuItem asChild className="text-white/70 hover:text-white hover:bg-white/10 cursor-pointer rounded-lg mx-1">
  <Link to="/dashboard" className="flex items-center gap-2.5 px-2 py-2">
  <LayoutDashboard className="size-4 text-[#0D6F73]" />
  Dashboard
  </Link>
  </DropdownMenuItem>
- <DropdownMenuItem asChild className="text-white/70 hover:text-white hover:bg-accent/ cursor-pointer rounded-lg mx-1">
+ <DropdownMenuItem asChild className="text-white/70 hover:text-white hover:bg-white/10 cursor-pointer rounded-lg mx-1">
  <Link to="/follow-requests" className="flex items-center gap-2.5 px-2 py-2">
  <Users className="size-4 text-[#0D6F73]" />
  Connections & Requests
  </Link>
  </DropdownMenuItem>
- <DropdownMenuItem asChild className="text-white/70 hover:text-white hover:bg-accent/ cursor-pointer rounded-lg mx-1">
+ <DropdownMenuItem asChild className="text-white/70 hover:text-white hover:bg-white/10 cursor-pointer rounded-lg mx-1">
  <Link to="/settings" className="flex items-center gap-2.5 px-2 py-2">
  <Settings className="size-4 text-[#0D6F73]" />
  Settings
  </Link>
  </DropdownMenuItem>
- <DropdownMenuSeparator className="bg-accent/" />
+ <DropdownMenuSeparator className="bg-white/10" />
  <DropdownMenuItem
  onClick={handleSignOut}
  className="text-red-400 hover:text-red-300 hover:bg-red-500/10 cursor-pointer rounded-lg mx-1 mb-1 gap-2.5"
@@ -273,7 +273,7 @@ export function Navbar() {
  <Button
  variant="ghost"
  size="sm"
- className="text-white/70 hover:text-white border border-border hover:border-border hover:bg-accent/"
+ className="text-white/70 hover:text-white border border-border hover:border-border hover:bg-white/10"
  >
  Log In
  </Button>
@@ -294,7 +294,7 @@ export function Navbar() {
  {/* Mobile hamburger */}
  <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
  <SheetTrigger asChild>
- <Button variant="ghost" size="icon" className="md:hidden text-white/70 hover:text-white hover:bg-accent/">
+ <Button variant="ghost" size="icon" className="md:hidden text-white/70 hover:text-white hover:bg-white/10">
  {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
  </Button>
  </SheetTrigger>
@@ -332,7 +332,7 @@ export function Navbar() {
  "flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
  isActive(link.href)
  ? "bg-linear-to-r from-[#0D6F73]/20 to-[#0D6F73]/20 text-white border border-[#0D6F73]/20"
- : "text-white/60 hover:text-white hover:bg-accent/"
+ : "text-white/60 hover:text-white hover:bg-white/10"
  )}
  >
  {link.label}
@@ -346,7 +346,7 @@ export function Navbar() {
  <>
  {/* Mobile profile card */}
  {profile && (
- <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-accent/ border border-border mb-2">
+ <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/5 border border-border mb-2">
  <span className="flex size-9 items-center justify-center rounded-full bg-linear-to-br from-[#0D6F73] to-[#0D6F73] text-sm font-bold text-white shrink-0">
  {userInitials}
  </span>
@@ -365,7 +365,7 @@ export function Navbar() {
  )}
 
  <Link to="/settings" onClick={() => setMobileOpen(false)}>
- <span className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-white/60 hover:text-white hover:bg-accent/ transition-all">
+ <span className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-white/60 hover:text-white hover:bg-white/10 transition-all">
  <Settings className="size-4 text-[#0D6F73]" /> Settings
  </span>
  </Link>
@@ -380,7 +380,7 @@ export function Navbar() {
  ) : (
  <>
  <Link to="/auth" onClick={() => setMobileOpen(false)}>
- <Button variant="outline" className="w-full mt-1 border-border text-white/70 hover:text-white hover:bg-accent/">
+ <Button variant="outline" className="w-full mt-1 border-border text-white/70 hover:text-white hover:bg-white/10">
  Log In
  </Button>
  </Link>

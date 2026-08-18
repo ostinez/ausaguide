@@ -31,7 +31,7 @@ const TREE_TYPES = [
  name: "African Tulip Tree (Spathodea campanulata)",
  description: "Native to tropical Africa including Kenya. Its bright red/orange bell-shaped flowers attract local birds and bees. Fast-growing and resilient, making it highly popular for community reforestation efforts.",
  image: africanTulipImage,
- color: "7F5AF0",
+ color: "0D6F73",
  },
  {
  name: "Croton (Croton megalocarpus)",

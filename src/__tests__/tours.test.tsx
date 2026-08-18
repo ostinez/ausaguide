@@ -50,7 +50,22 @@ vi.mock("@/hooks/useSEO", () => ({
  useSEO: vi.fn(),
 }))
 
-vi.mock("@/lib/supabase")
+vi.mock("@/lib/supabase", () => ({
+  supabase: {
+    auth: {
+      getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
+      getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
+      onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
+    },
+    from: vi.fn(() => ({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+      maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+    })),
+  },
+}))
 
 describe("Tours Page Unit Tests", () => {
  it("renders tours page header and search interface", async () => {

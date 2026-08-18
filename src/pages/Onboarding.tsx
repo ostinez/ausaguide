@@ -790,7 +790,7 @@ function StepDone({ name, role, hostTier }: { name: string; role: Role; hostTier
  variant="outline"
  disabled={navigating}
  onClick={() => handleNavigate("/dashboard")}
- className="rounded-full px-8 border-border text-white/80 hover:bg-accent/ hover:text-white font-semibold"
+ className="rounded-full px-8 border-border text-white/80 hover:bg-white/10 hover:text-white font-semibold"
  >
  Go to Dashboard
  </Button>
@@ -812,7 +812,7 @@ function StepDone({ name, role, hostTier }: { name: string; role: Role; hostTier
  variant="outline"
  disabled={navigating}
  onClick={() => handleNavigate("/tours")}
- className="rounded-full px-8 border-border text-white/80 hover:bg-accent/ hover:text-white font-semibold"
+ className="rounded-full px-8 border-border text-white/80 hover:bg-white/10 hover:text-white font-semibold"
  >
  Explore Tours
  </Button>

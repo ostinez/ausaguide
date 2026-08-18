@@ -293,7 +293,7 @@ export default function NewTourPage() {
  <div
  className={`flex size-8 items-center justify-center rounded-full border text-xs font-semibold transition-all ${
  idx === currentStep
- ? "border-primary bg-primary text-primary-foreground shadow-[0_0_15px_rgba(147,51,234,0.4)]"
+ ? "border-primary bg-primary text-primary-foreground shadow-[0_0_15px_rgba(13,111,115,0.4)]"
  : idx < currentStep
  ? "border-primary bg-primary/10 text-primary"
  : "border-border bg-transparent"
@@ -527,7 +527,7 @@ export default function NewTourPage() {
  <span className="ml-auto text-[10px] text-muted-foreground">Required · shown on tour card</span>
  </div>
  <CoverImageUploader
- bucket="avatars"
+ bucket="tours"
  maxSizeMB={20}
  value={coverImage}
  onChange={setCoverImage}
@@ -550,7 +550,7 @@ export default function NewTourPage() {
  </div>
  <p className="text-xs text-muted-foreground">Add photos of each stop on your tour — markets, viewpoints, restaurants, etc. Travelers love seeing what they'll experience.</p>
  <Dropzone
- bucket="avatars"
+ bucket="tours"
  multiple={true}
  maxSizeMB={20}
  value={galleryImages}

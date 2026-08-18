@@ -127,7 +127,7 @@ export default function TravelCommitmentThankYouPage() {
 
         {/* Certificate Display on Screen */}
         <BorderGlow
-          glowColor="127 90 240"
+          glowColor="183 70 25"
           glowIntensity={0.5}
           borderRadius={24}
           backgroundColor="#121214"
