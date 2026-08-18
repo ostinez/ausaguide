@@ -222,7 +222,7 @@ export default function ConfirmationPage() {
  >
  <div className="absolute inset-0 bg-gradient-to-b from-background/30 to-background/95" />
 
- <div className="relative mx-auto max-w-2xl px-6 text-center">
+ <div className="relative mx-auto max-w-2xl px-4 sm:px-6 text-center">
  {/* Animated check icon */}
  <div className="mx-auto mb-5 flex size-20 items-center justify-center rounded-full bg-teal/20 ring-4 ring-teal/30">
  <CheckCircle2 className="size-10 text-teal" />
@@ -254,7 +254,7 @@ export default function ConfirmationPage() {
  </div>
 
  {/* Main content */}
- <div className="mx-auto max-w-2xl px-6 pb-20 pt-8">
+ <div className="mx-auto max-w-2xl px-4 sm:px-6 pb-24 pt-8">
  {/* Status badge */}
  <div className="mb-6 flex items-center justify-between">
  <h2 className="text-lg font-semibold text-foreground">Booking details</h2>

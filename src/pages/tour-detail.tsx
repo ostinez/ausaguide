@@ -329,7 +329,7 @@ export default function TourDetailPage() {
  />
  <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
 
- <div className="absolute left-0 right-0 top-0 mx-auto max-w-6xl px-6 pt-6">
+ <div className="absolute left-0 right-0 top-0 mx-auto max-w-6xl px-4 sm:px-6 pt-6">
  <button
  onClick={() => window.history.length > 1 ? navigate(-1) : navigate("/tours")}
  className="inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-background/60 px-3 py-2 text-sm text-foreground transition-colors hover:bg-background/80 min-h-[44px] active:scale-95"
@@ -339,7 +339,7 @@ export default function TourDetailPage() {
  </button>
  </div>
 
- <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-6xl px-6 pb-7">
+ <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-6xl px-4 sm:px-6 pb-7">
  <div className="mb-3 flex flex-wrap items-center gap-2">
  <span
  className={cn(
@@ -393,7 +393,7 @@ export default function TourDetailPage() {
  </div>
  </div>
 
- <div className="relative z-10 mx-auto max-w-6xl px-6 py-10">
+ <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-10">
  <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_360px]">
  <div className="space-y-10">
  <section>

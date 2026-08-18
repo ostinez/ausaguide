@@ -293,7 +293,7 @@ export default function CheckoutPage() {
  </div>
  </div>
 
- <div className="mx-auto max-w-4xl px-6 pb-20 pt-4">
+ <div className="mx-auto max-w-4xl px-4 sm:px-6 pb-24 pt-4">
  <h1 className="scroll-m-20 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
  Complete your booking
  </h1>

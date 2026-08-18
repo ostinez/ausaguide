@@ -355,10 +355,21 @@ button.icon-btn {
   padding: 10px;
 }
 
-/* ── Prevent iOS text size inflation after orientation change ── */
-html {
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+}
+
+/* ── Prevent iOS Safari Auto-Zoom on form fields ── */
+@media (max-width: 768px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
 }
 
 /* ── Prevent double-tap-to-zoom on interactive elements ── */
@@ -370,6 +381,7 @@ select,
 textarea {
   touch-action: manipulation;
 }
+
 
 /* ── Reduced motion: respect user OS accessibility setting ── */
 @media (prefers-reduced-motion: reduce) {

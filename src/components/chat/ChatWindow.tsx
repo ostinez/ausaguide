@@ -451,9 +451,9 @@ export function ChatWindow({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* ─── Composer Input Bar ─── */}
-      <div className="p-3 bg-card border-t border-border shrink-0">
-        <form onSubmit={handleSend} className="flex items-center gap-2">
+      {/* ─── Composer Input Bar (Sticky for Mobile) ─── */}
+      <div className="p-3 bg-card/95 backdrop-blur-md border-t border-border shrink-0 sticky bottom-0 z-20 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <form onSubmit={handleSend} className="flex items-center gap-2 max-w-4xl mx-auto">
           <input
             type="file"
             ref={fileInputRef}
@@ -468,34 +468,34 @@ export function ChatWindow({
             size="icon"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploadingImage || sending}
-            className="size-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted shrink-0"
+            className="size-11 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted shrink-0 touch-target"
             title="Attach photo"
           >
             {uploadingImage ? (
-              <Loader2 className="size-4 animate-spin text-primary" />
+              <Loader2 className="size-5 animate-spin text-primary" />
             ) : (
-              <ImageIcon className="size-4" />
+              <ImageIcon className="size-5" />
             )}
           </Button>
 
           <Input
             value={inputVal}
             onChange={handleInputChange}
-            placeholder="Message..."
+            placeholder="Type a message..."
             disabled={sending}
-            className="flex-1 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground rounded-full px-4 h-9.5 text-sm focus-visible:ring-1 focus-visible:ring-primary"
+            className="flex-1 bg-muted/60 border-border text-foreground placeholder:text-muted-foreground rounded-full px-4 h-11 text-base focus-visible:ring-1 focus-visible:ring-primary"
           />
 
           <Button
             type="submit"
             size="icon"
             disabled={!inputVal.trim() || sending}
-            className="size-9.5 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shrink-0 disabled:opacity-40 transition-all shadow-sm"
+            className="size-11 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shrink-0 disabled:opacity-40 transition-all shadow-sm touch-target"
           >
             {sending ? (
-              <Loader2 className="size-4 animate-spin" />
+              <Loader2 className="size-5 animate-spin" />
             ) : (
-              <Send className="size-4" />
+              <Send className="size-5" />
             )}
           </Button>
         </form>
@@ -503,3 +503,4 @@ export function ChatWindow({
     </div>
   )
 }
+

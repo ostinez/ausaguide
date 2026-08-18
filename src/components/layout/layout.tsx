@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { Outlet, useLocation, Link } from "react-router-dom"
 import { StaggeredMenu } from "@/components/ui/StaggeredMenu"
+import { MobileNav } from "./MobileNav"
 import { supabase } from "@/lib/supabase"
 import { Footer } from "./footer"
 import { ProfileCompletionBanner } from "@/components/ui/ProfileCompletionBanner"
@@ -346,11 +347,12 @@ export function Layout() {
  logoUrl="/logo-primary.png"
  className={`${!isAuthOrOnboarding ? "has-beta-banner" : ""} ${impersonatedName ? "has-impersonation-banner" : ""}`.trim()}
  />
- <main className="flex-1">
+ <main className="flex-1 pb-16 md:pb-0">
  <Outlet />
  </main>
  {!isAuthOrOnboarding && <Footer />}
  {!isAuthOrOnboarding && <ProfileCompletionBanner />}
+ {!isAuthOrOnboarding && <MobileNav />}
  {isOffline && (
  <div
  role="alert"
