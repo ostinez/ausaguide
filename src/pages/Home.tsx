@@ -13,6 +13,7 @@ import { useSEO } from "@/hooks/useSEO"
 import { JsonLd } from "@/components/seo/JsonLd"
 import { WaitlistHero } from "@/components/home/WaitlistHero"
 import { TreePlanting } from "@/components/TreePlanting"
+import { MentalHealth } from "@/components/MentalHealth"
 import ProfileCard from "@/components/ui/ProfileCard"
 import founderPhoto from "../assets/images/founder/austin-mbote.webp"
 import { ArrowRight } from "lucide-react"
@@ -140,8 +141,9 @@ export default function Home() {
         <ImpactPreview />
       </div>
       <section className="py-16 bg-background border-b border-border">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           <TreePlanting />
+          <MentalHealth />
         </div>
       </section>
       <div className="defer-render">

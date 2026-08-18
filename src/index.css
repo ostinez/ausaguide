@@ -579,6 +579,45 @@ img {
   cursor: not-allowed;
 }
 
+/* ── Mental Health Social Impact Section Styles ── */
+.mental-health-input {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(37, 99, 235, 0.4) !important;
+  color: #ffffff !important;
+  transition: all 0.2s ease;
+}
+
+.mental-health-input::placeholder {
+  color: rgba(167, 196, 232, 0.6) !important;
+}
+
+.mental-health-input:focus {
+  outline: none !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3) !important;
+}
+
+.mental-health-button {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.mental-health-button:hover {
+  background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+}
+
+.mental-health-button:disabled {
+  background: rgba(37, 99, 235, 0.35) !important;
+  cursor: not-allowed;
+}
+
+.role-selector-btn {
+  transition: all 0.2s ease;
+}
+
+
 
 
 

@@ -1,13 +1,8 @@
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { Brain, HeartPulse, ShieldAlert, Plane, Compass, Sun, Heart, Leaf, Waves, Mountain, User, Mail, FileText, ArrowRight, Quote, Camera } from "lucide-react"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+import { Brain, HeartPulse, ShieldAlert, Plane, Compass, Sun, Heart, Leaf, Waves, Mountain, Quote, Camera } from "lucide-react"
 import { GradientText } from "@/components/ui/GradientText"
 import { BorderGlow } from "@/components/ui/BorderGlow"
 import { WaitlistSection } from "@/components/ui/WaitlistSection"
-import { supabase } from "@/lib/supabase"
-import { toast } from "sonner"
+import { MentalHealth } from "@/components/MentalHealth"
 import { useSEO } from "@/hooks/useSEO"
 import { JsonLd } from "@/components/seo/JsonLd"
 
@@ -18,154 +13,62 @@ import mentalGallery3 from "../assets/images/mental-health/mental-gallery-3.webp
 import mentalGallery4 from "../assets/images/mental-health/mental-gallery-4.webp"
 
 const TIERS = [
- {
- icon: <Leaf className="size-6 text-[#0D6F73]" />,
- title: "Day Retreat",
- price: "$50",
- description: "1-day nature escape",
- details: "Includes transport, guided mindfulness hike, and organic meals.",
- color: "2CB67D",
- },
- {
- icon: <Sun className="size-6 text-[#0D6F73]" />,
- title: "Weekend Getaway",
- price: "$100",
- description: "2-day wellness retreat",
- details: "Includes accommodation, meditation class, and forest walking activities.",
- color: "7F5AF0",
- },
- {
- icon: <Waves className="size-6 text-blue-500" />,
- title: "Cultural Immersion",
- price: "$250",
- description: "5-day Swahili Coast break",
- details: "Full local community stay, coastal sailing, and traditional healing foods.",
- color: "3b82f6",
- },
- {
- icon: <Mountain className="size-6 text-pink-500" />,
- title: "Healing Journey",
- price: "$500",
- description: "7-day Mount Kenya retreat",
- details: "All-inclusive mountain lodge, professional guide wellness sessions, and scenic hikes.",
- color: "ec4899",
- },
+  {
+    icon: <Leaf className="size-6 text-[#0D6F73]" />,
+    title: "Day Retreat",
+    price: "$50",
+    description: "1-day nature escape",
+    details: "Includes transport, guided mindfulness hike, and organic meals.",
+    color: "2CB67D",
+  },
+  {
+    icon: <Sun className="size-6 text-[#0D6F73]" />,
+    title: "Weekend Getaway",
+    price: "$100",
+    description: "2-day wellness retreat",
+    details: "Includes accommodation, meditation class, and forest walking activities.",
+    color: "7F5AF0",
+  },
+  {
+    icon: <Waves className="size-6 text-blue-500" />,
+    title: "Cultural Immersion",
+    price: "$250",
+    description: "5-day Swahili Coast break",
+    details: "Full local community stay, coastal sailing, and traditional healing foods.",
+    color: "3b82f6",
+  },
+  {
+    icon: <Mountain className="size-6 text-pink-500" />,
+    title: "Healing Journey",
+    price: "$500",
+    description: "7-day Mount Kenya retreat",
+    details: "All-inclusive mountain lodge, professional guide wellness sessions, and scenic hikes.",
+    color: "ec4899",
+  },
 ]
 
 const GALLERY = [
- {
- url: mentalGallery1,
- caption: "Sunset peace over Lake Naivasha water sanctuary",
- },
- {
- url: mentalGallery2,
- caption: "Nature hiking paths along Chyulu Hills highlands",
- },
- {
- url: mentalGallery4,
- caption: "Quiet ocean relaxation on Watamu beaches",
- },
+  {
+    url: mentalGallery1,
+    caption: "Sunset peace over Lake Naivasha water sanctuary",
+  },
+  {
+    url: mentalGallery2,
+    caption: "Nature hiking paths along Chyulu Hills highlands",
+  },
+  {
+    url: mentalGallery4,
+    caption: "Quiet ocean relaxation on Watamu beaches",
+  },
 ]
 
-
 export default function MentalHealthPage() {
- useSEO({
- title: "Sponsor a Getaway, Heal a Mind | Ausaguide",
- description: "Sponsor therapeutic travel experiences and getaways for local guides and community members in Kenya to combat burnout and recharge.",
- })
+  useSEO({
+    title: "Sponsor a Getaway, Heal a Mind | Ausaguide",
+    description: "Sponsor therapeutic travel experiences and getaways for local guides and community members in Kenya to combat burnout and recharge.",
+  })
 
- const navigate = useNavigate()
-
- // Virtual Commitment state
- const [pledgeName, setPledgeName] = useState("")
- const [pledgeEmail, setPledgeEmail] = useState("")
- const [pledgeDedication, setPledgeDedication] = useState("")
- const [submittingPledge, setSubmittingPledge] = useState(false)
-
- const handlePledgeSubmit = async (e: React.FormEvent) => {
- e.preventDefault()
- if (!pledgeName.trim() || !pledgeEmail.trim()) {
- toast.error("Please enter your name and email.")
- return
- }
-
- setSubmittingPledge(true)
- try {
- let finalCommitmentId = ""
-
- // 1. Try to invoke edge function
- try {
- const { data, error } = await supabase.functions.invoke("generate-travel-commitment-id", {
- method: "GET"
- })
- if (data && data.commitment_id) {
- finalCommitmentId = data.commitment_id
- } else {
- console.warn("Edge function didn't return commitment_id:", error)
- }
- } catch (err) {
- console.warn("Failed to call generate-travel-commitment-id, falling back to local generation:", err)
- }
-
- // 2. Client fallback
- if (!finalCommitmentId) {
- try {
- const { count, error } = await supabase
- .from("travel_commitments")
- .select("*", { count: "exact", head: true })
- 
- if (error) throw error
- 
- const nextIndex = (count || 0) + 1
- finalCommitmentId = `AUS-TRAVEL-${nextIndex.toString().padStart(4, "0")}`
- } catch (dbErr) {
- console.warn("Database query failed, generating random commitment ID:", dbErr)
- const randomNum = Math.floor(1000 + Math.random() * 9000)
- finalCommitmentId = `AUS-TRAVEL-${randomNum}`
- }
- }
-
- const userId = localStorage.getItem("user_id")
-
- // 3. Save to database
- const { error } = await supabase
- .from("travel_commitments")
- .insert({
- user_id: userId || null,
- email: pledgeEmail.trim(),
- name: pledgeName.trim(),
- dedication: pledgeDedication.trim() || null,
- commitment_id: finalCommitmentId,
- status: "pending",
- })
-
- if (error) throw error
-
- toast.success("Your travel getaway pledge has been registered! Pledge ID: " + finalCommitmentId)
-
- // Redirect to thank you page with state
- navigate("/travel-commitment-thank-you", {
- state: {
- name: pledgeName.trim(),
- email: pledgeEmail.trim(),
- commitmentId: finalCommitmentId,
- dedication: pledgeDedication.trim() || "For the wellness of Kenyan guides",
- date: new Date().toLocaleDateString("en-US", {
- year: "numeric",
- month: "long",
- day: "numeric",
- })
- }
- })
- } catch (err: any) {
- console.error(err)
- toast.error(err.message || "Failed to submit commitment. Please try again.")
- } finally {
- setSubmittingPledge(false)
- }
- }
-
- return (
+  return (
     <div className="relative overflow-hidden min-h-screen bg-background text-foreground flex flex-col items-center">
       <JsonLd
         data={{
@@ -378,7 +281,7 @@ export default function MentalHealthPage() {
           </div>
         </div>
 
-        {/* Gallery Section */}
+        {/* 7. Gallery Section */}
         <div className="space-y-6">
           <div className="text-center md:text-left space-y-1.5">
             <div className="flex items-center gap-1.5 justify-center md:justify-start text-brand font-bold">
@@ -409,85 +312,13 @@ export default function MentalHealthPage() {
           </div>
         </div>
 
-        {/* 7. Commitment Pledge Form */}
-        <div className="p-8 border border-border bg-card shadow-modern rounded-3xl space-y-6">
-          <div className="flex items-center gap-2.5">
-            <Compass className="size-6 text-brand" />
-            <h3 className="text-xl font-bold text-foreground font-accent">
-              <GradientText colors={["#06363D", "#0D6F73", "#06363D"]} animationSpeed={4}>
-                Commit to Sponsoring a Getaway
-              </GradientText>
-            </h3>
-          </div>
-          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-2xl font-medium">
-            Pledge a virtual commitment today (no payment required). Once we launch the checkout flow, you'll be invited to fund a getaway experience. A digital pledge certificate will be generated upon submission.
-          </p>
+        {/* 8. Mental Health Social Impact Form */}
+        <MentalHealth />
 
-          <form onSubmit={handlePledgeSubmit} className="space-y-4 pt-2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-foreground/80">Your Name *</label>
-                <div className="relative">
-                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    placeholder="Enter your name"
-                    value={pledgeName}
-                    onChange={(e) => setPledgeName(e.target.value)}
-                    disabled={submittingPledge}
-                    required
-                    className="pl-10 h-11 bg-secondary/50 border-border text-xs rounded-xl focus:border-brand focus:ring-1 focus:ring-brand text-foreground placeholder:text-muted-foreground font-medium"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-foreground/80">Email Address *</label>
-                <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                  <Input
-                    type="email"
-                    placeholder="Enter your email"
-                    value={pledgeEmail}
-                    onChange={(e) => setPledgeEmail(e.target.value)}
-                    disabled={submittingPledge}
-                    required
-                    className="pl-10 h-11 bg-secondary/50 border-border text-xs rounded-xl focus:border-brand focus:ring-1 focus:ring-brand text-foreground placeholder:text-muted-foreground font-medium"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-foreground/80">Dedication (Optional)</label>
-              <div className="relative">
-                <FileText className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="e.g. Dedicated to local guides in Masai Mara"
-                  value={pledgeDedication}
-                  onChange={(e) => setPledgeDedication(e.target.value)}
-                  disabled={submittingPledge}
-                  className="pl-10 h-11 bg-secondary/50 border-border text-xs rounded-xl focus:border-brand focus:ring-1 focus:ring-brand text-foreground placeholder:text-muted-foreground font-medium"
-                />
-              </div>
-            </div>
-
-            <Button
-              type="submit"
-              disabled={submittingPledge}
-              className="w-full h-11 rounded-full bg-gradient-to-r from-[#0B3037] to-[#0D6F73] hover:from-[#06363D] hover:to-[#0B3037] text-white font-bold shadow-neo-pill border border-white/15 cursor-pointer flex items-center justify-center gap-1.5 text-xs"
-            >
-              {submittingPledge ? "Submitting commitment..." : "Commit to Sponsoring a Getaway"}
-              <ArrowRight className="size-3.5" />
-            </Button>
-          </form>
-        </div>
-
-        {/* 8. Waitlist Section */}
+        {/* 9. Waitlist Section */}
         <WaitlistSection defaultInterest="mental-health-travel" />
 
       </div>
     </div>
- )
+  )
 }

@@ -489,3 +489,44 @@ export async function sendTreePlantingConfirmationEmail(
   return dispatchEmail({ to, subject, html, name })
 }
 
+export async function sendMentalHealthConfirmationEmail(
+  to: string,
+  name: string,
+  role: "traveler" | "host" | "both"
+): Promise<boolean> {
+  const subject = `Welcome to the Mental Health Movement with Ausaguide`
+  const roleLabel = role === "both" ? "Traveler & Host" : role === "host" ? "Local Host" : "Traveler"
+  const html = `
+  <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #1e3a8a; border-radius: 24px; background: linear-gradient(135deg, #0a1628 0%, #1a2a4a 100%); color: #ffffff; line-height: 1.6;">
+    <div style="text-align: center; margin-bottom: 32px;">
+      <img src="https://ausaguide.com/logo-primary.png" alt="Ausaguide" style="height: 36px; width: auto; display: inline-block;" />
+    </div>
+    <p style="font-size: 18px; font-weight: 700; color: #60a5fa; margin-bottom: 8px;">Thank you, ${name}!</p>
+    <p style="font-size: 16px; color: #ffffff; margin-bottom: 20px;">
+      You have joined the <strong>Mental Health & Guide Wellness Movement</strong> on Ausaguide as a <strong style="color: #93c5fd;">${roleLabel}</strong>.
+    </p>
+    
+    <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(96,165,250,0.3); border-radius: 16px; padding: 20px; margin-bottom: 24px;">
+      <p style="font-size: 13px; font-weight: 600; color: #93c5fd; margin: 0 0 6px; text-transform: uppercase; letter-spacing: 0.05em;">Our Mission</p>
+      <p style="font-size: 14px; color: #ffffff; margin: 0; line-height: 1.5;">
+        Every booking fuels mental health resources, burnout recovery getaways, and holistic wellness support for Kenyan community guides and mindful travelers.
+      </p>
+    </div>
+    
+    <p style="font-size: 14px; color: #a7c4e8; margin-bottom: 24px;">
+      You are now part of a community of 500+ supporters fostering safe, supportive, and conscious travel across Kenya.
+    </p>
+    
+    <div style="text-align: center; margin-bottom: 28px;">
+      <a href="https://ausaguide.com/mental-health" style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; padding: 14px 32px; border-radius: 9999px; text-decoration: none; font-weight: bold; display: inline-block; font-size: 15px;">View Mental Health Initiative →</a>
+    </div>
+
+    <p style="font-size: 15px; color: #ffffff; margin-bottom: 0; font-weight: 600;">– The Ausaguide Wellness Team</p>
+    <hr style="border: 0; border-top: 1px solid rgba(96, 165, 250, 0.2); margin: 32px 0;" />
+    <p style="font-size: 13px; color: #60a5fa; font-weight: 700; text-align: center; margin-bottom: 4px;">Ausaguide — Social Impact & Mental Health</p>
+    <p style="font-size: 11px; color: #93c5fd; text-align: center; margin: 0;">© 2026 Ausaguide. Nairobi, Kenya.</p>
+  </div>
+  `
+  return dispatchEmail({ to, subject, html, name })
+}
+
