@@ -270,11 +270,24 @@ export default function CheckoutPage() {
  </div>
  </div>
 
- {/* Trust badge */}
- <div className="flex items-center gap-2 rounded-xl bg-primary/5 border border-primary/20 px-3 py-2.5 text-xs text-primary font-medium">
- <CheckCircle2 className="size-4 shrink-0" />
- IntaSend-secured · M-PESA protected
- </div>
+  {/* IntaSend Trust Badge */}
+  <div className="text-center">
+    <a href="https://intasend.com/security" target="_blank" rel="noopener noreferrer">
+      <img
+        src="https://intasend-prod-static.s3.amazonaws.com/img/trust-badges/intasend-trust-badge-v-light.png"
+        alt="IntaSend Secure Payments (PCI-DSS Compliant)"
+        className="mx-auto w-full max-w-[260px] rounded-lg"
+      />
+    </a>
+    <a
+      href="https://intasend.com/security"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-1.5 block text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+    >
+      Secured by IntaSend Payments
+    </a>
+  </div>
  </aside>
  )
 
@@ -529,6 +542,15 @@ export default function CheckoutPage() {
  <>Pay {formatTourPrice(total, tour.currency)} with M-PESA</>
  )}
  </Button>
+ <div className="text-center pt-2">
+    <a href="https://intasend.com/security" target="_blank" rel="noopener noreferrer">
+      <img
+        src="https://intasend-prod-static.s3.amazonaws.com/img/trust-badges/intasend-trust-badge-v-light.png"
+        alt="IntaSend Secure Payments (PCI-DSS Compliant)"
+        className="mx-auto w-full max-w-[220px] rounded-lg opacity-90"
+      />
+    </a>
+  </div>
  </section>
  ) : (
  <MPesaCheckout

@@ -1,7 +1,17 @@
 import { supabase } from "@/lib/supabase"
 
-const DAILY_API_KEY = import.meta.env.VITE_DAILY_API_KEY as string
+const DAILY_API_KEY = import.meta.env.VITE_DAILY_API_KEY as string | undefined
 const DAILY_API_BASE = "https://api.daily.co/v1"
+
+function requireDailyKey(): string {
+  if (!DAILY_API_KEY) {
+    throw new Error(
+      "Daily.co API key is not configured. Please add VITE_DAILY_API_KEY to your environment variables."
+    )
+  }
+  return DAILY_API_KEY
+}
+
 
 export interface DailyRoom {
  url: string
@@ -37,7 +47,7 @@ export async function createOrGetDailyRoom(bookingId: string): Promise<string> {
  method: "POST",
  headers: {
  "Content-Type": "application/json",
- Authorization: `Bearer ${DAILY_API_KEY}`,
+ Authorization: `Bearer ${requireDailyKey()}`,
  },
  body: JSON.stringify({
  name: roomName,
@@ -82,7 +92,7 @@ export async function createGeneralDailyRoom(conversationId: string): Promise<st
  method: "POST",
  headers: {
  "Content-Type": "application/json",
- Authorization: `Bearer ${DAILY_API_KEY}`,
+ Authorization: `Bearer ${requireDailyKey()}`,
  },
  body: JSON.stringify({
  name: roomName,

@@ -197,6 +197,7 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
  guest_phone: input.guest_phone,
  notes: input.notes ?? null,
  booking_time: input.booking_time ?? null,
+ tour_type: input.booking_type || "physical",
  })
  .select("*")
  .single()

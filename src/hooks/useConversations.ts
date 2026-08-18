@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { supabase } from "@/lib/supabase"
 
 export interface Participant {
@@ -101,10 +101,21 @@ export function useConversations(currentUserId: string | null) {
     }
   }, [currentUserId])
 
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+
   useEffect(() => {
     loadConversations()
 
     if (!currentUserId) return
+
+    // Unsubscribe from any previous channel before creating a new one.
+    // This prevents "cannot add postgres_changes callbacks after subscribe()" errors
+    // when currentUserId changes (e.g. on login/logout).
+    if (channelRef.current) {
+      channelRef.current.unsubscribe()
+      supabase.removeChannel(channelRef.current)
+      channelRef.current = null
+    }
 
     // Realtime channel on conversations and messages
     const channel = supabase
@@ -134,11 +145,15 @@ export function useConversations(currentUserId: string | null) {
       )
       .subscribe()
 
+    channelRef.current = channel
+
     return () => {
       channel.unsubscribe()
       supabase.removeChannel(channel)
+      channelRef.current = null
     }
   }, [currentUserId, loadConversations])
+
 
   const createOrGetConversation = useCallback(
     async (otherUserId: string): Promise<string | null> => {
