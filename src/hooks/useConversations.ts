@@ -108,18 +108,31 @@ export function useConversations(currentUserId: string | null) {
 
     if (!currentUserId) return
 
-    // Unsubscribe from any previous channel before creating a new one.
-    // This prevents "cannot add postgres_changes callbacks after subscribe()" errors
-    // when currentUserId changes (e.g. on login/logout).
+    const topicName = `user-conversations-${currentUserId}`
+
+    // 1. Purge any pre-existing channel with this topic from Supabase client registry
+    try {
+      const existingChannels = supabase.getChannels()
+      const existing = existingChannels.find(
+        (ch) => ch.topic === `realtime:${topicName}` || ch.topic === topicName
+      )
+      if (existing) {
+        supabase.removeChannel(existing)
+      }
+    } catch (e) {
+      console.warn("[useConversations] Error cleaning up pre-existing channel:", e)
+    }
+
     if (channelRef.current) {
-      channelRef.current.unsubscribe()
-      supabase.removeChannel(channelRef.current)
+      try {
+        supabase.removeChannel(channelRef.current)
+      } catch (_) {}
       channelRef.current = null
     }
 
-    // Realtime channel on conversations and messages
+    // 2. Realtime channel on conversations and messages
     const channel = supabase
-      .channel(`user-conversations-${currentUserId}`)
+      .channel(topicName)
       .on(
         "postgres_changes",
         {
@@ -148,11 +161,14 @@ export function useConversations(currentUserId: string | null) {
     channelRef.current = channel
 
     return () => {
-      channel.unsubscribe()
-      supabase.removeChannel(channel)
+      try {
+        channel.unsubscribe()
+        supabase.removeChannel(channel)
+      } catch (_) {}
       channelRef.current = null
     }
   }, [currentUserId, loadConversations])
+
 
 
   const createOrGetConversation = useCallback(

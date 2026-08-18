@@ -86,64 +86,88 @@ export function useMessages(
 
  // 2. Realtime listener for new messages & typing indicator
  useEffect(() => {
- if (!conversationId || !currentUserId) return
+  if (!conversationId || !currentUserId) return
 
- const channel = supabase
- .channel(`conv:${conversationId}`)
- .on(
- "postgres_changes",
- {
- event: "INSERT",
- schema: "public",
- table: "messages",
- filter: `conversation_id=eq.${conversationId}`,
- },
- (payload) => {
- const newMsg = payload.new as DirectMessage
- setMessages((prev) => {
- if (prev.some((m) => m.id === newMsg.id)) return prev
- return [...prev, newMsg]
- })
+  const topicName = `conv:${conversationId}`
 
- // If current user is receiver, mark as read immediately
- if (newMsg.receiver_id === currentUserId) {
- supabase
- .from("messages")
- .update({ read: true })
- .eq("id", newMsg.id)
- .then(() => {})
- }
- }
- )
- .on(
- "postgres_changes",
- {
- event: "UPDATE",
- schema: "public",
- table: "messages",
- filter: `conversation_id=eq.${conversationId}`,
- },
- (payload) => {
- const updatedMsg = payload.new as DirectMessage
- setMessages((prev) =>
- prev.map((m) => (m.id === updatedMsg.id ? updatedMsg : m))
- )
- }
- )
- .on("broadcast", { event: "typing" }, (payload) => {
- if (payload.payload?.senderId && payload.payload.senderId !== currentUserId) {
- setOtherTyping(Boolean(payload.payload.isTyping))
- }
- })
- .subscribe()
+  try {
+    const existingChannels = supabase.getChannels()
+    const existing = existingChannels.find(
+      (ch) => ch.topic === `realtime:${topicName}` || ch.topic === topicName
+    )
+    if (existing) {
+      supabase.removeChannel(existing)
+    }
+  } catch (e) {
+    console.warn("[useMessages] Error cleaning up pre-existing channel:", e)
+  }
 
- channelRef.current = channel
+  if (channelRef.current) {
+    try {
+      supabase.removeChannel(channelRef.current)
+    } catch (_) {}
+    channelRef.current = null
+  }
 
- return () => {
- channel.unsubscribe()
- supabase.removeChannel(channel)
- }
- }, [conversationId, currentUserId])
+  const channel = supabase
+  .channel(topicName)
+  .on(
+  "postgres_changes",
+  {
+  event: "INSERT",
+  schema: "public",
+  table: "messages",
+  filter: `conversation_id=eq.${conversationId}`,
+  },
+  (payload) => {
+  const newMsg = payload.new as DirectMessage
+  setMessages((prev) => {
+  if (prev.some((m) => m.id === newMsg.id)) return prev
+  return [...prev, newMsg]
+  })
+
+  // If current user is receiver, mark as read immediately
+  if (newMsg.receiver_id === currentUserId) {
+  supabase
+  .from("messages")
+  .update({ read: true })
+  .eq("id", newMsg.id)
+  .then(() => {})
+  }
+  }
+  )
+  .on(
+  "postgres_changes",
+  {
+  event: "UPDATE",
+  schema: "public",
+  table: "messages",
+  filter: `conversation_id=eq.${conversationId}`,
+  },
+  (payload) => {
+  const updatedMsg = payload.new as DirectMessage
+  setMessages((prev) =>
+  prev.map((m) => (m.id === updatedMsg.id ? updatedMsg : m))
+  )
+  }
+  )
+  .on("broadcast", { event: "typing" }, (payload) => {
+  if (payload.payload?.senderId && payload.payload.senderId !== currentUserId) {
+  setOtherTyping(Boolean(payload.payload.isTyping))
+  }
+  })
+  .subscribe()
+
+  channelRef.current = channel
+
+  return () => {
+    try {
+      channel.unsubscribe()
+      supabase.removeChannel(channel)
+    } catch (_) {}
+    channelRef.current = null
+  }
+  }, [conversationId, currentUserId])
 
  // 3. Typing broadcast
  const broadcastTyping = useCallback(
