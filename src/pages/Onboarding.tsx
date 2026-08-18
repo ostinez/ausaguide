@@ -11,6 +11,7 @@ import { validateName, validateUsername } from "@/lib/validation"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { sendGuideApplicationNotification } from "@/lib/api/emails"
+import { OnboardingInterests } from "@/components/auth/OnboardingInterests"
 import { 
  Loader2, 
  Globe, 
@@ -1188,7 +1189,9 @@ export default function OnboardingPage() {
  { label: "Verify ID" },
  { label: "Host Type" },
  ]
- : []),
+ : [
+ { label: "Interests" },
+ ]),
  { label: "Done" },
  ]
 
@@ -1256,6 +1259,15 @@ export default function OnboardingPage() {
  ) : (
  <>
  {step === 3 && (
+ <div className="py-2">
+ <OnboardingInterests
+ userId={userId}
+ onComplete={() => setStep(4)}
+ onSkip={() => setStep(4)}
+ />
+ </div>
+ )}
+ {step === 4 && (
  <StepDone
  name={completedName || "Explorer"}
  role={role ?? "traveler"}

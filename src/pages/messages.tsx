@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ChatWindow } from "@/components/chat/ChatWindow"
 import { NewConversationModal } from "@/components/chat/NewConversationModal"
+import { JournalButton } from "@/components/chat/JournalButton"
 import { useConversations } from "@/hooks/useConversations"
 import { useRealtimePresence } from "@/lib/hooks/useRealtimePresence"
 import { supabase } from "@/lib/supabase"
@@ -170,6 +171,12 @@ function ChatHeader({
       </button>
 
       <div className="flex items-center gap-1 shrink-0">
+        <JournalButton
+          hostName={name}
+          variant="ghost"
+          className="h-9 px-2.5 sm:px-3 text-xs"
+          showText={true}
+        />
         <Button
           variant="ghost"
           size="icon"
@@ -192,6 +199,7 @@ function ChatHeader({
     </div>
   )
 }
+
 
 // ─── Profile Sidebar ─────────────────────────────────────────────────────────
 

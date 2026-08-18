@@ -7,6 +7,7 @@ import { DiscoverToursStack } from "@/components/landing/discover-tours-stack"
 import { HowItWorks } from "@/components/landing/how-it-works"
 import { ImpactPreview } from "@/components/landing/impact-preview"
 import { CTASection } from "@/components/landing/cta-section"
+import { TikTokFeed } from "@/components/landing/TikTokFeed"
 import { useSEO } from "@/hooks/useSEO"
 import { JsonLd } from "@/components/seo/JsonLd"
 import ProfileCard from "@/components/ui/ProfileCard"
@@ -276,6 +277,9 @@ export default function Home() {
  </div>
  <div className="defer-render">
  <ImpactPreview />
+ </div>
+ <div className="defer-render">
+ <TikTokFeed />
  </div>
  <div className="defer-render">
  <CTASection />

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { SkeletonTourGrid } from "@/components/ui/Skeleton"
 import { cn } from "@/lib/utils"
 import { fetchTours, incrementTourViews } from "@/lib/api/tours"
+import { getRecommendedTours } from "@/lib/recommendations"
 import { TourCard } from "@/components/ui/TourCard"
 import type { Tour } from "@/lib/types"
 
@@ -61,6 +62,7 @@ export default function ToursPage() {
  const [urgentMatchOpen, setUrgentMatchOpen] = useState(false)
 
  const [tours, setTours] = useState<Tour[]>([])
+ const [recommendedTours, setRecommendedTours] = useState<Tour[]>([])
  const [loading, setLoading] = useState(true)
  const [error, setError] = useState<string | null>(null)
  const [query, setQuery] = useState(searchParams.get("search") ?? "")
@@ -79,6 +81,13 @@ export default function ToursPage() {
  label: "All Tours",
  active: typeFilter === "all",
  onClick: () => setTypeFilter("all"),
+ },
+ {
+ icon: <Sparkles size={20} className="text-amber-400" />,
+ color: "teal",
+ label: "Recommended",
+ active: typeFilter === "recommended",
+ onClick: () => setTypeFilter("recommended"),
  },
  {
  icon: <Globe size={20} />,
@@ -141,37 +150,17 @@ export default function ToursPage() {
  }, [userId, role])
 
  useEffect(() => {
- fetchTours()
- .then((data) => {
- setTours(data)
+ Promise.all([
+ fetchTours(),
+ getRecommendedTours(userId || undefined),
+ ])
+ .then(([allData, recData]) => {
+ setTours(allData)
+ setRecommendedTours(recData)
  })
  .catch((err: Error) => setError(err.message))
  .finally(() => setLoading(false))
-
- // Realtime tours update subscription for all events (INSERT, UPDATE, DELETE)
- /*
- const channel = supabase
- .channel("tours-realtime")
- .on(
- "postgres_changes",
- { event: "*", schema: "public", table: "tours" },
- async (payload) => {
- console.log("Realtime tours table change received:", payload)
- try {
- const data = await fetchTours()
- setTours(data)
- } catch (err) {
- console.error("Error refreshing tours on realtime update:", err)
- }
- }
- )
- .subscribe()
- */
-
- return () => {
- // supabase.removeChannel(channel)
- }
- }, [])
+ }, [userId])
 
  const handleToggleWishlist = async (tourId: string, isWishlisted: boolean) => {
  if (!userId) {
@@ -208,16 +197,22 @@ export default function ToursPage() {
  }
  }
 
- const filtered = tours.filter((tour) => {
- const tags = getTourFilterTags(tour)
- const matchesType = typeFilter === "all" || tags.includes(typeFilter as FilterTag)
- const matchesPriceFilter = matchesPrice(tour.price, priceFilter)
- const matchesQuery =
- query.trim() === "" ||
- tour.title.toLowerCase().includes(query.toLowerCase()) ||
- tour.location_name.toLowerCase().includes(query.toLowerCase())
- return matchesType && matchesPriceFilter && matchesQuery
- })
+  const baseTours = typeFilter === "recommended" ? recommendedTours : tours
+
+  const filtered = baseTours.filter((tour) => {
+    const tags = getTourFilterTags(tour)
+    const matchesType =
+      typeFilter === "all" ||
+      typeFilter === "recommended" ||
+      tags.includes(typeFilter as FilterTag)
+    const matchesPriceFilter = matchesPrice(tour.price, priceFilter)
+    const matchesQuery =
+      query.trim() === "" ||
+      tour.title.toLowerCase().includes(query.toLowerCase()) ||
+      tour.location_name.toLowerCase().includes(query.toLowerCase())
+    return matchesType && matchesPriceFilter && matchesQuery
+  })
+
 
  const ITEMS_PER_PAGE = 6
  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
@@ -268,13 +263,25 @@ export default function ToursPage() {
  aria-label="Search tours or destinations"
  />
  </div>
- <Button
- onClick={() => setUrgentMatchOpen(true)}
- className="h-11 px-6 rounded-full bg-gradient-to-r from-[#0B3037] to-[#0D6F73] hover:from-[#0B3037] hover:to-[#0D6F73] text-white font-bold shadow-lg hover:shadow-[0_4px_16px_rgba(13, 111, 115,0.3)] shrink-0 transition duration-300 cursor-pointer"
- >
- <Compass className="size-4 mr-2 animate-pulse" />
- Find a Host Now
- </Button>
+          <div className="flex items-center gap-2.5 shrink-0">
+            <Button
+              variant="outline"
+              onClick={() => navigate("/onboarding/interests")}
+              className="h-11 px-4 rounded-full border-border/80 hover:border-primary/50 text-xs font-bold gap-1.5 shrink-0"
+              title="Personalize travel recommendations"
+            >
+              <Sparkles className="size-3.5 text-amber-400" />
+              <span className="hidden sm:inline">Customize Interests</span>
+              <span className="sm:hidden">Interests</span>
+            </Button>
+            <Button
+              onClick={() => setUrgentMatchOpen(true)}
+              className="h-11 px-6 rounded-full bg-gradient-to-r from-[#0B3037] to-[#0D6F73] hover:from-[#0B3037] hover:to-[#0D6F73] text-white font-bold shadow-lg hover:shadow-[0_4px_16px_rgba(13, 111, 115,0.3)] shrink-0 transition duration-300 cursor-pointer"
+            >
+              <Compass className="size-4 mr-2 animate-pulse" />
+              Find a Host Now
+            </Button>
+          </div>
  </div>
  </div>
  </div>

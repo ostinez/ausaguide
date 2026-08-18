@@ -1,6 +1,7 @@
 import type { TourCategory, TourType } from "./types"
 
-export type FilterTag = "virtual" | "in-person" | "walking" | "food" | "nature"
+export type FilterTag = "recommended" | "virtual" | "in-person" | "walking" | "food" | "nature"
+
 
 const CATEGORY_GRADIENTS: Record<TourCategory, string> = {
  food: "linear-gradient(135deg, #78350f99 0%, #92400e66 100%)",

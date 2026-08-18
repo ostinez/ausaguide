@@ -48,6 +48,7 @@ import TermsPage from "@/pages/legal/terms"
 import PrivacyPage from "@/pages/legal/privacy"
 import AuthCallbackPage from "@/pages/AuthCallback"
 import OnboardingPage from "@/pages/Onboarding"
+import OnboardingInterestsPage from "@/pages/OnboardingInterests"
 import ResetPasswordPage from "@/pages/ResetPassword"
 import EmailPreferencesPage from "@/pages/email-preferences"
 import AdminSetupPage from "@/pages/AdminSetup"
@@ -98,6 +99,7 @@ export default function App() {
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/onboarding" element={<OnboardingPage />} />
+          <Route path="/onboarding/interests" element={<OnboardingInterestsPage />} />
           <Route path="/host/signup" element={<Navigate to="/onboarding?become-host=true" replace />} />
           <Route path="/host/:id" element={<HostProfilePage />} />
           <Route path="/admin/*" element={<Navigate to="/admin2" replace />} />
