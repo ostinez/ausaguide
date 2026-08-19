@@ -1,6 +1,6 @@
 import { useEffect } from "react"
 import { Link } from "react-router-dom"
-import { Compass, Users, Globe, Heart, Shield, CheckCircle, ArrowRight, Sparkles } from "lucide-react"
+import { Compass, Users, Globe, Heart, Shield, CheckCircle, ArrowRight } from "lucide-react"
 import { GradientText } from "@/components/ui/GradientText"
 import { SpotlightCard } from "@/components/ui/SpotlightCard"
 import { BorderGlow } from "@/components/ui/BorderGlow"
@@ -183,7 +183,7 @@ export default function AboutPage() {
  <SpotlightCard className="p-8 border border-border bg-card shadow-modern rounded-2xl space-y-3 flex flex-col justify-between hover:border-[#317978]/40 transition duration-300">
  <div className="space-y-3">
  <span className="text-[10px] font-bold uppercase tracking-wider text-[#317978] flex items-center gap-1.5">
- <Sparkles className="size-3 text-[#317978]" /> The Memory
+ <Compass className="size-3 text-[#317978]" /> The Memory
  </span>
  <p className="text-xs text-white/70 leading-relaxed font-medium">
  "I remember it like it was yesterday. As a toddler, I would beg my mother to take us to Village Market — a mall in Nairobi that had incredible recreational activities, including the famous water slides I'd heard so much about. I'd seen pictures of my older siblings having the time of their lives there. It became my dream destination. For years, I waited."
@@ -194,7 +194,7 @@ export default function AboutPage() {
  <SpotlightCard className="p-8 border border-border bg-card shadow-modern rounded-2xl space-y-3 flex flex-col justify-between hover:border-[#317978]/40 transition duration-300">
  <div className="space-y-3">
  <span className="text-[10px] font-bold uppercase tracking-wider text-[#317978] flex items-center gap-1.5">
- <Sparkles className="size-3 text-[#317978]" /> The Disappointment
+ <Compass className="size-3 text-[#317978]" /> The Disappointment
  </span>
  <p className="text-xs text-white/70 leading-relaxed font-medium">
  "On my 11th birthday, my mother finally said yes. I packed my swimming kit with so much excitement I could barely sleep the night before. I imagined the stories I'd tell my friends — the best day of my life. We took the matatu. We arrived. I was buzzing with energy. But as we approached the entrance, I noticed my mother's mood shift. She spoke quietly to the security guard, then turned to me with a look I'll never forget. 'The recreational activities are closed. They're upgrading the mall.' Just like that, my dream day crumbled. There was nothing else to do. We headed home in silence. All I could think was: If only there was a way to know..."
@@ -205,7 +205,7 @@ export default function AboutPage() {
  <SpotlightCard className="p-8 border border-border bg-card shadow-modern rounded-2xl space-y-3 flex flex-col justify-between hover:border-[#317978]/40 transition duration-300">
  <div className="space-y-3">
  <span className="text-[10px] font-bold uppercase tracking-wider text-[#317978] flex items-center gap-1.5">
- <Sparkles className="size-3 text-[#317978]" /> The Idea
+ <Compass className="size-3 text-[#317978]" /> The Idea
  </span>
  <p className="text-xs text-white/70 leading-relaxed font-medium">
  "That feeling stayed with me. In 2025, the idea resurfaced. What if I could build something that saves people from that same disappointment? Something that prevents wasted time and money — a tool anyone could use to discover authentic, up‑to‑date experiences, while also giving locals a way to earn extra income. I did my research and realized this could become a real economic boost for tourist destinations — helping both locals and travelers, creating real connections."
@@ -216,7 +216,7 @@ export default function AboutPage() {
  <SpotlightCard className="p-8 border border-border bg-card shadow-modern rounded-2xl space-y-3 flex flex-col justify-between hover:border-[#317978]/40 transition duration-300">
  <div className="space-y-3">
  <span className="text-[10px] font-bold uppercase tracking-wider text-[#317978] flex items-center gap-1.5">
- <Sparkles className="size-3 text-[#317978]" /> The Mission
+ <Compass className="size-3 text-[#317978]" /> The Mission
  </span>
  <p className="text-xs text-white/70 leading-relaxed font-medium">
  "That's why I built Ausaguide. Not just a booking platform, but a way to protect people's expectations. A way to empower locals to share their world. A way to turn disappointment into discovery."

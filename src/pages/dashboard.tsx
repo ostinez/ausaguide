@@ -8,7 +8,7 @@ import {
  MapPin,
  Calendar,
  DollarSign,
- Star,
+ ShieldCheck,
  Users,
  TrendingUp,
  Eye,
@@ -238,7 +238,7 @@ function TourRow({
  <span><strong>{mockViews}</strong> views</span>
  </div>
  <div className="flex items-center gap-1">
- <Star className="size-3.5 text-amber-400 fill-current" />
+ <ShieldCheck className="size-3.5 text-[#317978]" />
  <span><strong>{tour.rating}</strong> ({tour.review_count})</span>
  </div>
  </div>
@@ -1033,7 +1033,7 @@ export function HostDashboard({
  accent
  />
  <StatCard
- icon={Star}
+ icon={ShieldCheck}
  label="Avg Rating"
  value={avgRating.toFixed(1)}
  accent
@@ -1803,7 +1803,7 @@ export default function DashboardPage() {
  accent
  />
  <StatCard
- icon={Star}
+ icon={ShieldCheck}
  label="Avg Rating"
  value={(hostTours.length > 0 ? hostTours.reduce((sum, t) => sum + t.rating, 0) / hostTours.length : 0).toFixed(1)}
  accent
@@ -2025,7 +2025,7 @@ export default function DashboardPage() {
  <CardHeader className="border-b border-border/30 pb-4">
  <div className="flex items-center gap-2">
  <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
- <Star className="size-4 text-primary" />
+ <ShieldCheck className="size-4 text-primary" />
  </div>
  <div>
  <h2 className="text-xl font-bold tracking-tight text-foreground">Your Reviews</h2>
@@ -2035,7 +2035,7 @@ export default function DashboardPage() {
  </CardHeader>
  <CardContent className="py-16 text-center text-muted-foreground flex flex-col items-center justify-center gap-3">
  <div className="flex size-14 items-center justify-center rounded-full bg-muted/40">
- <Star className="size-7 text-muted-foreground/50" />
+ <ShieldCheck className="size-7 text-muted-foreground/50" />
  </div>
  <h3 className="text-sm font-bold text-foreground">No reviews written yet</h3>
  <p className="text-xs text-muted-foreground max-w-sm leading-relaxed">

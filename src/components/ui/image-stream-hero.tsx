@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react"
 import { Link } from "react-router-dom"
 import {
   ArrowRight,
-  Sparkles,
+  Radio,
   XCircle,
   CheckCircle2,
   ShieldCheck,
@@ -297,35 +297,21 @@ export function ImageStreamHero() {
         <div className="bento-card-main p-6 sm:p-10 lg:p-12 text-center space-y-6">
           {/* Top Pill Tag */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bento-pill text-[#B7E6E5] text-xs sm:text-sm font-semibold">
-            <Sparkles className="size-4 text-[#317978]" />
-            <span>Try Kenya Live Before You Fly</span>
+            <Radio className="size-3.5 text-[#317978] animate-pulse shrink-0" />
+            <span>Live Remote Reconnaissance · Kenya</span>
           </div>
 
           {/* H1 Main Headline */}
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-[1.12] font-headline max-w-3xl mx-auto">
-            Stop Wasting Money on{" "}
-            <span className="relative inline-block text-white">
-              Tourist Traps
-              <svg
-                className="absolute -bottom-2 left-0 w-full h-3 sm:h-4 text-[#ff5252]"
-                viewBox="0 0 100 20"
-                preserveAspectRatio="none"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M0 10 Q 12.5 0, 25 10 T 50 10 T 75 10 T 100 10"
-                  stroke="currentColor"
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                />
-              </svg>
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-[1.14] font-headline max-w-4xl mx-auto">
+            Never Fall for a Tourist Trap.{" "}
+            <span className="block mt-1 text-transparent bg-clip-text bg-gradient-to-r from-[#B7E6E5] via-[#88C2C1] to-[#317978]">
+              Preview Kenya Live With Real Locals.
             </span>
           </h1>
 
           {/* Subtitle */}
           <p className="text-[#599D9C] text-base sm:text-lg md:text-xl leading-relaxed max-w-2xl mx-auto font-normal">
-            Explore Kenya through a local's eyes before you book. Live video reconnaissance tours with vetted local guides. Skip the scams.
+            Connect live with vetted Kenyan hosts who verify the beaches, inspect the lodges, and scout authentic hidden spots for you in real-time. Zero surprises.
           </p>
 
           {/* CTA Buttons */}
@@ -334,8 +320,9 @@ export function ImageStreamHero() {
               to="/waitlist"
               className="w-full sm:w-auto px-8 py-3.5 bento-btn-primary font-bold rounded-2xl text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer min-h-[48px]"
             >
-              <Sparkles className="size-4" />
-              <span>Join Early Waitlist</span>
+              <ShieldCheck className="size-4 text-[#B7E6E5]" />
+              <span>Get Early Access</span>
+              <ArrowRight className="size-4 text-[#B7E6E5]" />
             </Link>
             <Link
               to="/tours"
@@ -343,7 +330,6 @@ export function ImageStreamHero() {
             >
               <Compass className="size-4 text-[#317978]" />
               <span>Explore Live Tours</span>
-              <ArrowRight className="size-4 text-[#B7E6E5]" />
             </Link>
           </div>
         </div>

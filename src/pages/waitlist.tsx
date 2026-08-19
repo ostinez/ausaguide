@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
-import { ArrowRight, Users, Shield, Sparkles, CheckCircle, Mail, User, Globe, Loader2 } from "lucide-react"
+import { ArrowRight, Users, Shield, Compass, CheckCircle, Mail, User, Globe, Loader2 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 import { checkRateLimit } from "@/lib/api/rate-limit"
@@ -110,7 +110,7 @@ export default function WaitlistPage() {
 
           <div className="p-4 rounded-xl bg-[#113B3A] border border-[#235E5D] text-xs text-[#599D9C] text-left space-y-2">
             <div className="flex items-center gap-2 text-[#B7E6E5] font-semibold">
-              <Sparkles className="size-4 text-[#317978]" />
+              <Compass className="size-4 text-[#317978]" />
               <span>What to expect next:</span>
             </div>
             <p>1. Priority invitation to beta test live video tours.</p>
@@ -168,7 +168,7 @@ export default function WaitlistPage() {
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-12 md:py-20 flex flex-col justify-center">
         <div className="text-center mb-10 space-y-4">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#184948] border border-[#235E5D] rounded-full text-[#B7E6E5] text-xs sm:text-sm font-semibold shadow-sm">
-            <Sparkles className="size-4 text-[#317978]" />
+            <Compass className="size-4 text-[#317978]" />
             <span>The Future of Travel in Kenya</span>
           </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight leading-[1.15] font-headline">
@@ -253,11 +253,11 @@ export default function WaitlistPage() {
                 <span>Early access</span>
               </div>
               <div className="flex items-center gap-2 text-xs sm:text-sm text-[#B7E6E5]">
-                <Sparkles className="size-4 text-[#317978] shrink-0" />
+                <CheckCircle className="size-4 text-[#317978] shrink-0" />
                 <span>Exclusive rates</span>
               </div>
               <div className="flex items-center gap-2 text-xs sm:text-sm text-[#B7E6E5]">
-                <CheckCircle className="size-4 text-[#317978] shrink-0" />
+                <Compass className="size-4 text-[#317978] shrink-0" />
                 <span>No hidden fees</span>
               </div>
             </div>

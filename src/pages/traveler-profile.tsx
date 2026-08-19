@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useParams, Link } from "react-router-dom"
-import { MapPin, Star, Calendar, ArrowLeft, Globe, User, BookOpen, Quote } from "lucide-react"
+import { MapPin, ShieldCheck, Calendar, ArrowLeft, Globe, User, BookOpen, Quote } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -341,7 +341,7 @@ export default function TravelerProfilePage() {
  {review.tour?.title || "Hosted Tour"}
  </h4>
  <div className="flex items-center gap-1 text-xs">
- <Star className="size-3 fill-primary text-primary" />
+ <ShieldCheck className="size-3 text-[#317978]" />
  <span className="font-semibold">{review.rating}</span>
  </div>
  </div>

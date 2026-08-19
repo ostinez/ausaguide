@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
-import { Heart, Trash2, ArrowRight, MapPin, Clock, Star, AlertCircle, ArrowLeft } from "lucide-react"
+import { Heart, Trash2, ArrowRight, MapPin, Clock, ShieldCheck, AlertCircle, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -143,7 +143,7 @@ export default function WishlistPage() {
  </div>
 
  <div className="flex items-center gap-1">
- <Star className="size-3.5 fill-primary text-primary" />
+ <ShieldCheck className="size-3.5 text-[#317978]" />
  <span className="text-sm font-semibold text-foreground">{tour.rating.toFixed(1)}</span>
  <span className="text-xs text-muted-foreground">({tour.review_count})</span>
  </div>

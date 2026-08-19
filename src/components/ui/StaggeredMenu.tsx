@@ -1,6 +1,6 @@
 import React, { useCallback, useLayoutEffect, useRef, useState, useEffect } from "react"
 import { useNavigate, useLocation, Link } from "react-router-dom"
-import { Sparkles, ArrowRight, Compass } from "lucide-react"
+import { Compass, ArrowRight } from "lucide-react"
 import { gsap } from "gsap"
 import NotificationBell from "./NotificationBell"
 import "./StaggeredMenu.css"
@@ -425,7 +425,7 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
         to="/waitlist"
         className="sm-nav-early-access group inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-xs font-semibold transition-all duration-300"
       >
-        <Sparkles className="size-3.5 text-[#317978] group-hover:scale-110 transition-transform shrink-0" />
+        <Compass className="size-3.5 text-[#317978] group-hover:scale-110 transition-transform shrink-0" />
         <span className="hidden md:inline font-medium">Early Access — We're testing with real users.</span>
         <span className="inline md:hidden font-bold">Early Access</span>
         <span className="hidden sm:inline font-bold underline decoration-[#317978] decoration-2 underline-offset-2 group-hover:text-white">

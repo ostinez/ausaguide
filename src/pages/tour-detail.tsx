@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom"
 import {
  ArrowLeft,
  MapPin,
- Star,
+ ShieldCheck,
  Clock,
  Users,
  BadgeCheck,
@@ -388,11 +388,11 @@ export default function TourDetailPage() {
  </span>
  )}
  </span>
- <span className="flex items-center gap-1 text-sm text-foreground/80">
- <Star className="size-3.5 fill-primary text-primary" />
- <span className="font-semibold">{tour.rating.toFixed(1)}</span>
- <span className="text-muted-foreground">({tour.review_count} reviews)</span>
- </span>
+          <span className="flex items-center gap-1 text-sm text-foreground/80">
+            <ShieldCheck className="size-3.5 text-[#317978]" />
+            <span className="font-semibold">{tour.rating.toFixed(1)}</span>
+            <span className="text-muted-foreground">({tour.review_count} reviews)</span>
+          </span>
  </div>
  <h1 className="scroll-m-20 text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">
  {tour.title}
@@ -524,11 +524,11 @@ export default function TourDetailPage() {
  </div>
  )}
  </div>
- <div className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
- <Star className="size-3.5 fill-primary text-primary" />
- <span className="font-medium text-foreground">{tour.rating.toFixed(1)}</span>
- <span>· {tour.review_count} reviews</span>
- </div>
+        <div className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
+          <ShieldCheck className="size-3.5 text-[#317978]" />
+          <span className="font-medium text-foreground">{tour.rating.toFixed(1)}</span>
+          <span>· {tour.review_count} reviews</span>
+        </div>
  {tour.host?.bio && (
  <p className="mt-3 leading-7 text-sm text-muted-foreground">
  {tour.host.bio}
@@ -663,11 +663,11 @@ export default function TourDetailPage() {
  <span className="text-sm text-muted-foreground">/ person</span>
  </div>
 
- <div className="mt-1 flex items-center gap-1 text-sm">
- <Star className="size-3.5 fill-primary text-primary" />
- <span className="font-medium text-foreground">{tour.rating.toFixed(1)}</span>
- <span className="text-muted-foreground">({tour.review_count})</span>
- </div>
+        <div className="mt-1 flex items-center gap-1 text-sm">
+          <ShieldCheck className="size-3.5 text-[#317978]" />
+          <span className="font-medium text-foreground">{tour.rating.toFixed(1)}</span>
+          <span className="text-muted-foreground">({tour.review_count})</span>
+        </div>
 
  <Separator className="my-5" />
 

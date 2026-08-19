@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
-import { Search, LayoutGrid, List, Heart, MapPin, Compass, Globe, Sparkles, Users } from "lucide-react"
+import { Search, LayoutGrid, List, Heart, MapPin, Compass, Globe, ShieldCheck, TreePine, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { GradientText } from "@/components/ui/GradientText"
 
@@ -83,48 +83,48 @@ export default function ToursPage() {
  active: typeFilter === "all",
  onClick: () => setTypeFilter("all"),
  },
- {
- icon: <Sparkles size={20} className="text-amber-400" />,
- color: "teal",
- label: "Recommended",
- active: typeFilter === "recommended",
- onClick: () => setTypeFilter("recommended"),
- },
- {
- icon: <Globe size={20} />,
- color: "blue",
- label: "Virtual",
- active: typeFilter === "virtual",
- onClick: () => setTypeFilter("virtual"),
- },
- {
- icon: <Users size={20} />,
- color: "green",
- label: "In-Person",
- active: typeFilter === "in-person",
- onClick: () => setTypeFilter("in-person"),
- },
- {
- icon: <MapPin size={20} />,
- color: "orange",
- label: "Walking",
- active: typeFilter === "walking",
- onClick: () => setTypeFilter("walking"),
- },
- {
- icon: <Heart size={20} />,
- color: "red",
- label: "Food",
- active: typeFilter === "food",
- onClick: () => setTypeFilter("food"),
- },
- {
- icon: <Sparkles size={20} />,
- color: "teal",
- label: "Nature",
- active: typeFilter === "nature",
- onClick: () => setTypeFilter("nature"),
- },
+    {
+      icon: <ShieldCheck size={20} className="text-[#317978]" />,
+      color: "teal",
+      label: "Recommended",
+      active: typeFilter === "recommended",
+      onClick: () => setTypeFilter("recommended"),
+    },
+    {
+      icon: <Globe size={20} />,
+      color: "blue",
+      label: "Virtual",
+      active: typeFilter === "virtual",
+      onClick: () => setTypeFilter("virtual"),
+    },
+    {
+      icon: <Users size={20} />,
+      color: "green",
+      label: "In-Person",
+      active: typeFilter === "in-person",
+      onClick: () => setTypeFilter("in-person"),
+    },
+    {
+      icon: <MapPin size={20} />,
+      color: "orange",
+      label: "Walking",
+      active: typeFilter === "walking",
+      onClick: () => setTypeFilter("walking"),
+    },
+    {
+      icon: <Heart size={20} />,
+      color: "red",
+      label: "Food",
+      active: typeFilter === "food",
+      onClick: () => setTypeFilter("food"),
+    },
+    {
+      icon: <TreePine size={20} />,
+      color: "teal",
+      label: "Nature",
+      active: typeFilter === "nature",
+      onClick: () => setTypeFilter("nature"),
+    },
  ]
 
  const toggleViewMode = (mode: "grid" | "list") => {
@@ -271,7 +271,7 @@ export default function ToursPage() {
               className="h-11 px-4 rounded-full border-border/80 hover:border-primary/50 text-xs font-bold gap-1.5 shrink-0"
               title="Personalize travel recommendations"
             >
-              <Sparkles className="size-3.5 text-amber-400" />
+              <Compass className="size-3.5 text-[#317978]" />
               <span className="hidden sm:inline">Customize Interests</span>
               <span className="sm:hidden">Interests</span>
             </Button>

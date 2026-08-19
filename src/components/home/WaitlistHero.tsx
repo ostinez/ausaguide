@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { ArrowRight, Mail, Shield, Users, Sparkles, CheckCircle2, User, Loader2 } from "lucide-react"
+import { ArrowRight, Mail, Shield, Users, Compass, CheckCircle2, User, Loader2 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 import { sendGeneralWaitlistEmail } from "@/lib/api/emails"
@@ -109,7 +109,7 @@ export function WaitlistHero() {
         {/* Top Badge */}
         <div className="flex justify-center">
           <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-blue-400/30 bg-blue-500/10 text-blue-200 text-xs font-bold tracking-wide uppercase shadow-sm">
-            <Sparkles className="size-3.5 text-blue-400" />
+            <Compass className="size-3.5 text-blue-400" />
             The Future of Travel
           </span>
         </div>
@@ -243,7 +243,7 @@ export function WaitlistHero() {
             <span>Direct Guide Community</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <Sparkles className="size-4 text-blue-400" />
+            <CheckCircle2 className="size-4 text-blue-400" />
             <span>Exclusive Launch Discounts</span>
           </div>
         </div>

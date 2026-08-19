@@ -3,7 +3,7 @@ import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
 import { sendHostWaitlistEmail } from "@/lib/api/emails"
 import { checkRateLimit } from "@/lib/api/rate-limit"
-import { Loader2, CheckCircle2, User, Mail, Phone, MapPin, AlignLeft, Sparkles } from "lucide-react"
+import { Loader2, CheckCircle2, User, Mail, Phone, MapPin, AlignLeft, Compass } from "lucide-react"
 
 export default function HostWaitlistPage() {
  const [name, setName] = useState("")
@@ -110,7 +110,7 @@ export default function HostWaitlistPage() {
           <div className="rounded-3xl border border-border p-8 bg-card shadow-modern space-y-6">
             <div className="text-center space-y-2">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-bold text-primary mb-2">
-                <Sparkles className="size-3.5" />
+                <Compass className="size-3.5" />
                 <span>Join local guides</span>
               </div>
               <h1 className="text-3xl font-black text-foreground tracking-tight">Become an Ausaguide Host</h1>

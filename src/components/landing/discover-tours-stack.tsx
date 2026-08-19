@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { GradientText } from "@/components/ui/GradientText"
 import { Spinner } from "@/components/ui/spinner"
-import { Sparkles, ArrowRight, Compass } from "lucide-react"
+import { Compass, ArrowRight } from "lucide-react"
 import { fetchFeaturedTours } from "@/lib/api/tours"
 import { formatTourPrice } from "@/lib/tour-utils"
 import Stack from "@/components/ui/Stack"
@@ -66,7 +66,7 @@ export function DiscoverToursStack() {
           {/* Left Column: Heading & Copy */}
           <div className="lg:col-span-7 space-y-6 text-left">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-[#235E5D] bg-[#184948] text-xs font-bold uppercase tracking-wider text-[#B7E6E5]">
-              <Sparkles className="size-3.5 text-[#317978]" />
+              <Compass className="size-3.5 text-[#317978]" />
               Quick Discovery
             </div>
             
