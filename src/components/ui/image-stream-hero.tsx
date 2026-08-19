@@ -387,23 +387,6 @@ export function ImageStreamHero() {
               </div>
             </div>
 
-            {/* ── Center Floating Action Overlay ── */}
-            <div className="absolute inset-x-0 bottom-10 sm:bottom-12 z-25 flex flex-col items-center justify-center text-center pointer-events-none px-4 space-y-2">
-              <h2 className="text-xs sm:text-sm font-bold text-white tracking-widest uppercase drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">
-                PREMIUM KENYAN ADVENTURES
-              </h2>
-
-              <div className="pointer-events-auto">
-                <Link to="/tours" className="hero-pill-cta">
-                  <span>EXPLORE LIVE TOURS</span>
-                  <ArrowRight className="size-3.5" />
-                </Link>
-              </div>
-
-              <p className="text-[10px] sm:text-[11px] text-[#B7E6E5]/90 font-medium tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
-                ↔ Drag dial to compare real-time weather & conditions
-              </p>
-            </div>
 
             {/* ── Bottom Integrated Intel Bar ── */}
             <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-[#0d2a29]/95 via-[#113B3A]/80 to-transparent pt-4 pb-2 px-3 sm:px-6 z-25 flex items-center justify-between gap-3 border-t border-[#235E5D]/30 backdrop-blur-xs">
