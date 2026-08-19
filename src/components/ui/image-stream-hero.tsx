@@ -88,7 +88,7 @@ export const SCENARIO_PAIRS: ScenarioPair[] = [
     trap: {
       title: "Overcrowded Tourist Trap Beach",
       scenario: "Commercial Noise & Trash",
-      image: "/images/corridor/trap_beach.jpg",
+      image: "/images/hero/beach_trap.jpg",
       location: "Commercial Strip, Mombasa Coast",
       problem: "Packed shoulder-to-shoulder with aggressive touts, littered sand, and overpriced staged beach stalls.",
       badge: "Overrun & Noisy",
@@ -102,7 +102,7 @@ export const SCENARIO_PAIRS: ScenarioPair[] = [
     smart: {
       title: "Private Secluded Watamu Cove",
       scenario: "Live-Verified Hidden Paradise",
-      image: "/images/corridor/smart_beach.jpg",
+      image: "/images/hero/beach_smart.jpg",
       location: "Watamu Marine Sanctuary, Kenya",
       solution: "Discovered via live host video scouting. Pristine turquoise waters, quiet sands, and an authentic dhow sailboat.",
       badge: "Verified Secluded",
@@ -122,7 +122,7 @@ export const SCENARIO_PAIRS: ScenarioPair[] = [
     trap: {
       title: "Failed Safari Van Breakdown",
       scenario: "Unvetted Budget Safari Trap",
-      image: "/images/corridor/trap_safari_breakdown.jpg",
+      image: "/images/hero/safari_trap.jpg",
       location: "Maasai Mara Hinterland Dirt Road",
       problem: "Budget operator used a dilapidated minivan that overheated and broke down in the mud with no backup support.",
       badge: "Stranded 5+ Hours",
@@ -136,7 +136,7 @@ export const SCENARIO_PAIRS: ScenarioPair[] = [
     smart: {
       title: "Reliable Certified 4x4 Safari Cruiser",
       scenario: "Certified Local Maasai Guide",
-      image: "/images/corridor/smart_safari_guide.jpg",
+      image: "/images/hero/safari_smart.jpg",
       location: "Maasai Mara National Reserve, Kenya",
       solution: "Vetted 4x4 Land Cruiser with an experienced certified local guide tracking animal movements in real time.",
       badge: "Vetted & Certified",
@@ -156,7 +156,7 @@ export const SCENARIO_PAIRS: ScenarioPair[] = [
     trap: {
       title: "Misleading 'Hidden Falls' Trickle",
       scenario: "Bait-and-Switch Fake Photos",
-      image: "/images/corridor/trap_waterfall.jpg",
+      image: "/images/hero/waterfall_trap.jpg",
       location: "Dry Highway Roadside, Rural Kenya",
       problem: "Advertised as a secluded tropical paradise, but was actually a dirty roadside runoff trickle behind a rusty fence.",
       badge: "Bait & Switch",
@@ -170,7 +170,7 @@ export const SCENARIO_PAIRS: ScenarioPair[] = [
     smart: {
       title: "Breathtaking Aberdare Forest Falls",
       scenario: "Exact Reconnaissance Delivered",
-      image: "/images/corridor/smart_waterfall.jpg",
+      image: "/images/hero/waterfall_smart.jpg",
       location: "Aberdare Rainforest Canopy, Kenya",
       solution: "Live video reconnaissance verified the real current water flow and trail condition before paying a cent.",
       badge: "Live Recon Verified",
@@ -190,7 +190,7 @@ export const SCENARIO_PAIRS: ScenarioPair[] = [
     trap: {
       title: "Turned Away at Lodge Gate",
       scenario: "False 'Pet-Friendly' Listing",
-      image: "/images/corridor/trap_no_pets.jpg",
+      image: "/images/hero/pets_trap.jpg",
       location: "Mara River Safari Lodge Entrance Gate",
       problem: "Website claimed 'pets welcome', but armed gate security strictly denied entry due to outdated online rules.",
       badge: "Entry Denied",
@@ -204,7 +204,7 @@ export const SCENARIO_PAIRS: ScenarioPair[] = [
     smart: {
       title: "Warmly Welcomed at Eco-Lodge",
       scenario: "Host-Confirmed Pet Policy",
-      image: "/images/corridor/smart_pet_friendly.jpg",
+      image: "/images/hero/pets_smart.jpg",
       location: "Eco-Lodge Veranda, Great Rift Valley",
       solution: "Local host double-checked pet amenities, designated dog trails, and fresh water bowls directly with the lodge.",
       badge: "Host-Confirmed",
@@ -224,7 +224,7 @@ export const SCENARIO_PAIRS: ScenarioPair[] = [
     trap: {
       title: "Surprise Cash Fees Argument",
       scenario: "Hidden Charges & Shady Operators",
-      image: "/images/corridor/trap_extra_fees.jpg",
+      image: "/images/hero/pricing_trap.jpg",
       location: "Roadside Booking Office, Kenya",
       problem: "Shady operator demanded 40% extra cash at the curb for 'fuel surcharges' and 'park entrance' not included in base fare.",
       badge: "+40% Surprise Fees",
@@ -238,7 +238,7 @@ export const SCENARIO_PAIRS: ScenarioPair[] = [
     smart: {
       title: "100% Transparent Zero-Fee Flexibility",
       scenario: "Transparent Direct Pricing",
-      image: "/images/corridor/smart_flex_booking.jpg",
+      image: "/images/hero/pricing_smart.jpg",
       location: "Fair Travel Kenya Cafe, Naivasha",
       solution: "All-inclusive pricing with digital Escrow via IntaSend. Free date switches and seamless itinerary tweaks.",
       badge: "Zero Hidden Fees",
