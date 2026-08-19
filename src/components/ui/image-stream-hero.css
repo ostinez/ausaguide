@@ -47,14 +47,25 @@
   line-height: 0.85;
 }
 
+.hero-giant-typography {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-weight: 900;
+  font-size: clamp(3.5rem, 11vw, 9.5rem);
+  line-height: 0.88;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  user-select: none;
+  pointer-events: none;
+}
+
 /* Slider Drag Handle */
 .slider-handle-line {
   position: absolute;
   top: 0;
   bottom: 0;
   width: 3px;
-  background: #317978;
-  box-shadow: 0 0 12px rgba(49, 121, 120, 0.8), 0 0 4px #B7E6E5;
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.9), 0 0 4px rgba(49, 121, 120, 0.8);
   transform: translateX(-50%);
   pointer-events: none;
   z-index: 30;
@@ -65,26 +76,25 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 9999px;
-  background: #184948;
-  border: 2px solid #B7E6E5;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), 0 0 10px rgba(49, 121, 120, 0.5);
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #cbd5e1 35%, #94a3b8 65%, #64748b 100%);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.7), inset 0 2px 4px rgba(255, 255, 255, 0.8), inset 0 -2px 4px rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ffffff;
+  color: #0f172a;
   cursor: ew-resize;
   pointer-events: auto;
-  transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .slider-handle-button:hover,
 .slider-handle-button:active {
-  transform: translate(-50%, -50%) scale(1.1);
-  border-color: #ffffff;
-  background: #317978;
+  transform: translate(-50%, -50%) scale(1.12);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), 0 0 20px rgba(255, 255, 255, 0.6);
 }
 
 /* Neumorphic Buttons & Tabs */
