@@ -345,53 +345,42 @@ export function ImageStreamHero() {
             decoding="async"
           />
 
-          {/* Giant Typography Layer Behind Mountain (Smart Side) */}
-          <div className="absolute inset-x-0 top-[22%] sm:top-[25%] -translate-y-1/2 flex items-center justify-center pointer-events-none select-none z-10 opacity-45 sm:opacity-55">
-            <span className="hero-giant-condensed">
+          {/* ── Left Layer: Unchecked Monsoon/Fog Trap (Clipped seamlessly via clipPath) ── */}
+          <div
+            className="absolute inset-0 w-full h-full pointer-events-none z-15 overflow-hidden"
+            style={{ clipPath: `polygon(0 0, ${sliderPosition}% 0, ${sliderPosition}% 100%, 0 100%)` }}
+          >
+            <img
+              src={currentScenario.trap.image}
+              alt={currentScenario.trap.title}
+              className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+            />
+          </div>
+
+          {/* ── Giant Editorial Depth Typography (Single Crisp Layer Across Sky) ── */}
+          <div className="absolute inset-x-0 top-[20%] sm:top-[24%] -translate-y-1/2 flex items-center justify-center pointer-events-none select-none z-20 px-2">
+            <span className="hero-giant-condensed text-center">
               AUSAGUIDE
             </span>
           </div>
 
-          {/* Top Right Label */}
+          {/* Top Right Label (Sunrise) */}
           <div className="absolute top-4 right-4 sm:top-8 sm:right-10 z-25 pointer-events-none">
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white text-xs sm:text-sm font-black tracking-wider uppercase drop-shadow-lg">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-black/45 backdrop-blur-md border border-white/20 text-white text-xs sm:text-sm font-black tracking-wider uppercase drop-shadow-lg">
               <Check className="size-3.5 text-[#B7E6E5]" />
               <span>SCOUTED SUNRISE · 100% CLARITY</span>
             </span>
           </div>
 
-          {/* ── Left Layer: Unchecked Monsoon/Fog Trap (Clipped by Slider) ── */}
-          <div
-            className="absolute inset-0 overflow-hidden pointer-events-none z-15"
-            style={{ width: `${sliderPosition}%` }}
-          >
-            <img
-              src={currentScenario.trap.image}
-              alt={currentScenario.trap.title}
-              className="absolute inset-0 h-full object-cover select-none pointer-events-none"
-              style={{
-                width: sliderRef.current ? `${sliderRef.current.clientWidth}px` : "100vw",
-                maxWidth: "none",
-              }}
-              loading="eager"
-              fetchPriority="high"
-              decoding="async"
-            />
-
-            {/* Giant Typography Layer Behind Mountain (Trap Side) */}
-            <div className="absolute inset-x-0 top-[22%] sm:top-[25%] -translate-y-1/2 flex items-center justify-center pointer-events-none select-none opacity-30">
-              <span className="hero-giant-condensed text-slate-300">
-                AUSAGUIDE
-              </span>
-            </div>
-
-            {/* Top Left Label */}
-            <div className="absolute top-4 left-4 sm:top-8 sm:left-10 z-25">
-              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-black/50 backdrop-blur-md border border-red-500/40 text-red-200 text-xs sm:text-sm font-black tracking-wider uppercase drop-shadow-lg">
-                <AlertTriangle className="size-3.5 text-red-400" />
-                <span>UNCHECKED · FOG & RAIN TRAP</span>
-              </span>
-            </div>
+          {/* Top Left Label (Fog Trap) */}
+          <div className="absolute top-4 left-4 sm:top-8 sm:left-10 z-25 pointer-events-none">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-black/55 backdrop-blur-md border border-red-500/40 text-red-200 text-xs sm:text-sm font-black tracking-wider uppercase drop-shadow-lg">
+              <AlertTriangle className="size-3.5 text-red-400" />
+              <span>UNCHECKED · FOG & RAIN TRAP</span>
+            </span>
           </div>
 
           {/* ── Center Metallic Slider Handle ── */}
