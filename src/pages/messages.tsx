@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ChatWindow } from "@/components/chat/ChatWindow"
 import { JournalButton } from "@/components/chat/JournalButton"
-import { useConversations } from "@/hooks/useConversations"
+import { useConversations, type ConversationItem, type Participant } from "@/hooks/useConversations"
 import { useRealtimePresence } from "@/lib/hooks/useRealtimePresence"
 import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
@@ -432,8 +432,9 @@ export default function MessagesPage() {
     })
   }, [])
 
-  const { conversations, loading: convsLoading } = useConversations(authUser?.id ?? null)
+  const { conversations, loading: convsLoading, refreshConversations } = useConversations(authUser?.id ?? null)
   const { isUserOnline } = useRealtimePresence(authUser?.id ?? null)
+  const [fallbackConv, setFallbackConv] = useState<ConversationItem | null>(null)
 
   // Handle ?userId=... direct messaging from profile / follow actions
   useEffect(() => {
@@ -444,12 +445,13 @@ export default function MessagesPage() {
         const { id: directConvId } = await findOrCreateDirectConversation(authUser!.id, paramUserId)
         setSelectedConvId(directConvId)
         setMobileView("chat")
+        await refreshConversations()
       } catch (err) {
         console.error("Failed to start direct conversation with user:", err)
       }
     }
     initUserChat()
-  }, [authUser?.id, paramUserId])
+  }, [authUser?.id, paramUserId, refreshConversations])
 
   // Load reachable connections and pending requests count
   useEffect(() => {
@@ -469,6 +471,66 @@ export default function MessagesPage() {
     }
     loadSocialContext()
   }, [authUser?.id])
+
+  // Load fallback conversation details if selectedConvId is not in conversations list yet
+  useEffect(() => {
+    if (!selectedConvId || !authUser?.id) {
+      setFallbackConv(null)
+      return
+    }
+
+    const found = conversations.find((c) => c.id === selectedConvId)
+    if (found) {
+      setFallbackConv(null)
+      return
+    }
+
+    let isMounted = true
+    async function loadFallback() {
+      try {
+        const { data: convData } = await supabase
+          .from("conversations")
+          .select("id, participant_a, participant_b, last_message, last_message_at, created_at, booking_id")
+          .eq("id", selectedConvId)
+          .maybeSingle()
+
+        if (!convData || !isMounted) return
+
+        const otherId = convData.participant_a === authUser!.id ? convData.participant_b : convData.participant_a
+        const { data: profData } = await supabase
+          .from("profiles")
+          .select("id, full_name, avatar_url, host_tier, bio")
+          .eq("id", otherId)
+          .maybeSingle()
+
+        if (!isMounted) return
+
+        setFallbackConv({
+          id: convData.id,
+          participant_a: convData.participant_a,
+          participant_b: convData.participant_b,
+          last_message: convData.last_message,
+          last_message_at: convData.last_message_at,
+          created_at: convData.created_at,
+          bookingId: convData.booking_id,
+          other: (profData as Participant) || {
+            id: otherId,
+            full_name: "Ausaguide User",
+            avatar_url: null,
+            host_tier: null,
+          },
+          unreadCount: 0,
+        })
+      } catch (err) {
+        console.warn("[MessagesPage] Fallback conversation fetch error:", err)
+      }
+    }
+
+    loadFallback()
+    return () => {
+      isMounted = false
+    }
+  }, [selectedConvId, conversations, authUser?.id])
 
   // Auto-select conversation based on route params, query params, or first item
   useEffect(() => {
@@ -501,6 +563,7 @@ export default function MessagesPage() {
   }, [conversations, preselectedConvId, paramBookingId, paramUserId, selectedConvId])
 
   const selectedConv = conversations.find((c) => c.id === selectedConvId)
+  const activeConv = selectedConv || fallbackConv
 
   const handleSelectConversation = (convId: string) => {
     setSelectedConvId(convId)
@@ -535,10 +598,10 @@ export default function MessagesPage() {
     )
   }
 
-  const otherUserId = selectedConv
-    ? selectedConv.participant_a === authUser.id
-      ? selectedConv.participant_b
-      : selectedConv.participant_a
+  const otherUserId = activeConv
+    ? activeConv.participant_a === authUser.id
+      ? activeConv.participant_b
+      : activeConv.participant_a
     : null
 
   return (
@@ -787,39 +850,39 @@ export default function MessagesPage() {
           mobileView === "list" ? "hidden" : "flex"
         )}
       >
-        {!selectedConvId || !selectedConv ? (
+        {!selectedConvId || !activeConv ? (
           conversations.length > 0
             ? <NoChatSelected />
             : <EmptyConversationPane userRole={authUser.role} />
         ) : (
           <div className="flex flex-col h-full min-h-0">
             <ChatHeader
-              name={selectedConv.other.full_name}
-              avatarUrl={selectedConv.other.avatar_url}
-              hostTier={selectedConv.other.host_tier}
-              isOnline={isUserOnline(selectedConv.other.id)}
+              name={activeConv.other.full_name}
+              avatarUrl={activeConv.other.avatar_url}
+              hostTier={activeConv.other.host_tier}
+              isOnline={isUserOnline(activeConv.other.id)}
               isTyping={otherTyping}
-              tourName={selectedConv.tourName}
-              bookingDate={selectedConv.bookingDate}
+              tourName={activeConv.tourName}
+              bookingDate={activeConv.bookingDate}
               onBack={handleBack}
               onVideoCall={handleVideoCall}
               onViewProfile={() => setShowProfile((v) => !v)}
               showBack={mobileView === "chat"}
-              hostName={selectedConv.other.full_name}
+              hostName={activeConv.other.full_name}
             />
 
             <div className="flex flex-1 min-h-0 overflow-hidden">
               <div className="flex-1 min-w-0 flex flex-col min-h-0">
-                {authUser && selectedConv && otherUserId && (
+                {authUser && activeConv && otherUserId && (
                   <ChatWindow
                     conversationId={selectedConvId}
                     currentUserId={authUser.id}
                     otherUser={{
                       id: otherUserId,
-                      full_name: selectedConv.other.full_name,
-                      avatar_url: selectedConv.other.avatar_url,
-                      host_tier: selectedConv.other.host_tier,
-                      isOnline: isUserOnline(selectedConv.other.id),
+                      full_name: activeConv.other.full_name,
+                      avatar_url: activeConv.other.avatar_url,
+                      host_tier: activeConv.other.host_tier,
+                      isOnline: isUserOnline(activeConv.other.id),
                     }}
                     currentUserRole={authUser.role}
                     className="flex-1 min-h-0 rounded-none border-0 shadow-none bg-background"
