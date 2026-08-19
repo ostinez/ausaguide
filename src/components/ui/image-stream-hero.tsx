@@ -361,12 +361,6 @@ export function ImageStreamHero() {
               />
             </div>
 
-            {/* ── Giant Editorial Depth Typography Behind Peak ── */}
-            <div className="absolute inset-x-0 top-[22%] sm:top-[26%] -translate-y-1/2 flex items-center justify-center pointer-events-none select-none z-20 px-2">
-              <span className="hero-giant-condensed text-center">
-                AUSAGUIDE
-              </span>
-            </div>
 
             {/* Top Right Label (Sunrise) */}
             <div className="absolute top-3 right-3 sm:top-5 sm:right-6 z-25 pointer-events-none">
