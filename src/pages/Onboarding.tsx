@@ -168,6 +168,7 @@ function StepRole({
           return (
             <button
               key={c.id}
+              id={`onboarding-role-${c.id}`}
               type="button"
               onClick={() => onSelect(c.id)}
               className={cn(
@@ -189,6 +190,7 @@ function StepRole({
       </div>
 
       <Button
+        id="onboarding-role-next"
         size="lg"
         disabled={!selectedRole}
         onClick={onNext}
@@ -395,6 +397,7 @@ function StepProfile({
 
         <div className="pt-2">
           <Button
+            id="onboarding-profile-submit"
             type="submit"
             size="lg"
             disabled={loading}

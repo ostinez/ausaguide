@@ -114,26 +114,28 @@ test.describe("Onboarding E2E Flow", () => {
 
     // Choose Role step
     await expect(
-      page.locator("h1, h2, h3").filter({ hasText: /Choose Your Role/i }).first()
+      page.locator("h1, h2, h3").filter({ hasText: /Choose Your Role|How do you plan/i }).first()
     ).toBeVisible({ timeout: 10_000 });
     await page.locator("#onboarding-role-traveler").click({ force: true });
     await page.locator("#onboarding-role-next").click();
 
     // Tell Us About You step
     await expect(
-      page.locator("h1, h2, h3").filter({ hasText: /Tell Us About You/i }).first()
+      page.locator("h1, h2, h3").filter({ hasText: /Tell us about yourself|Tell Us About You/i }).first()
     ).toBeVisible({ timeout: 10_000 });
-    await page.locator("#ob-name").fill("Jane Traveler");
-    await page.locator("#ob-username").fill("janetraveler");
+    await page.locator("#onboarding-full-name, #ob-name").first().fill("Jane Traveler");
+    await page.locator("#onboarding-username, #ob-username").first().fill("janetraveler");
 
     // Click submit
     await page.locator("#onboarding-profile-submit").click();
 
-    // Confetti or success screen should show up
+    // Confetti or success screen or interests step should show up
     await expect(
       page
         .getByText(/Welcome to Ausaguide/i)
         .or(page.getByText(/adventure starts now/i))
+        .or(page.getByText(/What are your travel interests/i))
+        .or(page.getByText(/Profile details saved/i))
         .first()
     ).toBeVisible({ timeout: 15_000 });
   });
