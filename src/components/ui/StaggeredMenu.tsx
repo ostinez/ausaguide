@@ -409,13 +409,14 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
       location.pathname.startsWith("/admin") ||
       location.pathname.startsWith("/host/") ||
       location.pathname.startsWith("/settings")) && logoUrl && (
-      <div className="sm-logo shrink-0" aria-label="Logo" onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
+      <div className="sm-logo shrink-0 flex items-center gap-2" aria-label="Logo" onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
         <img
           src={logoUrl}
-          alt="Logo"
-          className="sm-logo-img h-10 sm:h-11 w-auto block object-contain transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(49,121,120,0.6)]"
+          alt="Ausaguide Logo"
+          className="sm-logo-img h-9 sm:h-10 w-auto rounded-lg block object-contain transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(49,121,120,0.6)]"
           draggable={false}
         />
+        <span className="text-base sm:text-lg font-bold text-white tracking-tight hidden sm:inline-block font-headline">Ausaguide</span>
       </div>
     )}
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
-import { Globe, Camera, Play } from "lucide-react"
+import { Camera, Play } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 
 const footerLinks = {
@@ -65,18 +65,15 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <img
                 src="/logo-primary.png"
-                alt="Ausaguide"
-                width={160}
-                height={32}
-                className="h-10 w-auto block object-contain brightness-0 invert"
+                alt="Ausaguide Logo"
+                width={40}
+                height={40}
+                className="h-10 w-auto rounded-lg block object-contain"
               />
-              <div id="footer-brand-fallback" className="items-center gap-2" style={{ display: "none" }}>
-                <Globe className="size-5 text-[#317978]" />
-                <span className="text-lg font-bold text-white">Ausaguide</span>
-              </div>
+              <span className="text-xl font-bold tracking-tight text-white font-headline">Ausaguide</span>
             </div>
             <p className="text-sm text-[#599D9C] leading-relaxed">
               Be a Local. Share Your World. Discover authentic journeys across Kenya with verified guides.
