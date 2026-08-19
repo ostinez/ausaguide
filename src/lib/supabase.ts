@@ -12,13 +12,6 @@ if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KE
 
 export const supabase = createClient<any>(supabaseUrl, supabaseAnonKey)
 
-// Disable real-time globally (temporary)
-if ((supabase as any).realtime?.setConfig) {
-  ;(supabase as any).realtime.setConfig({
-    subscriptions: { enable: false }
-  })
-}
-
-if (typeof window !== "undefined") {
+if (import.meta.env.DEV && typeof window !== "undefined") {
   ;(window as any).supabase = supabase
 }
