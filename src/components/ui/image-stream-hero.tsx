@@ -420,6 +420,8 @@ export function ImageStreamHero() {
                 alt={currentScenario.smart.title}
                 className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
                 loading="eager"
+                fetchPriority="high"
+                decoding="async"
               />
 
               {/* Right Side Overlay Tag */}
@@ -444,6 +446,8 @@ export function ImageStreamHero() {
                     maxWidth: "none",
                   }}
                   loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
                 />
 
                 {/* Left Side Overlay Tag */}
