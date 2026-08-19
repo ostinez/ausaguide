@@ -29,7 +29,6 @@ export interface ScenarioPair {
     title: string
     scenario: string
     image: string
-    cutout?: string
     location: string
     problem: string
     badge: string
@@ -39,7 +38,6 @@ export interface ScenarioPair {
     title: string
     scenario: string
     image: string
-    cutout?: string
     location: string
     solution: string
     badge: string
@@ -56,8 +54,7 @@ export const SCENARIO_PAIRS: ScenarioPair[] = [
     trap: {
       title: "Zero-Visibility Rain & Fog Trap",
       scenario: "Unchecked Monsoon Weather",
-      image: "/images/hero/option_c_foggy_clean.jpg",
-      cutout: "/images/hero/option_c_foggy_cutout.png",
+      image: "/images/hero/option_c_foggy.jpg",
       location: "Mount Kenya Alpine Tarn · Freezing Monsoon Fog Trap",
       problem: "Hiker booked without local weather verification. The entire peak was swallowed in freezing torrential rain, zero visibility, and impenetrable fog.",
       badge: "Fogged Out & Ruined",
@@ -71,8 +68,7 @@ export const SCENARIO_PAIRS: ScenarioPair[] = [
     smart: {
       title: "Crystal-Clear Golden Sunrise Summit",
       scenario: "Scouted Local Weather Window",
-      image: "/images/hero/option_c_sunrise_clean.jpg",
-      cutout: "/images/hero/option_c_sunrise_cutout.png",
+      image: "/images/hero/option_c_sunrise.jpg",
       location: "Mount Kenya Alpine Tarn · Crystal Sunrise Clarity",
       solution: "Local verified reconnaissance confirmed crystal-clear skies, dry alpine trails, and radiant golden sunrise illumination.",
       badge: "Scouted Sunrise Clarity",
@@ -340,7 +336,7 @@ export function ImageStreamHero() {
               handleMove(e.touches[0].clientX)
             }}
           >
-            {/* ── Layer 1 (Back): Background Clean Landscapes ── */}
+            {/* ── Right Layer: Scouted Reality (Golden Sunrise & Mountain) ── */}
             <img
               src={currentScenario.smart.image}
               alt={currentScenario.smart.title}
@@ -350,8 +346,9 @@ export function ImageStreamHero() {
               decoding="async"
             />
 
+            {/* ── Left Layer: Bad Cold Weather Restricting View (Clipped via clipPath) ── */}
             <div
-              className="absolute inset-0 w-full h-full pointer-events-none z-10 overflow-hidden"
+              className="absolute inset-0 w-full h-full pointer-events-none z-15 overflow-hidden"
               style={{ clipPath: `polygon(0 0, ${sliderPosition}% 0, ${sliderPosition}% 100%, 0 100%)` }}
             >
               <img
@@ -363,39 +360,6 @@ export function ImageStreamHero() {
                 decoding="async"
               />
             </div>
-
-            {/* ── Layer 2 (Middle): 100% Constant AUSAGUIDE Typography Across Both Slides ── */}
-            <div className="absolute inset-x-0 top-[20%] sm:top-[22%] -translate-y-1/2 flex items-center justify-center pointer-events-none select-none z-15 px-2">
-              <span className="hero-giant-condensed text-center">
-                AUSAGUIDE
-              </span>
-            </div>
-
-            {/* ── Layer 3 (Front Cutout): Foreground Mountain Peak Cutouts Masking the Text in 3D ── */}
-            {currentScenario.smart.cutout && (
-              <img
-                src={currentScenario.smart.cutout}
-                alt=""
-                className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none z-20"
-                loading="eager"
-                decoding="async"
-              />
-            )}
-
-            {currentScenario.trap.cutout && (
-              <div
-                className="absolute inset-0 w-full h-full pointer-events-none z-20 overflow-hidden"
-                style={{ clipPath: `polygon(0 0, ${sliderPosition}% 0, ${sliderPosition}% 100%, 0 100%)` }}
-              >
-                <img
-                  src={currentScenario.trap.cutout}
-                  alt=""
-                  className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
-                  loading="eager"
-                  decoding="async"
-                />
-              </div>
-            )}
 
             {/* Top Right Label (Sunrise) */}
             <div className="absolute top-3 right-3 sm:top-5 sm:right-6 z-25 pointer-events-none">
