@@ -314,197 +314,191 @@ export function ImageStreamHero() {
   }
 
   return (
-    <section className="relative overflow-hidden w-full bg-[#113B3A] text-white border-b border-[#235E5D]">
+    <section className="relative overflow-hidden w-full bg-[#113B3A] text-white py-6 sm:py-10 px-3 sm:px-6 lg:px-8 border-b border-[#235E5D]">
       {/* Ambient Deep Teal Lighting */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[600px] w-[900px] rounded-full bg-[#184948]/70 blur-[160px]" />
-        <div className="absolute bottom-0 right-1/4 h-[400px] w-[500px] rounded-full bg-[#235E5D]/30 blur-[130px]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[500px] w-[800px] rounded-full bg-[#184948]/70 blur-[150px]" />
+        <div className="absolute bottom-0 right-1/4 h-[350px] w-[450px] rounded-full bg-[#235E5D]/30 blur-[120px]" />
       </div>
 
-      {/* ── 1. Full-Screen Editorial Hero Canvas (Option C) ── */}
-      <div className="relative w-full">
-        <div
-          ref={sliderRef}
-          className="hero-fullscreen-container relative w-full h-[84vh] sm:h-[90vh] lg:h-[92vh] cursor-ew-resize select-none overflow-hidden border-b border-[#235E5D]/60 shadow-2xl"
-          onMouseDown={(e) => {
-            setIsDragging(true)
-            handleMove(e.clientX)
-          }}
-          onTouchStart={(e) => {
-            setIsDragging(true)
-            handleMove(e.touches[0].clientX)
-          }}
-        >
-          {/* ── Right Layer: Scouted Reality (Golden Sunrise & Mountain) ── */}
-          <img
-            src={currentScenario.smart.image}
-            alt={currentScenario.smart.title}
-            className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
-            loading="eager"
-            fetchPriority="high"
-            decoding="async"
-          />
-
-          {/* ── Left Layer: Unchecked Monsoon/Fog Trap (Clipped seamlessly via clipPath) ── */}
+      <div className="relative z-10 max-w-6xl mx-auto space-y-6">
+        {/* ── 1. Balanced Widescreen Hero Canvas ── */}
+        <div className="bento-card-main overflow-hidden rounded-2xl sm:rounded-3xl border border-[#235E5D] shadow-2xl">
           <div
-            className="absolute inset-0 w-full h-full pointer-events-none z-15 overflow-hidden"
-            style={{ clipPath: `polygon(0 0, ${sliderPosition}% 0, ${sliderPosition}% 100%, 0 100%)` }}
+            ref={sliderRef}
+            className="hero-widescreen-container relative w-full cursor-ew-resize select-none overflow-hidden"
+            onMouseDown={(e) => {
+              setIsDragging(true)
+              handleMove(e.clientX)
+            }}
+            onTouchStart={(e) => {
+              setIsDragging(true)
+              handleMove(e.touches[0].clientX)
+            }}
           >
+            {/* ── Right Layer: Scouted Reality (Golden Sunrise & Mountain) ── */}
             <img
-              src={currentScenario.trap.image}
-              alt={currentScenario.trap.title}
+              src={currentScenario.smart.image}
+              alt={currentScenario.smart.title}
               className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
               loading="eager"
               fetchPriority="high"
               decoding="async"
             />
-          </div>
 
-          {/* ── Giant Editorial Depth Typography (Single Crisp Layer Across Sky) ── */}
-          <div className="absolute inset-x-0 top-[20%] sm:top-[24%] -translate-y-1/2 flex items-center justify-center pointer-events-none select-none z-20 px-2">
-            <span className="hero-giant-condensed text-center">
-              AUSAGUIDE
-            </span>
-          </div>
+            {/* ── Left Layer: Unchecked Monsoon/Fog Trap (Clipped seamlessly via clipPath) ── */}
+            <div
+              className="absolute inset-0 w-full h-full pointer-events-none z-15 overflow-hidden"
+              style={{ clipPath: `polygon(0 0, ${sliderPosition}% 0, ${sliderPosition}% 100%, 0 100%)` }}
+            >
+              <img
+                src={currentScenario.trap.image}
+                alt={currentScenario.trap.title}
+                className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+              />
+            </div>
 
-          {/* Top Right Label (Sunrise) */}
-          <div className="absolute top-4 right-4 sm:top-8 sm:right-10 z-25 pointer-events-none">
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-black/45 backdrop-blur-md border border-white/20 text-white text-xs sm:text-sm font-black tracking-wider uppercase drop-shadow-lg">
-              <Check className="size-3.5 text-[#B7E6E5]" />
-              <span>SCOUTED SUNRISE · 100% CLARITY</span>
-            </span>
-          </div>
+            {/* ── Giant Editorial Depth Typography Behind Peak ── */}
+            <div className="absolute inset-x-0 top-[22%] sm:top-[26%] -translate-y-1/2 flex items-center justify-center pointer-events-none select-none z-20 px-2">
+              <span className="hero-giant-condensed text-center">
+                AUSAGUIDE
+              </span>
+            </div>
 
-          {/* Top Left Label (Fog Trap) */}
-          <div className="absolute top-4 left-4 sm:top-8 sm:left-10 z-25 pointer-events-none">
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-black/55 backdrop-blur-md border border-red-500/40 text-red-200 text-xs sm:text-sm font-black tracking-wider uppercase drop-shadow-lg">
-              <AlertTriangle className="size-3.5 text-red-400" />
-              <span>UNCHECKED · FOG & RAIN TRAP</span>
-            </span>
-          </div>
+            {/* Top Right Label (Sunrise) */}
+            <div className="absolute top-3 right-3 sm:top-5 sm:right-6 z-25 pointer-events-none">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/45 backdrop-blur-md border border-white/20 text-white text-[11px] sm:text-xs font-black tracking-wider uppercase drop-shadow-lg">
+                <Check className="size-3 text-[#B7E6E5]" />
+                <span>SCOUTED SUNRISE · 100% CLARITY</span>
+              </span>
+            </div>
 
-          {/* ── Center Metallic Slider Handle ── */}
-          <div className="slider-handle-line" style={{ left: `${sliderPosition}%` }}>
-            <div className="slider-handle-button" aria-label="Drag to compare before and after">
-              <div className="flex items-center gap-0.5">
-                <ChevronLeft className="size-4 text-slate-800 stroke-[3]" />
-                <ChevronRight className="size-4 text-slate-800 stroke-[3]" />
+            {/* Top Left Label (Fog Trap) */}
+            <div className="absolute top-3 left-3 sm:top-5 sm:left-6 z-25 pointer-events-none">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/55 backdrop-blur-md border border-red-500/40 text-red-200 text-[11px] sm:text-xs font-black tracking-wider uppercase drop-shadow-lg">
+                <AlertTriangle className="size-3 text-red-400" />
+                <span>UNCHECKED · FOG & RAIN TRAP</span>
+              </span>
+            </div>
+
+            {/* ── Center Metallic Slider Handle ── */}
+            <div className="slider-handle-line" style={{ left: `${sliderPosition}%` }}>
+              <div className="slider-handle-button" aria-label="Drag to compare before and after">
+                <div className="flex items-center gap-0.5">
+                  <ChevronLeft className="size-3.5 text-slate-800 stroke-[3]" />
+                  <ChevronRight className="size-3.5 text-slate-800 stroke-[3]" />
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* ── Center Floating Action Overlay (Matching Japan Reference Style) ── */}
-          <div className="absolute inset-x-0 bottom-14 sm:bottom-16 z-25 flex flex-col items-center justify-center text-center pointer-events-none px-4 space-y-3">
-            <h2 className="text-sm sm:text-base md:text-lg font-bold text-white tracking-widest uppercase drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">
-              PREMIUM KENYAN ADVENTURES
-            </h2>
+            {/* ── Center Floating Action Overlay ── */}
+            <div className="absolute inset-x-0 bottom-10 sm:bottom-12 z-25 flex flex-col items-center justify-center text-center pointer-events-none px-4 space-y-2">
+              <h2 className="text-xs sm:text-sm font-bold text-white tracking-widest uppercase drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">
+                PREMIUM KENYAN ADVENTURES
+              </h2>
 
-            <div className="pointer-events-auto">
-              <Link to="/tours" className="hero-pill-cta">
-                <span>EXPLORE LIVE TOURS</span>
-                <ArrowRight className="size-4" />
-              </Link>
+              <div className="pointer-events-auto">
+                <Link to="/tours" className="hero-pill-cta">
+                  <span>EXPLORE LIVE TOURS</span>
+                  <ArrowRight className="size-3.5" />
+                </Link>
+              </div>
+
+              <p className="text-[10px] sm:text-[11px] text-[#B7E6E5]/90 font-medium tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+                ↔ Drag dial to compare real-time weather & conditions
+              </p>
             </div>
 
-            <p className="text-[11px] sm:text-xs text-[#B7E6E5]/90 font-medium tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
-              ↔ Drag dial to compare real-time weather & conditions
-            </p>
-          </div>
+            {/* ── Bottom Integrated Intel Bar ── */}
+            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-[#0d2a29]/95 via-[#113B3A]/80 to-transparent pt-4 pb-2 px-3 sm:px-6 z-25 flex items-center justify-between gap-3 border-t border-[#235E5D]/30 backdrop-blur-xs">
+              <div className="flex items-center gap-4 sm:gap-6 text-[10px] sm:text-[11px] font-bold tracking-wider uppercase text-[#B7E6E5]">
+                <Link to="/" className="hover:text-white transition-colors">HOME</Link>
+                <Link to="/tours" className="hover:text-white transition-colors">TOURS</Link>
+                <Link to="/hosts" className="hover:text-white transition-colors">LOCAL HOSTS</Link>
+                <Link to="/journal" className="hover:text-white transition-colors">JOURNAL</Link>
+              </div>
 
-          {/* ── Bottom Integrated Nav Bar ── */}
-          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-[#0d2a29]/95 via-[#113B3A]/80 to-transparent pt-6 pb-3 px-4 sm:px-8 z-25 flex flex-wrap items-center justify-between gap-3 border-t border-[#235E5D]/30 backdrop-blur-xs">
-            <div className="flex items-center gap-4 sm:gap-8 text-[11px] sm:text-xs font-bold tracking-wider uppercase text-[#B7E6E5]">
-              <Link to="/" className="hover:text-white transition-colors">HOME</Link>
-              <Link to="/tours" className="hover:text-white transition-colors">TOURS</Link>
-              <Link to="/hosts" className="hover:text-white transition-colors">LOCAL HOSTS</Link>
-              <Link to="/journal" className="hover:text-white transition-colors">JOURNAL</Link>
-            </div>
-
-            <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowDetails(!showDetails)}
-                className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#184948]/80 border border-[#235E5D] text-[11px] font-bold text-[#B7E6E5] hover:text-white transition-colors cursor-pointer"
+                className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#184948]/80 border border-[#235E5D] text-[10px] sm:text-[11px] font-bold text-[#B7E6E5] hover:text-white transition-colors cursor-pointer"
               >
                 <Info className="size-3 text-[#317978]" />
                 <span>{showDetails ? "Hide Intel" : "View Intel"}</span>
               </button>
             </div>
           </div>
-        </div>
 
-        {/* ── Optional Weather & Recon Intel Drawer ── */}
-        {showDetails && (
-          <div className="max-w-6xl mx-auto p-4 sm:p-6 my-4 bg-[#184948] rounded-2xl border border-[#235E5D] grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in duration-200 shadow-2xl">
-            <div className="p-4 rounded-xl bg-[#113B3A]/70 border border-red-500/30 space-y-2">
-              <p className="text-xs font-bold text-red-400 uppercase tracking-wider">The Weather Disappointment:</p>
-              <p className="text-xs text-red-200 leading-relaxed">{currentScenario.trap.problem}</p>
-              <ul className="space-y-1 pt-1">
-                {currentScenario.trap.details.map((pt, i) => (
-                  <li key={i} className="flex items-start gap-2 text-xs text-red-300/80">
-                    <AlertTriangle className="size-3 text-red-400 shrink-0 mt-0.5" />
-                    <span>{pt}</span>
-                  </li>
-                ))}
-              </ul>
+          {/* Optional Story Intel Drawer */}
+          {showDetails && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 sm:p-6 bg-[#113B3A] border-t border-[#235E5D] animate-in fade-in duration-200">
+              <div className="p-4 rounded-xl bg-[#184948]/50 border border-red-500/30 space-y-2">
+                <p className="text-xs font-bold text-red-400 uppercase tracking-wider">The Weather Disappointment:</p>
+                <p className="text-xs text-red-200 leading-relaxed">{currentScenario.trap.problem}</p>
+                <ul className="space-y-1 pt-1">
+                  {currentScenario.trap.details.map((pt, i) => (
+                    <li key={i} className="flex items-start gap-2 text-xs text-red-300/80">
+                      <AlertTriangle className="size-3 text-red-400 shrink-0 mt-0.5" />
+                      <span>{pt}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="p-4 rounded-xl bg-[#184948]/50 border border-[#317978]/40 space-y-2">
+                <p className="text-xs font-bold text-[#B7E6E5] uppercase tracking-wider">The Scouted Local Reality:</p>
+                <p className="text-xs text-white leading-relaxed">{currentScenario.smart.solution}</p>
+                <ul className="space-y-1 pt-1">
+                  {currentScenario.smart.details.map((pt, i) => (
+                    <li key={i} className="flex items-start gap-2 text-xs text-[#B7E6E5]">
+                      <Check className="size-3 text-[#317978] shrink-0 mt-0.5" />
+                      <span>{pt}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {/* Scenario Carousel Switcher */}
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3 sm:p-4 bg-[#143f3e] border-t border-[#235E5D]">
+            <div className="flex flex-wrap items-center gap-2">
+              {SCENARIO_PAIRS.map((item, idx) => {
+                const active = activeScenarioIndex === idx
+                const TabIcon = item.icon
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveScenarioIndex(idx)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                      active ? "bento-tab-active" : "bento-tab-inactive"
+                    }`}
+                  >
+                    <TabIcon className="size-3.5" />
+                    <span>{item.categoryLabel}</span>
+                  </button>
+                )
+              })}
             </div>
 
-            <div className="p-4 rounded-xl bg-[#113B3A]/70 border border-[#317978]/50 space-y-2">
-              <p className="text-xs font-bold text-[#B7E6E5] uppercase tracking-wider">The Scouted Local Reality:</p>
-              <p className="text-xs text-white leading-relaxed">{currentScenario.smart.solution}</p>
-              <ul className="space-y-1 pt-1">
-                {currentScenario.smart.details.map((pt, i) => (
-                  <li key={i} className="flex items-start gap-2 text-xs text-[#B7E6E5]">
-                    <Check className="size-3 text-[#317978] shrink-0 mt-0.5" />
-                    <span>{pt}</span>
-                  </li>
-                ))}
-              </ul>
+            <div className="flex items-center gap-2 ml-auto">
+              <button
+                onClick={prevScenario}
+                className="p-1.5 rounded-xl bento-pill text-[#B7E6E5] hover:text-white cursor-pointer"
+                title="Previous Scenario"
+              >
+                <ChevronLeft className="size-4" />
+              </button>
+              <button
+                onClick={nextScenario}
+                className="p-1.5 rounded-xl bento-pill text-[#B7E6E5] hover:text-white cursor-pointer"
+                title="Next Scenario"
+              >
+                <ChevronRight className="size-4" />
+              </button>
             </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── 2. Scenario Switcher & Value Section ── */}
-      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8">
-        {/* Scenario Carousel Switcher */}
-        <div className="bento-card-main p-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-bold text-[#B7E6E5] uppercase tracking-wider mr-2 hidden sm:inline">
-              Compare Scenarios:
-            </span>
-            {SCENARIO_PAIRS.map((item, idx) => {
-              const active = activeScenarioIndex === idx
-              const TabIcon = item.icon
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveScenarioIndex(idx)}
-                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                    active ? "bento-tab-active" : "bento-tab-inactive"
-                  }`}
-                >
-                  <TabIcon className="size-3.5" />
-                  <span>{item.categoryLabel}</span>
-                </button>
-              )
-            })}
-          </div>
-
-          <div className="flex items-center gap-2 ml-auto">
-            <button
-              onClick={prevScenario}
-              className="p-1.5 rounded-xl bento-pill text-[#B7E6E5] hover:text-white cursor-pointer"
-              title="Previous Scenario"
-            >
-              <ChevronLeft className="size-4" />
-            </button>
-            <button
-              onClick={nextScenario}
-              className="p-1.5 rounded-xl bento-pill text-[#B7E6E5] hover:text-white cursor-pointer"
-              title="Next Scenario"
-            >
-              <ChevronRight className="size-4" />
-            </button>
           </div>
         </div>
 
