@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { MapPin, Globe, Loader2, AlertTriangle } from "lucide-react"
+import { MapPin, Globe, Loader2, AlertTriangle, X } from "lucide-react"
 import { Link, useSearchParams } from "react-router-dom"
 import { supabase } from "@/lib/supabase"
 
@@ -254,10 +254,10 @@ export default function MapPage() {
  <div className="flex-1">
  <p className="font-semibold text-destructive">VPN Mismatch Detected</p>
  <p className="text-muted-foreground mt-0.5">For accurate location, please turn off your VPN.</p>
- </div>
- <button onClick={() => setShowVpnBanner(false)} className="text-destructive hover:opacity-85 font-bold ml-2">
- ✕
+ <button onClick={() => setShowVpnBanner(false)} className="text-destructive hover:opacity-85 font-bold ml-2 p-1" aria-label="Close">
+ <X className="size-4" />
  </button>
+ </div>
  </div>
  </div>
  )}
@@ -354,8 +354,8 @@ export default function MapPage() {
  </div>
  {selected.bio && <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{selected.bio}</p>}
  </div>
- <button onClick={() => setSelected(null)} className="text-muted-foreground hover:text-foreground">
- ✕
+ <button onClick={() => setSelected(null)} className="text-muted-foreground hover:text-foreground p-1" aria-label="Close">
+ <X className="size-4" />
  </button>
  </div>
  <Link

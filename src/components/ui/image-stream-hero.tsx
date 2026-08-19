@@ -17,6 +17,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Info,
+  Umbrella,
+  Droplets,
+  Heart,
+  CreditCard,
 } from "lucide-react"
 import "./image-stream-hero.css"
 
@@ -24,7 +28,7 @@ export interface ScenarioPair {
   id: string
   category: "beach" | "safari" | "waterfall" | "pets" | "pricing"
   categoryLabel: string
-  icon: string
+  icon: React.ComponentType<{ className?: string }>
   trap: {
     title: string
     scenario: string
@@ -50,7 +54,7 @@ export const SCENARIO_PAIRS: ScenarioPair[] = [
     id: "beach",
     category: "beach",
     categoryLabel: "Beach & Coast",
-    icon: "🏖️",
+    icon: Umbrella,
     trap: {
       title: "Overcrowded Tourist Trap Beach",
       scenario: "Commercial Noise & Trash",
@@ -84,7 +88,7 @@ export const SCENARIO_PAIRS: ScenarioPair[] = [
     id: "safari",
     category: "safari",
     categoryLabel: "Wildlife Safari",
-    icon: "🚙",
+    icon: Compass,
     trap: {
       title: "Failed Safari Van Breakdown",
       scenario: "Unvetted Budget Safari Trap",
@@ -118,7 +122,7 @@ export const SCENARIO_PAIRS: ScenarioPair[] = [
     id: "waterfall",
     category: "waterfall",
     categoryLabel: "Highland Waterfalls",
-    icon: "💧",
+    icon: Droplets,
     trap: {
       title: "Misleading 'Hidden Falls' Trickle",
       scenario: "Bait-and-Switch Fake Photos",
@@ -152,7 +156,7 @@ export const SCENARIO_PAIRS: ScenarioPair[] = [
     id: "pets",
     category: "pets",
     categoryLabel: "Pet-Friendly Stay",
-    icon: "🐾",
+    icon: Heart,
     trap: {
       title: "Turned Away at Lodge Gate",
       scenario: "False 'Pet-Friendly' Listing",
@@ -186,7 +190,7 @@ export const SCENARIO_PAIRS: ScenarioPair[] = [
     id: "pricing",
     category: "pricing",
     categoryLabel: "Pricing & Flexibility",
-    icon: "💳",
+    icon: CreditCard,
     trap: {
       title: "Surprise Cash Fees Argument",
       scenario: "Hidden Charges & Shady Operators",
@@ -349,7 +353,9 @@ export function ImageStreamHero() {
           {/* Header Bar of Comparison Box */}
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#235E5D] pb-4">
             <div className="flex items-center gap-3">
-              <span className="text-xl sm:text-2xl">{currentScenario.icon}</span>
+              <div className="p-2 rounded-xl bg-[#113B3A] border border-[#235E5D] text-[#317978] shadow-sm">
+                <currentScenario.icon className="size-5" />
+              </div>
               <div>
                 <h3 className="text-base sm:text-lg font-bold text-white font-headline">
                   {currentScenario.categoryLabel}
@@ -555,6 +561,7 @@ export function ImageStreamHero() {
             <div className="flex flex-wrap items-center gap-2">
               {SCENARIO_PAIRS.map((item, idx) => {
                 const active = activeScenarioIndex === idx
+                const TabIcon = item.icon
                 return (
                   <button
                     key={item.id}
@@ -563,7 +570,7 @@ export function ImageStreamHero() {
                       active ? "bento-tab-active" : "bento-tab-inactive"
                     }`}
                   >
-                    <span>{item.icon}</span>
+                    <TabIcon className="size-3.5" />
                     <span>{item.categoryLabel}</span>
                   </button>
                 )

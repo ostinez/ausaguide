@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Compass, Trash2, Search, Loader2, AlertCircle, ExternalLink } from "lucide-react"
+import { Compass, Trash2, Search, Loader2, AlertCircle, ExternalLink, Star } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -154,7 +154,10 @@ export default function AdminTours() {
  {tour.currency} {tour.price}
  </td>
  <td className="px-6 py-4.5">
- <span className="font-bold text-amber-400">★ {tour.rating?.toFixed(1) || "0.0"}</span>
+ <span className="font-bold text-amber-400 flex items-center gap-1">
+ <Star className="size-3.5 fill-amber-400 text-amber-400 shrink-0" />
+ <span>{tour.rating?.toFixed(1) || "0.0"}</span>
+ </span>
  <span className="text-white/30 text-[10px] ml-1">({tour.review_count || 0})</span>
  </td>
  <td className="px-6 py-4.5">

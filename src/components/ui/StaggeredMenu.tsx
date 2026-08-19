@@ -1,5 +1,6 @@
 import React, { useCallback, useLayoutEffect, useRef, useState, useEffect } from "react"
-import { useNavigate, useLocation } from "react-router-dom"
+import { useNavigate, useLocation, Link } from "react-router-dom"
+import { Sparkles, ArrowRight, Compass } from "lucide-react"
 import { gsap } from "gsap"
 import NotificationBell from "./NotificationBell"
 import "./StaggeredMenu.css"
@@ -403,51 +404,78 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
  return arr.map((c, i) => <div key={i} className="sm-prelayer" style={{ background: c }} />)
  })()}
  </div>
- <header className="staggered-menu-header flex items-center justify-between" aria-label="Main navigation header">
- {!(location.pathname.startsWith("/dashboard") ||
- location.pathname.startsWith("/admin") ||
- location.pathname.startsWith("/host/") ||
- location.pathname.startsWith("/settings")) && logoUrl && (
- <div className="sm-logo" aria-label="Logo" onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
- <img
- src={logoUrl}
- alt="Logo"
- className="sm-logo-img h-11 w-auto block object-contain transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(13, 111, 115,0.6)]"
- draggable={false}
- />
- </div>
- )}
- <div className="flex items-center gap-4">
- {userId && location.pathname !== "/host/signup" && (
- <div className="relative z-50">
- <NotificationBell />
- </div>
- )}
- <button
- ref={toggleBtnRef}
- className="sm-toggle"
- aria-label={open ? "Close menu" : "Open menu"}
- aria-expanded={open}
- aria-controls="staggered-menu-panel"
- onClick={toggleMenu}
- type="button"
- >
- <span ref={textWrapRef} className="sm-toggle-textWrap" aria-hidden="true">
- <span ref={textInnerRef} className="sm-toggle-textInner">
- {textLines.map((l, i) => (
- <span className="sm-toggle-line" key={i}>
- {l}
- </span>
- ))}
- </span>
- </span>
- <span ref={iconRef} className="sm-icon" aria-hidden="true">
- <span ref={plusHRef} className="sm-icon-line" />
- <span ref={plusVRef} className="sm-icon-line sm-icon-line-v" />
- </span>
- </button>
- </div>
- </header>
+  <header className="staggered-menu-header flex items-center justify-between gap-2 sm:gap-4" aria-label="Main navigation header">
+    {!(location.pathname.startsWith("/dashboard") ||
+      location.pathname.startsWith("/admin") ||
+      location.pathname.startsWith("/host/") ||
+      location.pathname.startsWith("/settings")) && logoUrl && (
+      <div className="sm-logo shrink-0" aria-label="Logo" onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
+        <img
+          src={logoUrl}
+          alt="Logo"
+          className="sm-logo-img h-10 sm:h-11 w-auto block object-contain transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(49,121,120,0.6)]"
+          draggable={false}
+        />
+      </div>
+    )}
+
+    {/* Integrated Early Access Notification Badge / Waitlist Link */}
+    {location.pathname !== "/waitlist" && (
+      <Link
+        to="/waitlist"
+        className="sm-nav-early-access group inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-xs font-semibold transition-all duration-300"
+      >
+        <Sparkles className="size-3.5 text-[#317978] group-hover:scale-110 transition-transform shrink-0" />
+        <span className="hidden md:inline font-medium">Early Access — We're testing with real users.</span>
+        <span className="inline md:hidden font-bold">Early Access</span>
+        <span className="hidden sm:inline font-bold underline decoration-[#317978] decoration-2 underline-offset-2 group-hover:text-white">
+          Join waitlist
+        </span>
+        <ArrowRight className="size-3 text-[#599D9C] group-hover:translate-x-0.5 transition-transform shrink-0" />
+      </Link>
+    )}
+
+    <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+      {location.pathname !== "/tours" && (
+        <Link
+          to="/tours"
+          className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Compass className="size-3.5 text-primary" />
+          <span>Explore Tours</span>
+        </Link>
+      )}
+
+      {userId && location.pathname !== "/host/signup" && (
+        <div className="relative z-50">
+          <NotificationBell />
+        </div>
+      )}
+      <button
+        ref={toggleBtnRef}
+        className="sm-toggle"
+        aria-label={open ? "Close menu" : "Open menu"}
+        aria-expanded={open}
+        aria-controls="staggered-menu-panel"
+        onClick={toggleMenu}
+        type="button"
+      >
+        <span ref={textWrapRef} className="sm-toggle-textWrap" aria-hidden="true">
+          <span ref={textInnerRef} className="sm-toggle-textInner">
+            {textLines.map((l, i) => (
+              <span className="sm-toggle-line" key={i}>
+                {l}
+              </span>
+            ))}
+          </span>
+        </span>
+        <span ref={iconRef} className="sm-icon" aria-hidden="true">
+          <span ref={plusHRef} className="sm-icon-line" />
+          <span ref={plusVRef} className="sm-icon-line sm-icon-line-v" />
+        </span>
+      </button>
+    </div>
+  </header>
 
  <aside id="staggered-menu-panel" ref={panelRef} className="staggered-menu-panel" aria-hidden={!open}>
  <div className="sm-panel-inner">

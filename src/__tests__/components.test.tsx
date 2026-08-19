@@ -77,7 +77,7 @@ describe("Custom UI Components Unit Tests", () => {
  it("renders active glass icon element", () => {
  const items = [
  {
- icon: <span data-testid="mock-icon">★</span>,
+ icon: <span data-testid="mock-icon">icon</span>,
  color: "teal" as const,
  label: "Teal Star",
  active: true,
