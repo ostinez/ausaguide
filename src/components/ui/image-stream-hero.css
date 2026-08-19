@@ -1,117 +1,97 @@
-/* ── Image Stream Corridor Hero: 3D Perspective & Ausaguide Deep Teal Silk ── */
+/* ── Option D Bento Hero: Interactive Comparison Slider & Deep Teal Silk ── */
 
-/*
-  Site Brand Palette (must match index.css / :root theme):
-  --color-brand:       #0D6F73  ← primary teal action
-  --color-brand-deep:  #06363D  ← darkest bg / section base
-  --color-brand-silk:  #0B3037  ← card bg / elevated surface
-  --color-carbon:      #0B3037  ← same as silk
-  --color-carbon-light:#134E5E  ← lighter card / border
-  --color-brand-light: #84BABF  ← light teal / secondary text
-  --color-brand-ice:   #E0EDE9  ← very light ice for highlights
-*/
-
-@keyframes corridorScrollUp {
-  0%   { transform: translateY(0); }
-  100% { transform: translateY(-50%); }
-}
-
-@keyframes corridorScrollDown {
-  0%   { transform: translateY(-50%); }
-  100% { transform: translateY(0); }
-}
-
-.corridor-container {
-  perspective: 1200px;
-  perspective-origin: 50% 50%;
-  transform-style: preserve-3d;
-  container-type: inline-size;
-}
-
-.corridor-rail-left {
-  transform: rotateY(12deg) rotateX(4deg) translateZ(0);
-  transform-style: preserve-3d;
-}
-
-.corridor-rail-right {
-  transform: rotateY(-12deg) rotateX(4deg) translateZ(0);
-  transform-style: preserve-3d;
-}
-
-.corridor-scroll-up {
-  animation: corridorScrollUp 40s linear infinite;
-  will-change: transform;
-}
-
-.corridor-scroll-down {
-  animation: corridorScrollDown 40s linear infinite;
-  will-change: transform;
-}
-
-.corridor-container:hover .corridor-scroll-up,
-.corridor-container:hover .corridor-scroll-down,
-.corridor-paused .corridor-scroll-up,
-.corridor-paused .corridor-scroll-down {
-  animation-play-state: paused;
-}
-
-/* ── Teal Neumorphic Cards (Ausaguide Smart Way) ── */
-.neumorph-card-green {
+/* Neumorphic Card Base */
+.bento-card-main {
   background-color: #0B3037;
   border: 1px solid #134E5E;
-  box-shadow: 8px 8px 20px #030f12, -6px -6px 16px #0e3b43;
+  box-shadow: 8px 8px 24px #030f12, -6px -6px 20px #0e3b43;
+  border-radius: 1.5rem;
+}
+
+.bento-card-inset {
+  background-color: #06363D;
+  border: 1px solid #134E5E;
+  box-shadow: inset 4px 4px 12px #030f12, inset -3px -3px 8px #0e3b43;
   border-radius: 1.25rem;
-  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s ease;
 }
 
-.neumorph-card-green:hover {
-  transform: translateY(-4px) scale(1.02);
-  box-shadow: 12px 12px 28px #030f12, -8px -8px 22px #134E5E;
-}
-
-/* ── Trap Cards (Tourist Trap side, keep danger red contrast) ── */
-.neumorph-card-trap {
-  background-color: #0e2428;
-  border: 1px solid #4a2828;
-  box-shadow: 8px 8px 20px #030f12, -6px -6px 16px #0B3037;
+/* Before / After Slider Container */
+.slider-compare-container {
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  touch-action: pan-y;
   border-radius: 1.25rem;
-  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s ease;
+  border: 1px solid #134E5E;
+  box-shadow: 6px 6px 18px #030f12, -4px -4px 14px #0e3b43;
 }
 
-.neumorph-card-trap:hover {
-  transform: translateY(-4px) scale(1.02);
-  box-shadow: 12px 12px 28px #030f12, -8px -8px 22px #2d1818;
-  border-color: #ef4444;
+/* Slider Drag Handle */
+.slider-handle-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #0D6F73;
+  box-shadow: 0 0 12px rgba(13, 111, 115, 0.8), 0 0 4px #84BABF;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 30;
 }
 
-/* ── Teal Pill / Filter Tag ── */
-.neumorph-pill-green {
+.slider-handle-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  background: #0B3037;
+  border: 2px solid #84BABF;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), 0 0 10px rgba(13, 111, 115, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  cursor: ew-resize;
+  pointer-events: auto;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.slider-handle-button:hover,
+.slider-handle-button:active {
+  transform: translate(-50%, -50%) scale(1.1);
+  border-color: #ffffff;
+  background: #0D6F73;
+}
+
+/* Neumorphic Buttons & Tabs */
+.bento-pill {
   background-color: #0B3037;
   border: 1px solid #134E5E;
-  box-shadow: 4px 4px 10px #030f12, -3px -3px 8px #0e3b43;
+  box-shadow: 3px 3px 8px #030f12, -2px -2px 6px #0e3b43;
 }
 
-/* ── Primary Teal CTA Button ── */
-.neumorph-btn-emerald {
+.bento-btn-primary {
   background-color: #0D6F73;
   color: #ffffff;
   box-shadow: 5px 5px 14px #030f12, -4px -4px 12px #0e3b43;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.neumorph-btn-emerald:hover {
+.bento-btn-primary:hover {
   background-color: #0b5f63;
   box-shadow: 3px 3px 8px #030f12, -2px -2px 6px #0e3b43;
   transform: translateY(-1px);
 }
 
-.neumorph-btn-emerald:active {
+.bento-btn-primary:active {
   box-shadow: inset 3px 3px 6px #052224, inset -3px -3px 6px #14888d;
   transform: translateY(1px);
 }
 
-/* ── Secondary Outlined Button ── */
-.neumorph-btn-secondary {
+.bento-btn-secondary {
   background-color: #0B3037;
   color: #E0EDE9;
   border: 1px solid #134E5E;
@@ -119,41 +99,27 @@
   transition: all 0.2s ease;
 }
 
-.neumorph-btn-secondary:hover {
+.bento-btn-secondary:hover {
   background-color: #134E5E;
   border-color: #0D6F73;
   transform: translateY(-1px);
 }
 
-.neumorph-btn-secondary:active {
-  box-shadow: inset 3px 3px 6px #030f12, inset -3px -3px 6px #134E5E;
-  transform: translateY(1px);
-}
-
-/* ── Filter Tab Active (Teal) ── */
-.neumorph-tab-active {
+.bento-tab-active {
   background-color: #0D6F73;
   color: #ffffff;
   font-weight: 700;
-  box-shadow: inset 2px 2px 4px rgba(0,0,0,0.3), 0 2px 8px rgba(13, 111, 115, 0.45);
+  box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(13, 111, 115, 0.45);
 }
 
-/* ── Filter Tab Inactive ── */
-.neumorph-tab-inactive {
+.bento-tab-inactive {
   background-color: #0B3037;
   color: #84BABF;
   border: 1px solid #134E5E;
   box-shadow: 3px 3px 8px #030f12, -2px -2px 6px #0e3b43;
 }
 
-.neumorph-tab-inactive:hover {
+.bento-tab-inactive:hover {
   background-color: #134E5E;
   color: #E0EDE9;
-}
-
-/* ── Mobile: remove 3D perspective for performance ── */
-@media (max-width: 768px) {
-  .corridor-rail-left  { transform: none; }
-  .corridor-rail-right { transform: none; }
-  .corridor-container  { perspective: none; }
 }

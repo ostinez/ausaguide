@@ -1,4 +1,4 @@
-import { useState, useRef } from "react"
+import { useState, useRef, useCallback, useEffect } from "react"
 import { Link } from "react-router-dom"
 import {
   ArrowRight,
@@ -9,14 +9,14 @@ import {
   Video,
   DollarSign,
   Users,
-  Pause,
-  Play,
-  Maximize2,
   Compass,
   AlertTriangle,
   Check,
-  X,
-  SlidersHorizontal,
+  Columns,
+  SplitSquareHorizontal,
+  ChevronLeft,
+  ChevronRight,
+  Info,
 } from "lucide-react"
 import "./image-stream-hero.css"
 
@@ -24,6 +24,7 @@ export interface ScenarioPair {
   id: string
   category: "beach" | "safari" | "waterfall" | "pets" | "pricing"
   categoryLabel: string
+  icon: string
   trap: {
     title: string
     scenario: string
@@ -49,18 +50,19 @@ export const SCENARIO_PAIRS: ScenarioPair[] = [
     id: "beach",
     category: "beach",
     categoryLabel: "Beach & Coast",
+    icon: "🏖️",
     trap: {
       title: "Overcrowded Tourist Trap Beach",
-      scenario: "Commercial Noise & Clutter",
+      scenario: "Commercial Noise & Trash",
       image: "/images/corridor/trap_beach.jpg",
-      location: "Generic Commercial Strip, Mombasa Coast",
+      location: "Commercial Strip, Mombasa Coast",
       problem: "Packed shoulder-to-shoulder with aggressive touts, littered sand, and overpriced staged beach stalls.",
       badge: "Overrun & Noisy",
       details: [
-        "Unfiltered photos hid the massive overcrowding",
+        "Unfiltered marketing photos hid the massive overcrowding",
         "Persistent touts and aggressive vendors every 2 minutes",
         "Littered sand with zero quiet relaxation space",
-        "Wasted full vacation day and transport fees",
+        "Wasted full vacation day and heavy transport costs",
       ],
     },
     smart: {
@@ -82,6 +84,7 @@ export const SCENARIO_PAIRS: ScenarioPair[] = [
     id: "safari",
     category: "safari",
     categoryLabel: "Wildlife Safari",
+    icon: "🚙",
     trap: {
       title: "Failed Safari Van Breakdown",
       scenario: "Unvetted Budget Safari Trap",
@@ -115,6 +118,7 @@ export const SCENARIO_PAIRS: ScenarioPair[] = [
     id: "waterfall",
     category: "waterfall",
     categoryLabel: "Highland Waterfalls",
+    icon: "💧",
     trap: {
       title: "Misleading 'Hidden Falls' Trickle",
       scenario: "Bait-and-Switch Fake Photos",
@@ -147,7 +151,8 @@ export const SCENARIO_PAIRS: ScenarioPair[] = [
   {
     id: "pets",
     category: "pets",
-    categoryLabel: "Pet Policies",
+    categoryLabel: "Pet-Friendly Stay",
+    icon: "🐾",
     trap: {
       title: "Turned Away at Lodge Gate",
       scenario: "False 'Pet-Friendly' Listing",
@@ -181,6 +186,7 @@ export const SCENARIO_PAIRS: ScenarioPair[] = [
     id: "pricing",
     category: "pricing",
     categoryLabel: "Pricing & Flexibility",
+    icon: "💳",
     trap: {
       title: "Surprise Cash Fees Argument",
       scenario: "Hidden Charges & Shady Operators",
@@ -213,50 +219,103 @@ export const SCENARIO_PAIRS: ScenarioPair[] = [
 ]
 
 export function ImageStreamHero() {
-  const [activeCategory, setActiveCategory] = useState<string>("all")
-  const [isPaused, setIsPaused] = useState(false)
-  const [selectedScenario, setSelectedScenario] = useState<ScenarioPair | null>(null)
-  const corridorRef = useRef<HTMLDivElement>(null)
+  const [activeScenarioIndex, setActiveScenarioIndex] = useState<number>(0)
+  const [sliderPosition, setSliderPosition] = useState<number>(50)
+  const [isDragging, setIsDragging] = useState<boolean>(false)
+  const [viewMode, setViewMode] = useState<"slider" | "split">("slider")
+  const [showDetails, setShowDetails] = useState<boolean>(false)
 
-  const filteredScenarios =
-    activeCategory === "all"
-      ? SCENARIO_PAIRS
-      : SCENARIO_PAIRS.filter((s) => s.category === activeCategory)
+  const sliderRef = useRef<HTMLDivElement>(null)
+  const currentScenario = SCENARIO_PAIRS[activeScenarioIndex]
 
-  // Duplicate list to achieve continuous infinite looping stream
-  const displayScenarios = [...filteredScenarios, ...filteredScenarios]
+  // Handle Drag / Pointer Movement on the Before-After Slider
+  const handleMove = useCallback((clientX: number) => {
+    if (!sliderRef.current) return
+    const rect = sliderRef.current.getBoundingClientRect()
+    const x = clientX - rect.left
+    const percent = Math.max(0, Math.min(100, (x / rect.width) * 100))
+    setSliderPosition(percent)
+  }, [])
 
-  const categories = [
-    { id: "all", label: "All Scenarios" },
-    { id: "beach", label: "Beach Disasters" },
-    { id: "safari", label: "Safari Breakdowns" },
-    { id: "waterfall", label: "Fake Waterfalls" },
-    { id: "pets", label: "Pet Restrictions" },
-    { id: "pricing", label: "Hidden Fees" },
-  ]
+  const handleTouchMove = useCallback(
+    (e: TouchEvent) => {
+      if (!isDragging) return
+      handleMove(e.touches[0].clientX)
+    },
+    [isDragging, handleMove]
+  )
+
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isDragging) return
+      handleMove(e.clientX)
+    },
+    [isDragging, handleMove]
+  )
+
+  const handlePointerUp = useCallback(() => {
+    setIsDragging(false)
+  }, [])
+
+  useEffect(() => {
+    if (isDragging) {
+      window.addEventListener("mousemove", handleMouseMove)
+      window.addEventListener("mouseup", handlePointerUp)
+      window.addEventListener("touchmove", handleTouchMove)
+      window.addEventListener("touchend", handlePointerUp)
+    }
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove)
+      window.removeEventListener("mouseup", handlePointerUp)
+      window.removeEventListener("touchmove", handleTouchMove)
+      window.removeEventListener("touchend", handlePointerUp)
+    }
+  }, [isDragging, handleMouseMove, handlePointerUp, handleTouchMove])
+
+  const nextScenario = () => {
+    setActiveScenarioIndex((prev) => (prev + 1) % SCENARIO_PAIRS.length)
+  }
+
+  const prevScenario = () => {
+    setActiveScenarioIndex((prev) => (prev - 1 + SCENARIO_PAIRS.length) % SCENARIO_PAIRS.length)
+  }
 
   return (
-    <section className="relative overflow-hidden w-full bg-[#06363D] text-white py-12 sm:py-20 px-4 sm:px-6 lg:px-8 border-b border-[#134E5E]">
-      {/* Ambient Soft Lighting */}
+    <section className="relative overflow-hidden w-full bg-[#06363D] text-white py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 border-b border-[#134E5E]">
+      {/* Ambient Deep Teal Silk Lighting */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute top-0 left-1/4 h-[500px] w-[500px] rounded-full bg-[#0B3037]/60 blur-[130px]" />
-        <div className="absolute bottom-0 right-1/4 h-[450px] w-[450px] rounded-full bg-[#134E5E]/50 blur-[120px]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[450px] w-[650px] rounded-full bg-[#0B3037]/70 blur-[130px]" />
+        <div className="absolute bottom-0 right-1/4 h-[350px] w-[350px] rounded-full bg-[#134E5E]/40 blur-[100px]" />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto space-y-10 sm:space-y-14">
-        {/* ── Header & Headline ── */}
-        <div className="text-center space-y-5 max-w-3xl mx-auto">
-          {/* Top Pill */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full neumorph-pill-green text-[#84BABF] text-xs sm:text-sm font-semibold">
+      <div className="relative z-10 max-w-5xl mx-auto space-y-8 sm:space-y-10">
+        {/* ── Top Bento Block: Headline & Call To Action ── */}
+        <div className="bento-card-main p-6 sm:p-10 lg:p-12 text-center space-y-6">
+          {/* Top Pill Tag */}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bento-pill text-[#84BABF] text-xs sm:text-sm font-semibold">
             <Sparkles className="size-4 text-[#0D6F73]" />
             <span>Try Kenya Live Before You Fly</span>
           </div>
 
-          {/* Main H1 Headline */}
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight leading-[1.12] font-headline">
-            Stop Wasting Money on <br className="hidden sm:inline" />
-            <span className="text-[#ff6b6b] line-through decoration-[#ff5252] decoration-wavy decoration-2 sm:decoration-4">
-              Tourist Traps.
+          {/* H1 Main Headline */}
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-[1.12] font-headline max-w-3xl mx-auto">
+            Stop Wasting Money on{" "}
+            <span className="relative inline-block text-white">
+              Tourist Traps
+              <svg
+                className="absolute -bottom-2 left-0 w-full h-3 sm:h-4 text-[#ff5252]"
+                viewBox="0 0 100 20"
+                preserveAspectRatio="none"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M0 10 Q 12.5 0, 25 10 T 50 10 T 75 10 T 100 10"
+                  stroke="currentColor"
+                  strokeWidth="3.5"
+                  strokeLinecap="round"
+                />
+              </svg>
             </span>
           </h1>
 
@@ -265,18 +324,18 @@ export function ImageStreamHero() {
             Explore Kenya through a local's eyes before you book. Live video reconnaissance tours with vetted local guides. Skip the scams.
           </p>
 
-          {/* CTA Buttons with Apple-style Neumorphic Emerald styling */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-2">
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-2 max-w-md mx-auto">
             <Link
               to="/waitlist"
-              className="w-full sm:w-auto px-8 py-3.5 neumorph-btn-emerald font-bold rounded-2xl text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer min-h-[48px]"
+              className="w-full sm:w-auto px-8 py-3.5 bento-btn-primary font-bold rounded-2xl text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer min-h-[48px]"
             >
               <Sparkles className="size-4" />
               <span>Join Early Waitlist</span>
             </Link>
             <Link
               to="/tours"
-              className="w-full sm:w-auto px-8 py-3.5 neumorph-btn-secondary font-bold rounded-2xl text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer min-h-[48px]"
+              className="w-full sm:w-auto px-8 py-3.5 bento-btn-secondary font-bold rounded-2xl text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer min-h-[48px]"
             >
               <Compass className="size-4 text-[#0D6F73]" />
               <span>Explore Live Tours</span>
@@ -285,208 +344,253 @@ export function ImageStreamHero() {
           </div>
         </div>
 
-        {/* ── Interactive Scenario Filter Tabs & Play/Pause Controls ── */}
-        <div className="flex flex-wrap items-center justify-between gap-3 max-w-5xl mx-auto border-b border-[#134E5E] pb-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold text-[#84BABF] uppercase tracking-wider flex items-center gap-1.5 mr-1">
-              <SlidersHorizontal className="size-3.5 text-[#0D6F73]" />
-              Compare:
-            </span>
-            {categories.map((cat) => {
-              const active = activeCategory === cat.id
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => setActiveCategory(cat.id)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                    active ? "neumorph-tab-active" : "neumorph-tab-inactive"
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              )
-            })}
+        {/* ── Bottom Bento Block: Interactive Comparison Component ── */}
+        <div className="bento-card-main p-5 sm:p-8 space-y-6">
+          {/* Header Bar of Comparison Box */}
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#134E5E] pb-4">
+            <div className="flex items-center gap-3">
+              <span className="text-xl sm:text-2xl">{currentScenario.icon}</span>
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-white font-headline">
+                  {currentScenario.categoryLabel}
+                </h3>
+                <p className="text-xs text-[#84BABF]">
+                  Compare the unvetted tourist trap vs. the verified Ausaguide experience
+                </p>
+              </div>
+            </div>
+
+            {/* View Mode Switcher & Details Toggle */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setViewMode(viewMode === "slider" ? "split" : "slider")}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bento-pill text-xs font-semibold text-[#84BABF] hover:text-white cursor-pointer"
+                title="Toggle between Interactive Slider and Side-by-Side View"
+              >
+                {viewMode === "slider" ? (
+                  <>
+                    <Columns className="size-3.5 text-[#0D6F73]" />
+                    <span className="hidden sm:inline">Dual View</span>
+                  </>
+                ) : (
+                  <>
+                    <SplitSquareHorizontal className="size-3.5 text-[#0D6F73]" />
+                    <span className="hidden sm:inline">Slider View</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={() => setShowDetails(!showDetails)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer ${
+                  showDetails ? "bento-tab-active" : "bento-pill text-[#84BABF] hover:text-white"
+                }`}
+                title="Toggle detailed point-by-point breakdown"
+              >
+                <Info className="size-3.5" />
+                <span className="hidden sm:inline">Details</span>
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 ml-auto">
-            <button
-              onClick={() => setIsPaused(!isPaused)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl neumorph-pill-green text-xs font-semibold text-[#84BABF] hover:text-white cursor-pointer"
-              title={isPaused ? "Resume streaming" : "Pause streaming"}
+          {/* ── Comparison Area (Slider or Dual Mode) ── */}
+          {viewMode === "slider" ? (
+            /* Mode 1: Interactive Draggable Slider */
+            <div
+              ref={sliderRef}
+              className="slider-compare-container aspect-[16/10] sm:aspect-[16/9] md:aspect-[21/9] w-full cursor-ew-resize select-none"
+              onMouseDown={(e) => {
+                setIsDragging(true)
+                handleMove(e.clientX)
+              }}
+              onTouchStart={(e) => {
+                setIsDragging(true)
+                handleMove(e.touches[0].clientX)
+              }}
             >
-              {isPaused ? <Play className="size-3.5 text-[#0D6F73]" /> : <Pause className="size-3.5 text-[#84BABF]" />}
-              <span>{isPaused ? "Resume" : "Pause"}</span>
-            </button>
+              {/* Right Side Image (Smart Way - Background Full) */}
+              <img
+                src={currentScenario.smart.image}
+                alt={currentScenario.smart.title}
+                className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
+                loading="eager"
+              />
+
+              {/* Right Side Overlay Tag */}
+              <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 pointer-events-none">
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0B3037]/90 border border-[#0D6F73] shadow-md text-[#84BABF] text-xs font-bold">
+                  <CheckCircle2 className="size-3.5 text-[#0D6F73]" />
+                  <span>The Smart Way (Ausaguide)</span>
+                </div>
+              </div>
+
+              {/* Left Side Image (Tourist Trap - Clipped) */}
+              <div
+                className="absolute inset-0 overflow-hidden pointer-events-none"
+                style={{ width: `${sliderPosition}%` }}
+              >
+                <img
+                  src={currentScenario.trap.image}
+                  alt={currentScenario.trap.title}
+                  className="absolute inset-0 h-full object-cover select-none pointer-events-none"
+                  style={{
+                    width: sliderRef.current ? `${sliderRef.current.clientWidth}px` : "100%",
+                    maxWidth: "none",
+                  }}
+                  loading="eager"
+                />
+
+                {/* Left Side Overlay Tag */}
+                <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-20">
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0B3037]/90 border border-red-500/60 shadow-md text-red-300 text-xs font-bold">
+                    <XCircle className="size-3.5 text-red-400" />
+                    <span>Tourist Trap (Unvetted)</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Center Draggable Divider Line & Button */}
+              <div className="slider-handle-line" style={{ left: `${sliderPosition}%` }}>
+                <div className="slider-handle-button" aria-label="Drag to compare before and after">
+                  <div className="flex items-center gap-0.5">
+                    <ChevronLeft className="size-3 text-white" />
+                    <ChevronRight className="size-3 text-white" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Caption Pill */}
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+                <span className="px-3 py-1 rounded-full bg-[#06363D]/90 border border-[#134E5E] text-[11px] font-semibold text-[#84BABF] shadow-lg">
+                  Drag slider to compare
+                </span>
+              </div>
+            </div>
+          ) : (
+            /* Mode 2: Side-by-Side Dual View */
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+              {/* Left Card: Tourist Trap */}
+              <div className="bento-card-inset p-4 sm:p-5 border border-red-500/30 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-red-400 flex items-center gap-1.5">
+                    <XCircle className="size-3.5 text-red-400" />
+                    {currentScenario.trap.scenario}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-red-950/80 border border-red-500/40 text-red-200 text-[10px] font-bold">
+                    {currentScenario.trap.badge}
+                  </span>
+                </div>
+                <div className="relative aspect-video rounded-xl overflow-hidden border border-red-500/20 shadow-md">
+                  <img
+                    src={currentScenario.trap.image}
+                    alt={currentScenario.trap.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute bottom-2 left-2 right-2 bg-[#06363D]/90 p-1.5 rounded-lg border border-red-500/30">
+                    <p className="text-[11px] font-bold text-white truncate">{currentScenario.trap.title}</p>
+                    <p className="text-[10px] text-red-300/80 truncate">{currentScenario.trap.location}</p>
+                  </div>
+                </div>
+                <p className="text-xs text-[#84BABF] leading-relaxed">{currentScenario.trap.problem}</p>
+              </div>
+
+              {/* Right Card: The Smart Way */}
+              <div className="bento-card-inset p-4 sm:p-5 border border-[#134E5E] space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#84BABF] flex items-center gap-1.5">
+                    <CheckCircle2 className="size-3.5 text-[#0D6F73]" />
+                    {currentScenario.smart.scenario}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-[#0B3037] border border-[#0D6F73]/40 text-[#84BABF] text-[10px] font-bold">
+                    {currentScenario.smart.badge}
+                  </span>
+                </div>
+                <div className="relative aspect-video rounded-xl overflow-hidden border border-[#134E5E] shadow-md">
+                  <img
+                    src={currentScenario.smart.image}
+                    alt={currentScenario.smart.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute bottom-2 left-2 right-2 bg-[#06363D]/90 p-1.5 rounded-lg border border-[#134E5E]">
+                    <p className="text-[11px] font-bold text-white truncate">{currentScenario.smart.title}</p>
+                    <p className="text-[10px] text-[#84BABF] truncate">{currentScenario.smart.location}</p>
+                  </div>
+                </div>
+                <p className="text-xs text-white leading-relaxed">{currentScenario.smart.solution}</p>
+              </div>
+            </div>
+          )}
+
+          {/* ── Optional Point-by-Point Details Drawer ── */}
+          {showDetails && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-[#134E5E] animate-in fade-in duration-200">
+              <div className="p-4 rounded-xl bg-[#06363D] border border-red-500/20 space-y-2">
+                <p className="text-xs font-bold text-red-400">Why travelers get scammed:</p>
+                <ul className="space-y-1.5">
+                  {currentScenario.trap.details.map((pt, i) => (
+                    <li key={i} className="flex items-start gap-2 text-xs text-red-200">
+                      <AlertTriangle className="size-3 text-red-400 shrink-0 mt-0.5" />
+                      <span>{pt}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="p-4 rounded-xl bg-[#06363D] border border-[#134E5E] space-y-2">
+                <p className="text-xs font-bold text-[#84BABF]">How Ausaguide protects you:</p>
+                <ul className="space-y-1.5">
+                  {currentScenario.smart.details.map((pt, i) => (
+                    <li key={i} className="flex items-start gap-2 text-xs text-white">
+                      <Check className="size-3 text-[#0D6F73] shrink-0 mt-0.5" />
+                      <span>{pt}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {/* ── Scenario Switcher Pills & Prev/Next ── */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {SCENARIO_PAIRS.map((item, idx) => {
+                const active = activeScenarioIndex === idx
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveScenarioIndex(idx)}
+                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                      active ? "bento-tab-active" : "bento-tab-inactive"
+                    }`}
+                  >
+                    <span>{item.icon}</span>
+                    <span>{item.categoryLabel}</span>
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className="flex items-center gap-2 ml-auto">
+              <button
+                onClick={prevScenario}
+                className="p-2 rounded-xl bento-pill text-[#84BABF] hover:text-white cursor-pointer"
+                title="Previous Scenario"
+              >
+                <ChevronLeft className="size-4" />
+              </button>
+              <button
+                onClick={nextScenario}
+                className="p-2 rounded-xl bento-pill text-[#84BABF] hover:text-white cursor-pointer"
+                title="Next Scenario"
+              >
+                <ChevronRight className="size-4" />
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* ── 3D Image Stream Corridor (Two Perspective Rails) ── */}
-        <div
-          ref={corridorRef}
-          className={`corridor-container relative overflow-hidden rounded-3xl p-4 sm:p-6 bg-[#06363D] border border-[#134E5E] shadow-[inset_0_4px_16px_#030f12] ${
-            isPaused ? "corridor-paused" : ""
-          }`}
-          style={{ maxHeight: "680px" }}
-        >
-          {/* Corridor Top & Bottom Fade Gradients (Teal Depth) */}
-          <div className="pointer-events-none absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-[#06363D] via-[#06363D]/80 to-transparent z-20" />
-          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#06363D] via-[#06363D]/80 to-transparent z-20" />
-
-          {/* Column Header Banners */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4 relative z-30">
-            {/* Left Header */}
-            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#0B3037] border border-[#3a1a1a] shadow-[4px_4px_12px_#030f12]">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-red-500/20 text-red-400">
-                  <XCircle className="size-4" />
-                </div>
-                <span className="font-extrabold text-sm sm:text-base text-red-400 font-headline">
-                  The Tourist Trap (Unvetted)
-                </span>
-              </div>
-              <span className="px-2.5 py-0.5 rounded-full bg-red-500/15 border border-red-500/30 text-red-300 text-[10px] font-bold uppercase tracking-wider">
-                Avoid
-              </span>
-            </div>
-
-            {/* Right Header */}
-            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#0B3037] border border-[#134E5E] shadow-[4px_4px_12px_#030f12]">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-[#0D6F73]/20 text-[#0D6F73]">
-                  <CheckCircle2 className="size-4" />
-                </div>
-                <span className="font-extrabold text-sm sm:text-base text-[#84BABF] font-headline">
-                  The Smart Way (Ausaguide)
-                </span>
-              </div>
-              <span className="px-2.5 py-0.5 rounded-full bg-[#0D6F73]/20 border border-[#0D6F73]/40 text-[#84BABF] text-[10px] font-bold uppercase tracking-wider">
-                Verified Local
-              </span>
-            </div>
-          </div>
-
-          {/* Rails Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
-            {/* Left Rail — Scrolling Up (The Tourist Trap) */}
-            <div className="corridor-rail-left overflow-hidden">
-              <div className="corridor-scroll-up flex flex-col gap-6">
-                {displayScenarios.map((item, idx) => (
-                  <div
-                    key={`trap-${item.id}-${idx}`}
-                    onClick={() => setSelectedScenario(item)}
-                    className="neumorph-card-trap p-4 sm:p-5 cursor-pointer group"
-                  >
-                    <div className="space-y-3">
-                      {/* Scenario Top Info */}
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-red-400 flex items-center gap-1.5">
-                          <AlertTriangle className="size-3.5 text-red-400" />
-                          {item.trap.scenario}
-                        </span>
-                        <span className="px-2 py-0.5 rounded-full bg-red-950/80 border border-red-500/40 text-red-200 text-[10px] font-bold">
-                          {item.trap.badge}
-                        </span>
-                      </div>
-
-                      {/* Image Thumbnail */}
-                      <div className="relative aspect-video rounded-xl overflow-hidden border border-red-500/30 shadow-md">
-                        <img
-                          src={item.trap.image}
-                          alt={item.trap.title}
-                          loading="lazy"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#06363D]/90 via-transparent to-transparent" />
-                        <div className="absolute bottom-2 left-2 right-2">
-                          <p className="text-[11px] font-bold text-white truncate drop-shadow-md">
-                            {item.trap.title}
-                          </p>
-                          <p className="text-[10px] text-red-300/80 truncate">
-                            {item.trap.location}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Problem Description */}
-                      <p className="text-xs text-[#84BABF]/90 line-clamp-2 leading-relaxed">
-                        {item.trap.problem}
-                      </p>
-
-                      {/* Inspect Indicator */}
-                      <div className="flex items-center justify-between pt-1 border-t border-[#3a1a1a]/60 text-[10px] text-red-400/80">
-                        <span className="flex items-center gap-1">
-                          <XCircle className="size-3" /> Click to compare
-                        </span>
-                        <Maximize2 className="size-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Right Rail — Scrolling Down (The Smart Way) */}
-            <div className="corridor-rail-right overflow-hidden">
-              <div className="corridor-scroll-down flex flex-col gap-6">
-                {displayScenarios.map((item, idx) => (
-                  <div
-                    key={`smart-${item.id}-${idx}`}
-                    onClick={() => setSelectedScenario(item)}
-                    className="neumorph-card-green p-4 sm:p-5 cursor-pointer group"
-                  >
-                    <div className="space-y-3">
-                      {/* Scenario Top Info */}
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-[#84BABF] flex items-center gap-1.5">
-                          <CheckCircle2 className="size-3.5 text-[#0D6F73]" />
-                          {item.smart.scenario}
-                        </span>
-                        <span className="px-2 py-0.5 rounded-full bg-[#0B3037] border border-[#0D6F73]/40 text-[#84BABF] text-[10px] font-bold">
-                          {item.smart.badge}
-                        </span>
-                      </div>
-
-                      {/* Image Thumbnail */}
-                      <div className="relative aspect-video rounded-xl overflow-hidden border border-[#134E5E] shadow-md">
-                        <img
-                          src={item.smart.image}
-                          alt={item.smart.title}
-                          loading="lazy"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#06363D]/90 via-transparent to-transparent" />
-                        <div className="absolute bottom-2 left-2 right-2">
-                          <p className="text-[11px] font-bold text-white truncate drop-shadow-md">
-                            {item.smart.title}
-                          </p>
-                          <p className="text-[10px] text-[#84BABF] truncate">
-                            {item.smart.location}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Solution Description */}
-                      <p className="text-xs text-white/90 line-clamp-2 leading-relaxed">
-                        {item.smart.solution}
-                      </p>
-
-                      {/* Inspect Indicator */}
-                      <div className="flex items-center justify-between pt-1 border-t border-[#134E5E] text-[10px] text-[#0D6F73]">
-                        <span className="flex items-center gap-1">
-                          <Check className="size-3" /> Ausaguide Solution
-                        </span>
-                        <Maximize2 className="size-3 opacity-0 group-hover:opacity-100 transition-opacity text-[#84BABF]" />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Neumorphic Trust Badges Bar ── */}
-        <div className="p-4 sm:p-6 rounded-3xl bg-[#0B3037] border border-[#134E5E] shadow-[6px_6px_16px_#030f12,-4px_-4px_12px_#06363D] max-w-5xl mx-auto">
+        {/* ── Tactile Trust Badges Row ── */}
+        <div className="bento-card-main p-4 sm:p-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 text-center">
             {[
               { icon: ShieldCheck, label: "Vetted Local Guides", desc: "100% background checked" },
@@ -497,7 +601,7 @@ export function ImageStreamHero() {
               const Icon = badge.icon
               return (
                 <div key={idx} className="flex flex-col items-center justify-center gap-1.5 p-2">
-                  <div className="p-2.5 rounded-2xl bg-[#134E5E] border border-[#0D6F73]/40 text-[#0D6F73] shadow-[3px_3px_8px_#030f12,-2px_-2px_6px_#0B3037]">
+                  <div className="p-2.5 rounded-2xl bg-[#06363D] border border-[#134E5E] text-[#0D6F73] shadow-md">
                     <Icon className="size-5" />
                   </div>
                   <span className="text-xs sm:text-sm font-bold text-white mt-1">{badge.label}</span>
@@ -508,111 +612,6 @@ export function ImageStreamHero() {
           </div>
         </div>
       </div>
-
-      {/* ── Interactive Scenario Comparison Modal ── */}
-      {selectedScenario && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 animate-in fade-in duration-200">
-          <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#06363D] border border-[#134E5E] p-6 sm:p-8 shadow-[12px_12px_36px_#030f12] space-y-6">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-[#134E5E] pb-4">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#0D6F73]">
-                  Scenario Breakdown: {selectedScenario.categoryLabel}
-                </span>
-                <h3 className="text-xl sm:text-2xl font-extrabold text-white font-headline">
-                  Tourist Trap vs. Ausaguide Solution
-                </h3>
-              </div>
-              <button
-                onClick={() => setSelectedScenario(null)}
-                className="p-2 rounded-xl neumorph-pill-green text-[#84BABF] hover:text-white cursor-pointer"
-              >
-                <X className="size-5" />
-              </button>
-            </div>
-
-            {/* Modal Comparison Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Trap Side */}
-              <div className="neumorph-card-trap p-5 space-y-4">
-                <div className="flex items-center gap-2 text-red-400 font-bold text-base">
-                  <XCircle className="size-5" />
-                  <h4>{selectedScenario.trap.title}</h4>
-                </div>
-                <div className="aspect-video rounded-xl overflow-hidden border border-red-500/30">
-                  <img
-                    src={selectedScenario.trap.image}
-                    alt={selectedScenario.trap.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <p className="text-xs text-[#84BABF] leading-relaxed">
-                  {selectedScenario.trap.problem}
-                </p>
-                <ul className="space-y-2 pt-2 border-t border-[#3a1a1a]/60">
-                  {selectedScenario.trap.details.map((pt, i) => (
-                    <li key={i} className="flex items-start gap-2 text-xs text-red-200">
-                      <XCircle className="size-3.5 text-red-400 shrink-0 mt-0.5" />
-                      <span>{pt}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Smart Side */}
-              <div className="neumorph-card-green p-5 space-y-4">
-                <div className="flex items-center gap-2 text-[#84BABF] font-bold text-base">
-                  <CheckCircle2 className="size-5 text-[#0D6F73]" />
-                  <h4>{selectedScenario.smart.title}</h4>
-                </div>
-                <div className="aspect-video rounded-xl overflow-hidden border border-[#134E5E]">
-                  <img
-                    src={selectedScenario.smart.image}
-                    alt={selectedScenario.smart.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <p className="text-xs text-white leading-relaxed">
-                  {selectedScenario.smart.solution}
-                </p>
-                <ul className="space-y-2 pt-2 border-t border-[#134E5E]">
-                  {selectedScenario.smart.details.map((pt, i) => (
-                    <li key={i} className="flex items-start gap-2 text-xs text-[#84BABF]">
-                      <Check className="size-3.5 text-[#0D6F73] shrink-0 mt-0.5" />
-                      <span>{pt}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
-            {/* Modal Bottom Action */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-[#134E5E]">
-              <p className="text-xs text-[#84BABF]">
-                Ready to experience Kenya without tourist traps?
-              </p>
-              <div className="flex gap-3 w-full sm:w-auto">
-                <Link
-                  to="/waitlist"
-                  onClick={() => setSelectedScenario(null)}
-                  className="w-full sm:w-auto px-6 py-2.5 neumorph-btn-emerald text-xs font-bold rounded-xl flex items-center justify-center gap-1.5"
-                >
-                  <Sparkles className="size-3.5" />
-                  Join Early Waitlist
-                </Link>
-                <Link
-                  to="/tours"
-                  onClick={() => setSelectedScenario(null)}
-                  className="w-full sm:w-auto px-6 py-2.5 neumorph-btn-secondary text-xs font-bold rounded-xl flex items-center justify-center gap-1.5"
-                >
-                  <Compass className="size-3.5 text-[#0D6F73]" />
-                  Explore Tours
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </section>
   )
 }
