@@ -84,23 +84,23 @@
   --space-7: 48px;
   --space-8: 64px;
   
-  /* Mint Ice Canvas */
-  --background: #EBF5F4;
-  --foreground: #113B3A;
+  /* Deep Forest Teal Canvas */
+  --background: #113B3A;
+  --foreground: #B7E6E5;
   
-  /* Tactile Elevated Neo Cards (Crisp White over Mineral Canvas) */
-  --card: #FFFFFF;
-  --card-foreground: #113B3A;
-  --popover: #FFFFFF;
-  --popover-foreground: #113B3A;
+  /* Tactile Elevated Neo Cards */
+  --card: #184948;
+  --card-foreground: #B7E6E5;
+  --popover: #184948;
+  --popover-foreground: #B7E6E5;
   
   /* Deep Teal & Primary Actions */
   --primary: #317978;
   --primary-foreground: #FFFFFF;
-  --secondary: #D6ECEB;
-  --secondary-foreground: #113B3A;
-  --muted: #D6ECEB;
-  --muted-foreground: #235E5D;
+  --secondary: #235E5D;
+  --secondary-foreground: #B7E6E5;
+  --muted: #184948;
+  --muted-foreground: #599D9C;
   
   /* Accents */
   --accent: #317978;
@@ -108,25 +108,25 @@
   --destructive: #FF5252;
   --destructive-foreground: #FFFFFF;
   
-  --border: #B7E6E5;
-  --input: #B7E6E5;
+  --border: #235E5D;
+  --input: #235E5D;
   --ring: #317978;
   --teal: #317978;
   --teal-foreground: #FFFFFF;
   
   --chart-1: #317978;
   --chart-2: #599D9C;
-  --chart-3: #113B3A;
+  --chart-3: #B7E6E5;
   --chart-4: #F59E0B;
   --chart-5: #FF5252;
   
-  --sidebar: #EBF5F4;
-  --sidebar-foreground: #113B3A;
+  --sidebar: #113B3A;
+  --sidebar-foreground: #B7E6E5;
   --sidebar-primary: #317978;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #D6ECEB;
-  --sidebar-accent-foreground: #113B3A;
-  --sidebar-border: #B7E6E5;
+  --sidebar-accent: #184948;
+  --sidebar-accent-foreground: #B7E6E5;
+  --sidebar-border: #235E5D;
   --sidebar-ring: #317978;
 }
 
@@ -175,14 +175,40 @@
   --sidebar-ring: #317978;
 }
 
-
+/* ── Monochromatic Top-to-Bottom Fading Gradient Flow ── */
+.bg-page-fading-flow {
+  background: linear-gradient(
+    180deg,
+    #113B3A 0%,
+    #144342 12%,
+    #184948 26%,
+    #1c5352 42%,
+    #235E5D 58%,
+    #1f5756 74%,
+    #184948 88%,
+    #113B3A 100%
+  );
+  background-attachment: scroll;
+}
 
 @layer base {
   * {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    background: linear-gradient(
+      180deg,
+      #113B3A 0%,
+      #144342 12%,
+      #184948 26%,
+      #1c5352 42%,
+      #235E5D 58%,
+      #1f5756 74%,
+      #184948 88%,
+      #113B3A 100%
+    );
+    background-attachment: fixed;
+    color: var(--foreground);
     transition: background-color 0.2s ease, color 0.2s ease;
     /* Prevent horizontal scroll on all pages */
     overflow-x: hidden;

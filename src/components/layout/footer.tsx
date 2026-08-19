@@ -61,7 +61,7 @@ export function Footer() {
  })
 
   return (
-    <footer className="bg-[#06363D] text-[#E0EDE9] border-t border-white/10">
+    <footer className="bg-[#113B3A] text-[#B7E6E5] border-t border-[#235E5D]">
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-4">
@@ -74,29 +74,29 @@ export function Footer() {
                 className="h-10 w-auto block object-contain brightness-0 invert"
               />
               <div id="footer-brand-fallback" className="items-center gap-2" style={{ display: "none" }}>
-                <Globe className="size-5 text-[#84BABF]" />
+                <Globe className="size-5 text-[#317978]" />
                 <span className="text-lg font-bold text-white">Ausaguide</span>
               </div>
             </div>
-            <p className="text-sm text-[#84BABF] leading-relaxed">
+            <p className="text-sm text-[#599D9C] leading-relaxed">
               Be a Local. Share Your World. Discover authentic journeys across Kenya with verified guides.
             </p>
             <div className="flex flex-col gap-2 mt-4">
-              <p className="text-xs font-semibold text-[#84BABF]/80 uppercase tracking-wider">Follow Us</p>
+              <p className="text-xs font-semibold text-[#599D9C]/80 uppercase tracking-wider">Follow Us</p>
               <div className="flex flex-wrap gap-2">
-                <a href="https://instagram.com/ausaguide" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-full bg-white/5 border border-white/10 px-3 py-1.5 text-xs text-[#84BABF] hover:text-white hover:bg-white/10 transition-all">
+                <a href="https://instagram.com/ausaguide" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-full bg-[#184948] border border-[#235E5D] px-3 py-1.5 text-xs text-[#599D9C] hover:text-[#B7E6E5] hover:border-[#317978] transition-all">
                   <Camera className="size-3.5" />
                   <span>Instagram</span>
                 </a>
-                <a href="https://twitter.com/ausaguide" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-full bg-white/5 border border-white/10 px-3 py-1.5 text-xs text-[#84BABF] hover:text-white hover:bg-white/10 transition-all">
+                <a href="https://twitter.com/ausaguide" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-full bg-[#184948] border border-[#235E5D] px-3 py-1.5 text-xs text-[#599D9C] hover:text-[#B7E6E5] hover:border-[#317978] transition-all">
                   <svg className="size-3.5 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
                   <span>X (Twitter)</span>
                 </a>
-                <a href="https://youtube.com/@ausaguide" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-full bg-white/5 border border-white/10 px-3 py-1.5 text-xs text-[#84BABF] hover:text-white hover:bg-white/10 transition-all">
+                <a href="https://youtube.com/@ausaguide" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-full bg-[#184948] border border-[#235E5D] px-3 py-1.5 text-xs text-[#599D9C] hover:text-[#B7E6E5] hover:border-[#317978] transition-all">
                   <Play className="size-3.5" />
                   <span>YouTube</span>
                 </a>
-                <a href="https://tiktok.com/@ausaguide" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-full bg-white/5 border border-white/10 px-3 py-1.5 text-xs text-[#84BABF] hover:text-white hover:bg-white/10 transition-all">
+                <a href="https://tiktok.com/@ausaguide" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-full bg-[#184948] border border-[#235E5D] px-3 py-1.5 text-xs text-[#599D9C] hover:text-[#B7E6E5] hover:border-[#317978] transition-all">
                   <svg className="size-3.5 fill-current" viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.02 1.59 4.23.97 1.15 2.37 1.95 3.85 2.22l-.01 3.94c-1.39-.02-2.78-.37-3.99-1.07-.63-.36-1.19-.84-1.65-1.42l-.01 7.21c.05 1.58-.33 3.19-1.12 4.54-1.08 1.83-2.92 3.17-5.02 3.59-1.63.35-3.37.19-4.9-.45-1.89-.78-3.47-2.31-4.32-4.18-.89-1.92-1.07-4.18-.49-6.22C3.04 8.76 4.79 6.84 7.07 6c1.39-.53 2.92-.6 4.38-.2l-.01 4.09c-.93-.31-1.97-.24-2.85.22-.9.46-1.57 1.3-1.82 2.29-.32 1.14-.11 2.39.54 3.39.63.97 1.69 1.64 2.84 1.8 1.15.18 2.36-.14 3.25-.89.84-.71 1.29-1.78 1.25-2.88V.02h-.01z"/></svg>
                   <span>TikTok</span>
                 </a>
@@ -111,7 +111,7 @@ export function Footer() {
                 <li key={link.label}>
                   <Link
                     to={link.href}
-                    className="text-sm text-[#84BABF] transition-colors hover:text-white"
+                    className="text-sm text-[#599D9C] transition-colors hover:text-[#B7E6E5]"
                   >
                     {link.label}
                   </Link>
@@ -127,7 +127,7 @@ export function Footer() {
                 <li key={link.label}>
                   <Link
                     to={link.href}
-                    className="text-sm text-[#84BABF] transition-colors hover:text-white"
+                    className="text-sm text-[#599D9C] transition-colors hover:text-[#B7E6E5]"
                   >
                     {link.label}
                   </Link>
@@ -143,7 +143,7 @@ export function Footer() {
                 <li key={link.label}>
                   <Link
                     to={link.href}
-                    className="text-sm text-[#84BABF] transition-colors hover:text-white"
+                    className="text-sm text-[#599D9C] transition-colors hover:text-[#B7E6E5]"
                   >
                     {link.label}
                   </Link>
@@ -159,7 +159,7 @@ export function Footer() {
                 <li key={link.label}>
                   <Link
                     to={link.href}
-                    className="text-sm text-[#84BABF] transition-colors hover:text-white"
+                    className="text-sm text-[#599D9C] transition-colors hover:text-[#B7E6E5]"
                   >
                     {link.label}
                   </Link>
@@ -169,23 +169,23 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="my-10 h-px bg-white/10" />
+        <div className="my-10 h-px bg-[#235E5D]" />
 
         <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-          <p className="text-center text-xs text-[#84BABF]">
+          <p className="text-center text-xs text-[#599D9C]">
             &copy; {new Date().getFullYear()} Ausaguide. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             <Link
               to="/email-preferences"
-              className="text-xs text-[#84BABF] hover:text-white transition-colors"
+              className="text-xs text-[#599D9C] hover:text-[#B7E6E5] transition-colors"
             >
               Manage Email Preferences
             </Link>
             {import.meta.env.DEV && (
               <button
                 onClick={() => { throw new Error('Test error for Sentry'); }}
-                className="text-[10px] text-[#84BABF]/40 hover:text-[#84BABF] hover:underline transition-colors cursor-pointer"
+                className="text-[10px] text-[#599D9C]/40 hover:text-[#599D9C] hover:underline transition-colors cursor-pointer"
               >
                 Test Sentry
               </button>

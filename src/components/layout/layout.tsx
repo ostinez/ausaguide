@@ -345,7 +345,7 @@ export function Layout() {
  }
 
   return (
-    <div className="flex min-h-svh flex-col bg-background text-foreground">
+    <div className="flex min-h-svh flex-col bg-page-fading-flow text-foreground">
       {impersonatedName && (
         <div className="w-full bg-amber-500 text-black text-xs font-bold py-2.5 px-4 text-center z-50 relative flex items-center justify-center gap-2 shadow-md">
           <AlertTriangle className="size-4 shrink-0" />

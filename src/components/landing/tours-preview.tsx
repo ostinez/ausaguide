@@ -93,24 +93,24 @@ export function ToursPreview() {
  <section className="py-20">
  <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
  <div className="mb-10 flex items-end justify-between">
- <div>
- <h2 className="text-3xl font-bold tracking-tight text-foreground">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight text-white">
               <GradientText
-                colors={["#06363D", "#0D6F73", "#06363D"]}
+                colors={["#B7E6E5", "#317978", "#B7E6E5"]}
                 animationSpeed={4}
                 yoyo={true}
               >
                 Popular Tours
               </GradientText>
- </h2>
- <p className="mt-2 text-muted-foreground">Experiences handpicked by our community</p>
- </div>
- <Link to="/tours" className="hidden sm:block">
- <Button variant="ghost" className="text-primary">
- View All
- <ArrowRight className="size-4" />
- </Button>
- </Link>
+            </h2>
+            <p className="mt-2 text-[#599D9C]">Experiences handpicked by our community</p>
+          </div>
+          <Link to="/tours" className="hidden sm:block">
+            <Button variant="ghost" className="text-[#B7E6E5] hover:text-white hover:bg-[#184948]">
+              View All
+              <ArrowRight className="size-4" />
+            </Button>
+          </Link>
  </div>
 
  {loading ? (

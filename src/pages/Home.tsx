@@ -51,7 +51,7 @@ export default function Home() {
   })
 
   return (
-    <div className="relative overflow-hidden min-h-screen bg-background">
+    <div className="relative overflow-hidden min-h-screen">
       <JsonLd
         data={{
           "@context": "https://schema.org",
@@ -66,17 +66,17 @@ export default function Home() {
           }
         }}
       />
-      <div id="hero" className="w-full bg-[#113B3A]">
+      <div id="hero" className="w-full bg-transparent">
         <HeroSection />
       </div>
 
       {/* Action Selector Section */}
-      <section className="bg-background py-20 px-6 relative overflow-hidden flex flex-col items-center border-b border-border">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
+      <section className="bg-transparent py-20 px-6 relative overflow-hidden flex flex-col items-center border-b border-[#235E5D]/40">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-[#317978]/10 rounded-full blur-[120px] pointer-events-none" />
         <div className="relative z-10 w-full max-w-4xl mx-auto space-y-10">
           <div className="text-center space-y-3">
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight">What are you looking for?</h2>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">What are you looking for?</h2>
+            <p className="text-sm text-[#599D9C] max-w-md mx-auto leading-relaxed">
               Explore planned local journeys or match instantly with an active guide nearby.
             </p>
           </div>
@@ -85,15 +85,15 @@ export default function Home() {
             {/* Find a Tour Card */}
             <Link 
               to="/tours" 
-              className="group relative rounded-2xl border border-border p-8 bg-card shadow-modern hover:border-brand/40 transition-all duration-300 flex flex-col justify-between h-48 cursor-pointer"
+              className="group relative rounded-2xl border border-[#235E5D] p-8 bg-[#184948]/90 hover:bg-[#184948] shadow-modern hover:border-[#317978] transition-all duration-300 flex flex-col justify-between h-48 cursor-pointer"
             >
               <div className="space-y-2">
-                <h3 className="text-xl font-bold text-foreground group-hover:text-brand transition-colors">Find a Tour</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">
+                <h3 className="text-xl font-bold text-white group-hover:text-[#B7E6E5] transition-colors">Find a Tour</h3>
+                <p className="text-xs text-[#599D9C] leading-relaxed">
                   Browse immersive virtual and in-person experiences led by certified guides.
                 </p>
               </div>
-              <div className="flex items-center gap-1.5 text-xs font-bold text-brand group-hover:underline">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-[#B7E6E5] group-hover:underline">
                 <span>Browse Tours</span>
                 <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
               </div>
@@ -103,15 +103,15 @@ export default function Home() {
             <button 
               type="button"
               onClick={() => setUrgentMatchOpen(true)}
-              className="group relative rounded-2xl border border-border p-8 bg-card shadow-modern hover:border-brand/40 transition-all duration-300 flex flex-col justify-between h-48 cursor-pointer text-left w-full"
+              className="group relative rounded-2xl border border-[#235E5D] p-8 bg-[#184948]/90 hover:bg-[#184948] shadow-modern hover:border-[#317978] transition-all duration-300 flex flex-col justify-between h-48 cursor-pointer text-left w-full"
             >
               <div className="space-y-2">
-                <h3 className="text-xl font-bold text-foreground group-hover:text-brand transition-colors">Find a Host Now</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">
+                <h3 className="text-xl font-bold text-white group-hover:text-[#B7E6E5] transition-colors">Find a Host Now</h3>
+                <p className="text-xs text-[#599D9C] leading-relaxed">
                   Connect live and matching with nearby hosts for real-time guidance.
                 </p>
               </div>
-              <div className="flex items-center gap-1.5 text-xs font-bold text-brand group-hover:underline">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-[#B7E6E5] group-hover:underline">
                 <span>Match Instantly</span>
                 <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
               </div>
@@ -142,13 +142,13 @@ export default function Home() {
       </div>
 
       {/* Founder Section */}
-      <section className="bg-card py-20 px-6 border-t border-border relative overflow-hidden flex flex-col items-center">
+      <section className="bg-transparent py-20 px-6 border-t border-[#235E5D]/40 relative overflow-hidden flex flex-col items-center">
         {/* Subtle background effects */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#317978]/10 rounded-full blur-[120px] pointer-events-none" />
 
         <div className="text-center mb-8 relative z-10">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight">Meet the Founder</h2>
-          <p className="text-muted-foreground mt-2 text-sm sm:text-base font-semibold">Built for connection, powered by people</p>
+          <h2 className="text-3xl md:text-4xl font-bold text-white tracking-tight">Meet the Founder</h2>
+          <p className="text-[#599D9C] mt-2 text-sm sm:text-base font-semibold">Built for connection, powered by people</p>
         </div>
         
         <div className="flex justify-center w-full max-w-sm relative z-10">
@@ -162,8 +162,8 @@ export default function Home() {
             enableTilt={true}
             enableMobileTilt={true}
             behindGlowEnabled={true}
-            behindGlowColor="rgba(13, 111, 115, 0.4)"
-            innerGradient="linear-gradient(145deg, rgba(13, 111, 115, 0.2), rgba(13, 111, 115, 0.1))"
+            behindGlowColor="rgba(49, 121, 120, 0.4)"
+            innerGradient="linear-gradient(145deg, rgba(24, 73, 72, 0.8), rgba(17, 59, 58, 0.9))"
             onContactClick={() => window.open('https://www.linkedin.com/in/austin-murithi-5343aa402', '_blank')}
             onAvatarClick={() => window.location.href = '/about#founder-story'}
           />

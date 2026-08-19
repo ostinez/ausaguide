@@ -60,20 +60,20 @@ export function DiscoverToursStack() {
  }, [navigate])
 
   return (
-    <section className="py-24 bg-background relative overflow-hidden border-b border-border">
+    <section className="py-24 bg-transparent relative overflow-hidden border-b border-[#235E5D]/40">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           {/* Left Column: Heading & Copy */}
           <div className="lg:col-span-7 space-y-6 text-left">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-brand/20 bg-brand/10 text-xs font-bold uppercase tracking-wider text-brand">
-              <Sparkles className="size-3.5" />
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-[#235E5D] bg-[#184948] text-xs font-bold uppercase tracking-wider text-[#B7E6E5]">
+              <Sparkles className="size-3.5 text-[#317978]" />
               Quick Discovery
             </div>
             
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-foreground leading-tight">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
               Swipe Through <br />
               <GradientText
-                colors={["#06363D", "#0D6F73", "#06363D"]}
+                colors={["#B7E6E5", "#317978", "#B7E6E5"]}
                 animationSpeed={5}
                 yoyo={true}
               >
@@ -81,13 +81,13 @@ export function DiscoverToursStack() {
               </GradientText>
             </h2>
             
-            <p className="text-base sm:text-lg text-muted-foreground max-w-xl leading-relaxed font-medium">
+            <p className="text-base sm:text-lg text-[#599D9C] max-w-xl leading-relaxed font-medium">
               Don't know where to start? Tap or drag the cards in the stack to browse Nairobi street food tours, Maasai cultural homestays, and wild game safaris instantly. Swipe left or right to cycle cards, or click to inspect details!
             </p>
 
             <div className="flex flex-wrap items-center gap-4 pt-2">
               <Link to="/tours">
-                <Button className="h-11 px-6 rounded-full bg-gradient-to-r from-[#0B3037] to-[#0D6F73] hover:from-[#06363D] hover:to-[#0B3037] text-white font-bold shadow-neo-pill border border-white/15 flex items-center gap-2 text-sm transition cursor-pointer">
+                <Button className="h-11 px-6 rounded-full bg-[#317978] hover:bg-[#317978]/90 text-white font-bold shadow-neo-pill border border-[#B7E6E5]/20 flex items-center gap-2 text-sm transition cursor-pointer">
                   <Compass className="size-4" />
                   Explore Full Catalog
                   <ArrowRight className="size-4" />

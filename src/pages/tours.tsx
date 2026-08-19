@@ -224,34 +224,34 @@ export default function ToursPage() {
 
 
 
- return (
- <div className="relative overflow-hidden min-h-screen bg-background">
- <JsonLd
- data={{
- "@context": "https://schema.org",
- "@type": "ItemList",
- "itemListElement": filtered.map((tour, index) => ({
- "@type": "ListItem",
- "position": index + 1,
- "url": `https://ausaguide.com/tours/${tour.id}`,
- "name": tour.title
- }))
- }}
- />
- <div className="relative px-6 py-10">
- <div className="mx-auto max-w-7xl">
- <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight text-foreground">
+  return (
+    <div className="relative overflow-hidden min-h-screen bg-transparent">
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          "itemListElement": filtered.map((tour, index) => ({
+            "@type": "ListItem",
+            "position": index + 1,
+            "url": `https://ausaguide.com/tours/${tour.id}`,
+            "name": tour.title
+          }))
+        }}
+      />
+      <div className="relative px-6 py-10">
+        <div className="mx-auto max-w-7xl">
+          <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight text-white">
             <GradientText
-              colors={["#06363D", "#0D6F73", "#06363D"]}
+              colors={["#B7E6E5", "#317978", "#B7E6E5"]}
               animationSpeed={4}
               yoyo={true}
             >
               Explore Tours
             </GradientText>
- </h1>
- <p className="mt-2 text-base text-muted-foreground">
- Discover Kenya through the eyes of locals — virtual or in-person.
- </p>
+          </h1>
+          <p className="mt-2 text-base text-[#599D9C]">
+            Discover Kenya through the eyes of locals — virtual or in-person.
+          </p>
 
  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6">
  <div className="relative max-w-md w-full">

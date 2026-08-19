@@ -29,7 +29,7 @@ export default function AboutPage() {
  }, [])
 
  return (
- <div className="min-h-screen bg-background text-foreground relative overflow-hidden flex flex-col items-center">
+ <div className="min-h-screen bg-transparent text-foreground relative overflow-hidden flex flex-col items-center">
  <JsonLd
  data={{
  "@context": "https://schema.org",
@@ -41,8 +41,8 @@ export default function AboutPage() {
  />
  {/* Background gradients */}
  <div className="pointer-events-none absolute inset-0 overflow-hidden">
- <div className="absolute top-10 left-1/4 h-[400px] w-[500px] rounded-full bg-primary/10 blur-3xl animate-pulse duration-[8s]" />
- <div className="absolute bottom-20 right-1/4 h-[500px] w-[600px] rounded-full bg-teal/5 blur-3xl animate-pulse duration-[12s]" />
+ <div className="absolute top-10 left-1/4 h-[400px] w-[500px] rounded-full bg-[#317978]/15 blur-3xl animate-pulse duration-[8s]" />
+ <div className="absolute bottom-20 right-1/4 h-[500px] w-[600px] rounded-full bg-[#235E5D]/15 blur-3xl animate-pulse duration-[12s]" />
  </div>
 
  <div className="relative z-10 mx-auto max-w-4xl px-6 py-24 pt-32 flex flex-col space-y-16">
@@ -50,9 +50,9 @@ export default function AboutPage() {
  {/* Simple Heading */}
  <div className="text-center space-y-4 max-w-2xl mx-auto">
  <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight">
- About <span className="text-[#0D6F73]">Ausaguide</span>
+ About <span className="text-[#B7E6E5]">Ausaguide</span>
  </h1>
- <p className="text-sm sm:text-base text-white/70 leading-relaxed">
+ <p className="text-sm sm:text-base text-[#599D9C] leading-relaxed">
  Connecting curious global travelers with passionate local hosts in Kenya for authentic, off-the-beaten-path experiences.
  </p>
  </div>

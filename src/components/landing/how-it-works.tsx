@@ -22,22 +22,22 @@ const stepImages = [
 
 export function HowItWorks() {
   return (
-    <section className="py-24 bg-background relative overflow-hidden">
+    <section className="py-24 bg-transparent relative overflow-hidden">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="mb-16 text-center">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-brand/20 bg-brand/10 text-xs font-bold uppercase tracking-wider text-brand mb-3">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-[#235E5D] bg-[#184948] text-xs font-bold uppercase tracking-wider text-[#B7E6E5] mb-3">
             Process
           </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-foreground leading-tight">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
             <GradientText
-              colors={["#06363D", "#0D6F73", "#06363D"]}
+              colors={["#B7E6E5", "#317978", "#B7E6E5"]}
               animationSpeed={4}
               yoyo={true}
             >
               How It Works
             </GradientText>
           </h2>
-          <p className="mt-4 text-muted-foreground max-w-xl mx-auto text-sm sm:text-base leading-relaxed font-medium">
+          <p className="mt-4 text-[#599D9C] max-w-xl mx-auto text-sm sm:text-base leading-relaxed font-medium">
             Four simple steps to your next unforgettable live local experience in Kenya
           </p>
         </div>
@@ -47,7 +47,7 @@ export function HowItWorks() {
             return (
               <SpotlightCard
                 key={step.step}
-                className="relative text-left p-8 border border-border bg-card shadow-modern rounded-2xl flex flex-col justify-between min-h-[260px] hover:border-brand/40 transition-all duration-300 group"
+                className="relative text-left p-8 border border-[#235E5D] bg-[#184948]/90 shadow-modern rounded-2xl flex flex-col justify-between min-h-[260px] hover:border-[#317978] transition-all duration-300 group"
               >
                 <div className="space-y-6">
                   {/* GlassIcon wrapper */}
@@ -60,7 +60,7 @@ export function HowItWorks() {
                         active: true
                       }]}
                     />
-                    <span className="text-5xl font-black text-foreground/10 group-hover:text-brand/20 transition-colors select-none font-mono">
+                    <span className="text-5xl font-black text-[#599D9C]/20 group-hover:text-[#317978]/40 transition-colors select-none font-mono">
                       {`0${step.step}`}
                     </span>
                   </div>
@@ -69,12 +69,12 @@ export function HowItWorks() {
                     <img
                       src={stepImages[i]}
                       alt={`Traveler experience: ${step.title}`}
-                      className="w-full h-32 object-cover rounded-xl border border-border mb-3"
+                      className="w-full h-32 object-cover rounded-xl border border-[#235E5D] mb-3"
                     />
-                    <h3 className="text-lg font-bold text-foreground group-hover:text-brand transition-colors">
+                    <h3 className="text-lg font-bold text-white group-hover:text-[#B7E6E5] transition-colors">
                       {step.title}
                     </h3>
-                    <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                    <p className="text-xs sm:text-sm text-[#599D9C] leading-relaxed">
                       {step.description}
                     </p>
                   </div>
