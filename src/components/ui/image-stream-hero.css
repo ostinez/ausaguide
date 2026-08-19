@@ -36,6 +36,17 @@
   box-shadow: 6px 6px 18px #0a2423, -4px -4px 14px #1c5251;
 }
 
+/* BBC Earth 3D Depth Typography Layer */
+.depth-typography-text {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  pointer-events: none;
+  user-select: none;
+  line-height: 0.85;
+}
+
 /* Slider Drag Handle */
 .slider-handle-line {
   position: absolute;

@@ -2,7 +2,6 @@ import { useState, useRef, useCallback, useEffect } from "react"
 import { Link } from "react-router-dom"
 import {
   ArrowRight,
-  Radio,
   XCircle,
   CheckCircle2,
   ShieldCheck,
@@ -21,12 +20,13 @@ import {
   Droplets,
   Heart,
   CreditCard,
+  Mountain,
 } from "lucide-react"
 import "./image-stream-hero.css"
 
 export interface ScenarioPair {
   id: string
-  category: "beach" | "safari" | "waterfall" | "pets" | "pricing"
+  category: "mountain" | "beach" | "safari" | "waterfall" | "pets" | "pricing"
   categoryLabel: string
   icon: React.ComponentType<{ className?: string }>
   trap: {
@@ -50,6 +50,40 @@ export interface ScenarioPair {
 }
 
 export const SCENARIO_PAIRS: ScenarioPair[] = [
+  {
+    id: "mountain",
+    category: "mountain",
+    categoryLabel: "Mountain & Weather",
+    icon: Mountain,
+    trap: {
+      title: "Zero-Visibility Rain & Fog Trap",
+      scenario: "Unchecked Monsoon Weather",
+      image: "/images/corridor/trap_mount_kenya.jpg",
+      location: "Mount Kenya Slopes · Wrong Season",
+      problem: "Hiker booked without local weather verification. The entire peak was swallowed in freezing torrential rain, zero visibility, and impassable mud tracks.",
+      badge: "Fogged Out & Ruined",
+      details: [
+        "Unverified forecast missed high-altitude localized monsoon",
+        "Impassable knee-deep mud ruts trapped transport vehicles",
+        "0% visibility with freezing rain ruining the entire trek",
+        "No live local host to advise postponing to the clear window",
+      ],
+    },
+    smart: {
+      title: "Crystal-Clear Golden Hour Summit",
+      scenario: "Scouted Local Weather Window",
+      image: "/images/corridor/smart_mount_kenya.jpg",
+      location: "Mount Kenya Batian Ridge · Peak Clarity",
+      solution: "Local verified reconnaissance confirmed crystal-clear skies, dry alpine trails, and radiant golden hour illumination.",
+      badge: "Scouted Perfect Timing",
+      details: [
+        "Verified summit visibility & dry ridge conditions by resident alpine scout",
+        "Breathtaking 360° views of Batian & Nelion peaks in golden sunlight",
+        "Optimal morning departure scheduled according to micro-climate patterns",
+        "100% confidence before spending thousands on summit permits and gear",
+      ],
+    },
+  },
   {
     id: "beach",
     category: "beach",
@@ -297,8 +331,8 @@ export function ImageStreamHero() {
         <div className="bento-card-main p-6 sm:p-10 lg:p-12 text-center space-y-6">
           {/* Top Pill Tag */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bento-pill text-[#B7E6E5] text-xs sm:text-sm font-semibold">
-            <Radio className="size-3.5 text-[#317978] animate-pulse shrink-0" />
-            <span>Live Remote Reconnaissance · Kenya</span>
+            <Compass className="size-3.5 text-[#317978] shrink-0" />
+            <span>Remote Reconnaissance · Mount Kenya & Beyond</span>
           </div>
 
           {/* H1 Main Headline */}
@@ -412,9 +446,9 @@ export function ImageStreamHero() {
 
               {/* Right Side Overlay Tag */}
               <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 pointer-events-none">
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#184948]/95 border border-[#317978] shadow-md text-[#B7E6E5] text-xs font-bold">
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#184948]/95 border border-[#317978] shadow-md text-[#B7E6E5] text-xs font-bold backdrop-blur-sm">
                   <CheckCircle2 className="size-3.5 text-[#317978]" />
-                  <span>The Smart Way (Ausaguide)</span>
+                  <span>{currentScenario.id === "mountain" ? "Scouted Window (Ausaguide)" : "The Smart Way (Ausaguide)"}</span>
                 </div>
               </div>
 
@@ -438,9 +472,9 @@ export function ImageStreamHero() {
 
                 {/* Left Side Overlay Tag */}
                 <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-20">
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#184948]/95 border border-red-500/60 shadow-md text-red-300 text-xs font-bold">
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#184948]/95 border border-red-500/60 shadow-md text-red-300 text-xs font-bold backdrop-blur-sm">
                     <XCircle className="size-3.5 text-red-400" />
-                    <span>Tourist Trap (Unvetted)</span>
+                    <span>{currentScenario.id === "mountain" ? "Weather Trap (Unvetted)" : "Tourist Trap (Unvetted)"}</span>
                   </div>
                 </div>
               </div>
