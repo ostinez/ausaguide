@@ -2,8 +2,6 @@ import { useState, useRef, useCallback, useEffect } from "react"
 import { Link } from "react-router-dom"
 import {
   ArrowRight,
-  XCircle,
-  CheckCircle2,
   ShieldCheck,
   Video,
   DollarSign,
@@ -11,8 +9,6 @@ import {
   Compass,
   AlertTriangle,
   Check,
-  Columns,
-  SplitSquareHorizontal,
   ChevronLeft,
   ChevronRight,
   Info,
@@ -58,9 +54,9 @@ export const SCENARIO_PAIRS: ScenarioPair[] = [
     trap: {
       title: "Zero-Visibility Rain & Fog Trap",
       scenario: "Unchecked Monsoon Weather",
-      image: "/images/hero/suggestion2_trap.jpg",
-      location: "Mount Kenya Slopes · Rain & Fog Trap",
-      problem: "Hiker booked without local weather verification. The entire peak was swallowed in freezing torrential rain, zero visibility, and impassable mud tracks.",
+      image: "/images/hero/option_c_foggy.jpg",
+      location: "Mount Kenya Alpine Tarn · Freezing Monsoon Fog Trap",
+      problem: "Hiker booked without local weather verification. The entire peak was swallowed in freezing torrential rain, zero visibility, and impenetrable fog.",
       badge: "Fogged Out & Ruined",
       details: [
         "Unverified forecast missed high-altitude localized monsoon",
@@ -70,12 +66,12 @@ export const SCENARIO_PAIRS: ScenarioPair[] = [
       ],
     },
     smart: {
-      title: "Crystal-Clear Golden Hour Summit",
+      title: "Crystal-Clear Golden Sunrise Summit",
       scenario: "Scouted Local Weather Window",
-      image: "/images/hero/suggestion2_smart.jpg",
-      location: "Mount Kenya Batian Ridge · Peak Clarity",
-      solution: "Local verified reconnaissance confirmed crystal-clear skies, dry alpine trails, and radiant golden hour illumination.",
-      badge: "Scouted Perfect Timing",
+      image: "/images/hero/option_c_sunrise.jpg",
+      location: "Mount Kenya Alpine Tarn · Crystal Sunrise Clarity",
+      solution: "Local verified reconnaissance confirmed crystal-clear skies, dry alpine trails, and radiant golden sunrise illumination.",
+      badge: "Scouted Sunrise Clarity",
       details: [
         "Verified summit visibility & dry ridge conditions by resident alpine scout",
         "Breathtaking 360° views of Batian & Nelion peaks in golden sunlight",
@@ -260,7 +256,6 @@ export function ImageStreamHero() {
   const [activeScenarioIndex, setActiveScenarioIndex] = useState<number>(0)
   const [sliderPosition, setSliderPosition] = useState<number>(50)
   const [isDragging, setIsDragging] = useState<boolean>(false)
-  const [viewMode, setViewMode] = useState<"slider" | "split">("slider")
   const [showDetails, setShowDetails] = useState<boolean>(false)
 
   const sliderRef = useRef<HTMLDivElement>(null)
@@ -319,297 +314,228 @@ export function ImageStreamHero() {
   }
 
   return (
-    <section className="relative overflow-hidden w-full bg-[#113B3A] text-white py-8 sm:py-12 lg:py-16 px-4 sm:px-6 lg:px-8 border-b border-[#235E5D]">
+    <section className="relative overflow-hidden w-full bg-[#113B3A] text-white border-b border-[#235E5D]">
       {/* Ambient Deep Teal Lighting */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[500px] w-[750px] rounded-full bg-[#184948]/80 blur-[140px]" />
-        <div className="absolute bottom-0 right-1/4 h-[350px] w-[350px] rounded-full bg-[#235E5D]/40 blur-[100px]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[600px] w-[900px] rounded-full bg-[#184948]/70 blur-[160px]" />
+        <div className="absolute bottom-0 right-1/4 h-[400px] w-[500px] rounded-full bg-[#235E5D]/30 blur-[130px]" />
       </div>
 
-      <div className="relative z-10 max-w-6xl mx-auto space-y-6 sm:space-y-8">
-        {/* ── Main Suggestion 2 Hero Card: Interactive Depth Slider ── */}
-        <div className="bento-card-main p-3 sm:p-5 lg:p-6 space-y-4">
-          {/* Header Bar with Category & Controls */}
-          <div className="flex flex-wrap items-center justify-between gap-3 px-2 py-1">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-[#113B3A] border border-[#235E5D] text-[#317978] shadow-sm">
-                <currentScenario.icon className="size-4 sm:size-5" />
-              </div>
-              <div>
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#113B3A] border border-[#235E5D] text-[#B7E6E5] text-[11px] font-semibold mb-0.5">
-                  <Compass className="size-3 text-[#317978] shrink-0" />
-                  <span>Interactive Live Comparison</span>
-                </div>
-                <h2 className="text-sm sm:text-base font-bold text-white font-headline">
-                  {currentScenario.categoryLabel}
-                </h2>
-              </div>
+      {/* ── 1. Full-Screen Editorial Hero Canvas (Option C) ── */}
+      <div className="relative w-full">
+        <div
+          ref={sliderRef}
+          className="hero-fullscreen-container relative w-full h-[84vh] sm:h-[90vh] lg:h-[92vh] cursor-ew-resize select-none overflow-hidden border-b border-[#235E5D]/60 shadow-2xl"
+          onMouseDown={(e) => {
+            setIsDragging(true)
+            handleMove(e.clientX)
+          }}
+          onTouchStart={(e) => {
+            setIsDragging(true)
+            handleMove(e.touches[0].clientX)
+          }}
+        >
+          {/* ── Right Layer: Scouted Reality (Golden Sunrise & Mountain) ── */}
+          <img
+            src={currentScenario.smart.image}
+            alt={currentScenario.smart.title}
+            className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
+          />
+
+          {/* Giant Typography Layer Behind Mountain (Smart Side) */}
+          <div className="absolute inset-x-0 top-[22%] sm:top-[25%] -translate-y-1/2 flex items-center justify-center pointer-events-none select-none z-10 opacity-45 sm:opacity-55">
+            <span className="hero-giant-condensed">
+              AUSAGUIDE
+            </span>
+          </div>
+
+          {/* Top Right Label */}
+          <div className="absolute top-4 right-4 sm:top-8 sm:right-10 z-25 pointer-events-none">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white text-xs sm:text-sm font-black tracking-wider uppercase drop-shadow-lg">
+              <Check className="size-3.5 text-[#B7E6E5]" />
+              <span>SCOUTED SUNRISE · 100% CLARITY</span>
+            </span>
+          </div>
+
+          {/* ── Left Layer: Unchecked Monsoon/Fog Trap (Clipped by Slider) ── */}
+          <div
+            className="absolute inset-0 overflow-hidden pointer-events-none z-15"
+            style={{ width: `${sliderPosition}%` }}
+          >
+            <img
+              src={currentScenario.trap.image}
+              alt={currentScenario.trap.title}
+              className="absolute inset-0 h-full object-cover select-none pointer-events-none"
+              style={{
+                width: sliderRef.current ? `${sliderRef.current.clientWidth}px` : "100vw",
+                maxWidth: "none",
+              }}
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+            />
+
+            {/* Giant Typography Layer Behind Mountain (Trap Side) */}
+            <div className="absolute inset-x-0 top-[22%] sm:top-[25%] -translate-y-1/2 flex items-center justify-center pointer-events-none select-none opacity-30">
+              <span className="hero-giant-condensed text-slate-300">
+                AUSAGUIDE
+              </span>
             </div>
 
-            {/* View Mode & Details Toggles */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setViewMode(viewMode === "slider" ? "split" : "slider")}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bento-pill text-xs font-semibold text-[#B7E6E5] hover:text-white cursor-pointer"
-                title="Toggle between Interactive Slider and Side-by-Side View"
-              >
-                {viewMode === "slider" ? (
-                  <>
-                    <Columns className="size-3.5 text-[#317978]" />
-                    <span className="hidden sm:inline">Dual View</span>
-                  </>
-                ) : (
-                  <>
-                    <SplitSquareHorizontal className="size-3.5 text-[#317978]" />
-                    <span className="hidden sm:inline">Slider View</span>
-                  </>
-                )}
-              </button>
-
-              <button
-                onClick={() => setShowDetails(!showDetails)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer ${
-                  showDetails ? "bento-tab-active" : "bento-pill text-[#B7E6E5] hover:text-white"
-                }`}
-                title="Toggle detailed point-by-point breakdown"
-              >
-                <Info className="size-3.5" />
-                <span className="hidden sm:inline">Details</span>
-              </button>
+            {/* Top Left Label */}
+            <div className="absolute top-4 left-4 sm:top-8 sm:left-10 z-25">
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-black/50 backdrop-blur-md border border-red-500/40 text-red-200 text-xs sm:text-sm font-black tracking-wider uppercase drop-shadow-lg">
+                <AlertTriangle className="size-3.5 text-red-400" />
+                <span>UNCHECKED · FOG & RAIN TRAP</span>
+              </span>
             </div>
           </div>
 
-          {/* ── Centerpiece: Suggestion 2 Interactive Depth Slider Canvas ── */}
-          {viewMode === "slider" ? (
-            <div
-              ref={sliderRef}
-              className="slider-compare-container relative aspect-[16/11] sm:aspect-[16/9] md:aspect-[21/10] w-full cursor-ew-resize select-none overflow-hidden rounded-2xl border border-[#235E5D] shadow-2xl"
-              onMouseDown={(e) => {
-                setIsDragging(true)
-                handleMove(e.clientX)
-              }}
-              onTouchStart={(e) => {
-                setIsDragging(true)
-                handleMove(e.touches[0].clientX)
-              }}
-            >
-              {/* 1. Right Layer: Scouted Reality (Full Width Background) */}
-              <img
-                src={currentScenario.smart.image}
-                alt={currentScenario.smart.title}
-                className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
-                loading="eager"
-                fetchPriority="high"
-                decoding="async"
-              />
-
-              {/* 2. Giant Depth Typography Layer (Smart / Right side) */}
-              <div className="absolute inset-x-0 top-1/4 -translate-y-1/2 flex items-center justify-center pointer-events-none select-none z-10 opacity-30 sm:opacity-40">
-                <span className="hero-giant-typography text-white drop-shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
-                  AUSAGUIDE
-                </span>
-              </div>
-
-              {/* 3. Right Overlay Tag (Suggestion 2 styling) */}
-              <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20 pointer-events-none">
-                <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#113B3A]/90 border border-[#317978] shadow-lg text-[#B7E6E5] text-xs sm:text-sm font-extrabold tracking-wide uppercase backdrop-blur-md">
-                  <CheckCircle2 className="size-4 text-[#317978]" />
-                  <span>LOCAL SCOUTED · PERFECT CONDITIONS</span>
-                </div>
-              </div>
-
-              {/* 4. Left Layer: Unchecked Bad Weather / Trap (Clipped by Slider) */}
-              <div
-                className="absolute inset-0 overflow-hidden pointer-events-none z-15"
-                style={{ width: `${sliderPosition}%` }}
-              >
-                <img
-                  src={currentScenario.trap.image}
-                  alt={currentScenario.trap.title}
-                  className="absolute inset-0 h-full object-cover select-none pointer-events-none"
-                  style={{
-                    width: sliderRef.current ? `${sliderRef.current.clientWidth}px` : "100%",
-                    maxWidth: "none",
-                  }}
-                  loading="eager"
-                  fetchPriority="high"
-                  decoding="async"
-                />
-
-                {/* Giant Depth Typography Layer (Trap / Left side) */}
-                <div className="absolute inset-x-0 top-1/4 -translate-y-1/2 flex items-center justify-center pointer-events-none select-none opacity-25">
-                  <span className="hero-giant-typography text-slate-300 drop-shadow-[0_10px_30px_rgba(0,0,0,0.9)]">
-                    AUSAGUIDE
-                  </span>
-                </div>
-
-                {/* Left Overlay Tag (Suggestion 2 styling) */}
-                <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20">
-                  <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#1a0808]/90 border border-red-500/80 shadow-lg text-red-300 text-xs sm:text-sm font-extrabold tracking-wide uppercase backdrop-blur-md">
-                    <XCircle className="size-4 text-red-400" />
-                    <span>UNCHECKED BOOKING · RAIN & FOG TRAP</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* 5. Center Metallic Slider Knob (Suggestion 2 exact metallic dial) */}
-              <div className="slider-handle-line" style={{ left: `${sliderPosition}%` }}>
-                <div className="slider-handle-button" aria-label="Drag to compare before and after">
-                  <div className="flex items-center gap-0.5">
-                    <ChevronLeft className="size-3.5 text-slate-800 stroke-[3]" />
-                    <ChevronRight className="size-3.5 text-slate-800 stroke-[3]" />
-                  </div>
-                </div>
-              </div>
-
-              {/* 6. Bottom Center Instruction Pill */}
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-                <span className="px-4 py-1.5 rounded-full bg-[#113B3A]/95 border border-[#235E5D] text-xs font-bold text-[#B7E6E5] shadow-2xl backdrop-blur-md">
-                  Drag slider to compare weather & reality
-                </span>
+          {/* ── Center Metallic Slider Handle ── */}
+          <div className="slider-handle-line" style={{ left: `${sliderPosition}%` }}>
+            <div className="slider-handle-button" aria-label="Drag to compare before and after">
+              <div className="flex items-center gap-0.5">
+                <ChevronLeft className="size-4 text-slate-800 stroke-[3]" />
+                <ChevronRight className="size-4 text-slate-800 stroke-[3]" />
               </div>
             </div>
-          ) : (
-            /* Mode 2: Side-by-Side Dual View */
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-              {/* Left Card: Tourist Trap */}
-              <div className="bento-card-inset p-4 sm:p-5 border border-red-500/30 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-red-400 flex items-center gap-1.5">
-                    <XCircle className="size-3.5 text-red-400" />
-                    {currentScenario.trap.scenario}
-                  </span>
-                  <span className="px-2 py-0.5 rounded-full bg-red-950/80 border border-red-500/40 text-red-200 text-[10px] font-bold">
-                    {currentScenario.trap.badge}
-                  </span>
-                </div>
-                <div className="relative aspect-video rounded-xl overflow-hidden border border-red-500/20 shadow-md">
-                  <img
-                    src={currentScenario.trap.image}
-                    alt={currentScenario.trap.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute bottom-2 left-2 right-2 bg-[#113B3A]/95 p-1.5 rounded-lg border border-red-500/30">
-                    <p className="text-[11px] font-bold text-white truncate">{currentScenario.trap.title}</p>
-                    <p className="text-[10px] text-red-300/80 truncate">{currentScenario.trap.location}</p>
-                  </div>
-                </div>
-                <p className="text-xs text-[#599D9C] leading-relaxed">{currentScenario.trap.problem}</p>
-              </div>
+          </div>
 
-              {/* Right Card: The Smart Way */}
-              <div className="bento-card-inset p-4 sm:p-5 border border-[#235E5D] space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#B7E6E5] flex items-center gap-1.5">
-                    <CheckCircle2 className="size-3.5 text-[#317978]" />
-                    {currentScenario.smart.scenario}
-                  </span>
-                  <span className="px-2 py-0.5 rounded-full bg-[#184948] border border-[#317978]/40 text-[#B7E6E5] text-[10px] font-bold">
-                    {currentScenario.smart.badge}
-                  </span>
-                </div>
-                <div className="relative aspect-video rounded-xl overflow-hidden border border-[#235E5D] shadow-md">
-                  <img
-                    src={currentScenario.smart.image}
-                    alt={currentScenario.smart.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute bottom-2 left-2 right-2 bg-[#113B3A]/95 p-1.5 rounded-lg border border-[#235E5D]">
-                    <p className="text-[11px] font-bold text-white truncate">{currentScenario.smart.title}</p>
-                    <p className="text-[10px] text-[#B7E6E5] truncate">{currentScenario.smart.location}</p>
-                  </div>
-                </div>
-                <p className="text-xs text-white leading-relaxed">{currentScenario.smart.solution}</p>
-              </div>
-            </div>
-          )}
+          {/* ── Center Floating Action Overlay (Matching Japan Reference Style) ── */}
+          <div className="absolute inset-x-0 bottom-14 sm:bottom-16 z-25 flex flex-col items-center justify-center text-center pointer-events-none px-4 space-y-3">
+            <h2 className="text-sm sm:text-base md:text-lg font-bold text-white tracking-widest uppercase drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">
+              PREMIUM KENYAN ADVENTURES
+            </h2>
 
-          {/* ── Optional Point-by-Point Details Drawer ── */}
-          {showDetails && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-[#235E5D] animate-in fade-in duration-200">
-              <div className="p-4 rounded-xl bg-[#113B3A] border border-red-500/20 space-y-2">
-                <p className="text-xs font-bold text-red-400">Why travelers get trapped:</p>
-                <ul className="space-y-1.5">
-                  {currentScenario.trap.details.map((pt, i) => (
-                    <li key={i} className="flex items-start gap-2 text-xs text-red-200">
-                      <AlertTriangle className="size-3 text-red-400 shrink-0 mt-0.5" />
-                      <span>{pt}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="p-4 rounded-xl bg-[#113B3A] border border-[#235E5D] space-y-2">
-                <p className="text-xs font-bold text-[#B7E6E5]">How Ausaguide protects you:</p>
-                <ul className="space-y-1.5">
-                  {currentScenario.smart.details.map((pt, i) => (
-                    <li key={i} className="flex items-start gap-2 text-xs text-white">
-                      <Check className="size-3 text-[#317978] shrink-0 mt-0.5" />
-                      <span>{pt}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
-
-          {/* ── Scenario Switcher Carousel Pills ── */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-            <div className="flex flex-wrap items-center gap-2">
-              {SCENARIO_PAIRS.map((item, idx) => {
-                const active = activeScenarioIndex === idx
-                const TabIcon = item.icon
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => setActiveScenarioIndex(idx)}
-                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                      active ? "bento-tab-active" : "bento-tab-inactive"
-                    }`}
-                  >
-                    <TabIcon className="size-3.5" />
-                    <span>{item.categoryLabel}</span>
-                  </button>
-                )
-              })}
+            <div className="pointer-events-auto">
+              <Link to="/tours" className="hero-pill-cta">
+                <span>EXPLORE LIVE TOURS</span>
+                <ArrowRight className="size-4" />
+              </Link>
             </div>
 
-            <div className="flex items-center gap-2 ml-auto">
+            <p className="text-[11px] sm:text-xs text-[#B7E6E5]/90 font-medium tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+              ↔ Drag dial to compare real-time weather & conditions
+            </p>
+          </div>
+
+          {/* ── Bottom Integrated Nav Bar ── */}
+          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-[#0d2a29]/95 via-[#113B3A]/80 to-transparent pt-6 pb-3 px-4 sm:px-8 z-25 flex flex-wrap items-center justify-between gap-3 border-t border-[#235E5D]/30 backdrop-blur-xs">
+            <div className="flex items-center gap-4 sm:gap-8 text-[11px] sm:text-xs font-bold tracking-wider uppercase text-[#B7E6E5]">
+              <Link to="/" className="hover:text-white transition-colors">HOME</Link>
+              <Link to="/tours" className="hover:text-white transition-colors">TOURS</Link>
+              <Link to="/hosts" className="hover:text-white transition-colors">LOCAL HOSTS</Link>
+              <Link to="/journal" className="hover:text-white transition-colors">JOURNAL</Link>
+            </div>
+
+            <div className="flex items-center gap-2">
               <button
-                onClick={prevScenario}
-                className="p-2 rounded-xl bento-pill text-[#B7E6E5] hover:text-white cursor-pointer"
-                title="Previous Scenario"
+                onClick={() => setShowDetails(!showDetails)}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#184948]/80 border border-[#235E5D] text-[11px] font-bold text-[#B7E6E5] hover:text-white transition-colors cursor-pointer"
               >
-                <ChevronLeft className="size-4" />
-              </button>
-              <button
-                onClick={nextScenario}
-                className="p-2 rounded-xl bento-pill text-[#B7E6E5] hover:text-white cursor-pointer"
-                title="Next Scenario"
-              >
-                <ChevronRight className="size-4" />
+                <Info className="size-3 text-[#317978]" />
+                <span>{showDetails ? "Hide Intel" : "View Intel"}</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* ── Hero Headline & Action Callout Bar ── */}
-        <div className="bento-card-main p-6 sm:p-8 text-center space-y-5">
-          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight font-headline max-w-3xl mx-auto">
+        {/* ── Optional Weather & Recon Intel Drawer ── */}
+        {showDetails && (
+          <div className="max-w-6xl mx-auto p-4 sm:p-6 my-4 bg-[#184948] rounded-2xl border border-[#235E5D] grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in duration-200 shadow-2xl">
+            <div className="p-4 rounded-xl bg-[#113B3A]/70 border border-red-500/30 space-y-2">
+              <p className="text-xs font-bold text-red-400 uppercase tracking-wider">The Weather Disappointment:</p>
+              <p className="text-xs text-red-200 leading-relaxed">{currentScenario.trap.problem}</p>
+              <ul className="space-y-1 pt-1">
+                {currentScenario.trap.details.map((pt, i) => (
+                  <li key={i} className="flex items-start gap-2 text-xs text-red-300/80">
+                    <AlertTriangle className="size-3 text-red-400 shrink-0 mt-0.5" />
+                    <span>{pt}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="p-4 rounded-xl bg-[#113B3A]/70 border border-[#317978]/50 space-y-2">
+              <p className="text-xs font-bold text-[#B7E6E5] uppercase tracking-wider">The Scouted Local Reality:</p>
+              <p className="text-xs text-white leading-relaxed">{currentScenario.smart.solution}</p>
+              <ul className="space-y-1 pt-1">
+                {currentScenario.smart.details.map((pt, i) => (
+                  <li key={i} className="flex items-start gap-2 text-xs text-[#B7E6E5]">
+                    <Check className="size-3 text-[#317978] shrink-0 mt-0.5" />
+                    <span>{pt}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── 2. Scenario Switcher & Value Section ── */}
+      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8">
+        {/* Scenario Carousel Switcher */}
+        <div className="bento-card-main p-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold text-[#B7E6E5] uppercase tracking-wider mr-2 hidden sm:inline">
+              Compare Scenarios:
+            </span>
+            {SCENARIO_PAIRS.map((item, idx) => {
+              const active = activeScenarioIndex === idx
+              const TabIcon = item.icon
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveScenarioIndex(idx)}
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                    active ? "bento-tab-active" : "bento-tab-inactive"
+                  }`}
+                >
+                  <TabIcon className="size-3.5" />
+                  <span>{item.categoryLabel}</span>
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="flex items-center gap-2 ml-auto">
+            <button
+              onClick={prevScenario}
+              className="p-1.5 rounded-xl bento-pill text-[#B7E6E5] hover:text-white cursor-pointer"
+              title="Previous Scenario"
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+            <button
+              onClick={nextScenario}
+              className="p-1.5 rounded-xl bento-pill text-[#B7E6E5] hover:text-white cursor-pointer"
+              title="Next Scenario"
+            >
+              <ChevronRight className="size-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* ── Primary Call to Action Bar ── */}
+        <div className="bento-card-main p-6 sm:p-8 text-center space-y-4">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight font-headline max-w-2xl mx-auto">
             Stop Wasting Money on Tourist Traps.{" "}
             <span className="block mt-1 text-transparent bg-clip-text bg-gradient-to-r from-[#B7E6E5] via-[#88C2C1] to-[#317978]">
               Preview Kenya Live With Real Locals.
             </span>
           </h1>
 
-          <p className="text-[#599D9C] text-sm sm:text-base md:text-lg leading-relaxed max-w-2xl mx-auto">
-            Connect directly with verified local Kenyan hosts who inspect the weather, check the summit trails, scout secluded beaches, and verify uncrowded spots in real-time. Zero surprises.
+          <p className="text-[#599D9C] text-sm sm:text-base leading-relaxed max-w-xl mx-auto">
+            Connect live with vetted Kenyan hosts who verify the weather, inspect summits, scout private beaches, and secure authentic journeys.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 max-w-md mx-auto">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1 max-w-md mx-auto">
             <Link
               to="/waitlist"
-              className="w-full sm:w-auto px-7 py-3.5 bento-btn-primary font-bold rounded-2xl text-sm flex items-center justify-center gap-2 cursor-pointer min-h-[46px]"
+              className="w-full sm:w-auto px-7 py-3 bento-btn-primary font-bold rounded-2xl text-sm flex items-center justify-center gap-2 cursor-pointer min-h-[44px]"
             >
               <ShieldCheck className="size-4 text-[#B7E6E5]" />
               <span>Get Early Access</span>
@@ -617,7 +543,7 @@ export function ImageStreamHero() {
             </Link>
             <Link
               to="/tours"
-              className="w-full sm:w-auto px-7 py-3.5 bento-btn-secondary font-bold rounded-2xl text-sm flex items-center justify-center gap-2 cursor-pointer min-h-[46px]"
+              className="w-full sm:w-auto px-7 py-3 bento-btn-secondary font-bold rounded-2xl text-sm flex items-center justify-center gap-2 cursor-pointer min-h-[44px]"
             >
               <Compass className="size-4 text-[#317978]" />
               <span>Explore Live Tours</span>
@@ -625,9 +551,9 @@ export function ImageStreamHero() {
           </div>
         </div>
 
-        {/* ── Tactile Trust Badges Row ── */}
-        <div className="bento-card-main p-4 sm:p-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 text-center">
+        {/* ── Trust Badges Row ── */}
+        <div className="bento-card-main p-4 sm:p-5">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-center">
             {[
               { icon: ShieldCheck, label: "Vetted Local Guides", desc: "100% background checked" },
               { icon: Video, label: "Live Video Recon", desc: "See it real-time before paying" },
@@ -636,11 +562,11 @@ export function ImageStreamHero() {
             ].map((badge, idx) => {
               const Icon = badge.icon
               return (
-                <div key={idx} className="flex flex-col items-center justify-center gap-1.5 p-2">
-                  <div className="p-2.5 rounded-2xl bg-[#113B3A] border border-[#235E5D] text-[#317978] shadow-md">
-                    <Icon className="size-5" />
+                <div key={idx} className="flex flex-col items-center justify-center gap-1 p-2">
+                  <div className="p-2 rounded-2xl bg-[#113B3A] border border-[#235E5D] text-[#317978] shadow-md">
+                    <Icon className="size-4 sm:size-5" />
                   </div>
-                  <span className="text-xs sm:text-sm font-bold text-white mt-1">{badge.label}</span>
+                  <span className="text-xs font-bold text-white mt-0.5">{badge.label}</span>
                   <span className="text-[11px] text-[#599D9C]">{badge.desc}</span>
                 </div>
               )
@@ -653,3 +579,4 @@ export function ImageStreamHero() {
 }
 
 export default ImageStreamHero
+
