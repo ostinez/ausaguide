@@ -175,20 +175,50 @@
   --sidebar-ring: #317978;
 }
 
-/* ── Monochromatic Top-to-Bottom Fading Gradient Flow ── */
-.bg-page-fading-flow {
+/* ── Option A: Home Page Dark-to-Light Monochromatic Flow ── */
+.bg-home-flow-a {
   background: linear-gradient(
     180deg,
     #113B3A 0%,
-    #144342 12%,
-    #184948 26%,
-    #1c5352 42%,
-    #235E5D 58%,
-    #1f5756 74%,
-    #184948 88%,
-    #113B3A 100%
+    #113B3A 10%,
+    #184948 22%,
+    #1e5251 35%,
+    #235E5D 48%,
+    #317978 62%,
+    #599D9C 75%,
+    #8ec4c3 88%,
+    #B7E6E5 100%
   );
   background-attachment: scroll;
+}
+
+/* ── Option D: Ambient Silk Glow Flow for Sub-Pages ── */
+.bg-ambient-flow-d {
+  background: linear-gradient(
+    180deg,
+    #113B3A 0%,
+    #144342 14%,
+    #184948 30%,
+    #1c5352 48%,
+    #235E5D 66%,
+    #1a4e4d 84%,
+    #113B3A 100%
+  );
+  background-attachment: fixed;
+}
+
+/* ── Tactile Glow Card (Apple-Neumorphism + Ambient Glow) ── */
+.tactile-glow-card {
+  background-color: rgba(24, 73, 72, 0.85);
+  border: 1px solid rgba(49, 121, 120, 0.5);
+  box-shadow: 0 0 20px rgba(49, 121, 120, 0.2), 0 8px 32px rgba(17, 59, 58, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tactile-glow-card:hover {
+  border-color: rgba(183, 230, 229, 0.6);
+  box-shadow: 0 0 28px rgba(49, 121, 120, 0.35), 0 12px 40px rgba(17, 59, 58, 0.5);
+  transform: translateY(-2px);
 }
 
 @layer base {
@@ -199,12 +229,11 @@
     background: linear-gradient(
       180deg,
       #113B3A 0%,
-      #144342 12%,
-      #184948 26%,
-      #1c5352 42%,
-      #235E5D 58%,
-      #1f5756 74%,
-      #184948 88%,
+      #144342 14%,
+      #184948 30%,
+      #1c5352 48%,
+      #235E5D 66%,
+      #1a4e4d 84%,
       #113B3A 100%
     );
     background-attachment: fixed;
