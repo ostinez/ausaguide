@@ -85,7 +85,7 @@ export default function Home() {
             {/* Find a Tour Card */}
             <Link 
               to="/tours" 
-              className="group relative rounded-2xl border border-[#235E5D] p-8 bg-[#184948]/90 hover:bg-[#184948] shadow-modern hover:border-[#317978] transition-all duration-300 flex flex-col justify-between h-48 cursor-pointer"
+              className="group relative rounded-2xl p-8 tactile-glow-card flex flex-col justify-between h-48 cursor-pointer"
             >
               <div className="space-y-2">
                 <h3 className="text-xl font-bold text-white group-hover:text-[#B7E6E5] transition-colors">Find a Tour</h3>
@@ -103,7 +103,7 @@ export default function Home() {
             <button 
               type="button"
               onClick={() => setUrgentMatchOpen(true)}
-              className="group relative rounded-2xl border border-[#235E5D] p-8 bg-[#184948]/90 hover:bg-[#184948] shadow-modern hover:border-[#317978] transition-all duration-300 flex flex-col justify-between h-48 cursor-pointer text-left w-full"
+              className="group relative rounded-2xl p-8 tactile-glow-card flex flex-col justify-between h-48 cursor-pointer text-left w-full"
             >
               <div className="space-y-2">
                 <h3 className="text-xl font-bold text-white group-hover:text-[#B7E6E5] transition-colors">Find a Host Now</h3>

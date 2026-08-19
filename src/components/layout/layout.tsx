@@ -344,10 +344,8 @@ export function Layout() {
     )
  }
 
-  const isHomePage = location.pathname === "/"
-
   return (
-    <div className={`flex min-h-svh flex-col ${isHomePage ? "bg-home-flow-a" : "bg-ambient-flow-d"} text-foreground transition-colors duration-500`}>
+    <div className="flex min-h-svh flex-col bg-ambient-flow-d text-foreground transition-colors duration-500">
       {impersonatedName && (
         <div className="w-full bg-amber-500 text-black text-xs font-bold py-2.5 px-4 text-center z-50 relative flex items-center justify-center gap-2 shadow-md">
           <AlertTriangle className="size-4 shrink-0" />
