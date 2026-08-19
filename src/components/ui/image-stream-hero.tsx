@@ -58,8 +58,8 @@ export const SCENARIO_PAIRS: ScenarioPair[] = [
     trap: {
       title: "Zero-Visibility Rain & Fog Trap",
       scenario: "Unchecked Monsoon Weather",
-      image: "/images/corridor/trap_mount_kenya.jpg",
-      location: "Mount Kenya Slopes · Wrong Season",
+      image: "/images/hero/suggestion2_trap.jpg",
+      location: "Mount Kenya Slopes · Rain & Fog Trap",
       problem: "Hiker booked without local weather verification. The entire peak was swallowed in freezing torrential rain, zero visibility, and impassable mud tracks.",
       badge: "Fogged Out & Ruined",
       details: [
@@ -72,7 +72,7 @@ export const SCENARIO_PAIRS: ScenarioPair[] = [
     smart: {
       title: "Crystal-Clear Golden Hour Summit",
       scenario: "Scouted Local Weather Window",
-      image: "/images/corridor/smart_mount_kenya.jpg",
+      image: "/images/hero/suggestion2_smart.jpg",
       location: "Mount Kenya Batian Ridge · Peak Clarity",
       solution: "Local verified reconnaissance confirmed crystal-clear skies, dry alpine trails, and radiant golden hour illumination.",
       badge: "Scouted Perfect Timing",
