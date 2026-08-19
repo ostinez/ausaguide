@@ -1,17 +1,27 @@
-/* ── Option D Bento Hero: Interactive Comparison Slider & Deep Teal Silk ── */
+/* ── Option D Bento Hero: Exact 6-Color Deep Teal Palette ── */
+
+/*
+  Chosen 6-Color Reference Palette (Image 2):
+  #113B3A  ← Deepest Dark Teal / Section Canvas
+  #184948  ← Deep Forest Teal / Card Surface
+  #235E5D  ← Mid-tone Teal / Borders & Insets
+  #317978  ← Primary Action Teal / Buttons & Highlights
+  #599D9C  ← Soft Seafoam Teal / Secondary Text
+  #B7E6E5  ← Mint Ice / Text Highlights & Badges
+*/
 
 /* Neumorphic Card Base */
 .bento-card-main {
-  background-color: #0B3037;
-  border: 1px solid #134E5E;
-  box-shadow: 8px 8px 24px #030f12, -6px -6px 20px #0e3b43;
+  background-color: #184948;
+  border: 1px solid #235E5D;
+  box-shadow: 8px 8px 24px #0a2423, -6px -6px 20px #1c5251;
   border-radius: 1.5rem;
 }
 
 .bento-card-inset {
-  background-color: #06363D;
-  border: 1px solid #134E5E;
-  box-shadow: inset 4px 4px 12px #030f12, inset -3px -3px 8px #0e3b43;
+  background-color: #113B3A;
+  border: 1px solid #235E5D;
+  box-shadow: inset 4px 4px 12px #0a2423, inset -3px -3px 8px #1c5251;
   border-radius: 1.25rem;
 }
 
@@ -22,8 +32,8 @@
   user-select: none;
   touch-action: pan-y;
   border-radius: 1.25rem;
-  border: 1px solid #134E5E;
-  box-shadow: 6px 6px 18px #030f12, -4px -4px 14px #0e3b43;
+  border: 1px solid #235E5D;
+  box-shadow: 6px 6px 18px #0a2423, -4px -4px 14px #1c5251;
 }
 
 /* Slider Drag Handle */
@@ -32,8 +42,8 @@
   top: 0;
   bottom: 0;
   width: 3px;
-  background: #0D6F73;
-  box-shadow: 0 0 12px rgba(13, 111, 115, 0.8), 0 0 4px #84BABF;
+  background: #317978;
+  box-shadow: 0 0 12px rgba(49, 121, 120, 0.8), 0 0 4px #B7E6E5;
   transform: translateX(-50%);
   pointer-events: none;
   z-index: 30;
@@ -47,79 +57,79 @@
   width: 44px;
   height: 44px;
   border-radius: 9999px;
-  background: #0B3037;
-  border: 2px solid #84BABF;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), 0 0 10px rgba(13, 111, 115, 0.5);
+  background: #184948;
+  border: 2px solid #B7E6E5;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), 0 0 10px rgba(49, 121, 120, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #ffffff;
   cursor: ew-resize;
   pointer-events: auto;
-  transition: transform 0.15s ease, border-color 0.15s ease;
+  transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .slider-handle-button:hover,
 .slider-handle-button:active {
   transform: translate(-50%, -50%) scale(1.1);
   border-color: #ffffff;
-  background: #0D6F73;
+  background: #317978;
 }
 
 /* Neumorphic Buttons & Tabs */
 .bento-pill {
-  background-color: #0B3037;
-  border: 1px solid #134E5E;
-  box-shadow: 3px 3px 8px #030f12, -2px -2px 6px #0e3b43;
+  background-color: #184948;
+  border: 1px solid #235E5D;
+  box-shadow: 3px 3px 8px #0a2423, -2px -2px 6px #1c5251;
 }
 
 .bento-btn-primary {
-  background-color: #0D6F73;
+  background-color: #317978;
   color: #ffffff;
-  box-shadow: 5px 5px 14px #030f12, -4px -4px 12px #0e3b43;
+  box-shadow: 5px 5px 14px #0a2423, -4px -4px 12px #1c5251;
   transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .bento-btn-primary:hover {
-  background-color: #0b5f63;
-  box-shadow: 3px 3px 8px #030f12, -2px -2px 6px #0e3b43;
+  background-color: #235E5D;
+  box-shadow: 3px 3px 8px #0a2423, -2px -2px 6px #1c5251;
   transform: translateY(-1px);
 }
 
 .bento-btn-primary:active {
-  box-shadow: inset 3px 3px 6px #052224, inset -3px -3px 6px #14888d;
+  box-shadow: inset 3px 3px 6px #0a2423, inset -3px -3px 6px #317978;
   transform: translateY(1px);
 }
 
 .bento-btn-secondary {
-  background-color: #0B3037;
-  color: #E0EDE9;
-  border: 1px solid #134E5E;
-  box-shadow: 5px 5px 14px #030f12, -4px -4px 10px #0e3b43;
+  background-color: #184948;
+  color: #B7E6E5;
+  border: 1px solid #235E5D;
+  box-shadow: 5px 5px 14px #0a2423, -4px -4px 10px #1c5251;
   transition: all 0.2s ease;
 }
 
 .bento-btn-secondary:hover {
-  background-color: #134E5E;
-  border-color: #0D6F73;
+  background-color: #235E5D;
+  border-color: #317978;
   transform: translateY(-1px);
 }
 
 .bento-tab-active {
-  background-color: #0D6F73;
+  background-color: #317978;
   color: #ffffff;
   font-weight: 700;
-  box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(13, 111, 115, 0.45);
+  box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(49, 121, 120, 0.45);
 }
 
 .bento-tab-inactive {
-  background-color: #0B3037;
-  color: #84BABF;
-  border: 1px solid #134E5E;
-  box-shadow: 3px 3px 8px #030f12, -2px -2px 6px #0e3b43;
+  background-color: #184948;
+  color: #599D9C;
+  border: 1px solid #235E5D;
+  box-shadow: 3px 3px 8px #0a2423, -2px -2px 6px #1c5251;
 }
 
 .bento-tab-inactive:hover {
-  background-color: #134E5E;
-  color: #E0EDE9;
+  background-color: #235E5D;
+  color: #B7E6E5;
 }

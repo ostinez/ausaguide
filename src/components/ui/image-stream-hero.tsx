@@ -281,19 +281,19 @@ export function ImageStreamHero() {
   }
 
   return (
-    <section className="relative overflow-hidden w-full bg-[#06363D] text-white py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 border-b border-[#134E5E]">
-      {/* Ambient Deep Teal Silk Lighting */}
+    <section className="relative overflow-hidden w-full bg-[#113B3A] text-white py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 border-b border-[#235E5D]">
+      {/* Ambient Deep Teal Lighting */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[450px] w-[650px] rounded-full bg-[#0B3037]/70 blur-[130px]" />
-        <div className="absolute bottom-0 right-1/4 h-[350px] w-[350px] rounded-full bg-[#134E5E]/40 blur-[100px]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[450px] w-[650px] rounded-full bg-[#184948]/70 blur-[130px]" />
+        <div className="absolute bottom-0 right-1/4 h-[350px] w-[350px] rounded-full bg-[#235E5D]/40 blur-[100px]" />
       </div>
 
       <div className="relative z-10 max-w-5xl mx-auto space-y-8 sm:space-y-10">
         {/* ── Top Bento Block: Headline & Call To Action ── */}
         <div className="bento-card-main p-6 sm:p-10 lg:p-12 text-center space-y-6">
           {/* Top Pill Tag */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bento-pill text-[#84BABF] text-xs sm:text-sm font-semibold">
-            <Sparkles className="size-4 text-[#0D6F73]" />
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bento-pill text-[#B7E6E5] text-xs sm:text-sm font-semibold">
+            <Sparkles className="size-4 text-[#317978]" />
             <span>Try Kenya Live Before You Fly</span>
           </div>
 
@@ -320,7 +320,7 @@ export function ImageStreamHero() {
           </h1>
 
           {/* Subtitle */}
-          <p className="text-[#84BABF] text-base sm:text-lg md:text-xl leading-relaxed max-w-2xl mx-auto font-normal">
+          <p className="text-[#599D9C] text-base sm:text-lg md:text-xl leading-relaxed max-w-2xl mx-auto font-normal">
             Explore Kenya through a local's eyes before you book. Live video reconnaissance tours with vetted local guides. Skip the scams.
           </p>
 
@@ -337,9 +337,9 @@ export function ImageStreamHero() {
               to="/tours"
               className="w-full sm:w-auto px-8 py-3.5 bento-btn-secondary font-bold rounded-2xl text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer min-h-[48px]"
             >
-              <Compass className="size-4 text-[#0D6F73]" />
+              <Compass className="size-4 text-[#317978]" />
               <span>Explore Live Tours</span>
-              <ArrowRight className="size-4 text-[#84BABF]" />
+              <ArrowRight className="size-4 text-[#B7E6E5]" />
             </Link>
           </div>
         </div>
@@ -347,14 +347,14 @@ export function ImageStreamHero() {
         {/* ── Bottom Bento Block: Interactive Comparison Component ── */}
         <div className="bento-card-main p-5 sm:p-8 space-y-6">
           {/* Header Bar of Comparison Box */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#134E5E] pb-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#235E5D] pb-4">
             <div className="flex items-center gap-3">
               <span className="text-xl sm:text-2xl">{currentScenario.icon}</span>
               <div>
                 <h3 className="text-base sm:text-lg font-bold text-white font-headline">
                   {currentScenario.categoryLabel}
                 </h3>
-                <p className="text-xs text-[#84BABF]">
+                <p className="text-xs text-[#599D9C]">
                   Compare the unvetted tourist trap vs. the verified Ausaguide experience
                 </p>
               </div>
@@ -364,17 +364,17 @@ export function ImageStreamHero() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setViewMode(viewMode === "slider" ? "split" : "slider")}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bento-pill text-xs font-semibold text-[#84BABF] hover:text-white cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bento-pill text-xs font-semibold text-[#B7E6E5] hover:text-white cursor-pointer"
                 title="Toggle between Interactive Slider and Side-by-Side View"
               >
                 {viewMode === "slider" ? (
                   <>
-                    <Columns className="size-3.5 text-[#0D6F73]" />
+                    <Columns className="size-3.5 text-[#317978]" />
                     <span className="hidden sm:inline">Dual View</span>
                   </>
                 ) : (
                   <>
-                    <SplitSquareHorizontal className="size-3.5 text-[#0D6F73]" />
+                    <SplitSquareHorizontal className="size-3.5 text-[#317978]" />
                     <span className="hidden sm:inline">Slider View</span>
                   </>
                 )}
@@ -383,7 +383,7 @@ export function ImageStreamHero() {
               <button
                 onClick={() => setShowDetails(!showDetails)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer ${
-                  showDetails ? "bento-tab-active" : "bento-pill text-[#84BABF] hover:text-white"
+                  showDetails ? "bento-tab-active" : "bento-pill text-[#B7E6E5] hover:text-white"
                 }`}
                 title="Toggle detailed point-by-point breakdown"
               >
@@ -418,8 +418,8 @@ export function ImageStreamHero() {
 
               {/* Right Side Overlay Tag */}
               <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 pointer-events-none">
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0B3037]/90 border border-[#0D6F73] shadow-md text-[#84BABF] text-xs font-bold">
-                  <CheckCircle2 className="size-3.5 text-[#0D6F73]" />
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#184948]/95 border border-[#317978] shadow-md text-[#B7E6E5] text-xs font-bold">
+                  <CheckCircle2 className="size-3.5 text-[#317978]" />
                   <span>The Smart Way (Ausaguide)</span>
                 </div>
               </div>
@@ -442,7 +442,7 @@ export function ImageStreamHero() {
 
                 {/* Left Side Overlay Tag */}
                 <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-20">
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0B3037]/90 border border-red-500/60 shadow-md text-red-300 text-xs font-bold">
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#184948]/95 border border-red-500/60 shadow-md text-red-300 text-xs font-bold">
                     <XCircle className="size-3.5 text-red-400" />
                     <span>Tourist Trap (Unvetted)</span>
                   </div>
@@ -461,7 +461,7 @@ export function ImageStreamHero() {
 
               {/* Bottom Caption Pill */}
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-                <span className="px-3 py-1 rounded-full bg-[#06363D]/90 border border-[#134E5E] text-[11px] font-semibold text-[#84BABF] shadow-lg">
+                <span className="px-3 py-1 rounded-full bg-[#113B3A]/95 border border-[#235E5D] text-[11px] font-semibold text-[#B7E6E5] shadow-lg">
                   Drag slider to compare
                 </span>
               </div>
@@ -486,34 +486,34 @@ export function ImageStreamHero() {
                     alt={currentScenario.trap.title}
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute bottom-2 left-2 right-2 bg-[#06363D]/90 p-1.5 rounded-lg border border-red-500/30">
+                  <div className="absolute bottom-2 left-2 right-2 bg-[#113B3A]/95 p-1.5 rounded-lg border border-red-500/30">
                     <p className="text-[11px] font-bold text-white truncate">{currentScenario.trap.title}</p>
                     <p className="text-[10px] text-red-300/80 truncate">{currentScenario.trap.location}</p>
                   </div>
                 </div>
-                <p className="text-xs text-[#84BABF] leading-relaxed">{currentScenario.trap.problem}</p>
+                <p className="text-xs text-[#599D9C] leading-relaxed">{currentScenario.trap.problem}</p>
               </div>
 
               {/* Right Card: The Smart Way */}
-              <div className="bento-card-inset p-4 sm:p-5 border border-[#134E5E] space-y-3">
+              <div className="bento-card-inset p-4 sm:p-5 border border-[#235E5D] space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#84BABF] flex items-center gap-1.5">
-                    <CheckCircle2 className="size-3.5 text-[#0D6F73]" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#B7E6E5] flex items-center gap-1.5">
+                    <CheckCircle2 className="size-3.5 text-[#317978]" />
                     {currentScenario.smart.scenario}
                   </span>
-                  <span className="px-2 py-0.5 rounded-full bg-[#0B3037] border border-[#0D6F73]/40 text-[#84BABF] text-[10px] font-bold">
+                  <span className="px-2 py-0.5 rounded-full bg-[#184948] border border-[#317978]/40 text-[#B7E6E5] text-[10px] font-bold">
                     {currentScenario.smart.badge}
                   </span>
                 </div>
-                <div className="relative aspect-video rounded-xl overflow-hidden border border-[#134E5E] shadow-md">
+                <div className="relative aspect-video rounded-xl overflow-hidden border border-[#235E5D] shadow-md">
                   <img
                     src={currentScenario.smart.image}
                     alt={currentScenario.smart.title}
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute bottom-2 left-2 right-2 bg-[#06363D]/90 p-1.5 rounded-lg border border-[#134E5E]">
+                  <div className="absolute bottom-2 left-2 right-2 bg-[#113B3A]/95 p-1.5 rounded-lg border border-[#235E5D]">
                     <p className="text-[11px] font-bold text-white truncate">{currentScenario.smart.title}</p>
-                    <p className="text-[10px] text-[#84BABF] truncate">{currentScenario.smart.location}</p>
+                    <p className="text-[10px] text-[#B7E6E5] truncate">{currentScenario.smart.location}</p>
                   </div>
                 </div>
                 <p className="text-xs text-white leading-relaxed">{currentScenario.smart.solution}</p>
@@ -523,8 +523,8 @@ export function ImageStreamHero() {
 
           {/* ── Optional Point-by-Point Details Drawer ── */}
           {showDetails && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-[#134E5E] animate-in fade-in duration-200">
-              <div className="p-4 rounded-xl bg-[#06363D] border border-red-500/20 space-y-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-[#235E5D] animate-in fade-in duration-200">
+              <div className="p-4 rounded-xl bg-[#113B3A] border border-red-500/20 space-y-2">
                 <p className="text-xs font-bold text-red-400">Why travelers get scammed:</p>
                 <ul className="space-y-1.5">
                   {currentScenario.trap.details.map((pt, i) => (
@@ -536,12 +536,12 @@ export function ImageStreamHero() {
                 </ul>
               </div>
 
-              <div className="p-4 rounded-xl bg-[#06363D] border border-[#134E5E] space-y-2">
-                <p className="text-xs font-bold text-[#84BABF]">How Ausaguide protects you:</p>
+              <div className="p-4 rounded-xl bg-[#113B3A] border border-[#235E5D] space-y-2">
+                <p className="text-xs font-bold text-[#B7E6E5]">How Ausaguide protects you:</p>
                 <ul className="space-y-1.5">
                   {currentScenario.smart.details.map((pt, i) => (
                     <li key={i} className="flex items-start gap-2 text-xs text-white">
-                      <Check className="size-3 text-[#0D6F73] shrink-0 mt-0.5" />
+                      <Check className="size-3 text-[#317978] shrink-0 mt-0.5" />
                       <span>{pt}</span>
                     </li>
                   ))}
@@ -573,14 +573,14 @@ export function ImageStreamHero() {
             <div className="flex items-center gap-2 ml-auto">
               <button
                 onClick={prevScenario}
-                className="p-2 rounded-xl bento-pill text-[#84BABF] hover:text-white cursor-pointer"
+                className="p-2 rounded-xl bento-pill text-[#B7E6E5] hover:text-white cursor-pointer"
                 title="Previous Scenario"
               >
                 <ChevronLeft className="size-4" />
               </button>
               <button
                 onClick={nextScenario}
-                className="p-2 rounded-xl bento-pill text-[#84BABF] hover:text-white cursor-pointer"
+                className="p-2 rounded-xl bento-pill text-[#B7E6E5] hover:text-white cursor-pointer"
                 title="Next Scenario"
               >
                 <ChevronRight className="size-4" />
@@ -601,11 +601,11 @@ export function ImageStreamHero() {
               const Icon = badge.icon
               return (
                 <div key={idx} className="flex flex-col items-center justify-center gap-1.5 p-2">
-                  <div className="p-2.5 rounded-2xl bg-[#06363D] border border-[#134E5E] text-[#0D6F73] shadow-md">
+                  <div className="p-2.5 rounded-2xl bg-[#113B3A] border border-[#235E5D] text-[#317978] shadow-md">
                     <Icon className="size-5" />
                   </div>
                   <span className="text-xs sm:text-sm font-bold text-white mt-1">{badge.label}</span>
-                  <span className="text-[11px] text-[#84BABF]">{badge.desc}</span>
+                  <span className="text-[11px] text-[#599D9C]">{badge.desc}</span>
                 </div>
               )
             })}

@@ -94,23 +94,23 @@ export default function WaitlistPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#0f172a] text-white flex flex-col items-center justify-center p-4">
-        <div className="max-w-md w-full bg-[#1e293b] rounded-3xl p-8 sm:p-10 text-center border border-[#334155] shadow-2xl space-y-6 animate-in fade-in zoom-in duration-300">
-          <div className="size-16 sm:size-20 bg-blue-500/20 border border-blue-500/40 rounded-full flex items-center justify-center mx-auto shadow-inner">
-            <CheckCircle className="size-8 sm:size-10 text-blue-400" />
+      <div className="min-h-screen bg-[#113B3A] text-white flex flex-col items-center justify-center p-4">
+        <div className="max-w-md w-full bg-[#184948] rounded-3xl p-8 sm:p-10 text-center border border-[#235E5D] shadow-2xl space-y-6 animate-in fade-in zoom-in duration-300">
+          <div className="size-16 sm:size-20 bg-[#235E5D] border border-[#317978] rounded-full flex items-center justify-center mx-auto shadow-inner">
+            <CheckCircle className="size-8 sm:size-10 text-[#B7E6E5]" />
           </div>
           <div className="space-y-2">
             <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-headline">
               You're on the list!
             </h2>
-            <p className="text-[#cbd5e1] text-sm sm:text-base leading-relaxed">
+            <p className="text-[#B7E6E5] text-sm sm:text-base leading-relaxed">
               Welcome to the Ausaguide community, <strong className="text-white">{name.split(" ")[0]}</strong>. You'll be the first to know when we launch early access.
             </p>
           </div>
 
-          <div className="p-4 rounded-xl bg-[#0f172a] border border-[#334155] text-xs text-[#94a3b8] text-left space-y-2">
-            <div className="flex items-center gap-2 text-[#cbd5e1] font-semibold">
-              <Sparkles className="size-4 text-blue-400" />
+          <div className="p-4 rounded-xl bg-[#113B3A] border border-[#235E5D] text-xs text-[#599D9C] text-left space-y-2">
+            <div className="flex items-center gap-2 text-[#B7E6E5] font-semibold">
+              <Sparkles className="size-4 text-[#317978]" />
               <span>What to expect next:</span>
             </div>
             <p>1. Priority invitation to beta test live video tours.</p>
@@ -122,13 +122,13 @@ export default function WaitlistPage() {
             <button
               type="button"
               onClick={() => navigate("/")}
-              className="w-full py-3 px-6 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-xl text-sm transition-all shadow-md cursor-pointer"
+              className="w-full py-3 px-6 bg-[#317978] hover:bg-[#235E5D] text-white font-bold rounded-xl text-sm transition-all shadow-md cursor-pointer"
             >
               Back to Home
             </button>
             <Link
               to="/tours"
-              className="w-full py-3 px-6 bg-[#0f172a] hover:bg-[#1e293b] text-[#cbd5e1] border border-[#334155] font-semibold rounded-xl text-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full py-3 px-6 bg-[#113B3A] hover:bg-[#184948] text-[#B7E6E5] border border-[#235E5D] font-semibold rounded-xl text-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <span>Explore Tours</span>
               <ArrowRight className="size-3.5" />
@@ -140,23 +140,23 @@ export default function WaitlistPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-white flex flex-col">
+    <div className="min-h-screen bg-[#113B3A] text-white flex flex-col">
       {/* NAVBAR */}
-      <nav className="border-b border-[#334155] bg-[#0f172a]/90 backdrop-blur-md sticky top-0 z-50 px-4 sm:px-8 py-4">
+      <nav className="border-b border-[#235E5D] bg-[#113B3A]/95 backdrop-blur-md sticky top-0 z-50 px-4 sm:px-8 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="p-1.5 rounded-lg bg-blue-500/20 text-blue-400 group-hover:bg-blue-500/30 transition-colors">
+            <div className="p-1.5 rounded-lg bg-[#184948] text-[#B7E6E5] border border-[#235E5D] group-hover:bg-[#235E5D] transition-colors">
               <Globe className="size-5" />
             </div>
             <span className="text-xl font-bold tracking-tight text-white font-headline">Ausaguide</span>
           </Link>
           <div className="flex items-center gap-4">
-            <Link to="/tours" className="text-[#94a3b8] hover:text-white text-sm font-medium transition-colors hidden sm:inline-flex">
+            <Link to="/tours" className="text-[#599D9C] hover:text-[#B7E6E5] text-sm font-medium transition-colors hidden sm:inline-flex">
               Explore Tours
             </Link>
             <Link
               to="/auth"
-              className="px-4 py-2 rounded-xl text-sm font-semibold text-[#cbd5e1] hover:text-white bg-[#1e293b] hover:bg-[#334155] border border-[#334155] transition-all"
+              className="px-4 py-2 rounded-xl text-sm font-semibold text-[#B7E6E5] hover:text-white bg-[#184948] hover:bg-[#235E5D] border border-[#235E5D] transition-all shadow-sm"
             >
               Log in
             </Link>
@@ -167,28 +167,28 @@ export default function WaitlistPage() {
       {/* MAIN CONTENT */}
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-12 md:py-20 flex flex-col justify-center">
         <div className="text-center mb-10 space-y-4">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-500/10 border border-blue-500/30 rounded-full text-blue-400 text-xs sm:text-sm font-semibold">
-            <Sparkles className="size-4" />
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#184948] border border-[#235E5D] rounded-full text-[#B7E6E5] text-xs sm:text-sm font-semibold shadow-sm">
+            <Sparkles className="size-4 text-[#317978]" />
             <span>The Future of Travel in Kenya</span>
           </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight leading-[1.15] font-headline">
             Get Early Access to Ausaguide
           </h1>
-          <p className="text-[#94a3b8] text-base md:text-lg max-w-lg mx-auto leading-relaxed">
+          <p className="text-[#599D9C] text-base md:text-lg max-w-lg mx-auto leading-relaxed">
             Join thousands of travelers and locals waiting to explore Kenya smarter.
           </p>
         </div>
 
         {/* FORM */}
-        <div className="bg-[#1e293b] border border-[#334155] rounded-3xl p-6 sm:p-8 md:p-10 shadow-2xl">
+        <div className="bg-[#184948] border border-[#235E5D] rounded-3xl p-6 sm:p-8 md:p-10 shadow-2xl">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs sm:text-sm text-[#cbd5e1] font-semibold block mb-1.5">
+                <label className="text-xs sm:text-sm text-[#B7E6E5] font-semibold block mb-1.5">
                   Full Name
                 </label>
                 <div className="relative">
-                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-[#94a3b8]" />
+                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-[#599D9C]" />
                   <input
                     type="text"
                     value={name}
@@ -196,17 +196,17 @@ export default function WaitlistPage() {
                     placeholder="Your name"
                     required
                     disabled={loading}
-                    className="w-full pl-10 pr-4 py-3 bg-[#0f172a] border border-[#334155] rounded-xl text-white placeholder:text-[#94a3b8]/70 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base font-medium"
+                    className="w-full pl-10 pr-4 py-3 bg-[#113B3A] border border-[#235E5D] rounded-xl text-white placeholder:text-[#599D9C]/70 focus:outline-none focus:ring-2 focus:ring-[#317978] focus:border-transparent text-sm sm:text-base font-medium"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs sm:text-sm text-[#cbd5e1] font-semibold block mb-1.5">
+                <label className="text-xs sm:text-sm text-[#B7E6E5] font-semibold block mb-1.5">
                   Email Address
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-[#94a3b8]" />
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-[#599D9C]" />
                   <input
                     type="email"
                     value={email}
@@ -214,14 +214,14 @@ export default function WaitlistPage() {
                     placeholder="you@example.com"
                     required
                     disabled={loading}
-                    className="w-full pl-10 pr-4 py-3 bg-[#0f172a] border border-[#334155] rounded-xl text-white placeholder:text-[#94a3b8]/70 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base font-medium"
+                    className="w-full pl-10 pr-4 py-3 bg-[#113B3A] border border-[#235E5D] rounded-xl text-white placeholder:text-[#599D9C]/70 focus:outline-none focus:ring-2 focus:ring-[#317978] focus:border-transparent text-sm sm:text-base font-medium"
                   />
                 </div>
               </div>
             </div>
 
             <div>
-              <label className="text-xs sm:text-sm text-[#cbd5e1] font-semibold block mb-2">
+              <label className="text-xs sm:text-sm text-[#B7E6E5] font-semibold block mb-2">
                 I am joining as
               </label>
               <div className="grid grid-cols-3 gap-3">
@@ -237,8 +237,8 @@ export default function WaitlistPage() {
                     disabled={loading}
                     className={`px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer min-h-[44px] ${
                       role === option.id
-                        ? "bg-blue-500 text-white shadow-lg ring-2 ring-blue-300"
-                        : "bg-[#0f172a] text-[#94a3b8] border border-[#334155] hover:bg-[#1e293b] hover:text-white"
+                        ? "bg-[#317978] text-white shadow-lg ring-2 ring-[#B7E6E5]"
+                        : "bg-[#113B3A] text-[#599D9C] border border-[#235E5D] hover:bg-[#184948] hover:text-[#B7E6E5]"
                     }`}
                   >
                     {option.label}
@@ -247,17 +247,17 @@ export default function WaitlistPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 border-t border-[#334155]/60">
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-[#cbd5e1]">
-                <Shield className="size-4 text-blue-400 shrink-0" />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 border-t border-[#235E5D]/60">
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-[#B7E6E5]">
+                <Shield className="size-4 text-[#317978] shrink-0" />
                 <span>Early access</span>
               </div>
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-[#cbd5e1]">
-                <Sparkles className="size-4 text-blue-400 shrink-0" />
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-[#B7E6E5]">
+                <Sparkles className="size-4 text-[#317978] shrink-0" />
                 <span>Exclusive rates</span>
               </div>
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-[#cbd5e1]">
-                <CheckCircle className="size-4 text-blue-400 shrink-0" />
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-[#B7E6E5]">
+                <CheckCircle className="size-4 text-[#317978] shrink-0" />
                 <span>No hidden fees</span>
               </div>
             </div>
@@ -265,7 +265,7 @@ export default function WaitlistPage() {
             <button
               type="submit"
               disabled={loading || !name.trim() || !email.trim() || !role}
-              className="w-full py-4 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-800/50 text-white font-bold rounded-xl text-base transition-all duration-200 flex items-center justify-center gap-2 min-h-[56px] shadow-lg cursor-pointer disabled:cursor-not-allowed"
+              className="w-full py-4 bg-[#317978] hover:bg-[#235E5D] disabled:bg-[#184948]/50 text-white font-bold rounded-xl text-base transition-all duration-200 flex items-center justify-center gap-2 min-h-[56px] shadow-lg cursor-pointer disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
@@ -283,8 +283,8 @@ export default function WaitlistPage() {
         </div>
 
         <div className="text-center mt-8">
-          <p className="text-[#94a3b8] text-xs sm:text-sm flex items-center justify-center gap-2">
-            <Users className="size-4 text-blue-400" />
+          <p className="text-[#599D9C] text-xs sm:text-sm flex items-center justify-center gap-2">
+            <Users className="size-4 text-[#317978]" />
             <span>Join hundreds of travelers and local guides ready for launch</span>
           </p>
         </div>

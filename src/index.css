@@ -14,23 +14,23 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 16px);
   
-  /* Ausaguide Deep Teal Silk Palette */
-  --color-brand: #0D6F73;
-  --color-brand-deep: #06363D;
-  --color-brand-silk: #0B3037;
-  --color-brand-light: #84BABF;
-  --color-brand-ice: #E0EDE9;
-  --color-carbon-dark: #06363D;
-  --color-carbon: #0B3037;
-  --color-carbon-light: #134E5E;
+  /* Ausaguide Chosen Deep Teal Palette */
+  --color-brand: #317978;
+  --color-brand-deep: #113B3A;
+  --color-brand-silk: #184948;
+  --color-brand-light: #599D9C;
+  --color-brand-ice: #B7E6E5;
+  --color-carbon-dark: #113B3A;
+  --color-carbon: #184948;
+  --color-carbon-light: #235E5D;
   --color-accent-coral: #FF5252;
   --color-accent-amber: #F59E0B;
 
   /* Neo-Apple High-Performance Tactile Shadows (Zero GPU blur overhead) */
-  --shadow-modern: 0 2px 6px rgba(6, 54, 61, 0.04), 0 16px 36px -6px rgba(6, 54, 61, 0.09);
-  --shadow-modern-glow: 0 4px 16px -2px rgba(13, 111, 115, 0.35);
-  --shadow-neo-pill: 0 4px 12px rgba(6, 54, 61, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.3);
-  --shadow-neo-inset: inset 0 2px 4px rgba(6, 54, 61, 0.08);
+  --shadow-modern: 0 2px 6px rgba(17, 59, 58, 0.04), 0 16px 36px -6px rgba(17, 59, 58, 0.09);
+  --shadow-modern-glow: 0 4px 16px -2px rgba(49, 121, 120, 0.35);
+  --shadow-neo-pill: 0 4px 12px rgba(17, 59, 58, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+  --shadow-neo-inset: inset 0 2px 4px rgba(17, 59, 58, 0.08);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -69,7 +69,7 @@
 }
 
 /*
-  Ausaguide Deep Teal Silk & Mineral Ice Theme
+  Ausaguide Deep Teal & Mint Ice Theme
   Neo-Apple Tactile Styling · High Performance · Zero Glassmorphism Lag
 */
 
@@ -84,95 +84,95 @@
   --space-7: 48px;
   --space-8: 64px;
   
-  /* Mineral Ice Canvas */
-  --background: #E8F1EE;
-  --foreground: #06363D;
+  /* Mint Ice Canvas */
+  --background: #EBF5F4;
+  --foreground: #113B3A;
   
   /* Tactile Elevated Neo Cards (Crisp White over Mineral Canvas) */
   --card: #FFFFFF;
-  --card-foreground: #06363D;
+  --card-foreground: #113B3A;
   --popover: #FFFFFF;
-  --popover-foreground: #06363D;
+  --popover-foreground: #113B3A;
   
-  /* Deep Teal Silk & Primary Actions */
-  --primary: #0D6F73;
+  /* Deep Teal & Primary Actions */
+  --primary: #317978;
   --primary-foreground: #FFFFFF;
-  --secondary: #D4E5E0;
-  --secondary-foreground: #06363D;
-  --muted: #D8E7E3;
-  --muted-foreground: #235E60;
+  --secondary: #D6ECEB;
+  --secondary-foreground: #113B3A;
+  --muted: #D6ECEB;
+  --muted-foreground: #235E5D;
   
   /* Accents */
-  --accent: #0D6F73;
+  --accent: #317978;
   --accent-foreground: #FFFFFF;
   --destructive: #FF5252;
   --destructive-foreground: #FFFFFF;
   
-  --border: #C8DCD7;
-  --input: #C8DCD7;
-  --ring: #0D6F73;
-  --teal: #0D6F73;
+  --border: #B7E6E5;
+  --input: #B7E6E5;
+  --ring: #317978;
+  --teal: #317978;
   --teal-foreground: #FFFFFF;
   
-  --chart-1: #0D6F73;
-  --chart-2: #84BABF;
-  --chart-3: #06363D;
+  --chart-1: #317978;
+  --chart-2: #599D9C;
+  --chart-3: #113B3A;
   --chart-4: #F59E0B;
   --chart-5: #FF5252;
   
-  --sidebar: #E0EDE9;
-  --sidebar-foreground: #06363D;
-  --sidebar-primary: #0D6F73;
+  --sidebar: #EBF5F4;
+  --sidebar-foreground: #113B3A;
+  --sidebar-primary: #317978;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #D4E5E0;
-  --sidebar-accent-foreground: #06363D;
-  --sidebar-border: #C8DCD7;
-  --sidebar-ring: #0D6F73;
+  --sidebar-accent: #D6ECEB;
+  --sidebar-accent-foreground: #113B3A;
+  --sidebar-border: #B7E6E5;
+  --sidebar-ring: #317978;
 }
 
 .dark {
-  /* Midnight Petrol Deep Teal Canvas */
-  --background: #06363D;
-  --foreground: #E0EDE9;
+  /* Deepest Forest Teal Canvas */
+  --background: #113B3A;
+  --foreground: #B7E6E5;
   
-  /* Deep Teal Silk Elevated Surfaces */
-  --card: #0B3037;
-  --card-foreground: #E0EDE9;
-  --popover: #0B3037;
-  --popover-foreground: #E0EDE9;
+  /* Deep Teal Elevated Surfaces */
+  --card: #184948;
+  --card-foreground: #B7E6E5;
+  --popover: #184948;
+  --popover-foreground: #B7E6E5;
   
-  --primary: #84BABF;
-  --primary-foreground: #06363D;
-  --secondary: #134E5E;
-  --secondary-foreground: #E0EDE9;
-  --muted: #134E5E;
-  --muted-foreground: #84BABF;
+  --primary: #317978;
+  --primary-foreground: #FFFFFF;
+  --secondary: #235E5D;
+  --secondary-foreground: #B7E6E5;
+  --muted: #235E5D;
+  --muted-foreground: #599D9C;
   
-  --accent: #84BABF;
-  --accent-foreground: #06363D;
+  --accent: #317978;
+  --accent-foreground: #FFFFFF;
   --destructive: #FF5252;
   --destructive-foreground: #FFFFFF;
   
-  --border: #134E5E;
-  --input: #134E5E;
-  --ring: #84BABF;
-  --teal: #84BABF;
-  --teal-foreground: #06363D;
+  --border: #235E5D;
+  --input: #235E5D;
+  --ring: #317978;
+  --teal: #317978;
+  --teal-foreground: #FFFFFF;
   
-  --chart-1: #84BABF;
-  --chart-2: #0D6F73;
-  --chart-3: #E0EDE9;
+  --chart-1: #317978;
+  --chart-2: #599D9C;
+  --chart-3: #B7E6E5;
   --chart-4: #F59E0B;
   --chart-5: #FF5252;
   
-  --sidebar: #06363D;
-  --sidebar-foreground: #E0EDE9;
-  --sidebar-primary: #84BABF;
-  --sidebar-primary-foreground: #06363D;
-  --sidebar-accent: #0B3037;
-  --sidebar-accent-foreground: #E0EDE9;
-  --sidebar-border: #134E5E;
-  --sidebar-ring: #84BABF;
+  --sidebar: #113B3A;
+  --sidebar-foreground: #B7E6E5;
+  --sidebar-primary: #317978;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #184948;
+  --sidebar-accent-foreground: #B7E6E5;
+  --sidebar-border: #235E5D;
+  --sidebar-ring: #317978;
 }
 
 
@@ -218,13 +218,13 @@
 /* Use on sections that must always remain dark (hero globe, special pages) */
 .dark-section,
 .dark-bg {
-  --background: #06363D;
+  --background: #113B3A;
   --foreground: #FFFFFF;
-  --card: #0B3037;
+  --card: #184948;
   --card-foreground: #FFFFFF;
-  --border: #134E5E;
-  --muted-foreground: #D1D5DB;
-  background-color: #06363D !important;
+  --border: #235E5D;
+  --muted-foreground: #B7E6E5;
+  background-color: #113B3A !important;
   color: #FFFFFF !important;
 }
 
@@ -233,11 +233,11 @@
 }
 
 .dark-bg p, .dark-bg span, .dark-bg .subtitle {
-  color: #D1D5DB !important;
+  color: #B7E6E5 !important;
 }
 
 .dark-bg .highlight {
-  color: #84BABF !important;
+  color: #599D9C !important;
 }
 
 .light-bg {
