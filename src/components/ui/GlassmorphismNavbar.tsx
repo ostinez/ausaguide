@@ -116,13 +116,13 @@ export function GlassmorphismNavbar({ className, ...props }: GlassmorphismNavbar
         {...props}
       >
         {/* Logo */}
-        <Link to="/" className="group flex items-center gap-2">
+        <Link to="/" className="group flex items-center gap-2.5">
           <img
             src="/logo-primary.png"
             alt="Ausaguide"
-            width={140}
-            height={28}
-            className="h-7 w-auto block object-contain transition-all duration-300"
+            width={32}
+            height={32}
+            className="h-8 w-8 rounded-lg block object-contain transition-all duration-300 group-hover:scale-105"
             onError={(e) => {
               console.log("Navbar logo failed to load, triggering fallback");
               e.currentTarget.style.display = "none";
@@ -131,9 +131,12 @@ export function GlassmorphismNavbar({ className, ...props }: GlassmorphismNavbar
             }}
             onLoad={() => console.log("Navbar logo loaded successfully")}
           />
+          <span className="text-lg font-black tracking-tight text-white group-hover:text-primary transition-colors">
+            Ausaguide
+          </span>
           <div id="navbar-brand-fallback" className="items-center gap-2" style={{ display: "none" }}>
             <Globe className="size-6 text-primary" />
-            <span className="text-xl font-bold tracking-tight text-primary">
+            <span className="text-xl font-bold tracking-tight bg-linear-to-r from-primary to-primary/60 bg-clip-text text-transparent">
               Ausaguide
             </span>
           </div>
@@ -276,13 +279,13 @@ export function GlassmorphismNavbar({ className, ...props }: GlassmorphismNavbar
               className="w-72 bg-card border-l border-border p-6 rounded-l-3xl flex flex-col shadow-modern text-foreground"
             >
               <SheetHeader className="mb-6">
-                <SheetTitle className="flex items-center gap-2">
+                <SheetTitle className="flex items-center gap-2.5">
                   <img
                     src="/logo-primary.png"
                     alt="Ausaguide"
-                    width={120}
-                    height={24}
-                    className="h-6 w-auto block object-contain"
+                    width={28}
+                    height={28}
+                    className="h-7 w-7 rounded-lg block object-contain"
                     onError={(e) => {
                       console.log("Mobile Navbar logo failed to load, triggering fallback");
                       e.currentTarget.style.display = "none";
@@ -291,9 +294,10 @@ export function GlassmorphismNavbar({ className, ...props }: GlassmorphismNavbar
                     }}
                     onLoad={() => console.log("Mobile Navbar logo loaded successfully")}
                   />
+                  <span className="text-lg font-black tracking-tight text-white">Ausaguide</span>
                   <div id="navbar-brand-fallback-mobile" className="items-center gap-2" style={{ display: "none" }}>
                     <Globe className="size-5 text-primary" />
-                    <span className="font-bold text-primary">Ausaguide</span>
+                    <span className="font-bold bg-linear-to-r from-primary to-primary/60 bg-clip-text text-transparent">Ausaguide</span>
                   </div>
                 </SheetTitle>
               </SheetHeader>

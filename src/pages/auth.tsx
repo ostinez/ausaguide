@@ -950,17 +950,20 @@ export default function AuthPage() {
  </div>
 
  <div className="relative z-10 w-full max-w-md">
- {/* Logo */}
- <div className="mb-8 flex flex-col items-center gap-2">
- <Link to="/" className="flex items-center gap-2">
- <img
- src="/logo-primary.png"
- alt="Ausaguide"
- width={160}
- height={32}
- className="h-10 w-auto block object-contain"
- />
- </Link>
+        {/* Logo */}
+        <div className="mb-8 flex flex-col items-center gap-2">
+          <Link to="/" className="flex items-center gap-3 group">
+            <img
+              src="/logo-primary.png"
+              alt="Ausaguide"
+              width={44}
+              height={44}
+              className="h-11 w-11 rounded-xl block object-contain transition-transform group-hover:scale-105"
+            />
+            <span className="text-2xl font-black tracking-tight text-white font-headline">
+              Ausaguide
+            </span>
+          </Link>
  <p className="text-sm text-muted-foreground">
  Discover Kenya through local eyes
  </p>
