@@ -35,8 +35,6 @@ export async function findOrCreateChat(
     .insert({
       participant_a: pA,
       participant_b: pB,
-      last_message: "Booking confirmed — start chatting!",
-      last_message_at: new Date().toISOString(),
     })
     .select("id")
     .single()
@@ -102,15 +100,4 @@ export async function sendSystemMessage(
       })
     } catch (_) {}
   }
-
-  // Update conversation last_message
-  try {
-    await supabase
-      .from("conversations")
-      .update({
-        last_message: summaryText.substring(0, 120),
-        last_message_at: new Date().toISOString(),
-      })
-      .eq("id", chatId)
-  } catch (_) {}
 }

@@ -32,8 +32,6 @@ async function ensureReceiptMessage(booking: Booking, userId: string) {
  .insert({
  participant_a: pA,
  participant_b: pB,
- last_message: "Booking confirmed",
- last_message_at: new Date().toISOString(),
  })
  .select("id")
  .single()
@@ -75,14 +73,6 @@ async function ensureReceiptMessage(booking: Booking, userId: string) {
  },
  read: false,
  })
-
- await supabase
- .from("conversations")
- .update({
- last_message: "Booking confirmed",
- last_message_at: new Date().toISOString(),
- })
- .eq("id", convId)
 }
 
 export default function PaymentSuccessPage() {

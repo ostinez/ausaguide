@@ -425,8 +425,6 @@ export async function findOrCreateDirectConversation(
     .insert({
       participant_a: pA,
       participant_b: pB,
-      last_message: "You are now connected! Start your conversation.",
-      last_message_at: new Date().toISOString(),
     })
     .select("id")
     .single()
@@ -509,7 +507,7 @@ export async function fetchReachableConnections(
     // 3. Fetch existing conversation IDs
     const { data: convs } = await supabase
       .from("conversations")
-      .select("id, participant_a, participant_b, last_message, last_message_at")
+      .select("id, participant_a, participant_b")
       .or(`participant_a.eq.${currentUserId},participant_b.eq.${currentUserId}`)
 
     const convMap = new Map<string, any>()
@@ -533,8 +531,8 @@ export async function fetchReachableConnections(
         is_verified: p.is_verified,
         connection_type: conn?.type || "following",
         conversation_id: conv?.id || null,
-        last_message: conv?.last_message || null,
-        last_message_at: conv?.last_message_at || null,
+        last_message: null,
+        last_message_at: null,
       }
     })
   } catch (err) {

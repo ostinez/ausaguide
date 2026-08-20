@@ -528,7 +528,7 @@ export default function MessagesPage() {
       try {
         const { data: convData } = await supabase
           .from("conversations")
-          .select("id, participant_a, participant_b, last_message, last_message_at, created_at")
+          .select("id, participant_a, participant_b, created_at")
           .eq("id", selectedConvId)
           .maybeSingle()
 
@@ -547,8 +547,8 @@ export default function MessagesPage() {
           id: convData.id,
           participant_a: convData.participant_a,
           participant_b: convData.participant_b,
-          last_message: convData.last_message,
-          last_message_at: convData.last_message_at,
+          last_message: null,
+          last_message_at: convData.created_at,
           created_at: convData.created_at,
           isDirect: true,
           bookingId: null,

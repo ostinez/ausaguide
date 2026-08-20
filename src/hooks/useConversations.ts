@@ -57,35 +57,53 @@ export function useConversations(currentUserId: string | null) {
           id,
           participant_a,
           participant_b,
-          last_message,
-          last_message_at,
           created_at
         `)
         .or(`participant_a.eq.${currentUserId},participant_b.eq.${currentUserId}`)
-        .order("last_message_at", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false })
 
       if (convErr) throw convErr
 
       const deletedConvsKey = `deleted_convs_${currentUserId}`
       const deletedConvsMap: Record<string, string> = JSON.parse(localStorage.getItem(deletedConvsKey) || "{}")
 
-      // 2. Include all conversations except ones deleted for this user that have no new messages
-      const validRows = (convRows || []).filter((row: any) => {
-        const deletedAt = deletedConvsMap[row.id]
-        if (!deletedAt) return true
-        if (row.last_message_at && new Date(row.last_message_at) > new Date(deletedAt)) {
-          delete deletedConvsMap[row.id]
-          localStorage.setItem(deletedConvsKey, JSON.stringify(deletedConvsMap))
-          return true
-        }
-        return false
-      })
+      const validRows = convRows || []
 
-      // 3. Enrich with the other participant's profile + unread count + booking context
-      const enriched: ConversationItem[] = await Promise.all(
-        validRows.map(async (row: any) => {
+      // 2. Enrich with the other participant's profile + last message + unread count + booking context
+      const results = await Promise.all(
+        validRows.map(async (row: any): Promise<ConversationItem | null> => {
           const otherId =
             row.participant_a === currentUserId ? row.participant_b : row.participant_a
+
+          // Fetch last message from messages table
+          let lastMessageText: string | null = null
+          let lastMessageTime: string | null = row.created_at
+
+          try {
+            const { data: lastMsg } = await supabase
+              .from("messages")
+              .select("message, created_at")
+              .eq("conversation_id", row.id)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle()
+
+            if (lastMsg) {
+              lastMessageText = lastMsg.message
+              lastMessageTime = lastMsg.created_at
+            }
+          } catch (_) {}
+
+          // Check if conversation was soft deleted
+          const deletedAt = deletedConvsMap[row.id]
+          if (deletedAt) {
+            if (lastMessageTime && new Date(lastMessageTime) > new Date(deletedAt)) {
+              delete deletedConvsMap[row.id]
+              localStorage.setItem(deletedConvsKey, JSON.stringify(deletedConvsMap))
+            } else {
+              return null
+            }
+          }
 
           // Fetch the other user's profile
           let profile: any = null
@@ -141,8 +159,8 @@ export function useConversations(currentUserId: string | null) {
             id: row.id,
             participant_a: row.participant_a,
             participant_b: row.participant_b,
-            last_message: row.last_message,
-            last_message_at: row.last_message_at,
+            last_message: lastMessageText,
+            last_message_at: lastMessageTime,
             created_at: row.created_at,
             isDirect: !bookingInfo,
             bookingId: bookingInfo?.id ?? null,
@@ -160,6 +178,14 @@ export function useConversations(currentUserId: string | null) {
           }
         })
       )
+
+      const enriched: ConversationItem[] = results
+        .filter((c): c is ConversationItem => Boolean(c))
+        .sort((a, b) => {
+          const tA = a.last_message_at ? new Date(a.last_message_at).getTime() : 0
+          const tB = b.last_message_at ? new Date(b.last_message_at).getTime() : 0
+          return tB - tA
+        })
 
       setConversations(enriched)
     } catch (err: any) {

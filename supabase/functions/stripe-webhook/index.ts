@@ -172,8 +172,6 @@ serve(async (req) => {
               await supabase.from("conversations").insert({
                 participant_a: pA,
                 participant_b: pB,
-                last_message: `Booking confirmed for ${tourTitle}`,
-                last_message_at: new Date().toISOString(),
               })
               console.log(`Created chat thread between host ${booking.host_id} and guest ${booking.guest_id}`)
             }

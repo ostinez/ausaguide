@@ -117,8 +117,6 @@ serve(async (req) => {
           .insert({
             participant_a: pA,
             participant_b: pB,
-            last_message: "🧾 Booking confirmed",
-            last_message_at: new Date().toISOString(),
           })
           .select("id")
           .single();
@@ -164,14 +162,6 @@ serve(async (req) => {
           } else {
             console.log(`💬 Receipt inserted into conversation ${convId}`);
           }
-
-          await supabase
-            .from("conversations")
-            .update({
-              last_message: "🧾 Booking confirmed",
-              last_message_at: new Date().toISOString(),
-            })
-            .eq("id", convId);
         }
       }
     }

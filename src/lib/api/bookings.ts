@@ -321,19 +321,11 @@ export async function sendBookingSystemMessage(
       conversationId = existingConv.id
     } else {
       // Create a new conversation thread
-      const messagePreview =
-        type === "booking_confirmed"
-          ? `Booking confirmed for ${tourTitle}`
-          : type === "booking_request"
-          ? `New booking request for ${tourTitle}`
-          : `Booking declined for ${tourTitle}`
       const { data: newConv, error: convErr } = await supabase
         .from("conversations")
         .insert({
           participant_a: pA,
           participant_b: pB,
-          last_message: messagePreview,
-          last_message_at: new Date().toISOString(),
         })
         .select("id")
         .single()
@@ -380,15 +372,6 @@ export async function sendBookingSystemMessage(
       console.warn("[sendBookingSystemMessage] Failed to insert system message:", msgErr.message)
       return
     }
-
-    // Update last_message on conversation
-    await supabase
-      .from("conversations")
-      .update({
-        last_message: systemText.substring(0, 120),
-        last_message_at: new Date().toISOString(),
-      })
-      .eq("id", conversationId)
   } catch (err) {
     // Never block the booking action because of chat issues
     console.warn("[sendBookingSystemMessage] Error:", err)
