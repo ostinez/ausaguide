@@ -42,6 +42,8 @@ export default function Home() {
       "@type": "WebSite",
       "name": "Ausaguide",
       "url": "https://ausaguide.com",
+      "image": "https://ausaguide.com/og-image.png",
+      "thumbnailUrl": "https://ausaguide.com/logo-mark.png",
       "potentialAction": {
         "@type": "SearchAction",
         "target": "https://ausaguide.com/tours?search={search_term_string}",

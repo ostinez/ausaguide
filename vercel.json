@@ -5,7 +5,7 @@
   "installCommand": "npm install",
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
-    { "source": "/((?!api/|assets/|images/|sitemap\\.xml|robots\\.txt|sw\\.js|favicon\\.ico|favicon-.*\\.png|apple-touch-icon\\.png|web-app-manifest-.*\\.png|site\\.webmanifest|logo-mark\\.png|logo-primary\\.png|offline\\.html).*)", "destination": "/index.html" }
+    { "source": "/((?!api/|assets/|images/|sitemap\\.xml|robots\\.txt|sw\\.js|favicon.*|apple-touch-icon.*|web-app-manifest.*|site\\.webmanifest|logo-.*|og-image\\.png|offline\\.html).*)", "destination": "/index.html" }
   ],
   "headers": [
     {
@@ -17,6 +17,20 @@
         { "key": "Referrer-Policy",          "value": "strict-origin-when-cross-origin" },
         { "key": "Strict-Transport-Security","value": "max-age=63072000; includeSubDomains; preload" },
         { "key": "Permissions-Policy",       "value": "camera=(self \"https://*.daily.co\"), microphone=(self \"https://*.daily.co\"), geolocation=(self), payment=(self \"https://*.intasend.com\" \"https://*.paystack.co\")" }
+      ]
+    },
+    {
+      "source": "/og-image.png",
+      "headers": [
+        { "key": "Content-Type", "value": "image/png" },
+        { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=43200" }
+      ]
+    },
+    {
+      "source": "/favicon.ico",
+      "headers": [
+        { "key": "Content-Type", "value": "image/x-icon" },
+        { "key": "Cache-Control", "value": "public, max-age=86400" }
       ]
     },
     {

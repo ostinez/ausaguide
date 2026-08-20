@@ -1,4 +1,12 @@
 # https://www.robotstxt.org/robotstxt.html
+
+# Google Search Favicon & Image Crawlers
+User-agent: Googlebot-Favicons
+Allow: /
+
+User-agent: Googlebot-Image
+Allow: /
+
 User-agent: *
 Allow: /
 Disallow: /admin/
