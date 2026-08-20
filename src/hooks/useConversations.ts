@@ -50,7 +50,7 @@ export function useConversations(currentUserId: string | null) {
     setError(null)
 
     try {
-      // 1. Load conversations joined with booking context
+      // 1. Load conversations
       const { data: convRows, error: convErr } = await supabase
         .from("conversations")
         .select(`
@@ -59,24 +59,17 @@ export function useConversations(currentUserId: string | null) {
           participant_b,
           last_message,
           last_message_at,
-          created_at,
-          booking_id,
-          bookings!conversations_booking_id_fkey(
-            id,
-            status,
-            booking_date,
-            tour:tours(title)
-          )
+          created_at
         `)
         .or(`participant_a.eq.${currentUserId},participant_b.eq.${currentUserId}`)
         .order("last_message_at", { ascending: false, nullsFirst: false })
 
       if (convErr) throw convErr
 
-      // 2. Include all conversations (both direct chats and tour booking chats)
+      // 2. Include all conversations
       const validRows = convRows || []
 
-      // 3. Enrich with the other participant's profile + unread count
+      // 3. Enrich with the other participant's profile + unread count + booking context
       const enriched: ConversationItem[] = await Promise.all(
         validRows.map(async (row: any) => {
           const otherId =
@@ -109,9 +102,28 @@ export function useConversations(currentUserId: string | null) {
             // Safe fallback
           }
 
-          const booking = row.bookings
-          const tourTitle = booking?.tour?.title ?? null
-          const bookingDate = booking?.booking_date ?? null
+          // Check for active/recent booking between the two participants
+          let bookingInfo: { id: string; status: string; tourName: string | null; bookingDate: string | null } | null = null
+          try {
+            const { data: bData } = await supabase
+              .from("bookings")
+              .select("id, status, booking_date, tours(title)")
+              .or(`and(guest_id.eq.${currentUserId},host_id.eq.${otherId}),and(guest_id.eq.${otherId},host_id.eq.${currentUserId})`)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle()
+
+            if (bData) {
+              bookingInfo = {
+                id: bData.id,
+                status: bData.status,
+                tourName: (bData.tours as any)?.title ?? null,
+                bookingDate: bData.booking_date ?? null,
+              }
+            }
+          } catch (_) {
+            // Safe fallback
+          }
 
           return {
             id: row.id,
@@ -120,11 +132,11 @@ export function useConversations(currentUserId: string | null) {
             last_message: row.last_message,
             last_message_at: row.last_message_at,
             created_at: row.created_at,
-            isDirect: !row.booking_id,
-            bookingId: row.booking_id ?? null,
-            bookingStatus: booking?.status ?? null,
-            tourName: tourTitle,
-            bookingDate,
+            isDirect: !bookingInfo,
+            bookingId: bookingInfo?.id ?? null,
+            bookingStatus: bookingInfo?.status ?? null,
+            tourName: bookingInfo?.tourName ?? null,
+            bookingDate: bookingInfo?.bookingDate ?? null,
             other: (profile as Participant) ?? {
               id: otherId,
               full_name: "Ausaguide User",

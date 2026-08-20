@@ -12,26 +12,13 @@ import { supabase } from "./supabase"
  * can show booking context (tour name, date).
  */
 export async function findOrCreateChat(
-  bookingId: string,
+  _bookingId: string,
   travelerId: string,
   hostId: string
 ): Promise<string> {
   const [pA, pB] = [travelerId, hostId].sort()
 
-  // 1. Check if a conversation already exists for this booking
-  if (bookingId) {
-    const { data: byBooking } = await supabase
-      .from("conversations")
-      .select("id")
-      .eq("booking_id", bookingId)
-      .maybeSingle()
-
-    if (byBooking?.id) {
-      return byBooking.id
-    }
-  }
-
-  // 2. Check if a conversation already exists between participants (legacy)
+  // 1. Check if a conversation already exists between participants
   const { data: existingConv } = await supabase
     .from("conversations")
     .select("id")
@@ -39,36 +26,31 @@ export async function findOrCreateChat(
     .maybeSingle()
 
   if (existingConv?.id) {
-    // Attach booking_id to the existing conversation if not already set
-    if (bookingId) {
-      await supabase
-        .from("conversations")
-        .update({ booking_id: bookingId })
-        .eq("id", existingConv.id)
-        .is("booking_id", null)
-    }
     return existingConv.id
   }
 
-  // 3. Create new conversation thread with booking_id
-  const insertPayload: Record<string, any> = {
-    participant_a: pA,
-    participant_b: pB,
-    last_message: "Booking confirmed — start chatting!",
-    last_message_at: new Date().toISOString(),
-  }
-
-  if (bookingId) {
-    insertPayload.booking_id = bookingId
-  }
-
+  // 2. Create new conversation thread
   const { data: newConv, error } = await supabase
     .from("conversations")
-    .insert(insertPayload)
+    .insert({
+      participant_a: pA,
+      participant_b: pB,
+      last_message: "Booking confirmed — start chatting!",
+      last_message_at: new Date().toISOString(),
+    })
     .select("id")
     .single()
 
   if (error) {
+    if (error.code === "23505") {
+      const { data: retry } = await supabase
+        .from("conversations")
+        .select("id")
+        .eq("participant_a", pA)
+        .eq("participant_b", pB)
+        .single()
+      if (retry?.id) return retry.id
+    }
     throw new Error(`Failed to create chat: ${error.message}`)
   }
 

@@ -476,6 +476,34 @@ export default function MessagesPage() {
     loadSocialContext()
   }, [authUser?.id])
 
+  // Handle ?bookingId=... from bookings/dashboard
+  useEffect(() => {
+    if (!authUser?.id || !paramBookingId) return
+
+    async function initBookingChat() {
+      try {
+        const { data: bData } = await supabase
+          .from("bookings")
+          .select("id, guest_id, host_id")
+          .eq("id", paramBookingId)
+          .maybeSingle()
+
+        if (!bData) return
+
+        const otherUserId = bData.guest_id === authUser!.id ? bData.host_id : bData.guest_id
+        if (!otherUserId) return
+
+        const { id: convId } = await findOrCreateDirectConversation(authUser!.id, otherUserId)
+        setSelectedConvId(convId)
+        setMobileView("chat")
+        await refreshConversations()
+      } catch (err) {
+        console.error("Failed to start booking conversation:", err)
+      }
+    }
+    initBookingChat()
+  }, [authUser?.id, paramBookingId, refreshConversations])
+
   // Load fallback conversation details if selectedConvId is not in conversations list yet
   useEffect(() => {
     if (!selectedConvId || !authUser?.id) {
@@ -494,7 +522,7 @@ export default function MessagesPage() {
       try {
         const { data: convData } = await supabase
           .from("conversations")
-          .select("id, participant_a, participant_b, last_message, last_message_at, created_at, booking_id")
+          .select("id, participant_a, participant_b, last_message, last_message_at, created_at")
           .eq("id", selectedConvId)
           .maybeSingle()
 
@@ -516,8 +544,8 @@ export default function MessagesPage() {
           last_message: convData.last_message,
           last_message_at: convData.last_message_at,
           created_at: convData.created_at,
-          isDirect: !convData.booking_id,
-          bookingId: convData.booking_id,
+          isDirect: true,
+          bookingId: null,
           bookingStatus: null,
           other: (profData as Participant) || {
             id: otherId,

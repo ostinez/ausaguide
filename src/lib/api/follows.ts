@@ -425,7 +425,6 @@ export async function findOrCreateDirectConversation(
     .insert({
       participant_a: pA,
       participant_b: pB,
-      booking_id: null,
       last_message: "You are now connected! Start your conversation.",
       last_message_at: new Date().toISOString(),
     })
