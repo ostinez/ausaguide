@@ -20,7 +20,12 @@
     <link rel="preload" as="image" href="/images/hero/option_c_sunrise.jpg" fetchpriority="high" />
     <link rel="preload" as="image" href="/images/hero/option_c_foggy.jpg" fetchpriority="high" />
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <!-- Asynchronous Non-blocking Google Fonts with display=swap -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,600;1,400&family=Space+Grotesk:wght@500;700;900&display=swap" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,600;1,400&family=Space+Grotesk:wght@500;700;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,600;1,400&family=Space+Grotesk:wght@500;700;900&display=swap" rel="stylesheet" />
+    </noscript>
     <!-- iOS PWA & Status Bar -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

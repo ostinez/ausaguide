@@ -36,10 +36,15 @@ export const TourCard = memo(function TourCard({ tour, isWishlisted, onToggleWis
  const hostInitials = getHostInitials(hostName)
  const tourImage = getTourImage(tour)
 
- const defaultClick = () => {
- incrementTourViews(tour.id).catch(console.error)
- navigate(`/tours/${tour.id}`)
- }
+  const prefetchTour = () => {
+    // Prefetch tour detail chunk & assets on hover/touch
+    import("@/pages/tour-detail")
+  }
+
+  const defaultClick = () => {
+    incrementTourViews(tour.id).catch(console.error)
+    navigate(`/tours/${tour.id}`, { state: { initialTour: tour } })
+  }
 
  const isList = viewMode === "list"
 
@@ -56,6 +61,8 @@ export const TourCard = memo(function TourCard({ tour, isWishlisted, onToggleWis
           isList ? "flex-col sm:flex-row h-auto sm:h-52" : "flex-col"
         )}
  onClick={onClick || defaultClick}
+ onPointerEnter={prefetchTour}
+ onPointerDown={prefetchTour}
  tabIndex={0}
  role="button"
  aria-label={`View details for tour: ${tour.title}`}

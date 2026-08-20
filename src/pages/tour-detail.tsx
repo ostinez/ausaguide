@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useParams, Link, useNavigate } from "react-router-dom"
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom"
 import {
  ArrowLeft,
  MapPin,
@@ -49,9 +49,11 @@ import { useUser } from "@/hooks/useUser"
 export default function TourDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
+  const initialTour = (location.state as { initialTour?: Tour })?.initialTour || null
   const { user, isHost } = useUser()
- const [tour, setTour] = useState<Tour | null>(null)
- const [loading, setLoading] = useState(true)
+ const [tour, setTour] = useState<Tour | null>(initialTour)
+ const [loading, setLoading] = useState(!initialTour)
  const [error, setError] = useState<string | null>(null)
  const [activePhotoIndex, setActivePhotoIndex] = useState<number | null>(null)
 
@@ -121,7 +123,9 @@ export default function TourDetailPage() {
  useEffect(() => {
  if (!id) return
 
- setLoading(true)
+ if (!initialTour) {
+   setLoading(true)
+ }
  fetchTourById(id)
  .then(async (t) => {
  setTour(t)

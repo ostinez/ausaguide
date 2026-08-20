@@ -175,6 +175,12 @@
   --sidebar-ring: #317978;
 }
 
+/* ── Mobile Instant Response & Zero Tap Delay ── */
+html, body, button, a, [role="button"], input, select {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* ── Option A: Home Page Dark-to-Light Monochromatic Flow ── */
 .bg-home-flow-a {
   background: linear-gradient(

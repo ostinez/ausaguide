@@ -41,23 +41,26 @@ export function DiscoverToursStack() {
  toast.info(`Skipped "${card.title}"`)
  }
 
- useEffect(() => {
- // Fetch 6 featured tours to populate the Tinder-style stack
- fetchFeaturedTours(6)
- .then((tours) => {
- const formatted = tours.map((tour) => ({
- id: tour.id,
- title: tour.title,
- image: tour.images?.[0] || "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80",
- location: tour.location_name,
- price: formatTourPrice(tour.price, tour.currency),
- onClick: () => navigate(`/tours/${tour.id}`),
- }))
- setCards(formatted)
- })
- .catch(() => setCards([]))
- .finally(() => setLoading(false))
- }, [navigate])
+  useEffect(() => {
+    // Fetch 6 featured tours to populate the Tinder-style stack
+    fetchFeaturedTours(6)
+      .then((tours) => {
+        const formatted = tours.map((tour) => ({
+          id: tour.id,
+          title: tour.title,
+          image: tour.images?.[0] || "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80",
+          location: tour.location_name,
+          price: formatTourPrice(tour.price, tour.currency),
+          onClick: () => {
+            import("@/pages/tour-detail")
+            navigate(`/tours/${tour.id}`, { state: { initialTour: tour } })
+          },
+        }))
+        setCards(formatted)
+      })
+      .catch(() => setCards([]))
+      .finally(() => setLoading(false))
+  }, [navigate])
 
   return (
     <section className="py-24 bg-transparent relative overflow-hidden border-b border-[#235E5D]/40">
