@@ -11,8 +11,7 @@ import BookingDeclinedCard from "./BookingDeclinedCard"
 import DailyRoomSharedCard from "./DailyRoomSharedCard"
 import MessageContent from "./MessageContent"
 import EmojiPickerPopover from "./EmojiPickerPopover"
-import TourInclusionsGuidance from "./TourInclusionsGuidance"
-import HostTourBookingDetails, { type TourBookingInfo } from "./HostTourBookingDetails"
+import { type TourBookingInfo } from "./HostTourBookingDetails"
 import { createGeneralDailyRoom } from "@/lib/daily"
 import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
@@ -200,7 +199,7 @@ export function ChatWindow({
       try {
         let query = supabase
           .from("bookings")
-          .select("id, status, booking_date, booking_time, total_price, currency, guest_count, guest_name, guest_email, guest_phone, notes, tours(id, title, location)")
+          .select("id, status, booking_date, booking_time, total_price, currency, guest_count, guest_name, guest_email, guest_phone, notes, status_history, created_at, tours(id, title, location)")
         
         if (bookingId) {
           query = query.eq("id", bookingId)
@@ -227,6 +226,8 @@ export function ChatWindow({
             guest_email: bData.guest_email,
             guest_phone: bData.guest_phone,
             notes: bData.notes,
+            status_history: Array.isArray((bData as any).status_history) ? (bData as any).status_history : [],
+            created_at: (bData as any).created_at,
           })
         }
       } catch (err) {
@@ -452,28 +453,6 @@ export function ChatWindow({
         </div>
       </div>
 
-      {/* ─── Host / Traveler Verified Booking Receipt & Countdown Banner ─── */}
-      {activeBooking && (
-        <HostTourBookingDetails
-          variant="banner"
-          booking={activeBooking}
-          isHost={currentUserRole === "host"}
-          onStartVideoCall={onStartVideoCall || handleShareDailyRoom}
-        />
-      )}
-
-      {/* ─── Tour Inclusions & Planning Guidance Bar ─── */}
-      <TourInclusionsGuidance
-        userRole={currentUserRole}
-        tourName={tourName}
-        onSelectPrompt={(text) => {
-          setInputVal((prev) => (prev ? prev + " " + text : text))
-          broadcastTyping(true)
-          inputRef.current?.focus()
-        }}
-        onShareVideoCall={handleShareDailyRoom}
-        isSharingVideo={isSharingVideo}
-      />
 
       {/* ─── Message Bubbles Container ─── */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 custom-scrollbar bg-background/50">

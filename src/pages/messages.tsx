@@ -318,7 +318,7 @@ function ProfileSidebar({
         // 2. Load any active or confirmed booking between the two users
         let bookingQuery = supabase
           .from("bookings")
-          .select("id, status, booking_date, booking_time, total_price, currency, guest_count, guest_name, guest_email, guest_phone, notes, tours(id, title, location)")
+          .select("id, status, booking_date, booking_time, total_price, currency, guest_count, guest_name, guest_email, guest_phone, notes, status_history, created_at, tours(id, title, location)")
 
         if (activeConversation?.bookingId) {
           bookingQuery = bookingQuery.eq("id", activeConversation.bookingId)
@@ -345,6 +345,8 @@ function ProfileSidebar({
             guest_email: bData.guest_email,
             guest_phone: bData.guest_phone,
             notes: bData.notes,
+            status_history: Array.isArray((bData as any).status_history) ? (bData as any).status_history : [],
+            created_at: (bData as any).created_at,
           })
         }
       } catch (err) {
@@ -363,7 +365,7 @@ function ProfileSidebar({
           {isHost ? (
             <>
               <ShieldCheck className="size-4 text-emerald-600" />
-              <span>Traveler & Tour Receipt</span>
+              <span>Traveler &amp; Tour Receipt</span>
             </>
           ) : (
             <span>Host Profile</span>
@@ -432,7 +434,6 @@ function ProfileSidebar({
               booking={booking}
               isHost={isHost}
               onStartVideoCall={onStartVideoCall}
-              variant="sidebar"
             />
           )}
 
