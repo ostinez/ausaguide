@@ -12,6 +12,7 @@ import DailyRoomSharedCard from "./DailyRoomSharedCard"
 import MessageContent from "./MessageContent"
 import EmojiPickerPopover from "./EmojiPickerPopover"
 import TourInclusionsGuidance from "./TourInclusionsGuidance"
+import HostTourBookingDetails, { type TourBookingInfo } from "./HostTourBookingDetails"
 import { createGeneralDailyRoom } from "@/lib/daily"
 import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
@@ -34,6 +35,7 @@ export interface ChatWindowProps {
   currentUserName?: string
   tourName?: string | null
   bookingId?: string | null
+  bookingInfo?: TourBookingInfo | null
   onBack?: () => void
   onStartVideoCall?: () => void
   className?: string
@@ -169,6 +171,7 @@ export function ChatWindow({
   currentUserName,
   tourName,
   bookingId,
+  bookingInfo,
   onBack,
   onStartVideoCall,
   className,
@@ -184,6 +187,57 @@ export function ChatWindow({
     broadcastTyping,
     refreshMessages,
   } = useMessages(conversationId, currentUserId, otherUser.id, currentUserRole)
+
+  const [activeBooking, setActiveBooking] = useState<TourBookingInfo | null>(bookingInfo ?? null)
+
+  useEffect(() => {
+    if (bookingInfo) {
+      setActiveBooking(bookingInfo)
+      return
+    }
+
+    async function loadBooking() {
+      try {
+        let query = supabase
+          .from("bookings")
+          .select("id, status, booking_date, booking_time, total_price, currency, guest_count, guest_name, guest_email, guest_phone, notes, tours(id, title, location)")
+        
+        if (bookingId) {
+          query = query.eq("id", bookingId)
+        } else {
+          query = query
+            .or(`and(guest_id.eq.${currentUserId},host_id.eq.${otherUser.id}),and(guest_id.eq.${otherUser.id},host_id.eq.${currentUserId})`)
+            .order("created_at", { ascending: false })
+            .limit(1)
+        }
+
+        const { data: bData } = await query.maybeSingle()
+        if (bData) {
+          setActiveBooking({
+            id: bData.id,
+            tour_id: (bData.tours as any)?.id,
+            tour_name: (bData.tours as any)?.title || tourName || "Booked Tour",
+            booking_date: bData.booking_date,
+            booking_time: (bData as any).booking_time,
+            guest_count: bData.guest_count || 1,
+            total_price: bData.total_price || 0,
+            currency: bData.currency || "KES",
+            status: bData.status || "confirmed",
+            guest_name: bData.guest_name,
+            guest_email: bData.guest_email,
+            guest_phone: bData.guest_phone,
+            notes: bData.notes,
+          })
+        }
+      } catch (err) {
+        console.warn("Could not load booking context:", err)
+      }
+    }
+
+    if (currentUserId && otherUser?.id) {
+      loadBooking()
+    }
+  }, [bookingId, currentUserId, otherUser?.id, bookingInfo, tourName])
 
   const handleClearChat = async () => {
     if (window.confirm("Clear all messages on your side? This will erase chat history for you only, just like WhatsApp.")) {
@@ -345,12 +399,16 @@ export function ChatWindow({
               <h3 className="font-semibold text-sm text-foreground truncate max-w-[180px] sm:max-w-xs">
                 {otherUser.full_name}
               </h3>
-              {otherUser.host_tier && (
+              {currentUserRole === "host" ? (
+                <span className="flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-bold border border-blue-500/20">
+                  {activeBooking ? "Verified Guest" : "Traveler"}
+                </span>
+              ) : otherUser.host_tier ? (
                 <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 text-[10px] font-bold border border-amber-500/20">
                   <Star className="size-2.5 fill-amber-500 text-amber-500" />
                   {otherUser.host_tier}
                 </span>
-              )}
+              ) : null}
             </div>
             <p className="text-[11px] text-muted-foreground truncate">
               {otherTyping ? (
@@ -393,6 +451,16 @@ export function ChatWindow({
           )}
         </div>
       </div>
+
+      {/* ─── Host / Traveler Verified Booking Receipt & Countdown Banner ─── */}
+      {activeBooking && (
+        <HostTourBookingDetails
+          variant="banner"
+          booking={activeBooking}
+          isHost={currentUserRole === "host"}
+          onStartVideoCall={onStartVideoCall || handleShareDailyRoom}
+        />
+      )}
 
       {/* ─── Tour Inclusions & Planning Guidance Bar ─── */}
       <TourInclusionsGuidance

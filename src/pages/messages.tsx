@@ -14,12 +14,14 @@ import {
   Plus,
   Compass,
   Trash2,
+  ShieldCheck,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ChatWindow } from "@/components/chat/ChatWindow"
 import { JournalButton } from "@/components/chat/JournalButton"
 import { NewChatDialog } from "@/components/chat/NewChatDialog"
+import HostTourBookingDetails, { type TourBookingInfo } from "@/components/chat/HostTourBookingDetails"
 import { useConversations, type ConversationItem, type Participant } from "@/hooks/useConversations"
 import { useRealtimePresence } from "@/lib/hooks/useRealtimePresence"
 import { supabase } from "@/lib/supabase"
@@ -111,12 +113,15 @@ function NoChatSelected() {
 
 // ─── Chat Header ─────────────────────────────────────────────────────────────
 
+// ─── Chat Header ─────────────────────────────────────────────────────────────
+
 interface ChatHeaderProps {
   name: string
   avatarUrl: string | null
   hostTier?: string | null
   isOnline: boolean
   isTyping: boolean
+  isHostUser?: boolean
   tourName?: string | null
   bookingDate?: string | null
   onBack: () => void
@@ -132,6 +137,7 @@ function ChatHeader({
   hostTier,
   isOnline,
   isTyping,
+  isHostUser,
   tourName,
   bookingDate,
   onBack,
@@ -155,8 +161,8 @@ function ChatHeader({
 
       <button
         onClick={onViewProfile}
-        className="flex items-center gap-3 min-w-0 flex-1 hover:opacity-80 transition-opacity"
-        title="View profile"
+        className="flex items-center gap-3 min-w-0 flex-1 hover:opacity-85 transition-opacity"
+        title="View profile & booking receipt"
       >
         <div className="relative shrink-0">
           <Avatar className="size-10 border-2 border-border/60 ring-2 ring-primary/10">
@@ -177,24 +183,32 @@ function ChatHeader({
             <span className="font-semibold text-sm text-foreground truncate max-w-[160px] sm:max-w-xs">
               {name}
             </span>
-            {hostTier === "certified_guide" && (
-              <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold flex items-center gap-1">
-                <Award className="size-2.5" />
-                <span>Guide</span>
+            {isHostUser ? (
+              <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold">
+                {tourName ? "Verified Guest" : "Traveler"}
               </span>
-            )}
-            {hostTier === "local_host" && (
-              <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold">
-                Local Host
-              </span>
+            ) : (
+              <>
+                {hostTier === "certified_guide" && (
+                  <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold flex items-center gap-1">
+                    <Award className="size-2.5" />
+                    <span>Guide</span>
+                  </span>
+                )}
+                {hostTier === "local_host" && (
+                  <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold">
+                    Local Host
+                  </span>
+                )}
+              </>
             )}
           </div>
 
           {/* Booking context pill */}
           {tourName ? (
-            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-              <MapPin className="size-2.5 shrink-0" />
-              <span className="truncate max-w-[180px]">{tourName}</span>
+            <div className="flex items-center gap-1.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5">
+              <ShieldCheck className="size-3 shrink-0" />
+              <span className="truncate max-w-[160px]">{tourName}</span>
               {bookingDate && (
                 <>
                   <span className="text-border">·</span>
@@ -202,6 +216,9 @@ function ChatHeader({
                   <span>{new Date(bookingDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
                 </>
               )}
+              <span className="hidden sm:inline text-xs underline ml-1 text-primary cursor-pointer">
+                (View Receipt)
+              </span>
             </div>
           ) : (
             <p className="text-[11px] text-muted-foreground leading-tight">
@@ -215,7 +232,7 @@ function ChatHeader({
               ) : isOnline ? (
                 <span className="text-emerald-500 font-medium">Active now</span>
               ) : (
-                "Confirmed Booking"
+                "Direct Message"
               )}
             </p>
           )}
@@ -234,7 +251,7 @@ function ChatHeader({
           size="icon"
           onClick={onVideoCall}
           className="size-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted"
-          title="Video call"
+          title="Start video room"
         >
           <Video className="size-4" />
         </Button>
@@ -243,7 +260,7 @@ function ChatHeader({
           size="icon"
           onClick={onViewProfile}
           className="size-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted"
-          title="View profile"
+          title="View profile & booking details"
         >
           <Info className="size-4" />
         </Button>
@@ -257,13 +274,25 @@ function ChatHeader({
 
 interface ProfileSidebarProps {
   userId: string
+  authUser: AuthUser | null
+  activeConversation?: ConversationItem | null
   onClose: () => void
+  onStartVideoCall?: () => void
 }
 
-function ProfileSidebar({ userId, onClose }: ProfileSidebarProps) {
+function ProfileSidebar({
+  userId,
+  authUser,
+  activeConversation,
+  onClose,
+  onStartVideoCall,
+}: ProfileSidebarProps) {
   const [profile, setProfile] = useState<any>(null)
   const [tours, setTours] = useState<any[]>([])
+  const [booking, setBooking] = useState<TourBookingInfo | null>(null)
   const [loading, setLoading] = useState(true)
+
+  const isHost = authUser?.role === "host"
 
   useEffect(() => {
     async function load() {
@@ -275,13 +304,49 @@ function ProfileSidebar({ userId, onClose }: ProfileSidebarProps) {
           .single()
         setProfile(prof)
 
-        const { data: tourList } = await supabase
-          .from("tours")
-          .select("id, title, price, currency, rating")
-          .eq("host_id", userId)
-          .eq("is_published", true)
-          .limit(5)
-        setTours(tourList ?? [])
+        // 1. If traveler viewing host, load host's active tours
+        if (!isHost) {
+          const { data: tourList } = await supabase
+            .from("tours")
+            .select("id, title, price, currency, rating")
+            .eq("host_id", userId)
+            .eq("is_published", true)
+            .limit(5)
+          setTours(tourList ?? [])
+        }
+
+        // 2. Load any active or confirmed booking between the two users
+        let bookingQuery = supabase
+          .from("bookings")
+          .select("id, status, booking_date, booking_time, total_price, currency, guest_count, guest_name, guest_email, guest_phone, notes, tours(id, title, location)")
+
+        if (activeConversation?.bookingId) {
+          bookingQuery = bookingQuery.eq("id", activeConversation.bookingId)
+        } else if (authUser?.id) {
+          bookingQuery = bookingQuery
+            .or(`and(guest_id.eq.${authUser.id},host_id.eq.${userId}),and(guest_id.eq.${userId},host_id.eq.${authUser.id})`)
+            .order("created_at", { ascending: false })
+            .limit(1)
+        }
+
+        const { data: bData } = await bookingQuery.maybeSingle()
+        if (bData) {
+          setBooking({
+            id: bData.id,
+            tour_id: (bData.tours as any)?.id,
+            tour_name: (bData.tours as any)?.title || activeConversation?.tourName || "Booked Tour",
+            booking_date: bData.booking_date,
+            booking_time: (bData as any).booking_time,
+            guest_count: bData.guest_count || 1,
+            total_price: bData.total_price || 0,
+            currency: bData.currency || "KES",
+            status: bData.status || "confirmed",
+            guest_name: bData.guest_name || prof?.full_name,
+            guest_email: bData.guest_email,
+            guest_phone: bData.guest_phone,
+            notes: bData.notes,
+          })
+        }
       } catch (err) {
         console.error("ProfileSidebar load error:", err)
       } finally {
@@ -289,12 +354,21 @@ function ProfileSidebar({ userId, onClose }: ProfileSidebarProps) {
       }
     }
     load()
-  }, [userId])
+  }, [userId, isHost, authUser?.id, activeConversation?.bookingId, activeConversation?.tourName])
 
   return (
-    <div className="w-72 shrink-0 border-l border-border/60 bg-card flex flex-col h-full overflow-hidden shadow-modern">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border/60 shrink-0">
-        <span className="text-sm font-semibold text-foreground">Profile</span>
+    <div className="w-80 shrink-0 border-l border-border/60 bg-card flex flex-col h-full overflow-hidden shadow-modern">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/60 shrink-0 bg-muted/20">
+        <span className="text-sm font-bold text-foreground flex items-center gap-2">
+          {isHost ? (
+            <>
+              <ShieldCheck className="size-4 text-emerald-600" />
+              <span>Traveler & Tour Receipt</span>
+            </>
+          ) : (
+            <span>Host Profile</span>
+          )}
+        </span>
         <Button
           variant="ghost"
           size="icon"
@@ -315,8 +389,9 @@ function ProfileSidebar({ userId, onClose }: ProfileSidebarProps) {
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto custom-scrollbar">
-          <div className="flex flex-col items-center gap-3 px-4 py-6 border-b border-border/60">
-            <Avatar className="size-20 border-2 border-primary/30 ring-4 ring-primary/10">
+          {/* User Profile Header Card */}
+          <div className="flex flex-col items-center gap-3 px-4 py-5 border-b border-border/60 bg-card/60">
+            <Avatar className="size-18 border-2 border-primary/30 ring-4 ring-primary/10">
               {profile.avatar_url && (
                 <AvatarImage src={profile.avatar_url} alt={profile.full_name} className="object-cover" />
               )}
@@ -332,7 +407,11 @@ function ProfileSidebar({ userId, onClose }: ProfileSidebarProps) {
                   <span>{profile.location}</span>
                 </p>
               )}
-              {profile.host_tier && (
+              {isHost ? (
+                <span className="inline-flex items-center gap-1 mt-1.5 text-[11px] px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold">
+                  {booking ? "Verified Traveler" : "Ausaguide Traveler"}
+                </span>
+              ) : profile.host_tier && (
                 <span className="inline-flex items-center gap-1 mt-1.5 text-[11px] px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold">
                   {profile.host_tier === "certified_guide" ? (
                     <>
@@ -347,50 +426,66 @@ function ProfileSidebar({ userId, onClose }: ProfileSidebarProps) {
             </div>
           </div>
 
+          {/* If there's an active booking, render the Host Tour Receipt & Countdown Timer */}
+          {booking && (
+            <HostTourBookingDetails
+              booking={booking}
+              isHost={isHost}
+              onStartVideoCall={onStartVideoCall}
+              variant="sidebar"
+            />
+          )}
+
+          {/* Traveler Bio */}
           {profile.bio && (
-            <div className="px-4 py-4 border-b border-border/60">
-              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Bio</p>
-              <p className="text-sm text-foreground leading-relaxed">{profile.bio}</p>
+            <div className="px-4 py-3.5 border-b border-border/60">
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Bio</p>
+              <p className="text-xs text-foreground leading-relaxed">{profile.bio}</p>
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-px bg-border/60 border-b border-border/60">
-            <div className="bg-card px-4 py-3 text-center">
-              <p className="text-xs text-muted-foreground">Tours</p>
-              <p className="text-lg font-bold text-foreground">{tours.length}</p>
-            </div>
-            <div className="bg-card px-4 py-3 text-center">
-              <p className="text-xs text-muted-foreground">Rating</p>
-              <p className="text-lg font-bold text-foreground">
-                {tours.length
-                  ? (tours.reduce((acc, t) => acc + (t.rating || 0), 0) / tours.length).toFixed(1)
-                  : "—"}
-              </p>
-            </div>
-          </div>
-
-          {tours.length > 0 && (
-            <div className="px-4 py-4">
-              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                Active Tours
-              </p>
-              <div className="space-y-2">
-                {tours.map((t) => (
-                  <a
-                    key={t.id}
-                    href={`/tours/${t.id}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center justify-between p-2.5 rounded-xl bg-muted/50 border border-border/60 hover:bg-muted transition-colors"
-                  >
-                    <span className="text-sm font-medium text-foreground truncate max-w-[140px]">{t.title}</span>
-                    <span className="text-xs font-bold text-primary shrink-0 ml-2">
-                      {t.currency} {t.price}
-                    </span>
-                  </a>
-                ))}
+          {/* If Host Profile (viewed by traveler), show Host's active tours */}
+          {!isHost && (
+            <>
+              <div className="grid grid-cols-2 gap-px bg-border/60 border-b border-border/60">
+                <div className="bg-card px-4 py-3 text-center">
+                  <p className="text-xs text-muted-foreground">Tours</p>
+                  <p className="text-lg font-bold text-foreground">{tours.length}</p>
+                </div>
+                <div className="bg-card px-4 py-3 text-center">
+                  <p className="text-xs text-muted-foreground">Rating</p>
+                  <p className="text-lg font-bold text-foreground">
+                    {tours.length
+                      ? (tours.reduce((acc, t) => acc + (t.rating || 0), 0) / tours.length).toFixed(1)
+                      : "—"}
+                  </p>
+                </div>
               </div>
-            </div>
+
+              {tours.length > 0 && (
+                <div className="px-4 py-4">
+                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                    Active Tours
+                  </p>
+                  <div className="space-y-2">
+                    {tours.map((t) => (
+                      <a
+                        key={t.id}
+                        href={`/tours/${t.id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center justify-between p-2.5 rounded-xl bg-muted/50 border border-border/60 hover:bg-muted transition-colors"
+                      >
+                        <span className="text-sm font-medium text-foreground truncate max-w-[140px]">{t.title}</span>
+                        <span className="text-xs font-bold text-primary shrink-0 ml-2">
+                          {t.currency} {t.price}
+                        </span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
@@ -1012,6 +1107,7 @@ export default function MessagesPage() {
               hostTier={activeConv.other.host_tier}
               isOnline={isUserOnline(activeConv.other.id)}
               isTyping={otherTyping}
+              isHostUser={authUser.role === "host"}
               tourName={activeConv.tourName}
               bookingDate={activeConv.bookingDate}
               onBack={handleBack}
@@ -1021,7 +1117,7 @@ export default function MessagesPage() {
               hostName={activeConv.other.full_name}
             />
 
-            <div className="flex flex-1 min-h-0 overflow-hidden">
+            <div className="flex flex-1 min-h-0 overflow-hidden relative">
               <div className="flex-1 min-w-0 flex flex-col min-h-0">
                 {authUser && activeConv && otherUserId && (
                   <ChatWindow
@@ -1044,9 +1140,12 @@ export default function MessagesPage() {
               </div>
 
               {showProfile && otherUserId && (
-                <div className="hidden lg:flex">
+                <div className="absolute inset-y-0 right-0 z-20 bg-card shadow-2xl lg:static lg:flex lg:shadow-none animate-in slide-in-from-right duration-200">
                   <ProfileSidebar
                     userId={otherUserId}
+                    authUser={authUser}
+                    activeConversation={activeConv}
+                    onStartVideoCall={handleVideoCall}
                     onClose={() => setShowProfile(false)}
                   />
                 </div>

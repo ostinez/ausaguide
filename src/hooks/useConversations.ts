@@ -33,6 +33,14 @@ export interface ConversationItem {
   bookingStatus?: string | null
   tourName?: string | null
   bookingDate?: string | null
+  bookingTime?: string | null
+  guestCount?: number | null
+  totalPrice?: number | null
+  currency?: string | null
+  guestName?: string | null
+  guestEmail?: string | null
+  guestPhone?: string | null
+  bookingNotes?: string | null
 }
 
 export function useConversations(currentUserId: string | null) {
@@ -133,11 +141,25 @@ export function useConversations(currentUserId: string | null) {
           }
 
           // Check for active/recent booking between the two participants
-          let bookingInfo: { id: string; status: string; tourName: string | null; bookingDate: string | null } | null = null
+          let bookingInfo: {
+            id: string
+            status: string
+            tourName: string | null
+            bookingDate: string | null
+            bookingTime: string | null
+            guestCount: number | null
+            totalPrice: number | null
+            currency: string | null
+            guestName: string | null
+            guestEmail: string | null
+            guestPhone: string | null
+            notes: string | null
+          } | null = null
+
           try {
             const { data: bData } = await supabase
               .from("bookings")
-              .select("id, status, booking_date, tours(title)")
+              .select("id, status, booking_date, booking_time, total_price, currency, guest_count, guest_name, guest_email, guest_phone, notes, tours(title)")
               .or(`and(guest_id.eq.${currentUserId},host_id.eq.${otherId}),and(guest_id.eq.${otherId},host_id.eq.${currentUserId})`)
               .order("created_at", { ascending: false })
               .limit(1)
@@ -149,6 +171,14 @@ export function useConversations(currentUserId: string | null) {
                 status: bData.status,
                 tourName: (bData.tours as any)?.title ?? null,
                 bookingDate: bData.booking_date ?? null,
+                bookingTime: (bData as any).booking_time ?? null,
+                guestCount: (bData as any).guest_count ?? null,
+                totalPrice: (bData as any).total_price ?? null,
+                currency: (bData as any).currency ?? "KES",
+                guestName: (bData as any).guest_name ?? null,
+                guestEmail: (bData as any).guest_email ?? null,
+                guestPhone: (bData as any).guest_phone ?? null,
+                notes: (bData as any).notes ?? null,
               }
             }
           } catch (_) {
@@ -167,6 +197,14 @@ export function useConversations(currentUserId: string | null) {
             bookingStatus: bookingInfo?.status ?? null,
             tourName: bookingInfo?.tourName ?? null,
             bookingDate: bookingInfo?.bookingDate ?? null,
+            bookingTime: bookingInfo?.bookingTime ?? null,
+            guestCount: bookingInfo?.guestCount ?? null,
+            totalPrice: bookingInfo?.totalPrice ?? null,
+            currency: bookingInfo?.currency ?? null,
+            guestName: bookingInfo?.guestName ?? null,
+            guestEmail: bookingInfo?.guestEmail ?? null,
+            guestPhone: bookingInfo?.guestPhone ?? null,
+            bookingNotes: bookingInfo?.notes ?? null,
             other: (profile as Participant) ?? {
               id: otherId,
               full_name: "Ausaguide User",
