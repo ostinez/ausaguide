@@ -157,8 +157,11 @@ export function NewChatDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden bg-card border-border/80 text-foreground rounded-2xl shadow-2xl">
-        <DialogHeader className="p-5 pb-3 border-b border-border/60">
+      <DialogContent
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        className="sm:max-w-[480px] p-0 overflow-hidden bg-card border-border/80 text-foreground rounded-2xl shadow-2xl max-h-[85vh] sm:max-h-[560px] flex flex-col"
+      >
+        <DialogHeader className="p-5 pb-3 border-b border-border/60 shrink-0">
           <DialogTitle className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <div className="size-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
               <MessageSquare className="size-4 text-primary" />
@@ -170,18 +173,17 @@ export function NewChatDialog({
           </DialogDescription>
 
           <div className="relative mt-3">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
             <Input
               value={query}
               onChange={handleQueryChange}
               placeholder="Search by name…"
               className="pl-9 pr-4 py-2 bg-muted/60 border-border/60 rounded-xl text-sm focus-visible:ring-primary/30"
-              autoFocus
             />
           </div>
         </DialogHeader>
 
-        <div className="max-h-[380px] overflow-y-auto p-3 space-y-1.5 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-3 space-y-1.5 custom-scrollbar overscroll-contain touch-pan-y">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground">
               <Loader2 className="size-6 animate-spin text-primary" />

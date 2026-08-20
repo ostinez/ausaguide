@@ -163,13 +163,14 @@ export function ChatWindow({
     sending,
     otherTyping,
     sendMessage,
+    deleteMessageForMe,
     clearChat,
     broadcastTyping,
     refreshMessages,
   } = useMessages(conversationId, currentUserId, otherUser.id, currentUserRole)
 
   const handleClearChat = async () => {
-    if (window.confirm("Clear all messages on your side? You will still be able to receive new messages.")) {
+    if (window.confirm("Clear all messages on your side? This will erase chat history for you only, just like WhatsApp.")) {
       await clearChat()
     }
   }
@@ -426,8 +427,8 @@ export function ChatWindow({
                     )
                   })()
                 ) : (
-                  <div className={cn("flex flex-col", isMe ? "items-end" : "items-start")}>
-                    <div className="flex items-end gap-2 max-w-[85%] sm:max-w-[75%]">
+                  <div className={cn("flex flex-col group/msg relative", isMe ? "items-end" : "items-start")}>
+                    <div className="flex items-end gap-1.5 max-w-[88%] sm:max-w-[75%]">
                       {!isMe && (
                         <Avatar className="size-6 mb-1 shrink-0">
                           <AvatarImage src={otherUser.avatar_url || undefined} />
@@ -435,6 +436,22 @@ export function ChatWindow({
                             {initials(otherUser.full_name || "U")}
                           </AvatarFallback>
                         </Avatar>
+                      )}
+
+                      {isMe && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm("Delete this message for you?")) {
+                              deleteMessageForMe(msg.id)
+                            }
+                          }}
+                          className="opacity-0 group-hover/msg:opacity-100 focus:opacity-100 transition-opacity p-1 text-muted-foreground hover:text-rose-500 rounded-full hover:bg-muted/80 text-xs shrink-0 cursor-pointer"
+                          title="Delete for me"
+                          aria-label="Delete for me"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
                       )}
 
                       <div
@@ -472,6 +489,22 @@ export function ChatWindow({
                           )}
                         </div>
                       </div>
+
+                      {!isMe && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm("Delete this message for you?")) {
+                              deleteMessageForMe(msg.id)
+                            }
+                          }}
+                          className="opacity-0 group-hover/msg:opacity-100 focus:opacity-100 transition-opacity p-1 text-muted-foreground hover:text-rose-500 rounded-full hover:bg-muted/80 text-xs shrink-0 cursor-pointer"
+                          title="Delete for me"
+                          aria-label="Delete for me"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}

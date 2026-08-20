@@ -66,8 +66,20 @@ export function useConversations(currentUserId: string | null) {
 
       if (convErr) throw convErr
 
-      // 2. Include all conversations
-      const validRows = convRows || []
+      const deletedConvsKey = `deleted_convs_${currentUserId}`
+      const deletedConvsMap: Record<string, string> = JSON.parse(localStorage.getItem(deletedConvsKey) || "{}")
+
+      // 2. Include all conversations except ones deleted for this user that have no new messages
+      const validRows = (convRows || []).filter((row: any) => {
+        const deletedAt = deletedConvsMap[row.id]
+        if (!deletedAt) return true
+        if (row.last_message_at && new Date(row.last_message_at) > new Date(deletedAt)) {
+          delete deletedConvsMap[row.id]
+          localStorage.setItem(deletedConvsKey, JSON.stringify(deletedConvsMap))
+          return true
+        }
+        return false
+      })
 
       // 3. Enrich with the other participant's profile + unread count + booking context
       const enriched: ConversationItem[] = await Promise.all(
@@ -227,10 +239,29 @@ export function useConversations(currentUserId: string | null) {
     }
   }, [currentUserId, loadConversations])
 
+  const deleteConversationForMe = useCallback(
+    (conversationId: string) => {
+      if (!currentUserId || !conversationId) return
+      const deletedConvsKey = `deleted_convs_${currentUserId}`
+      const deletedConvsMap: Record<string, string> = JSON.parse(
+        localStorage.getItem(deletedConvsKey) || "{}"
+      )
+      deletedConvsMap[conversationId] = new Date().toISOString()
+      localStorage.setItem(deletedConvsKey, JSON.stringify(deletedConvsMap))
+
+      const clearedKey = `cleared_chat_${currentUserId}_${conversationId}`
+      localStorage.setItem(clearedKey, new Date().toISOString())
+
+      setConversations((prev) => prev.filter((c) => c.id !== conversationId))
+    },
+    [currentUserId]
+  )
+
   return {
     conversations,
     loading,
     error,
+    deleteConversationForMe,
     refreshConversations: loadConversations,
   }
 }

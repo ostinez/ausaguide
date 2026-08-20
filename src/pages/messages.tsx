@@ -13,6 +13,7 @@ import {
   UserPlus,
   Plus,
   Compass,
+  Trash2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -436,7 +437,12 @@ export default function MessagesPage() {
     })
   }, [])
 
-  const { conversations, loading: convsLoading, refreshConversations } = useConversations(authUser?.id ?? null)
+  const {
+    conversations,
+    loading: convsLoading,
+    deleteConversationForMe,
+    refreshConversations,
+  } = useConversations(authUser?.id ?? null)
   const { isUserOnline } = useRealtimePresence(authUser?.id ?? null)
   const [fallbackConv, setFallbackConv] = useState<ConversationItem | null>(null)
 
@@ -853,90 +859,110 @@ export default function MessagesPage() {
                 const online = isUserOnline(conv.other.id)
 
                 return (
-                  <button
-                    key={conv.id}
-                    id={`conv-item-${conv.id}`}
-                    onClick={() => handleSelectConversation(conv.id)}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-4 py-3.5 text-left transition-all duration-150 border-b border-border/40",
-                      isSelected
-                        ? "bg-primary/[0.08] border-r-2 border-r-primary"
-                        : "hover:bg-muted/60"
-                    )}
-                  >
-                    <div className="relative shrink-0">
-                      <Avatar className="size-11 border border-border/60">
-                        {conv.other.avatar_url && (
-                          <AvatarImage src={conv.other.avatar_url} alt={conv.other.full_name} className="object-cover" />
-                        )}
-                        <AvatarFallback className="bg-gradient-to-br from-primary/20 to-brand-light/10 text-primary font-bold text-sm">
-                          {initials(conv.other.full_name || "U")}
-                        </AvatarFallback>
-                      </Avatar>
-                      {online && (
-                        <span className="absolute bottom-0 right-0 size-3 rounded-full bg-emerald-500 ring-2 ring-card" />
+                  <div key={conv.id} className="relative group/conv">
+                    <button
+                      id={`conv-item-${conv.id}`}
+                      onClick={() => handleSelectConversation(conv.id)}
+                      className={cn(
+                        "w-full flex items-center gap-3 px-4 py-3.5 text-left transition-all duration-150 border-b border-border/40 pr-10",
+                        isSelected
+                          ? "bg-primary/[0.08] border-r-2 border-r-primary"
+                          : "hover:bg-muted/60"
                       )}
-                      {conv.unreadCount > 0 && !isSelected && (
-                        <span className="absolute -top-1 -right-1 size-5 rounded-full bg-primary text-[10px] text-primary-foreground font-black flex items-center justify-center">
-                          {conv.unreadCount > 9 ? "9+" : conv.unreadCount}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-1 mb-0.5">
-                        <span
-                          className={cn(
-                            "text-sm truncate",
-                            conv.unreadCount > 0 ? "font-bold text-foreground" : "font-semibold text-foreground/90",
-                            isSelected && "text-primary"
+                    >
+                      <div className="relative shrink-0">
+                        <Avatar className="size-11 border border-border/60">
+                          {conv.other.avatar_url && (
+                            <AvatarImage src={conv.other.avatar_url} alt={conv.other.full_name} className="object-cover" />
                           )}
-                        >
-                          {conv.other.full_name}
-                        </span>
-                        {conv.last_message_at && (
-                          <span className="text-[10px] text-muted-foreground shrink-0">
-                            {(() => {
-                              try {
-                                const d = new Date(conv.last_message_at)
-                                const now = new Date()
-                                const diff = now.getTime() - d.getTime()
-                                if (diff < 60000) return "now"
-                                if (diff < 3600000) return `${Math.floor(diff / 60000)}m`
-                                if (d.toDateString() === now.toDateString())
-                                  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-                                return d.toLocaleDateString([], { month: "short", day: "numeric" })
-                              } catch {
-                                return ""
-                              }
-                            })()}
+                          <AvatarFallback className="bg-gradient-to-br from-primary/20 to-brand-light/10 text-primary font-bold text-sm">
+                            {initials(conv.other.full_name || "U")}
+                          </AvatarFallback>
+                        </Avatar>
+                        {online && (
+                          <span className="absolute bottom-0 right-0 size-3 rounded-full bg-emerald-500 ring-2 ring-card" />
+                        )}
+                        {conv.unreadCount > 0 && !isSelected && (
+                          <span className="absolute -top-1 -right-1 size-5 rounded-full bg-primary text-[10px] text-primary-foreground font-black flex items-center justify-center">
+                            {conv.unreadCount > 9 ? "9+" : conv.unreadCount}
                           </span>
                         )}
                       </div>
 
-                      {/* Tour or Direct Context */}
-                      {conv.tourName ? (
-                        <p className="text-[10px] text-primary/80 font-medium truncate mb-0.5 flex items-center gap-1">
-                          <MapPin className="size-2.5 shrink-0" />
-                          {conv.tourName}
-                        </p>
-                      ) : conv.isDirect ? (
-                        <p className="text-[10px] text-muted-foreground/80 font-medium truncate mb-0.5 flex items-center gap-1">
-                          <span className="size-1.5 rounded-full bg-primary/70 inline-block" />
-                          Direct Chat
-                        </p>
-                      ) : null}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1 mb-0.5">
+                          <span
+                            className={cn(
+                              "text-sm truncate",
+                              conv.unreadCount > 0 ? "font-bold text-foreground" : "font-semibold text-foreground/90",
+                              isSelected && "text-primary"
+                            )}
+                          >
+                            {conv.other.full_name}
+                          </span>
+                          {conv.last_message_at && (
+                            <span className="text-[10px] text-muted-foreground shrink-0">
+                              {(() => {
+                                try {
+                                  const d = new Date(conv.last_message_at)
+                                  const now = new Date()
+                                  const diff = now.getTime() - d.getTime()
+                                  if (diff < 60000) return "now"
+                                  if (diff < 3600000) return `${Math.floor(diff / 60000)}m`
+                                  if (d.toDateString() === now.toDateString())
+                                    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                                  return d.toLocaleDateString([], { month: "short", day: "numeric" })
+                                } catch {
+                                  return ""
+                                }
+                              })()}
+                            </span>
+                          )}
+                        </div>
 
-                      <p
-                        className={cn(
-                          "text-xs truncate leading-tight",
-                          conv.unreadCount > 0 ? "font-semibold text-foreground" : "text-muted-foreground"
-                        )}
-                      >
-                        {conv.last_message || "No messages yet"}
-                      </p>
-                    </div>
-                  </button>
+                        {/* Tour or Direct Context */}
+                        {conv.tourName ? (
+                          <p className="text-[10px] text-primary/80 font-medium truncate mb-0.5 flex items-center gap-1">
+                            <MapPin className="size-2.5 shrink-0" />
+                            {conv.tourName}
+                          </p>
+                        ) : conv.isDirect ? (
+                          <p className="text-[10px] text-muted-foreground/80 font-medium truncate mb-0.5 flex items-center gap-1">
+                            <span className="size-1.5 rounded-full bg-primary/70 inline-block" />
+                            Direct Chat
+                          </p>
+                        ) : null}
+
+                        <p
+                          className={cn(
+                            "text-xs truncate leading-tight",
+                            conv.unreadCount > 0 ? "font-semibold text-foreground" : "text-muted-foreground"
+                          )}
+                        >
+                          {conv.last_message || "No messages yet"}
+                        </p>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (window.confirm(`Delete conversation with ${conv.other.full_name} for you? This will clear it from your list.`)) {
+                          deleteConversationForMe(conv.id)
+                          if (selectedConvId === conv.id) {
+                            setSelectedConvId("")
+                            setMobileView("list")
+                          }
+                        }
+                      }}
+                      className="absolute right-2 bottom-3 opacity-0 group-hover/conv:opacity-100 focus:opacity-100 p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-rose-500 transition-opacity cursor-pointer z-10"
+                      title="Delete conversation for me"
+                      aria-label="Delete conversation for me"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </div>
                 )
               })
           )}

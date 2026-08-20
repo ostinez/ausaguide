@@ -69,9 +69,17 @@ export function useMessages(
 
       if (error) throw error
 
+      const clearedKey = `cleared_chat_${currentUserId}_${conversationId}`
+      const deletedMsgsKey = `deleted_msgs_${currentUserId}_${conversationId}`
+
+      const clearedAt = localStorage.getItem(clearedKey)
+      const deletedList: string[] = JSON.parse(localStorage.getItem(deletedMsgsKey) || "[]")
+
       let list = (data ?? []) as DirectMessage[]
       // Filter out soft-deleted messages for current user
       list = list.filter((m) => {
+        if (clearedAt && new Date(m.created_at) <= new Date(clearedAt)) return false
+        if (deletedList.includes(m.id)) return false
         if (m.deleted_by_users && m.deleted_by_users.includes(currentUserId)) return false
         if (userRole === "host" && m.deleted_for_host) return false
         if (userRole === "traveler" && m.deleted_for_traveler) return false
@@ -95,241 +103,286 @@ export function useMessages(
   }, [conversationId, currentUserId, userRole])
 
 
- useEffect(() => {
- loadMessages()
- }, [loadMessages])
+  useEffect(() => {
+    loadMessages()
+  }, [loadMessages])
 
- // 2. Realtime listener for new messages & typing indicator
- useEffect(() => {
-  if (!conversationId || !currentUserId) return
+  // 2. Realtime listener for new messages & typing indicator
+  useEffect(() => {
+    if (!conversationId || !currentUserId) return
 
-  const topicName = `conv:${conversationId}`
+    const topicName = `conv:${conversationId}`
 
-  try {
-    const existingChannels = supabase.getChannels()
-    const existing = existingChannels.find(
-      (ch) => ch.topic === `realtime:${topicName}` || ch.topic === topicName
-    )
-    if (existing) {
-      supabase.removeChannel(existing)
+    try {
+      const existingChannels = supabase.getChannels()
+      const existing = existingChannels.find(
+        (ch) => ch.topic === `realtime:${topicName}` || ch.topic === topicName
+      )
+      if (existing) {
+        supabase.removeChannel(existing)
+      }
+    } catch (e) {
+      console.warn("[useMessages] Error cleaning up pre-existing channel:", e)
     }
-  } catch (e) {
-    console.warn("[useMessages] Error cleaning up pre-existing channel:", e)
-  }
 
-  if (channelRef.current) {
-    try {
-      supabase.removeChannel(channelRef.current)
-    } catch (_) {}
-    channelRef.current = null
-  }
+    if (channelRef.current) {
+      try {
+        supabase.removeChannel(channelRef.current)
+      } catch (_) {}
+      channelRef.current = null
+    }
 
-  const channel = supabase
-  .channel(topicName)
-  .on(
-  "postgres_changes",
-  {
-  event: "INSERT",
-  schema: "public",
-  table: "messages",
-  filter: `conversation_id=eq.${conversationId}`,
-  },
-  (payload) => {
-  const newMsg = payload.new as DirectMessage
-  // Filter out if message was soft deleted for current user
-  if (newMsg.deleted_by_users && newMsg.deleted_by_users.includes(currentUserId)) return
-  if (userRole === "host" && newMsg.deleted_for_host) return
-  if (userRole === "traveler" && newMsg.deleted_for_traveler) return
+    const channel = supabase
+      .channel(topicName)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const newMsg = payload.new as DirectMessage
+          // Filter out if message was soft deleted for current user
+          const deletedMsgsKey = `deleted_msgs_${currentUserId}_${conversationId}`
+          const deletedList: string[] = JSON.parse(localStorage.getItem(deletedMsgsKey) || "[]")
+          if (deletedList.includes(newMsg.id)) return
+          if (newMsg.deleted_by_users && newMsg.deleted_by_users.includes(currentUserId)) return
+          if (userRole === "host" && newMsg.deleted_for_host) return
+          if (userRole === "traveler" && newMsg.deleted_for_traveler) return
 
-  setMessages((prev) => {
-  if (prev.some((m) => m.id === newMsg.id)) return prev
-  return [...prev, newMsg]
-  })
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === newMsg.id)) return prev
+            return [...prev, newMsg]
+          })
 
-  // If message is from the other user, mark as read immediately in real-time
-  if (newMsg.sender_id && newMsg.sender_id !== currentUserId) {
-  supabase
-  .from("messages")
-  .update({ read: true })
-  .eq("id", newMsg.id)
-  .then(() => {})
-  }
-  }
-  )
-  .on(
-  "postgres_changes",
-  {
-  event: "UPDATE",
-  schema: "public",
-  table: "messages",
-  filter: `conversation_id=eq.${conversationId}`,
-  },
-  (payload) => {
-  const updatedMsg = payload.new as DirectMessage
-  // If updated message was soft-deleted for current user, remove from list
-  if (
-    (updatedMsg.deleted_by_users && updatedMsg.deleted_by_users.includes(currentUserId)) ||
-    (userRole === "host" && updatedMsg.deleted_for_host) ||
-    (userRole === "traveler" && updatedMsg.deleted_for_traveler)
-  ) {
-    setMessages((prev) => prev.filter((m) => m.id !== updatedMsg.id))
-    return
-  }
+          // If message is from the other user, mark as read immediately in real-time
+          if (newMsg.sender_id && newMsg.sender_id !== currentUserId) {
+            supabase
+              .from("messages")
+              .update({ read: true })
+              .eq("id", newMsg.id)
+              .then(() => {})
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const updatedMsg = payload.new as DirectMessage
+          // If updated message was soft-deleted for current user, remove from list
+          const deletedMsgsKey = `deleted_msgs_${currentUserId}_${conversationId}`
+          const deletedList: string[] = JSON.parse(localStorage.getItem(deletedMsgsKey) || "[]")
+          if (
+            deletedList.includes(updatedMsg.id) ||
+            (updatedMsg.deleted_by_users && updatedMsg.deleted_by_users.includes(currentUserId)) ||
+            (userRole === "host" && updatedMsg.deleted_for_host) ||
+            (userRole === "traveler" && updatedMsg.deleted_for_traveler)
+          ) {
+            setMessages((prev) => prev.filter((m) => m.id !== updatedMsg.id))
+            return
+          }
 
-  setMessages((prev) =>
-  prev.map((m) => (m.id === updatedMsg.id ? updatedMsg : m))
-  )
-  }
-  )
-  .on("broadcast", { event: "typing" }, (payload) => {
-  if (payload.payload?.senderId && payload.payload.senderId !== currentUserId) {
-  setOtherTyping(Boolean(payload.payload.isTyping))
-  }
-  })
-  .subscribe()
+          setMessages((prev) =>
+            prev.map((m) => (m.id === updatedMsg.id ? updatedMsg : m))
+          )
+        }
+      )
+      .on("broadcast", { event: "typing" }, (payload) => {
+        const { senderId, isTyping } = payload.payload as { senderId: string; isTyping: boolean }
+        if (senderId !== currentUserId) {
+          setOtherTyping(isTyping)
+        }
+      })
+      .subscribe()
 
-  channelRef.current = channel
+    channelRef.current = channel
 
-  return () => {
-    try {
-      channel.unsubscribe()
-      supabase.removeChannel(channel)
-    } catch (_) {}
-    channelRef.current = null
-  }
+    return () => {
+      try {
+        channel.unsubscribe()
+        supabase.removeChannel(channel)
+      } catch (_) {}
+      channelRef.current = null
+    }
   }, [conversationId, currentUserId, userRole])
 
- // 3. Typing broadcast
- const broadcastTyping = useCallback(
- (isTyping: boolean) => {
- if (!channelRef.current || !currentUserId) return
+  // 3. Broadcast typing status
+  const broadcastTyping = useCallback(
+    (isTyping: boolean) => {
+      if (!currentUserId || !channelRef.current) return
+      channelRef.current.send({
+        type: "broadcast",
+        event: "typing",
+        payload: { senderId: currentUserId, isTyping },
+      })
 
- channelRef.current.send({
- type: "broadcast",
- event: "typing",
- payload: { senderId: currentUserId, isTyping },
- })
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
+      if (isTyping) {
+        typingTimeoutRef.current = setTimeout(() => {
+          channelRef.current?.send({
+            type: "broadcast",
+            event: "typing",
+            payload: { senderId: currentUserId, isTyping: false },
+          })
+        }, 2500)
+      }
+    },
+    [currentUserId]
+  )
 
- if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
- if (isTyping) {
- typingTimeoutRef.current = setTimeout(() => {
- channelRef.current?.send({
- type: "broadcast",
- event: "typing",
- payload: { senderId: currentUserId, isTyping: false },
- })
- }, 2500)
- }
- },
- [currentUserId]
- )
+  // 4. Send message function
+  const sendMessage = useCallback(
+    async (content: string, imageUrl?: string, senderType?: "traveler" | "host" | "user") => {
+      if (!conversationId || !currentUserId || !otherUserId) {
+        toast.error("Unable to send message: conversation participant missing.")
+        return false
+      }
 
- // 4. Send message function
- const sendMessage = useCallback(
- async (content: string, imageUrl?: string, senderType?: "traveler" | "host" | "user") => {
- if (!conversationId || !currentUserId || !otherUserId) {
- toast.error("Unable to send message: conversation participant missing.")
- return false
- }
+      if (!content.trim() && !imageUrl) return false
 
- if (!content.trim() && !imageUrl) return false
+      setSending(true)
+      try {
+        const payload: Record<string, any> = {
+          conversation_id: conversationId,
+          sender_id: currentUserId,
+          receiver_id: otherUserId,
+          message: content.trim(),
+          read: false,
+        }
 
- setSending(true)
- try {
- const payload: Record<string, any> = {
- conversation_id: conversationId,
- sender_id: currentUserId,
- receiver_id: otherUserId,
- message: content.trim(),
- image_url: imageUrl || null,
- read: false,
- sender_type: senderType || (userRole === "host" ? "host" : userRole === "traveler" ? "traveler" : "user"),
- deleted_for_traveler: false,
- deleted_for_host: false,
- }
+        if (imageUrl) payload.image_url = imageUrl
+        if (senderType) payload.sender_type = senderType
 
- const { error } = await supabase
- .from("messages")
- .insert(payload)
+        const { error } = await supabase
+          .from("messages")
+          .insert(payload)
 
- if (error) throw error
+        if (error) throw error
 
- // Update conversation metadata
- await supabase
- .from("conversations")
- .update({
-        last_message: content.trim() || "Photo",
- last_message_at: new Date().toISOString(),
- })
- .eq("id", conversationId)
+        // Update conversation metadata
+        await supabase
+          .from("conversations")
+          .update({
+            last_message: content.trim() || "Photo",
+            last_message_at: new Date().toISOString(),
+          })
+          .eq("id", conversationId)
 
- // Reset typing status
- broadcastTyping(false)
+        // Reset typing status
+        broadcastTyping(false)
 
- return true
- } catch (err: any) {
- console.error("[useMessages] Error sending message:", err)
- toast.error(err.message || "Failed to send message.")
- return false
- } finally {
- setSending(false)
- }
- },
- [conversationId, currentUserId, otherUserId, broadcastTyping, userRole]
- )
+        return true
+      } catch (err: any) {
+        console.error("[useMessages] Error sending message:", err)
+        toast.error(err.message || "Failed to send message.")
+        return false
+      } finally {
+        setSending(false)
+      }
+    },
+    [conversationId, currentUserId, otherUserId, broadcastTyping]
+  )
 
- // 5. Mark conversation read
- const markConversationRead = useCallback(async () => {
- if (!conversationId || !currentUserId) return
- try {
- await supabase
- .from("messages")
- .update({ read: true })
- .eq("conversation_id", conversationId)
- .eq("receiver_id", currentUserId)
- .eq("read", false)
- } catch (err) {
- console.error("[useMessages] Error marking messages read:", err)
- }
- }, [conversationId, currentUserId])
+  // 5. Mark conversation read
+  const markConversationRead = useCallback(async () => {
+    if (!conversationId || !currentUserId) return
+    try {
+      await supabase
+        .from("messages")
+        .update({ read: true })
+        .eq("conversation_id", conversationId)
+        .eq("receiver_id", currentUserId)
+        .eq("read", false)
+    } catch (err) {
+      console.error("[useMessages] Error marking messages read:", err)
+    }
+  }, [conversationId, currentUserId])
 
- // 6. Clear chat on user's side (soft delete)
- const clearChat = useCallback(async () => {
-   if (!conversationId || !currentUserId) return false
-   try {
-     const updateData: Record<string, any> = {}
-     if (userRole === "host") {
-       updateData.deleted_for_host = true
-     } else {
-       updateData.deleted_for_traveler = true
-     }
+  // 6. Delete single message for me (WhatsApp "Delete for me")
+  const deleteMessageForMe = useCallback(
+    async (messageId: string) => {
+      if (!conversationId || !currentUserId || !messageId) return false
+      try {
+        const deletedMsgsKey = `deleted_msgs_${currentUserId}_${conversationId}`
+        const deletedList: string[] = JSON.parse(localStorage.getItem(deletedMsgsKey) || "[]")
+        if (!deletedList.includes(messageId)) {
+          deletedList.push(messageId)
+          localStorage.setItem(deletedMsgsKey, JSON.stringify(deletedList))
+        }
 
-     const { error } = await supabase
-       .from("messages")
-       .update(updateData)
-       .eq("conversation_id", conversationId)
+        setMessages((prev) => prev.filter((m) => m.id !== messageId))
 
-     if (error) throw error
+        // Attempt soft-delete in DB if supported
+        try {
+          const msg = messages.find((m) => m.id === messageId)
+          const updatedUsers = Array.from(new Set([...(msg?.deleted_by_users || []), currentUserId]))
+          await supabase
+            .from("messages")
+            .update({ deleted_by_users: updatedUsers })
+            .eq("id", messageId)
+        } catch (_) {}
 
-     setMessages([])
-     toast.success("Chat cleared on your side.")
-     return true
-   } catch (err: any) {
-     console.error("[useMessages] Error clearing chat:", err)
-     toast.error("Failed to clear chat.")
-     return false
-   }
- }, [conversationId, currentUserId, userRole])
+        toast.success("Message deleted for you.")
+        return true
+      } catch (err: any) {
+        console.error("[useMessages] Error deleting message:", err)
+        toast.error("Failed to delete message.")
+        return false
+      }
+    },
+    [conversationId, currentUserId, messages]
+  )
 
- return {
- messages,
- loading,
- sending,
- otherTyping,
- sendMessage,
- clearChat,
- broadcastTyping,
- markConversationRead,
- refreshMessages: loadMessages,
- }
+  // 7. Clear entire chat on user's side
+  const clearChat = useCallback(async () => {
+    if (!conversationId || !currentUserId) return false
+    try {
+      const clearedKey = `cleared_chat_${currentUserId}_${conversationId}`
+      localStorage.setItem(clearedKey, new Date().toISOString())
+
+      setMessages([])
+
+      // Attempt soft-delete in DB if columns exist
+      try {
+        const updateData: Record<string, any> = {}
+        if (userRole === "host") {
+          updateData.deleted_for_host = true
+        } else {
+          updateData.deleted_for_traveler = true
+        }
+        await supabase
+          .from("messages")
+          .update(updateData)
+          .eq("conversation_id", conversationId)
+      } catch (_) {}
+
+      toast.success("Chat cleared for you.")
+      return true
+    } catch (err: any) {
+      console.error("[useMessages] Error clearing chat:", err)
+      toast.error("Failed to clear chat.")
+      return false
+    }
+  }, [conversationId, currentUserId, userRole])
+
+  return {
+    messages,
+    loading,
+    sending,
+    otherTyping,
+    sendMessage,
+    deleteMessageForMe,
+    clearChat,
+    broadcastTyping,
+    markConversationRead,
+    refreshMessages: loadMessages,
+  }
 }
