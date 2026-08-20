@@ -261,6 +261,16 @@ export function ImageStreamHero() {
   const sliderRef = useRef<HTMLDivElement>(null)
   const currentScenario = SCENARIO_PAIRS[activeScenarioIndex]
 
+  // Preload all 6 scenario image pairs in browser cache immediately on mount for 0ms latency
+  useEffect(() => {
+    SCENARIO_PAIRS.forEach((scenario) => {
+      const img1 = new Image()
+      img1.src = scenario.smart.image
+      const img2 = new Image()
+      img2.src = scenario.trap.image
+    })
+  }, [])
+
   // Handle Drag / Pointer Movement on the Before-After Slider
   const handleMove = useCallback((clientX: number) => {
     if (!sliderRef.current) return
@@ -336,44 +346,58 @@ export function ImageStreamHero() {
               handleMove(e.touches[0].clientX)
             }}
           >
-            {/* ── Right Layer: Scouted Reality (Golden Sunrise & Mountain) ── */}
-            <img
-              src={currentScenario.smart.image}
-              alt={currentScenario.smart.title}
-              className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
-              loading="eager"
-              fetchPriority="high"
-              decoding="async"
-            />
+            {/* ── All Scenario Layers Pre-Rendered for Instant 0ms Full-Speed Switching ── */}
+            {SCENARIO_PAIRS.map((scenario, idx) => {
+              const isActive = activeScenarioIndex === idx
+              return (
+                <div
+                  key={scenario.id}
+                  className={`absolute inset-0 w-full h-full ${
+                    isActive ? "opacity-100 z-10 pointer-events-auto" : "opacity-0 z-0 pointer-events-none"
+                  }`}
+                  style={{ willChange: "opacity" }}
+                >
+                  {/* Right Layer: Scouted Reality */}
+                  <img
+                    src={scenario.smart.image}
+                    alt={scenario.smart.title}
+                    className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
+                    loading="eager"
+                    fetchPriority={isActive ? "high" : "auto"}
+                    decoding="async"
+                  />
 
-            {/* ── Left Layer: Bad Cold Weather Restricting View (Clipped via clipPath) ── */}
-            <div
-              className="absolute inset-0 w-full h-full pointer-events-none z-15 overflow-hidden"
-              style={{ clipPath: `polygon(0 0, ${sliderPosition}% 0, ${sliderPosition}% 100%, 0 100%)` }}
-            >
-              <img
-                src={currentScenario.trap.image}
-                alt={currentScenario.trap.title}
-                className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
-                loading="eager"
-                fetchPriority="high"
-                decoding="async"
-              />
-            </div>
+                  {/* Left Layer: Bad Cold Weather / Trap (Clipped via clipPath) */}
+                  <div
+                    className="absolute inset-0 w-full h-full pointer-events-none z-15 overflow-hidden"
+                    style={{ clipPath: `polygon(0 0, ${sliderPosition}% 0, ${sliderPosition}% 100%, 0 100%)` }}
+                  >
+                    <img
+                      src={scenario.trap.image}
+                      alt={scenario.trap.title}
+                      className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
+                      loading="eager"
+                      fetchPriority={isActive ? "high" : "auto"}
+                      decoding="async"
+                    />
+                  </div>
+                </div>
+              )
+            })}
 
-            {/* Top Right Label (Sunrise) */}
+            {/* Top Right Label (Scouted Reality) */}
             <div className="absolute top-3 right-3 sm:top-5 sm:right-6 z-25 pointer-events-none">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/45 backdrop-blur-md border border-white/20 text-white text-[11px] sm:text-xs font-black tracking-wider uppercase drop-shadow-lg">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/45 backdrop-blur-md border border-white/20 text-white text-[11px] sm:text-xs font-black tracking-wider uppercase drop-shadow-lg transition-all duration-100">
                 <Check className="size-3 text-[#B7E6E5]" />
-                <span>SCOUTED SUNRISE · 100% CLARITY</span>
+                <span>{currentScenario.smart.badge.toUpperCase()}</span>
               </span>
             </div>
 
-            {/* Top Left Label (Fog Trap) */}
+            {/* Top Left Label (Trap / Risk) */}
             <div className="absolute top-3 left-3 sm:top-5 sm:left-6 z-25 pointer-events-none">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/55 backdrop-blur-md border border-red-500/40 text-red-200 text-[11px] sm:text-xs font-black tracking-wider uppercase drop-shadow-lg">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/55 backdrop-blur-md border border-red-500/40 text-red-200 text-[11px] sm:text-xs font-black tracking-wider uppercase drop-shadow-lg transition-all duration-100">
                 <AlertTriangle className="size-3 text-red-400" />
-                <span>UNCHECKED · FOG & RAIN TRAP</span>
+                <span>{currentScenario.trap.badge.toUpperCase()}</span>
               </span>
             </div>
 
@@ -399,7 +423,8 @@ export function ImageStreamHero() {
 
               <button
                 onClick={() => setShowDetails(!showDetails)}
-                className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#184948]/80 border border-[#235E5D] text-[9px] sm:text-[11px] font-bold text-[#B7E6E5] hover:text-white transition-colors cursor-pointer shrink-0"
+                onPointerDown={() => setShowDetails(!showDetails)}
+                className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#184948]/80 border border-[#235E5D] text-[9px] sm:text-[11px] font-bold text-[#B7E6E5] hover:text-white transition-colors cursor-pointer shrink-0 active:scale-95"
               >
                 <Info className="size-3 text-[#317978]" />
                 <span>{showDetails ? "Hide Intel" : "View Intel"}</span>
@@ -448,7 +473,8 @@ export function ImageStreamHero() {
                   <button
                     key={item.id}
                     onClick={() => setActiveScenarioIndex(idx)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                    onPointerDown={() => setActiveScenarioIndex(idx)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shrink-0 active:scale-95 ${
                       active ? "bento-tab-active" : "bento-tab-inactive"
                     }`}
                   >
@@ -462,7 +488,8 @@ export function ImageStreamHero() {
             <div className="flex items-center gap-1.5 sm:gap-2 ml-auto shrink-0">
               <button
                 onClick={prevScenario}
-                className="p-1.5 rounded-xl bento-pill text-[#B7E6E5] hover:text-white cursor-pointer"
+                onPointerDown={prevScenario}
+                className="p-1.5 rounded-xl bento-pill text-[#B7E6E5] hover:text-white cursor-pointer active:scale-95"
                 title="Previous Scenario"
                 aria-label="Previous Scenario"
               >
@@ -470,7 +497,8 @@ export function ImageStreamHero() {
               </button>
               <button
                 onClick={nextScenario}
-                className="p-1.5 rounded-xl bento-pill text-[#B7E6E5] hover:text-white cursor-pointer"
+                onPointerDown={nextScenario}
+                className="p-1.5 rounded-xl bento-pill text-[#B7E6E5] hover:text-white cursor-pointer active:scale-95"
                 title="Next Scenario"
                 aria-label="Next Scenario"
               >
