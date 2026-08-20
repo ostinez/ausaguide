@@ -31,15 +31,29 @@ export interface ChatWindowProps {
  className?: string
 }
 
+function getDateDivider(currentDateStr: string, prevDateStr?: string): string | null {
+  if (!currentDateStr) return null
+  try {
+    const cur = new Date(currentDateStr)
+    if (prevDateStr) {
+      const prev = new Date(prevDateStr)
+      if (cur.toDateString() === prev.toDateString()) return null
+    }
+    if (isToday(cur)) return "Today"
+    if (isYesterday(cur)) return "Yesterday"
+    return format(cur, "MMMM d, yyyy")
+  } catch {
+    return null
+  }
+}
+
 function formatMsgTime(ts: string) {
- try {
- const d = new Date(ts)
- if (isToday(d)) return format(d, "HH:mm")
- if (isYesterday(d)) return "Yesterday " + format(d, "HH:mm")
- return format(d, "MMM d, HH:mm")
- } catch {
- return ""
- }
+  try {
+    const d = new Date(ts)
+    return format(d, "HH:mm")
+  } catch {
+    return ""
+  }
 }
 
 function initials(name: string) {
@@ -331,119 +345,136 @@ export function ChatWindow({
             const isMe = msg.sender_id === currentUserId
             const isSystem = msg.sender_type === "system"
             const notifType = msg.notification_type || msg.metadata?.type
-
-            if (isSystem || notifType) {
-              if (notifType === "booking_request") {
-                return (
-                  <BookingRequestCard
-                    key={msg.id || index}
-                    booking={{
-                      booking_id: msg.metadata?.booking_id || msg.id,
-                      tour_name: msg.metadata?.tour_name || "Experience",
-                      traveler_name: msg.metadata?.traveler_name || otherUser.full_name,
-                      date: msg.metadata?.date || "Selected Date",
-                      time: msg.metadata?.time || "Scheduled Time",
-                      guests: msg.metadata?.guests || 1,
-                      amount: msg.metadata?.amount || msg.metadata?.total || 0,
-                      currency: msg.metadata?.currency || "KES",
-                      status: msg.metadata?.status,
-                    }}
-                    hostId={currentUserId}
-                    currentUserId={currentUserId}
-                    isHost={currentUserRole === "host"}
-                    onActionComplete={refreshMessages}
-                  />
-                )
-              }
-
-              if (notifType === "booking_confirmed") {
-                return (
-                  <BookingConfirmedCard
-                    key={msg.id || index}
-                    content={{
-                      booking_id: msg.metadata?.booking_id,
-                      tour_name: msg.metadata?.tour_name,
-                      daily_room_url: msg.metadata?.daily_room_url,
-                      daily_room_id: msg.metadata?.daily_room_id,
-                      message: msg.message || msg.metadata?.message,
-                    }}
-                  />
-                )
-              }
-
-              if (notifType === "booking_declined") {
-                return (
-                  <BookingDeclinedCard
-                    key={msg.id || index}
-                    content={{
-                      booking_id: msg.metadata?.booking_id,
-                      tour_name: msg.metadata?.tour_name,
-                      decline_reason: msg.metadata?.decline_reason,
-                      message: msg.message || msg.metadata?.message,
-                    }}
-                  />
-                )
-              }
-
-              if (notifType === "booking_confirmation") {
-                return <BookingReceiptBubble key={msg.id || index} msg={msg} />
-              }
-
-              return (
-                <div key={msg.id || index} className="flex justify-center my-2.5 w-full">
-                  <div className="rounded-full bg-muted/80 border border-border/60 px-3.5 py-1 text-center text-[11px] text-muted-foreground max-w-sm">
-                    {msg.message || JSON.stringify(msg.metadata)}
-                  </div>
-                </div>
-              )
-            }
-
+            const prevMsg = index > 0 ? messages[index - 1] : undefined
+            const dateDivider = getDateDivider(msg.created_at, prevMsg?.created_at)
 
             return (
-              <div
-                key={msg.id || index}
-                className={cn("flex flex-col", isMe ? "items-end" : "items-start")}
-              >
-                <div className="flex items-end gap-2 max-w-[85%] sm:max-w-[75%]">
-                  {!isMe && (
-                    <Avatar className="size-6 mb-1 shrink-0">
-                      <AvatarImage src={otherUser.avatar_url || undefined} />
-                      <AvatarFallback className="bg-muted text-[9px] text-foreground font-semibold">
-                        {initials(otherUser.full_name || "U")}
-                      </AvatarFallback>
-                    </Avatar>
-                  )}
+              <div key={msg.id || index} className="space-y-3">
+                {/* WhatsApp-Style Date Divider Pill */}
+                {dateDivider && (
+                  <div className="flex justify-center my-3 w-full select-none">
+                    <span className="px-3.5 py-1 rounded-full bg-muted/90 backdrop-blur-md border border-border/70 text-[11px] font-semibold text-muted-foreground shadow-xs">
+                      {dateDivider}
+                    </span>
+                  </div>
+                )}
 
-                  <div className="flex flex-col">
-                    <div
-                      className={cn(
-                        "relative px-4 py-2.5 text-sm transition-all duration-200",
-                        isMe
-                          ? "bg-primary text-white rounded-2xl rounded-br-sm shadow-sm"
-                          : "bg-card text-foreground rounded-2xl rounded-bl-sm border border-border/80 shadow-sm"
-                      )}
-                    >
-                      {msg.image_url && <ChatImage src={msg.image_url} />}
-                      {msg.message && <p className="break-words leading-relaxed whitespace-pre-wrap">{msg.message}</p>}
-                    </div>
+                {isSystem || notifType ? (
+                  (() => {
+                    if (notifType === "booking_request") {
+                      return (
+                        <BookingRequestCard
+                          key={msg.id || index}
+                          booking={{
+                            booking_id: msg.metadata?.booking_id || msg.id,
+                            tour_name: msg.metadata?.tour_name || "Experience",
+                            traveler_name: msg.metadata?.traveler_name || otherUser.full_name,
+                            date: msg.metadata?.date || "Selected Date",
+                            time: msg.metadata?.time || "Scheduled Time",
+                            guests: msg.metadata?.guests || 1,
+                            amount: msg.metadata?.amount || msg.metadata?.total || 0,
+                            currency: msg.metadata?.currency || "KES",
+                            status: msg.metadata?.status,
+                          }}
+                          hostId={currentUserId}
+                          currentUserId={currentUserId}
+                          isHost={currentUserRole === "host"}
+                          onActionComplete={refreshMessages}
+                        />
+                      )
+                    }
 
-                    <div
-                      className={cn(
-                        "flex items-center gap-1 mt-1 text-[10px] text-muted-foreground",
-                        isMe ? "justify-end pr-1" : "justify-start pl-1"
+                    if (notifType === "booking_confirmed") {
+                      return (
+                        <BookingConfirmedCard
+                          key={msg.id || index}
+                          content={{
+                            booking_id: msg.metadata?.booking_id,
+                            tour_name: msg.metadata?.tour_name,
+                            daily_room_url: msg.metadata?.daily_room_url,
+                            daily_room_id: msg.metadata?.daily_room_id,
+                            message: msg.message || msg.metadata?.message,
+                          }}
+                        />
+                      )
+                    }
+
+                    if (notifType === "booking_declined") {
+                      return (
+                        <BookingDeclinedCard
+                          key={msg.id || index}
+                          content={{
+                            booking_id: msg.metadata?.booking_id,
+                            tour_name: msg.metadata?.tour_name,
+                            decline_reason: msg.metadata?.decline_reason,
+                            message: msg.message || msg.metadata?.message,
+                          }}
+                        />
+                      )
+                    }
+
+                    if (notifType === "booking_confirmation") {
+                      return <BookingReceiptBubble key={msg.id || index} msg={msg} />
+                    }
+
+                    return (
+                      <div key={msg.id || index} className="flex justify-center my-2.5 w-full">
+                        <div className="rounded-full bg-muted/80 border border-border/60 px-3.5 py-1 text-center text-[11px] text-muted-foreground max-w-sm">
+                          {msg.message || JSON.stringify(msg.metadata)}
+                        </div>
+                      </div>
+                    )
+                  })()
+                ) : (
+                  <div className={cn("flex flex-col", isMe ? "items-end" : "items-start")}>
+                    <div className="flex items-end gap-2 max-w-[85%] sm:max-w-[75%]">
+                      {!isMe && (
+                        <Avatar className="size-6 mb-1 shrink-0">
+                          <AvatarImage src={otherUser.avatar_url || undefined} />
+                          <AvatarFallback className="bg-muted text-[9px] text-foreground font-semibold">
+                            {initials(otherUser.full_name || "U")}
+                          </AvatarFallback>
+                        </Avatar>
                       )}
-                    >
-                      <span>{formatMsgTime(msg.created_at)}</span>
-                      {isMe && (
-                        msg.read ? (
-                          <span title="Read"><CheckCheck className="size-3 text-primary" /></span>
-                        ) : (
-                          <span title="Delivered"><Check className="size-3 text-muted-foreground" /></span>
-                        )
-                      )}
+
+                      <div
+                        className={cn(
+                          "relative px-3.5 py-2 text-sm shadow-sm transition-all select-text",
+                          isMe
+                            ? "bg-[#0D6F73] text-white rounded-2xl rounded-tr-xs"
+                            : "bg-card text-foreground rounded-2xl rounded-tl-xs border border-border/80"
+                        )}
+                      >
+                        {msg.image_url && <ChatImage src={msg.image_url} />}
+                        {msg.message && (
+                          <p className="break-words leading-relaxed whitespace-pre-wrap text-sm">
+                            {msg.message}
+                          </p>
+                        )}
+
+                        <div
+                          className={cn(
+                            "flex items-center justify-end gap-1 mt-1 text-[10px] select-none",
+                            isMe ? "text-white/80" : "text-muted-foreground"
+                          )}
+                        >
+                          <span>{formatMsgTime(msg.created_at)}</span>
+                          {isMe && (
+                            msg.read ? (
+                              <span title="Read" className="inline-flex items-center">
+                                <CheckCheck className="size-3.5 text-[#53bdeb] stroke-[2.5]" />
+                              </span>
+                            ) : (
+                              <span title="Delivered" className="inline-flex items-center">
+                                <CheckCheck className="size-3.5 text-white/70 stroke-[2]" />
+                              </span>
+                            )
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             )
           })

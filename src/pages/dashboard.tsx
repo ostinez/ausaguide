@@ -24,7 +24,6 @@ import {
  Loader2,
  CheckCircle2,
 } from "lucide-react"
-import { ChatDialog } from "@/components/chat/chat-dialog"
 import NotificationBell from "@/components/ui/NotificationBell"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -313,7 +312,19 @@ function BookingExpandedDetails({ booking }: { booking: Booking }) {
  )}
  </p>
  <p className="text-muted-foreground">Email: {booking.guest_email}</p>
- <p className="text-muted-foreground">Phone: {booking.guest_phone || "Not provided"}</p>
+ <p className="text-muted-foreground">
+ Phone:{" "}
+ {booking.guest_phone ? (
+ <a
+ href={`tel:${booking.guest_phone}`}
+ className="text-primary hover:underline font-medium transition-colors"
+ >
+ {booking.guest_phone}
+ </a>
+ ) : (
+ "Not provided"
+ )}
+ </p>
  </div>
  <div className="space-y-1">
  <p className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Special Requests & Notes</p>
@@ -432,115 +443,129 @@ function BookingRow({
  }
 
  return (
- <div
- onClick={() => setExpanded(!expanded)}
- className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4 transition-colors hover:bg-accent/40 cursor-pointer select-none"
- >
- <div className="flex items-center gap-4">
- <Avatar className="size-9 shrink-0" onClick={(e) => e.stopPropagation()}>
- <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
- {booking.guest_name
- .split(" ")
- .map((n) => n[0])
- .join("")}
- </AvatarFallback>
- </Avatar>
- <div className="min-w-0 flex-1">
- <p className="truncate text-sm font-semibold text-foreground">
- {showTour ? booking.tour?.title : booking.guest_name}
- </p>
- <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
- <span className="flex items-center gap-1">
- <Calendar className="size-3" />
- {dateStr}
- </span>
- <span className="flex items-center gap-1">
- <Users className="size-3" />
- {booking.guest_count} {booking.guest_count === 1 ? "guest" : "guests"}
- </span>
- <span>${booking.total_price ? `$${booking.total_price.toLocaleString()} USD` : "$0 USD"}</span>
- {countdown && (booking.status === "confirmed" || booking.status === "pending") && (
- <span className="inline-flex items-center rounded-full bg-teal-500/10 px-2 py-0.5 text-[10px] font-semibold text-teal-400">
- <Clock className="size-3 mr-1 inline" /> {countdown}
- </span>
- )}
- </div>
- </div>
- {onChat && (
- <Button
- size="sm"
- variant="outline"
- className="rounded-full shrink-0 border-primary/50 text-primary hover:bg-primary/10 mr-1"
- onClick={(e) => {
- e.stopPropagation()
- onChat(booking)
- }}
- >
- <MessageSquare className="size-3.5 mr-1" />
- Chat
- </Button>
- )}
- {booking.status === "confirmed" && (
- <Button
- size="sm"
- variant="outline"
- className="rounded-full shrink-0 border-teal/50 text-teal hover:bg-teal/10 mr-1 gap-1.5"
- onClick={handleJoinCall}
- disabled={joiningCall}
- >
- {joiningCall ? (
- <Spinner className="size-3.5 text-teal animate-spin" />
- ) : (
- <Video className="size-3.5" />
- )}
- Join Call
- </Button>
- )}
- {(booking.status === "confirmed" || booking.status === "completed") && !showTour && (
- <Button
- size="sm"
- variant={payoutDone ? "ghost" : "outline"}
- className={cn(
- "rounded-full shrink-0 gap-1.5 mr-1 text-xs",
- payoutDone
- ? "text-green-500 border-green-500/30 bg-green-500/10 cursor-default"
- : "border-primary/40 text-primary hover:bg-primary/10"
- )}
- onClick={handleConfirmCompletion}
- disabled={payingOut || payoutDone}
- >
- {payingOut ? (
- <><Spinner className="size-3 animate-spin" /> Paying out…</>
- ) : payoutDone ? (
- <><CheckCircle2 className="size-3" /> Paid Out</>
- ) : (
- <><BadgeCheck className="size-3" /> Confirm Tour Completion</>
- )}
- </Button>
- )}
- {booking.status === "declined" && booking.decline_reason && (
- <span className="text-xs text-destructive bg-destructive/10 border border-destructive/20 px-3 py-1.5 rounded-xl block max-w-xs shrink-0 truncate" title={booking.decline_reason}>
- Reason: {booking.decline_reason}
- </span>
- )}
- {showTour && (
- <div onClick={(e) => e.stopPropagation()}>
- <ReviewForm
- bookingId={booking.id}
- bookingStatus={booking.status}
- tourId={booking.tour_id}
- hostId={booking.host_id}
- travelerId={localStorage.getItem('user_id') ?? booking.guest_id ?? undefined}
- />
- </div>
- )}
- <Badge variant="outline" className={cn("shrink-0 border-transparent", statusColorClass(booking.status))}>
- {statusLabel(booking.status)}
- </Badge>
- </div>
- 
- {expanded && <BookingExpandedDetails booking={booking} />}
- </div>
+    <div
+      onClick={() => setExpanded(!expanded)}
+      className="flex flex-col gap-3 rounded-2xl border border-border/80 bg-card p-4 transition-all hover:bg-accent/40 hover:border-primary/30 cursor-pointer select-none shadow-sm"
+    >
+      {/* Top Header Row: Avatar, Names & Badges */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <Avatar className="size-10 shrink-0 ring-1 ring-border/60" onClick={(e) => e.stopPropagation()}>
+            <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
+              {booking.guest_name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-bold text-foreground">
+              {showTour ? booking.tour?.title : booking.guest_name}
+            </p>
+            <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1 font-medium">
+                <Calendar className="size-3 text-primary" />
+                {dateStr}
+              </span>
+              <span className="flex items-center gap-1">
+                <Users className="size-3" />
+                {booking.guest_count} {booking.guest_count === 1 ? "guest" : "guests"}
+              </span>
+              <span className="font-semibold text-foreground">
+                {booking.total_price ? `$${booking.total_price.toLocaleString()} USD` : "$0 USD"}
+              </span>
+              {countdown && (booking.status === "confirmed" || booking.status === "pending") && (
+                <span className="inline-flex items-center rounded-full bg-teal-500/10 px-2 py-0.5 text-[10px] font-semibold text-teal-400">
+                  <Clock className="size-3 mr-1 inline" /> {countdown}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <Badge variant="outline" className={cn("border-transparent font-semibold text-[11px] px-2.5 py-0.5", statusColorClass(booking.status))}>
+            {statusLabel(booking.status)}
+          </Badge>
+          {showTour && (
+            <div onClick={(e) => e.stopPropagation()}>
+              <ReviewForm
+                bookingId={booking.id}
+                bookingStatus={booking.status}
+                tourId={booking.tour_id}
+                hostId={booking.host_id}
+                travelerId={localStorage.getItem('user_id') ?? booking.guest_id ?? undefined}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Action buttons row */}
+      {(onChat || (booking.status as string) === "confirmed" || (((booking.status as string) === "confirmed" || (booking.status as string) === "completed") && !showTour) || (booking.status === "declined" && booking.decline_reason)) && (
+        <div className="flex flex-wrap items-center gap-2 pt-2.5 border-t border-border/50">
+          {onChat && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="rounded-full border-primary/50 text-primary hover:bg-primary/10 h-8 text-xs font-semibold px-3"
+              onClick={(e) => {
+                e.stopPropagation()
+                onChat(booking)
+              }}
+            >
+              <MessageSquare className="size-3.5 mr-1.5" />
+              Chat
+            </Button>
+          )}
+          {booking.status === "confirmed" && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="rounded-full border-teal/50 text-teal hover:bg-teal/10 h-8 text-xs font-semibold px-3 gap-1.5"
+              onClick={handleJoinCall}
+              disabled={joiningCall}
+            >
+              {joiningCall ? (
+                <Spinner className="size-3.5 text-teal animate-spin" />
+              ) : (
+                <Video className="size-3.5" />
+              )}
+              Join Call
+            </Button>
+          )}
+          {(booking.status === "confirmed" || booking.status === "completed") && !showTour && (
+            <Button
+              size="sm"
+              variant={payoutDone ? "ghost" : "outline"}
+              className={cn(
+                "rounded-full gap-1.5 h-8 text-xs font-semibold px-3",
+                payoutDone
+                  ? "text-green-500 border-green-500/30 bg-green-500/10 cursor-default"
+                  : "border-primary/40 text-primary hover:bg-primary/10"
+              )}
+              onClick={handleConfirmCompletion}
+              disabled={payingOut || payoutDone}
+            >
+              {payingOut ? (
+                <><Spinner className="size-3 animate-spin" /> Paying out…</>
+              ) : payoutDone ? (
+                <><CheckCircle2 className="size-3" /> Paid Out</>
+              ) : (
+                <><BadgeCheck className="size-3" /> Confirm Tour Completion</>
+              )}
+            </Button>
+          )}
+          {booking.status === "declined" && booking.decline_reason && (
+            <span className="text-xs text-destructive bg-destructive/10 border border-destructive/20 px-3 py-1 rounded-xl block max-w-full truncate" title={booking.decline_reason}>
+              Reason: {booking.decline_reason}
+            </span>
+          )}
+        </div>
+      )}
+
+      {expanded && <BookingExpandedDetails booking={booking} />}
+    </div>
  )
 }
 
@@ -615,45 +640,46 @@ function PendingBookingRow({
  </div>
  </div>
  </div>
- <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
- <Button
- size="sm"
- variant="ghost"
- className="rounded-full text-muted-foreground hover:text-foreground mr-1"
- onClick={(e) => {
- e.stopPropagation()
- onChat(booking)
- }}
- >
- <MessageSquare className="size-4 mr-1" />
- Chat
- </Button>
- <Button
- size="sm"
- variant="outline"
- className="rounded-full border-destructive/50 text-destructive hover:bg-destructive/10"
- onClick={(e) => {
- e.stopPropagation()
- setShowDeclineModal(true)
- }}
- disabled={loadingAction !== null}
- >
- Decline & Refund
- </Button>
- <Button
- size="sm"
- className="rounded-full bg-teal text-white hover:bg-teal/90"
- onClick={(e) => {
- e.stopPropagation()
- handleAction("accept")
- }}
- disabled={loadingAction !== null}
- >
- {loadingAction === "accept" && (
- <Spinner className="size-3 mr-1 text-white animate-spin" />
- )}
- Accept
- </Button>
+        <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-border/40 sm:border-0 sm:pt-0 sm:self-center shrink-0">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="rounded-full text-muted-foreground hover:text-foreground mr-1 h-8 text-xs px-3"
+            onClick={(e) => {
+              e.stopPropagation()
+              onChat(booking)
+            }}
+          >
+            <MessageSquare className="size-3.5 mr-1" />
+            Chat
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="rounded-full border-destructive/50 text-destructive hover:bg-destructive/10 h-8 text-xs px-3"
+            onClick={(e) => {
+              e.stopPropagation()
+              setShowDeclineModal(true)
+            }}
+            disabled={loadingAction !== null}
+          >
+            Decline & Refund
+          </Button>
+          <Button
+            size="sm"
+            className="rounded-full bg-teal text-white hover:bg-teal/90 h-8 text-xs px-3 font-semibold"
+            onClick={(e) => {
+              e.stopPropagation()
+              handleAction("accept")
+            }}
+            disabled={loadingAction !== null}
+          >
+            {loadingAction === "accept" && (
+              <Spinner className="size-3 mr-1 text-white animate-spin" />
+            )}
+            Accept
+          </Button>
+        </div>
  </div>
 
  {showDeclineModal && (
@@ -693,8 +719,6 @@ function PendingBookingRow({
  </div>
  </div>
  )}
- </div>
-
  {expanded && <BookingExpandedDetails booking={booking} />}
  </div>
  )
@@ -1005,7 +1029,8 @@ export function HostDashboard({
  bookings: Booking[]
  onUpdateStatus: (id: string, status: BookingStatus) => Promise<void>
 }) {
- const [chatBooking, setChatBooking] = useState<Booking | null>(null)
+ const navigate = useNavigate()
+ const handleChat = (b: Booking) => navigate(`/messages?bookingId=${b.id}`)
  const pending = bookings.filter((b) => b.status === "pending")
  const upcoming = bookings.filter((b) => b.status === "confirmed")
  const past = bookings.filter(
@@ -1059,7 +1084,7 @@ export function HostDashboard({
  key={b.id}
  booking={b}
  onUpdateStatus={onUpdateStatus}
- onChat={setChatBooking}
+ onChat={handleChat}
  />
  ))
  )}
@@ -1104,7 +1129,7 @@ export function HostDashboard({
  </p>
  ) : (
  upcoming.map((b) => (
- <BookingRow key={b.id} booking={b} onChat={setChatBooking} />
+ <BookingRow key={b.id} booking={b} onChat={handleChat} />
  ))
  )}
  </CardContent>
@@ -1118,23 +1143,10 @@ export function HostDashboard({
  </CardHeader>
  <CardContent className="space-y-3">
  {past.map((b) => (
- <BookingRow key={b.id} booking={b} onChat={setChatBooking} />
+ <BookingRow key={b.id} booking={b} onChat={handleChat} />
  ))}
  </CardContent>
  </Card>
- )}
-
- {chatBooking && (
- <ChatDialog
- bookingId={chatBooking.id}
- isOpen={!!chatBooking}
- onOpenChange={(open) => {
- if (!open) setChatBooking(null)
- }}
- currentUserId={chatBooking.host_id}
- receiverId={chatBooking.guest_id || "22222222-2222-2222-2222-222222222201"}
- receiverName={chatBooking.guest_name}
- />
  )}
  </div>
  )
@@ -1442,8 +1454,6 @@ export default function DashboardPage() {
  }
  }
  const [error, setError] = useState<string | null>(null);
- const [chatBooking, setChatBooking] = useState<Booking | null>(null);
- const [directChatReceiver, setDirectChatReceiver] = useState<{ id: string; name: string } | null>(null);
  const handleChatClick = (b: Booking) => navigate(`/messages?bookingId=${b.id}`);
  const [unreadNotifications, setUnreadNotifications] = useState<number>(0);
  const [notifications, setNotifications] = useState<any[]>([]);
@@ -1788,8 +1798,8 @@ export default function DashboardPage() {
  requests={urgentRequests}
  hostId={userId || ""}
  onRefresh={fetchPendingUrgent}
- onChat={(travelerId, travelerName) => {
- setDirectChatReceiver({ id: travelerId, name: travelerName })
+ onChat={(travelerId) => {
+ navigate(`/messages?userId=${travelerId}`)
  }}
  />
  <HostGamificationTips />
@@ -2050,30 +2060,6 @@ export default function DashboardPage() {
  <TravelerDashboard bookings={travelerBookings} onChat={handleChatClick} />
  </div>
  )}
-
- {(chatBooking || directChatReceiver) && (() => {
- const isHost = userRoleState === "host"
- const curUid = userId || ""
- const bookingId = chatBooking?.id || ""
- const recUid = chatBooking ? (isHost ? (chatBooking.guest_id || "22222222-2222-2222-2222-222222222202") : chatBooking.host_id) : directChatReceiver!.id
- const recName = chatBooking ? (isHost ? chatBooking.guest_name : (chatBooking.host?.full_name || chatBooking.tour?.host?.full_name || "Host")) : directChatReceiver!.name
- 
- return (
- <ChatDialog
- bookingId={bookingId}
- isOpen={!!(chatBooking || directChatReceiver)}
- onOpenChange={(open) => {
- if (!open) {
- setChatBooking(null)
- setDirectChatReceiver(null)
- }
- }}
- currentUserId={curUid}
- receiverId={recUid}
- receiverName={recName}
- />
- )
- })()}
  </div>
  </div>
  </div>

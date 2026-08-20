@@ -70,13 +70,12 @@ describe("useMessages Hook", () => {
 
  it("sends message with correct receiver_id", async () => {
  const mockInsert = vi.fn().mockResolvedValue({ error: null })
- const mockUpdate = vi.fn().mockReturnValue({
- eq: vi.fn().mockReturnValue({
- eq: vi.fn().mockReturnValue({
- eq: vi.fn().mockResolvedValue({ error: null }),
- }),
- }),
- })
+ const mockQueryBuilder: any = {
+ eq: vi.fn().mockImplementation(() => mockQueryBuilder),
+ neq: vi.fn().mockImplementation(() => mockQueryBuilder),
+ then: vi.fn().mockImplementation((cb: any) => Promise.resolve({ error: null }).then(cb)),
+ }
+ const mockUpdate = vi.fn().mockReturnValue(mockQueryBuilder)
 
  ;(supabase.from as any).mockImplementation((table: string) => {
  if (table === "messages") {

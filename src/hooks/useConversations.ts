@@ -14,6 +14,8 @@ export interface Participant {
   avatar_url: string | null
   host_tier: string | null
   bio?: string | null
+  role?: string | null
+  location?: string | null
 }
 
 export interface ConversationItem {
@@ -25,8 +27,10 @@ export interface ConversationItem {
   created_at: string
   other: Participant
   unreadCount: number
-  // Booking context
+  // Direct / Booking context
+  isDirect: boolean
   bookingId?: string | null
+  bookingStatus?: string | null
   tourName?: string | null
   bookingDate?: string | null
 }
@@ -46,8 +50,7 @@ export function useConversations(currentUserId: string | null) {
     setError(null)
 
     try {
-      // 1. Load conversations joined with confirmed booking context
-      //    A conversation is only valid if it has a confirmed booking
+      // 1. Load conversations joined with booking context
       const { data: convRows, error: convErr } = await supabase
         .from("conversations")
         .select(`
@@ -70,13 +73,8 @@ export function useConversations(currentUserId: string | null) {
 
       if (convErr) throw convErr
 
-      // 2. Filter: only keep conversations with a confirmed booking
-      //    If booking_id is null (legacy), still show it (backwards compat)
-      const validRows = (convRows || []).filter((row: any) => {
-        if (!row.booking_id) return true // legacy conversations without booking link
-        const b = row.bookings
-        return b && b.status === "confirmed"
-      })
+      // 2. Include all conversations (both direct chats and tour booking chats)
+      const validRows = convRows || []
 
       // 3. Enrich with the other participant's profile + unread count
       const enriched: ConversationItem[] = await Promise.all(
@@ -89,7 +87,7 @@ export function useConversations(currentUserId: string | null) {
           try {
             const { data } = await supabase
               .from("profiles")
-              .select("id, full_name, avatar_url, host_tier, bio")
+              .select("id, full_name, avatar_url, host_tier, bio, role, location")
               .eq("id", otherId)
               .maybeSingle()
             profile = data
@@ -122,7 +120,9 @@ export function useConversations(currentUserId: string | null) {
             last_message: row.last_message,
             last_message_at: row.last_message_at,
             created_at: row.created_at,
+            isDirect: !row.booking_id,
             bookingId: row.booking_id ?? null,
+            bookingStatus: booking?.status ?? null,
             tourName: tourTitle,
             bookingDate,
             other: (profile as Participant) ?? {
@@ -130,6 +130,7 @@ export function useConversations(currentUserId: string | null) {
               full_name: "Ausaguide User",
               avatar_url: null,
               host_tier: null,
+              role: "user",
             },
             unreadCount,
           }

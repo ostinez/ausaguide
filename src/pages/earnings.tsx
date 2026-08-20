@@ -35,7 +35,7 @@ import {
  SelectValue,
 } from "@/components/ui/select"
 import { fetchHostEarnings, type EarningRow, type EarningsSummary, type DailyEarning } from "@/lib/api/earnings"
-import { fetchProfileById, fetchHostByUserId } from "@/lib/api/hosts"
+import { fetchProfileById } from "@/lib/api/hosts"
 import { toast } from "sonner"
 
 const TAX_RATE = 0.05
@@ -119,8 +119,6 @@ export default function EarningsDashboard() {
  if (!userId) throw new Error("Not logged in.")
  const host = await fetchProfileById(userId)
  if (!host) throw new Error("No host profile found.")
- const hostRecord = await fetchHostByUserId(host.id)
- if (!hostRecord) throw new Error("Host record not found.")
  const data = await fetchHostEarnings(host.id)
  setSummary(data.summary)
  setRows(data.rows)

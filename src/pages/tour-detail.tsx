@@ -906,15 +906,18 @@ export default function TourDetailPage() {
  )}
 
  {tour.host_id && (
- <div className="mt-4 pt-4 border-t border-border/50 flex flex-col items-center gap-1.5">
+ <div className="mt-3.5 pt-3.5 border-t border-border/50">
  <DirectMessageButton
  hostId={tour.host_id}
  hostName={hostName}
  tourId={tour.id}
- variant="ghost"
- className="w-full text-xs text-muted-foreground hover:text-primary hover:bg-primary/5 py-2.5 min-h-[36px]"
- label={`Have questions? Chat with ${hostName.split(" ")[0]}`}
+ variant="outline"
+ className="w-full rounded-full py-5 text-sm font-bold border-primary/50 text-primary hover:bg-primary/10 flex items-center justify-center gap-2 shadow-xs"
+ label={`Message Host (${hostName.split(" ")[0]})`}
  />
+ <p className="text-[11px] text-muted-foreground text-center mt-1.5">
+ Ask questions, check custom availability, or request details
+ </p>
  </div>
  )}
  </div>
@@ -947,8 +950,8 @@ export default function TourDetailPage() {
  hostName={hostName}
  tourId={tour.id}
  variant="outline"
- className="h-10 px-3 rounded-full border-border/80 text-xs font-semibold shrink-0"
- label="Chat"
+ className="h-10 px-3.5 rounded-full border-primary/50 text-primary hover:bg-primary/10 text-xs font-bold shrink-0 gap-1.5"
+ label="Message Host"
  />
  )}
  <Button

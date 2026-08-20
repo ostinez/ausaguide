@@ -187,10 +187,14 @@ export function Navbar() {
         <div className="flex items-center gap-2">
           {userId && <NotificationBell />}
           {userId && unreadCount > 0 && (
-            <div className="hidden md:flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon/10 border border-[#0D6F73]/20 text-[#0D6F73] animate-pulse">
-              <MessageSquare className="size-3" />
+            <Link
+              to="/messages"
+              className="hidden md:flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 transition-colors animate-pulse"
+              title="View unread messages"
+            >
+              <MessageSquare className="size-3 text-primary" />
               <span>{unreadCount}</span>
-            </div>
+            </Link>
           )}
 
           <div className="hidden items-center gap-2 md:flex">

@@ -80,12 +80,12 @@ export function useMessages(
 
       setMessages(list)
 
-      // Automatically mark received messages in this conversation as read
+      // Automatically mark all received messages in this conversation as read
       await supabase
         .from("messages")
         .update({ read: true })
         .eq("conversation_id", conversationId)
-        .eq("receiver_id", currentUserId)
+        .neq("sender_id", currentUserId)
         .eq("read", false)
     } catch (err: any) {
       console.error("[useMessages] Error loading messages:", err)
@@ -146,8 +146,8 @@ export function useMessages(
   return [...prev, newMsg]
   })
 
-  // If current user is receiver, mark as read immediately
-  if (newMsg.receiver_id === currentUserId) {
+  // If message is from the other user, mark as read immediately in real-time
+  if (newMsg.sender_id && newMsg.sender_id !== currentUserId) {
   supabase
   .from("messages")
   .update({ read: true })

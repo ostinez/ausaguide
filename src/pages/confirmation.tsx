@@ -615,7 +615,15 @@ export default function ConfirmationPage() {
  </div>
  <div className="flex justify-between">
  <dt className="text-muted-foreground">Phone</dt>
- <dd className="font-medium text-foreground">{booking.guest_phone}</dd>
+ <dd className="font-medium text-foreground">
+ {booking.guest_phone ? (
+ <a href={`tel:${booking.guest_phone}`} className="text-primary hover:underline font-medium transition-colors">
+ {booking.guest_phone}
+ </a>
+ ) : (
+ "—"
+ )}
+ </dd>
  </div>
  {booking.notes && (
  <div className="flex flex-col gap-0.5 pt-1">

@@ -7,17 +7,18 @@ import {
   Info,
   Loader2,
   CalendarDays,
-  Calendar,
-  CheckCircle2,
   MapPin,
   Award,
   Users,
   UserPlus,
+  Plus,
+  Compass,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ChatWindow } from "@/components/chat/ChatWindow"
 import { JournalButton } from "@/components/chat/JournalButton"
+import { NewChatDialog } from "@/components/chat/NewChatDialog"
 import { useConversations, type ConversationItem, type Participant } from "@/hooks/useConversations"
 import { useRealtimePresence } from "@/lib/hooks/useRealtimePresence"
 import { supabase } from "@/lib/supabase"
@@ -50,7 +51,13 @@ function initials(name: string) {
 
 // ─── Empty State ─────────────────────────────────────────────────────────────
 
-function EmptyConversationPane({ userRole }: { userRole?: string }) {
+function EmptyConversationPane({
+  userRole,
+  onNewChat,
+}: {
+  userRole?: string
+  onNewChat: () => void
+}) {
   return (
     <div className="flex flex-col items-center justify-center h-full gap-5 text-center px-8 select-none">
       <div className="size-24 rounded-3xl bg-gradient-to-br from-primary/20 to-brand-light/10 border border-primary/20 flex items-center justify-center shadow-modern">
@@ -59,33 +66,28 @@ function EmptyConversationPane({ userRole }: { userRole?: string }) {
       <div className="space-y-2">
         <h2 className="text-xl font-bold text-foreground">Your messages</h2>
         <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
-          Conversations appear here after a host accepts your booking request.
+          Start a direct conversation with guides, hosts, or fellow travelers, or view your tour messages.
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-2 justify-center text-xs text-muted-foreground pt-2">
-        <span className="px-3 py-1.5 rounded-full bg-muted/60 border border-border/60 font-medium flex items-center gap-1.5">
-          <Calendar className="size-3.5 text-primary" />
-          <span>Book a tour</span>
-        </span>
-        <span className="px-3 py-1.5 rounded-full bg-muted/60 border border-border/60 font-medium flex items-center gap-1.5">
-          <CheckCircle2 className="size-3.5 text-emerald-500" />
-          <span>Host accepts</span>
-        </span>
-        <span className="px-3 py-1.5 rounded-full bg-muted/60 border border-border/60 font-medium flex items-center gap-1.5">
-          <MessageSquare className="size-3.5 text-primary" />
-          <span>Chat opens</span>
-        </span>
-      </div>
-
-      {userRole === "traveler" && (
-        <Link
-          to="/tours"
-          className="mt-2 inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90 transition-all shadow-modern-glow min-h-[44px]"
+      <div className="flex flex-wrap gap-2.5 justify-center items-center pt-2">
+        <Button
+          onClick={onNewChat}
+          className="rounded-full font-bold text-xs gap-1.5 shadow-modern-glow h-10 px-5"
         >
-          Browse Tours
-        </Link>
-      )}
+          <Plus className="size-3.5" />
+          Start a Conversation
+        </Button>
+        {userRole === "traveler" && (
+          <Link
+            to="/tours"
+            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full border border-border/60 bg-muted/60 text-foreground font-medium text-xs hover:bg-muted transition-all h-10"
+          >
+            <Compass className="size-3.5 text-primary" />
+            Explore Tours
+          </Link>
+        )}
+      </div>
     </div>
   )
 }
@@ -408,6 +410,8 @@ export default function MessagesPage() {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
   const [selectedConvId, setSelectedConvId] = useState<string>(preselectedConvId)
   const [searchQuery, setSearchQuery] = useState("")
+  const [activeCategory, setActiveCategory] = useState<"all" | "direct" | "tours">("all")
+  const [isNewChatOpen, setIsNewChatOpen] = useState(false)
   const [mobileView, setMobileView] = useState<"list" | "chat">(
     preselectedConvId || paramBookingId || paramUserId ? "chat" : "list"
   )
@@ -512,7 +516,9 @@ export default function MessagesPage() {
           last_message: convData.last_message,
           last_message_at: convData.last_message_at,
           created_at: convData.created_at,
+          isDirect: !convData.booking_id,
           bookingId: convData.booking_id,
+          bookingStatus: null,
           other: (profData as Participant) || {
             id: otherId,
             full_name: "Ausaguide User",
@@ -617,20 +623,30 @@ export default function MessagesPage() {
         )}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-4 border-b border-border/60 bg-card/95 shrink-0">
+        <div className="flex items-center justify-between px-4 py-3.5 border-b border-border/60 bg-card/95 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="size-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
               <MessageSquare className="size-4 text-primary" />
             </div>
             <h1 className="text-lg font-bold text-foreground tracking-tight">Messages</h1>
           </div>
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-muted text-muted-foreground border border-border/60">
-            {conversations.length}
-          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => setIsNewChatOpen(true)}
+              className="h-8 rounded-full px-3 text-xs font-bold gap-1 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+            >
+              <Plus className="size-3.5" />
+              <span>New Chat</span>
+            </Button>
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border/60">
+              {conversations.length}
+            </span>
+          </div>
         </div>
 
         {/* Search */}
-        <div className="px-3 py-3 border-b border-border/60 shrink-0">
+        <div className="px-3 pt-3 pb-2 shrink-0">
           <div className="relative">
             <svg
               className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground"
@@ -649,6 +665,43 @@ export default function MessagesPage() {
               className="w-full pl-8 pr-3 py-2 text-sm bg-muted/60 border border-border/60 rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition"
             />
           </div>
+        </div>
+
+        {/* Category Filter Tabs */}
+        <div className="flex items-center gap-1.5 px-3 pb-2.5 border-b border-border/40 overflow-x-auto scrollbar-none shrink-0">
+          <button
+            onClick={() => setActiveCategory("all")}
+            className={cn(
+              "px-3 py-1 rounded-full text-xs font-semibold transition-all shrink-0",
+              activeCategory === "all"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted"
+            )}
+          >
+            All ({conversations.length})
+          </button>
+          <button
+            onClick={() => setActiveCategory("direct")}
+            className={cn(
+              "px-3 py-1 rounded-full text-xs font-semibold transition-all shrink-0",
+              activeCategory === "direct"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted"
+            )}
+          >
+            Direct ({conversations.filter((c) => c.isDirect).length})
+          </button>
+          <button
+            onClick={() => setActiveCategory("tours")}
+            className={cn(
+              "px-3 py-1 rounded-full text-xs font-semibold transition-all shrink-0",
+              activeCategory === "tours"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted"
+            )}
+          >
+            Tours & Bookings ({conversations.filter((c) => !c.isDirect).length})
+          </button>
         </div>
 
         {/* Follow Requests Alert Banner */}
@@ -732,20 +785,35 @@ export default function MessagesPage() {
               <div>
                 <p className="text-sm font-semibold text-foreground">No conversations yet</p>
                 <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  Book a tour and once the host accepts, your chat will appear here.
+                  Start a direct chat with any guide or host, or explore tours.
                 </p>
               </div>
-              {authUser.role === "traveler" && (
-                <Link
-                  to="/tours"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground font-bold text-xs hover:bg-primary/90 transition min-h-[36px]"
+              <div className="flex flex-col gap-2 w-full max-w-[200px]">
+                <Button
+                  onClick={() => setIsNewChatOpen(true)}
+                  className="rounded-full bg-primary text-primary-foreground font-bold text-xs hover:bg-primary/90 transition min-h-[36px] gap-1.5"
                 >
-                  Explore Tours
-                </Link>
-              )}
+                  <Plus className="size-3.5" />
+                  New Message
+                </Button>
+                {authUser.role === "traveler" && (
+                  <Link
+                    to="/tours"
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full border border-border/60 bg-muted/60 text-foreground font-semibold text-xs hover:bg-muted transition min-h-[36px]"
+                  >
+                    <Compass className="size-3.5 text-primary" />
+                    Explore Tours
+                  </Link>
+                )}
+              </div>
             </div>
           ) : (
             conversations
+              .filter((c) => {
+                if (activeCategory === "direct") return c.isDirect
+                if (activeCategory === "tours") return !c.isDirect
+                return true
+              })
               .filter(
                 (c) =>
                   (c.other?.full_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -818,13 +886,18 @@ export default function MessagesPage() {
                         )}
                       </div>
 
-                      {/* Tour context */}
-                      {conv.tourName && (
+                      {/* Tour or Direct Context */}
+                      {conv.tourName ? (
                         <p className="text-[10px] text-primary/80 font-medium truncate mb-0.5 flex items-center gap-1">
                           <MapPin className="size-2.5 shrink-0" />
                           {conv.tourName}
                         </p>
-                      )}
+                      ) : conv.isDirect ? (
+                        <p className="text-[10px] text-muted-foreground/80 font-medium truncate mb-0.5 flex items-center gap-1">
+                          <span className="size-1.5 rounded-full bg-primary/70 inline-block" />
+                          Direct Chat
+                        </p>
+                      ) : null}
 
                       <p
                         className={cn(
@@ -853,7 +926,7 @@ export default function MessagesPage() {
         {!selectedConvId || !activeConv ? (
           conversations.length > 0
             ? <NoChatSelected />
-            : <EmptyConversationPane userRole={authUser.role} />
+            : <EmptyConversationPane userRole={authUser.role} onNewChat={() => setIsNewChatOpen(true)} />
         ) : (
           <div className="flex flex-col h-full min-h-0">
             <ChatHeader
@@ -902,6 +975,16 @@ export default function MessagesPage() {
           </div>
         )}
       </main>
+
+      {/* ── New Chat Dialog ──────────────────────────────────────────────── */}
+      {authUser && (
+        <NewChatDialog
+          isOpen={isNewChatOpen}
+          onOpenChange={setIsNewChatOpen}
+          currentUserId={authUser.id}
+          onSelectConversation={handleSelectConversation}
+        />
+      )}
     </div>
   )
 }

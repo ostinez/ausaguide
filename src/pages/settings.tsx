@@ -96,6 +96,8 @@ export default function SettingsPage() {
 
  // Privacy
  const [publicProfile, setPublicProfile] = useState(true)
+ const [dmPrivacy, setDmPrivacy] = useState<"everyone" | "followers" | "bookings">("everyone")
+ const [readReceipts, setReadReceipts] = useState(true)
 
  // Verification
  const [isVerified, setIsVerified] = useState(false)
@@ -317,6 +319,10 @@ export default function SettingsPage() {
  setFacebook((p as any).facebook || "")
  setReddit((p as any).reddit || "")
  setPublicProfile((p as any).is_private === false)
+ const savedDmPriv = (p as any).direct_messages_permission || localStorage.getItem(`user_dm_privacy_${userId}`) || "everyone"
+ setDmPrivacy(savedDmPriv as "everyone" | "followers" | "bookings")
+ const savedReceipts = localStorage.getItem(`user_read_receipts_${userId}`)
+ setReadReceipts(savedReceipts !== "false")
  }
 
  // Load traveler preferences from local storage
@@ -399,7 +405,10 @@ export default function SettingsPage() {
  facebook: facebook.trim() || null,
  reddit: reddit.trim() || null,
  is_private: !publicProfile,
+ direct_messages_permission: dmPrivacy,
  } as any)
+ localStorage.setItem(`user_dm_privacy_${userId}`, dmPrivacy)
+ localStorage.setItem(`user_read_receipts_${userId}`, String(readReceipts))
 
  const notifs: string[] = []
  if (emailNotifs) notifs.push("email")
@@ -735,7 +744,7 @@ export default function SettingsPage() {
  </p>
  <p className="text-xs text-muted-foreground mt-0.5">
  {publicProfile
- ? "Anyone can follow you instantly and start conversations."
+ ? "Anyone can follow you instantly and view your public profile."
  : "Followers must send a request and be approved before connecting."}
  </p>
  </div>
@@ -766,6 +775,79 @@ export default function SettingsPage() {
  className={cn(
  "pointer-events-none inline-block size-5 rounded-full bg-white shadow-lg transition-transform duration-200",
  publicProfile ? "translate-x-5" : "translate-x-0"
+ )}
+ />
+ </button>
+ </div>
+
+ {/* Direct Messaging Permissions */}
+ <div className="rounded-xl border border-border/50 bg-card shadow-modern p-5 space-y-3">
+ <div>
+ <p className="text-sm font-semibold text-foreground">Direct Messaging Privacy</p>
+ <p className="text-xs text-muted-foreground mt-0.5">
+ Control who can initiate new direct conversations with you.
+ </p>
+ </div>
+ <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+ {[
+ { id: "everyone", label: "Everyone", desc: "Any registered traveler or host on Ausaguide" },
+ { id: "followers", label: "Connections Only", desc: "People you follow & approved followers" },
+ { id: "bookings", label: "Bookings Only", desc: "Users with active or confirmed tours" },
+ ].map((opt) => (
+ <button
+ key={opt.id}
+ type="button"
+ onClick={async () => {
+ setDmPrivacy(opt.id as any)
+ if (userId) {
+ localStorage.setItem(`user_dm_privacy_${userId}`, opt.id)
+ try {
+ await supabase.from("profiles").update({ direct_messages_permission: opt.id } as any).eq("id", userId)
+ } catch {}
+ toast.success(`Direct message privacy set to: ${opt.label}`)
+ }
+ }}
+ className={cn(
+ "flex flex-col text-left p-3.5 rounded-xl border text-xs transition-all cursor-pointer",
+ dmPrivacy === opt.id
+ ? "border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary"
+ : "border-border/70 hover:border-primary/40 bg-card text-foreground"
+ )}
+ >
+ <span className="font-bold text-sm text-foreground">{opt.label}</span>
+ <span className="text-[11px] text-muted-foreground mt-1 leading-relaxed">{opt.desc}</span>
+ </button>
+ ))}
+ </div>
+ </div>
+
+ {/* WhatsApp-Style Read Receipts Toggle */}
+ <div className="flex items-start justify-between rounded-xl border border-border/50 bg-card shadow-modern px-5 py-4">
+ <div>
+ <p className="text-sm font-semibold text-foreground">Read Receipts</p>
+ <p className="text-xs text-muted-foreground mt-0.5">
+ Show double blue checkmarks when you have read messages.
+ </p>
+ </div>
+ <button
+ type="button"
+ onClick={() => {
+ const next = !readReceipts
+ setReadReceipts(next)
+ if (userId) {
+ localStorage.setItem(`user_read_receipts_${userId}`, String(next))
+ toast.success(next ? "Read receipts enabled" : "Read receipts disabled")
+ }
+ }}
+ className={cn(
+ "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200",
+ readReceipts ? "bg-primary" : "bg-muted"
+ )}
+ >
+ <span
+ className={cn(
+ "pointer-events-none inline-block size-5 rounded-full bg-white shadow-lg transition-transform duration-200",
+ readReceipts ? "translate-x-5" : "translate-x-0"
  )}
  />
  </button>
