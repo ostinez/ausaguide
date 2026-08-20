@@ -240,7 +240,14 @@ export function useMessages(
 
   // 4. Send message function
   const sendMessage = useCallback(
-    async (content: string, imageUrl?: string, senderType?: "traveler" | "host" | "user") => {
+    async (
+      content: string,
+      imageUrl?: string,
+      senderType?: "traveler" | "host" | "user" | "system",
+      notificationType?: string,
+      metadata?: Record<string, any>,
+      bookingId?: string | null
+    ) => {
       if (!conversationId || !currentUserId || !otherUserId) {
         toast.error("Unable to send message: conversation participant missing.")
         return false
@@ -260,12 +267,20 @@ export function useMessages(
 
         if (imageUrl) payload.image_url = imageUrl
         if (senderType) payload.sender_type = senderType
+        if (notificationType) payload.notification_type = notificationType
+        if (metadata) payload.metadata = metadata
+        if (bookingId) payload.booking_id = bookingId
 
         const { error } = await supabase
           .from("messages")
           .insert(payload)
 
-        if (error) throw error
+        if (error) {
+          if (error.message?.includes("booking_id") && error.message?.includes("not-null")) {
+            console.error("[useMessages] DB constraint error: booking_id is NOT NULL on messages table.")
+          }
+          throw error
+        }
 
         // Reset typing status
         broadcastTyping(false)

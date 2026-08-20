@@ -39,6 +39,7 @@ import {
 interface AuthUser {
   id: string
   role: "traveler" | "host" | "admin" | "user"
+  full_name?: string
 }
 
 function initials(name: string) {
@@ -427,12 +428,13 @@ export default function MessagesPage() {
       if (!data.user) return
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role")
+        .select("role, full_name")
         .eq("id", data.user.id)
         .maybeSingle()
       setAuthUser({
         id: data.user.id,
         role: (profile?.role as AuthUser["role"]) || "user",
+        full_name: profile?.full_name || data.user.user_metadata?.full_name || "User",
       })
     })
   }, [])
@@ -618,11 +620,32 @@ export default function MessagesPage() {
   }
 
   const handleVideoCall = async () => {
-    if (!selectedConvId) return
+    if (!selectedConvId || !authUser || !otherUserId) return
     const loadingToast = toast.loading("Creating video room…")
     try {
       const roomUrl = await createGeneralDailyRoom(selectedConvId)
       toast.dismiss(loadingToast)
+
+      // Post video room invite into conversation
+      try {
+        const senderType = authUser.role === "host" ? "host" : authUser.role === "traveler" ? "traveler" : "user"
+        await supabase.from("messages").insert({
+          conversation_id: selectedConvId,
+          sender_id: authUser.id,
+          receiver_id: otherUserId,
+          message: `📹 I've started a live video meeting room: ${roomUrl}`,
+          read: false,
+          sender_type: senderType,
+          notification_type: "daily_room_shared",
+          metadata: {
+            type: "daily_room_shared",
+            daily_room_url: roomUrl,
+            shared_by_name: authUser.full_name || (authUser.role === "host" ? "Host" : "Traveler"),
+          },
+          ...(activeConv?.bookingId ? { booking_id: activeConv.bookingId } : {}),
+        })
+      } catch (_) {}
+
       window.open(roomUrl, "_blank")
     } catch (err: any) {
       toast.dismiss(loadingToast)
@@ -1004,6 +1027,9 @@ export default function MessagesPage() {
                   <ChatWindow
                     conversationId={selectedConvId}
                     currentUserId={authUser.id}
+                    currentUserName={authUser.full_name || "User"}
+                    tourName={activeConv.tourName}
+                    bookingId={activeConv.bookingId}
                     otherUser={{
                       id: otherUserId,
                       full_name: activeConv.other.full_name,

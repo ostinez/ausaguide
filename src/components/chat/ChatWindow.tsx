@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { Send, Image as ImageIcon, ArrowLeft, Check, CheckCheck, Loader2, Video, Star, Trash2 } from "lucide-react"
+import { Send, Image as ImageIcon, ArrowLeft, Check, CheckCheck, Loader2, Video, Star, Trash2, X } from "lucide-react"
 import { format, isToday, isYesterday } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,27 +8,35 @@ import { useMessages, type DirectMessage } from "@/hooks/useMessages"
 import BookingRequestCard from "./BookingRequestCard"
 import BookingConfirmedCard from "./BookingConfirmedCard"
 import BookingDeclinedCard from "./BookingDeclinedCard"
+import DailyRoomSharedCard from "./DailyRoomSharedCard"
+import MessageContent from "./MessageContent"
+import EmojiPickerPopover from "./EmojiPickerPopover"
+import TourInclusionsGuidance from "./TourInclusionsGuidance"
+import { createGeneralDailyRoom } from "@/lib/daily"
 import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 
 export interface ChatParticipant {
- id: string
- full_name: string
- avatar_url: string | null
- host_tier?: string | null
- bio?: string | null
- isOnline?: boolean
+  id: string
+  full_name: string
+  avatar_url: string | null
+  host_tier?: string | null
+  bio?: string | null
+  isOnline?: boolean
 }
 
 export interface ChatWindowProps {
- conversationId: string
- currentUserId: string
- otherUser: ChatParticipant
- currentUserRole?: "traveler" | "host" | "admin" | "user"
- onBack?: () => void
- onStartVideoCall?: () => void
- className?: string
+  conversationId: string
+  currentUserId: string
+  otherUser: ChatParticipant
+  currentUserRole?: "traveler" | "host" | "admin" | "user"
+  currentUserName?: string
+  tourName?: string | null
+  bookingId?: string | null
+  onBack?: () => void
+  onStartVideoCall?: () => void
+  className?: string
 }
 
 function getDateDivider(currentDateStr: string, prevDateStr?: string): string | null {
@@ -57,41 +65,41 @@ function formatMsgTime(ts: string) {
 }
 
 function initials(name: string) {
- return name
- .split(" ")
- .map((n) => n[0])
- .join("")
- .toUpperCase()
- .slice(0, 2)
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2)
 }
 
 function ChatImage({ src }: { src: string }) {
- const [signedUrl, setSignedUrl] = useState<string | null>(null)
- const [loading, setLoading] = useState(true)
+  const [signedUrl, setSignedUrl] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
- useEffect(() => {
- async function load() {
- try {
- let path = src
- if (src.includes("/object/public/chat-images/")) {
- path = src.split("/object/public/chat-images/")[1]
- } else if (src.includes("/object/sign/chat-images/")) {
- path = src.split("/object/sign/chat-images/")[1]?.split("?")[0]
- }
- const { data, error } = await supabase.storage.from("chat-images").createSignedUrl(path, 3600)
- if (!error && data?.signedUrl) {
- setSignedUrl(data.signedUrl)
- } else {
- setSignedUrl(src)
- }
- } catch {
- setSignedUrl(src)
- } finally {
- setLoading(false)
- }
- }
- if (src) load()
- }, [src])
+  useEffect(() => {
+    async function load() {
+      try {
+        let path = src
+        if (src.includes("/object/public/chat-images/")) {
+          path = src.split("/object/public/chat-images/")[1]
+        } else if (src.includes("/object/sign/chat-images/")) {
+          path = src.split("/object/sign/chat-images/")[1]?.split("?")[0]
+        }
+        const { data, error } = await supabase.storage.from("chat-images").createSignedUrl(path, 3600)
+        if (!error && data?.signedUrl) {
+          setSignedUrl(data.signedUrl)
+        } else {
+          setSignedUrl(src)
+        }
+      } catch {
+        setSignedUrl(src)
+      } finally {
+        setLoading(false)
+      }
+    }
+    if (src) load()
+  }, [src])
 
   if (loading) {
     return (
@@ -102,7 +110,12 @@ function ChatImage({ src }: { src: string }) {
   }
 
   return (
-    <a href={signedUrl || src} target="_blank" rel="noopener noreferrer" className="block my-1 overflow-hidden rounded-xl border border-border/60 max-w-xs group cursor-zoom-in">
+    <a
+      href={signedUrl || src}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block my-1 overflow-hidden rounded-xl border border-border/60 max-w-xs group cursor-zoom-in"
+    >
       <img
         src={signedUrl || src}
         alt="Attachment"
@@ -153,6 +166,9 @@ export function ChatWindow({
   currentUserId,
   otherUser,
   currentUserRole = "user",
+  currentUserName,
+  tourName,
+  bookingId,
   onBack,
   onStartVideoCall,
   className,
@@ -176,14 +192,18 @@ export function ChatWindow({
   }
 
   const [inputVal, setInputVal] = useState("")
+  const [selectedImage, setSelectedImage] = useState<{ file: File; previewUrl: string } | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [isSharingVideo, setIsSharingVideo] = useState(false)
+
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Auto-scroll on message updates
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages, otherTyping])
+  }, [messages, otherTyping, selectedImage])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value
@@ -191,51 +211,109 @@ export function ChatWindow({
     broadcastTyping(val.length > 0)
   }
 
-  const handleSend = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault()
-    if (!inputVal.trim() || sending) return
-    const text = inputVal
-    setInputVal("")
-    const senderType = currentUserRole === "host" ? "host" : currentUserRole === "traveler" ? "traveler" : "user"
-    await sendMessage(text, undefined, senderType)
+  const handleSelectEmoji = (emoji: string) => {
+    setInputVal((prev) => prev + emoji)
+    broadcastTyping(true)
+    inputRef.current?.focus()
   }
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file || !currentUserId) return
+    if (!file) return
 
     if (file.size > 10 * 1024 * 1024) {
       toast.error("Image file size must be less than 10MB.")
       return
     }
 
-    setUploadingImage(true)
+    const previewUrl = URL.createObjectURL(file)
+    setSelectedImage({ file, previewUrl })
+    if (fileInputRef.current) fileInputRef.current.value = ""
+  }
+
+  const handleRemoveImage = () => {
+    if (selectedImage?.previewUrl) {
+      URL.revokeObjectURL(selectedImage.previewUrl)
+    }
+    setSelectedImage(null)
+  }
+
+  const handleShareDailyRoom = async () => {
+    if (!conversationId) return
+    setIsSharingVideo(true)
+    const toastId = toast.loading("Creating video room...")
     try {
-      const ext = file.name.split(".").pop() || "jpg"
-      const filePath = `${currentUserId}/${Date.now()}.${ext}`
-
-      const { error: uploadErr } = await supabase.storage
-        .from("chat-images")
-        .upload(filePath, file, { upsert: false })
-
-      if (uploadErr) throw uploadErr
+      const roomUrl = await createGeneralDailyRoom(conversationId)
+      toast.dismiss(toastId)
 
       const senderType = currentUserRole === "host" ? "host" : currentUserRole === "traveler" ? "traveler" : "user"
-      await sendMessage("", filePath, senderType)
-      toast.success("Photo sent successfully!")
+      const ok = await sendMessage(
+        `📹 I've started a live video meeting room: ${roomUrl}`,
+        undefined,
+        senderType,
+        "daily_room_shared",
+        {
+          type: "daily_room_shared",
+          daily_room_url: roomUrl,
+          shared_by_name: currentUserName || (currentUserRole === "host" ? "Host" : "Traveler"),
+        },
+        bookingId
+      )
+
+      if (ok) {
+        toast.success("Live video room shared with participant!")
+        window.open(roomUrl, "_blank")
+      }
     } catch (err: any) {
-      console.error("Upload error:", err)
-      toast.error(err.message || "Failed to upload image")
+      toast.dismiss(toastId)
+      console.error("Error sharing daily room:", err)
+      toast.error(err.message || "Failed to create video room.")
     } finally {
-      setUploadingImage(false)
-      if (fileInputRef.current) fileInputRef.current.value = ""
+      setIsSharingVideo(false)
+    }
+  }
+
+  const handleSend = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    if ((!inputVal.trim() && !selectedImage) || sending) return
+
+    const text = inputVal.trim()
+    const imageToSend = selectedImage
+    setInputVal("")
+    setSelectedImage(null)
+
+    const senderType = currentUserRole === "host" ? "host" : currentUserRole === "traveler" ? "traveler" : "user"
+
+    if (imageToSend) {
+      setUploadingImage(true)
+      try {
+        const ext = imageToSend.file.name.split(".").pop() || "jpg"
+        const filePath = `${currentUserId}/${Date.now()}.${ext}`
+
+        const { error: uploadErr } = await supabase.storage
+          .from("chat-images")
+          .upload(filePath, imageToSend.file, { upsert: false })
+
+        if (uploadErr) throw uploadErr
+
+        await sendMessage(text, filePath, senderType, undefined, undefined, bookingId)
+        toast.success("Photo sent!")
+      } catch (err: any) {
+        console.error("Upload error:", err)
+        toast.error(err.message || "Failed to upload image")
+      } finally {
+        setUploadingImage(false)
+        URL.revokeObjectURL(imageToSend.previewUrl)
+      }
+    } else {
+      await sendMessage(text, undefined, senderType, undefined, undefined, bookingId)
     }
   }
 
   return (
     <div className={cn("flex flex-col h-full bg-card border border-border rounded-2xl overflow-hidden shadow-modern", className)}>
       {/* ─── Header ─── */}
-      <div className="flex items-center justify-between px-4 py-3.5 border-b border-border bg-card shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           {onBack && (
             <Button
@@ -289,18 +367,19 @@ export function ChatWindow({
         </div>
 
         {/* Action icons */}
-        <div className="flex items-center gap-1">
-          {onStartVideoCall && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted"
-              onClick={onStartVideoCall}
-              title="Start Video Call"
-            >
-              <Video className="size-4" />
-            </Button>
-          )}
+        <div className="flex items-center gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 rounded-xl text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20 text-xs font-semibold gap-1.5"
+            onClick={onStartVideoCall || handleShareDailyRoom}
+            disabled={isSharingVideo}
+            title="Start Video Meeting Room"
+          >
+            <Video className="size-3.5" />
+            <span className="hidden sm:inline">Video Call</span>
+          </Button>
+
           {messages.length > 0 && (
             <Button
               variant="ghost"
@@ -315,6 +394,18 @@ export function ChatWindow({
         </div>
       </div>
 
+      {/* ─── Tour Inclusions & Planning Guidance Bar ─── */}
+      <TourInclusionsGuidance
+        userRole={currentUserRole}
+        tourName={tourName}
+        onSelectPrompt={(text) => {
+          setInputVal((prev) => (prev ? prev + " " + text : text))
+          broadcastTyping(true)
+          inputRef.current?.focus()
+        }}
+        onShareVideoCall={handleShareDailyRoom}
+        isSharingVideo={isSharingVideo}
+      />
 
       {/* ─── Message Bubbles Container ─── */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 custom-scrollbar bg-background/50">
@@ -335,10 +426,10 @@ export function ChatWindow({
             </div>
             <h4 className="font-bold text-foreground text-base mb-1">{otherUser.full_name}</h4>
             <p className="text-xs text-muted-foreground max-w-xs mb-4">
-              This is the beginning of your direct conversation on Ausaguide.
+              This is the beginning of your direct conversation on Ausaguide. Discuss inclusions, transport, meals, and customize your experience.
             </p>
             <span className="inline-block text-[11px] px-3 py-1 rounded-full bg-muted text-muted-foreground border border-border">
-              Say hello
+              Say hello 👋
             </span>
           </div>
         ) : (
@@ -362,6 +453,18 @@ export function ChatWindow({
 
                 {isSystem || notifType ? (
                   (() => {
+                    if (notifType === "daily_room_shared") {
+                      return (
+                        <DailyRoomSharedCard
+                          key={msg.id || index}
+                          roomUrl={msg.metadata?.daily_room_url || msg.message}
+                          sharedByName={msg.metadata?.shared_by_name || (isMe ? "You" : otherUser.full_name)}
+                          createdAt={msg.created_at}
+                          isMe={isMe}
+                        />
+                      )
+                    }
+
                     if (notifType === "booking_request") {
                       return (
                         <BookingRequestCard
@@ -464,9 +567,9 @@ export function ChatWindow({
                       >
                         {msg.image_url && <ChatImage src={msg.image_url} />}
                         {msg.message && (
-                          <p className="break-words leading-relaxed whitespace-pre-wrap text-sm">
-                            {msg.message}
-                          </p>
+                          <div className="text-sm">
+                            <MessageContent text={msg.message} isMe={isMe} />
+                          </div>
                         )}
 
                         <div
@@ -533,24 +636,61 @@ export function ChatWindow({
         <div ref={messagesEndRef} />
       </div>
 
+      {/* ─── Image Preview Tray (when an image is selected before sending) ─── */}
+      {selectedImage && (
+        <div className="px-4 py-2.5 bg-muted/60 border-t border-border flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2">
+          <div className="relative size-14 rounded-xl overflow-hidden border border-border bg-card shrink-0">
+            <img
+              src={selectedImage.previewUrl}
+              alt="Preview"
+              className="size-full object-cover"
+            />
+            <button
+              type="button"
+              onClick={handleRemoveImage}
+              className="absolute top-1 right-1 size-5 rounded-full bg-black/70 text-white flex items-center justify-center hover:bg-black transition-colors"
+              title="Remove image"
+            >
+              <X className="size-3" />
+            </button>
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold text-foreground truncate">{selectedImage.file.name}</p>
+            <p className="text-[11px] text-muted-foreground">
+              {(selectedImage.file.size / 1024).toFixed(0)} KB • Ready to send
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleRemoveImage}
+            className="h-7 text-xs text-muted-foreground hover:text-rose-500"
+          >
+            Remove
+          </Button>
+        </div>
+      )}
+
       {/* ─── Composer Input Bar (Sticky for Mobile) ─── */}
       <div className="p-3 bg-card/95 backdrop-blur-md border-t border-border shrink-0 sticky bottom-0 z-20 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        <form onSubmit={handleSend} className="flex items-center gap-2 max-w-4xl mx-auto">
+        <form onSubmit={handleSend} className="flex items-center gap-1.5 max-w-4xl mx-auto">
           <input
             type="file"
             ref={fileInputRef}
-            onChange={handleImageUpload}
+            onChange={handleImageSelect}
             accept="image/*"
             className="hidden"
           />
 
+          {/* Attach Image Button */}
           <Button
             type="button"
             variant="ghost"
             size="icon"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploadingImage || sending}
-            className="size-11 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted shrink-0 touch-target"
+            className="size-10 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted shrink-0 touch-target"
             title="Attach photo"
           >
             {uploadingImage ? (
@@ -560,21 +700,30 @@ export function ChatWindow({
             )}
           </Button>
 
+          {/* Emoji Picker Popover */}
+          <EmojiPickerPopover
+            onSelectEmoji={handleSelectEmoji}
+            disabled={sending || uploadingImage}
+          />
+
+          {/* Text Input */}
           <Input
+            ref={inputRef}
             value={inputVal}
             onChange={handleInputChange}
-            placeholder="Type a message..."
-            disabled={sending}
+            placeholder={selectedImage ? "Add a caption..." : "Type a message, link, or question..."}
+            disabled={sending || uploadingImage}
             className="flex-1 bg-muted/60 border-border text-foreground placeholder:text-muted-foreground rounded-full px-4 h-11 text-base focus-visible:ring-1 focus-visible:ring-primary"
           />
 
+          {/* Send Button */}
           <Button
             type="submit"
             size="icon"
-            disabled={!inputVal.trim() || sending}
-            className="size-11 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shrink-0 disabled:opacity-40 transition-all shadow-sm touch-target"
+            disabled={(!inputVal.trim() && !selectedImage) || sending || uploadingImage}
+            className="size-11 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shrink-0 disabled:opacity-40 transition-all shadow-sm touch-target cursor-pointer"
           >
-            {sending ? (
+            {sending || uploadingImage ? (
               <Loader2 className="size-5 animate-spin" />
             ) : (
               <Send className="size-5" />
@@ -585,4 +734,3 @@ export function ChatWindow({
     </div>
   )
 }
-

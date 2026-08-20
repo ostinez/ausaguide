@@ -404,10 +404,19 @@ grant select, insert, update on public.hosts to anon, authenticated;
 -- ── Messages ────────────────────────────────────────────────────────────────
 create table if not exists public.messages (
   id uuid primary key default gen_random_uuid(),
-  booking_id uuid not null references public.bookings(id) on delete cascade,
-  sender_id uuid not null references public.profiles(id) on delete cascade,
-  receiver_id uuid not null references public.profiles(id) on delete cascade,
-  message text not null,
+  conversation_id uuid references public.conversations(id) on delete cascade,
+  booking_id uuid references public.bookings(id) on delete set null,
+  sender_id uuid references public.profiles(id) on delete set null,
+  receiver_id uuid references public.profiles(id) on delete set null,
+  message text not null default '',
+  image_url text,
+  read boolean not null default false,
+  sender_type text default 'user',
+  notification_type text,
+  metadata jsonb default '{}'::jsonb,
+  deleted_for_traveler boolean default false,
+  deleted_for_host boolean default false,
+  deleted_by_users text[] default '{}',
   created_at timestamptz not null default now()
 );
 
@@ -425,8 +434,14 @@ create policy "Public insert messages"
   on public.messages for insert
   with check (true);
 
+drop policy if exists "Public update messages" on public.messages;
+create policy "Public update messages"
+  on public.messages for update
+  using (true)
+  with check (true);
+
 -- Grants
-grant select, insert on public.messages to anon, authenticated;
+grant select, insert, update on public.messages to anon, authenticated;
 
 -- ── Reviews ────────────────────────────────────────────────────────────────
 create table if not exists public.reviews (
