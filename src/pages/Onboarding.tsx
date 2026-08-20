@@ -1182,33 +1182,61 @@ export default function OnboardingPage() {
  })
  }, [])
 
- // Stepper steps computed dynamically based on role and tier
- const steps = [
- { label: "Welcome" },
- { label: "Role" },
- { label: "Profile" },
- ...(role === "host"
- ? [
- { label: "Verify ID" },
- { label: "Host Type" },
- ]
- : [
- { label: "Interests" },
- ]),
- { label: "Done" },
- ]
+ // Stepper steps computed dynamically based on role and tier with gamified metadata
+  const steps = [
+    {
+      label: "Welcome",
+      title: "Welcome to Ausaguide",
+      tip: "Join over 1,200+ local explorers and vetted Kenyan guides.",
+    },
+    {
+      label: "Role",
+      title: "Choose Your Path",
+      tip: "Explore as a traveler or earn by sharing your local world.",
+    },
+    {
+      label: "Profile",
+      title: "Set Up Profile",
+      tip: "Profiles with a verified bio and avatar receive 3x more bookings.",
+    },
+    ...(role === "host"
+      ? [
+          {
+            label: "Verify ID",
+            title: "Identity Verification",
+            tip: "Government ID verification unlocks the trusted Host badge.",
+          },
+          {
+            label: "Host Type",
+            title: "Guide Credentials",
+            tip: "Certified guides earn up to 40% higher booking revenue.",
+          },
+        ]
+      : [
+          {
+            label: "Interests",
+            title: "Pick Travel Vibes",
+            tip: "Selecting 3+ interests unlocks instant live matching with local guides.",
+          },
+        ]),
+    {
+      label: "Done",
+      title: "Ready to Explore!",
+      tip: "Your local journey starts now. Discover live authentic Kenya.",
+    },
+  ]
 
- return (
- <div className="min-h-screen bg-[#0d0d12] flex flex-col items-center justify-center px-4 py-12 relative overflow-hidden">
- {/* Background glow blobs */}
- <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
- <div className="absolute top-1/4 left-1/4 w-[500px] h-[400px] rounded-full bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon/8 blur-[120px] animate-pulse" />
- <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[300px] rounded-full bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon/6 blur-[100px] animate-pulse" style={{ animationDelay: "2s" }} />
- </div>
+  return (
+    <div className="min-h-screen bg-[#091413] flex flex-col items-center justify-center px-4 py-12 relative overflow-hidden">
+      {/* Background glow blobs */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+        <div className="absolute top-1/4 left-1/4 w-[500px] h-[400px] rounded-full bg-[#0D6F73]/15 blur-[140px] animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[300px] rounded-full bg-[#10b981]/10 blur-[120px] animate-pulse" style={{ animationDelay: "2s" }} />
+      </div>
 
- <div className="relative z-10 w-full max-w-2xl">
- {/* Card shell */}
- <div className="rounded-3xl border border-white/8 bg-card shadow-modern shadow-2xl shadow-black/50 p-6 sm:p-10">
+      <div className="relative z-10 w-full max-w-2xl">
+        {/* Card shell */}
+        <div className="rounded-3xl border border-[#235E5D]/30 bg-[#0c1a19] shadow-2xl shadow-black/70 p-5 sm:p-8">
  <Stepper steps={steps} currentStep={step}>
  {step === 0 && <StepWelcome onNext={() => setStep(1)} />}
 
