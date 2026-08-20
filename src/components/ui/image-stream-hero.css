@@ -160,6 +160,7 @@
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 10;
+  min-height: 260px;
   max-height: 520px;
   user-select: none;
   touch-action: pan-y;

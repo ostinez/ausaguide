@@ -605,7 +605,7 @@ export default function MessagesPage() {
     : null
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] bg-background overflow-hidden pt-16">
+    <div className="flex h-[calc(100dvh-4rem)] md:h-[calc(100vh-4rem)] bg-background overflow-hidden pt-16">
 
       {/* ── Conversation Sidebar ───────────────────────────────────────── */}
       <aside

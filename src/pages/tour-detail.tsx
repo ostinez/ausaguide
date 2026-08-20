@@ -569,9 +569,9 @@ export default function TourDetailPage() {
  </section>
  </div>
 
- <div className="lg:sticky lg:top-8 lg:self-start">
- {/* Auth guard overlay — covers only the booking card, never blocks scroll */}
- <div className="relative">
+          <div id="tour-booking-card" className="lg:sticky lg:top-8 lg:self-start">
+            {/* Auth guard overlay — covers only the booking card, never blocks scroll */}
+            <div className="relative">
  {!isAuthenticated && (
  <div
  className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-5 rounded-2xl"
@@ -918,6 +918,47 @@ export default function TourDetailPage() {
  </div>
  </div>
  <ReviewList tourId={tour.id} bookingId={userBooking?.id} bookingStatus={userBooking?.status} />
+ </div>
+
+ {/* ── Mobile Sticky Bottom Booking Bar ── */}
+ <div className="fixed bottom-16 inset-x-0 z-35 bg-card/95 backdrop-blur-xl border-t border-border/80 px-4 py-3 shadow-[0_-8px_30px_rgba(0,0,0,0.25)] flex items-center justify-between gap-3 lg:hidden pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
+ <div className="flex flex-col min-w-0">
+ <div className="flex items-baseline gap-1">
+ <span className="text-lg font-black text-foreground truncate">
+ {formatTourPrice(bookingType === 'virtual' ? (tour.virtual_price ?? 0) : (tour.physical_price ?? tour.price), tour.currency)}
+ </span>
+ <span className="text-[11px] text-muted-foreground font-medium">/ person</span>
+ </div>
+ <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+ <ShieldCheck className="size-3 text-[#317978]" />
+ <span className="font-semibold text-foreground">{tour.rating.toFixed(1)}</span>
+ <span>({tour.review_count})</span>
+ </div>
+ </div>
+
+ <div className="flex items-center gap-2 shrink-0">
+ {tour.host_id && (
+ <DirectMessageButton
+ hostId={tour.host_id}
+ hostName={hostName}
+ tourId={tour.id}
+ variant="outline"
+ className="h-10 px-3 rounded-full border-border/80 text-xs font-semibold shrink-0"
+ label="Chat"
+ />
+ )}
+ <Button
+ onClick={() => {
+ const bookingEl = document.getElementById("tour-booking-card")
+ if (bookingEl) {
+ bookingEl.scrollIntoView({ behavior: "smooth", block: "center" })
+ }
+ }}
+ className="h-10 px-5 rounded-full bg-gradient-to-r from-[#0B3037] to-[#0D6F73] hover:from-[#0B3037] hover:to-[#0D6F73] text-white font-bold text-xs shadow-md shrink-0"
+ >
+ Book Now
+ </Button>
+ </div>
  </div>
 
  {activePhotoIndex !== null && tour.images && (

@@ -672,7 +672,27 @@ img {
   transition: all 0.2s ease;
 }
 
+/* ── Mobile Touch & Usability Utilities ── */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
 
+html {
+  -webkit-tap-highlight-color: transparent;
+  scroll-behavior: smooth;
+}
 
+body {
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
-
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
+}

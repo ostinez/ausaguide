@@ -389,17 +389,17 @@ export function ImageStreamHero() {
 
 
             {/* ── Bottom Integrated Intel Bar ── */}
-            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-[#0d2a29]/95 via-[#113B3A]/80 to-transparent pt-4 pb-2 px-3 sm:px-6 z-25 flex items-center justify-between gap-3 border-t border-[#235E5D]/30 backdrop-blur-xs">
-              <div className="flex items-center gap-4 sm:gap-6 text-[10px] sm:text-[11px] font-bold tracking-wider uppercase text-[#B7E6E5]">
-                <Link to="/" className="hover:text-white transition-colors">HOME</Link>
-                <Link to="/tours" className="hover:text-white transition-colors">TOURS</Link>
-                <Link to="/hosts" className="hover:text-white transition-colors">LOCAL HOSTS</Link>
-                <Link to="/journal" className="hover:text-white transition-colors">JOURNAL</Link>
+            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-[#0d2a29]/95 via-[#113B3A]/80 to-transparent pt-4 pb-2 px-3 sm:px-6 z-25 flex items-center justify-between gap-2 border-t border-[#235E5D]/30 backdrop-blur-xs">
+              <div className="flex items-center gap-2.5 sm:gap-6 text-[9px] sm:text-[11px] font-bold tracking-wider uppercase text-[#B7E6E5] overflow-x-auto scrollbar-none shrink">
+                <Link to="/" className="hover:text-white transition-colors shrink-0">HOME</Link>
+                <Link to="/tours" className="hover:text-white transition-colors shrink-0">TOURS</Link>
+                <Link to="/hosts" className="hover:text-white transition-colors shrink-0">LOCAL HOSTS</Link>
+                <Link to="/journal" className="hover:text-white transition-colors shrink-0">JOURNAL</Link>
               </div>
 
               <button
                 onClick={() => setShowDetails(!showDetails)}
-                className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#184948]/80 border border-[#235E5D] text-[10px] sm:text-[11px] font-bold text-[#B7E6E5] hover:text-white transition-colors cursor-pointer"
+                className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#184948]/80 border border-[#235E5D] text-[9px] sm:text-[11px] font-bold text-[#B7E6E5] hover:text-white transition-colors cursor-pointer shrink-0"
               >
                 <Info className="size-3 text-[#317978]" />
                 <span>{showDetails ? "Hide Intel" : "View Intel"}</span>
@@ -439,8 +439,8 @@ export function ImageStreamHero() {
           )}
 
           {/* Scenario Carousel Switcher */}
-          <div className="flex flex-wrap items-center justify-between gap-3 p-3 sm:p-4 bg-[#143f3e] border-t border-[#235E5D]">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center justify-between gap-2 p-2.5 sm:p-4 bg-[#143f3e] border-t border-[#235E5D]">
+            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-nowrap sm:flex-wrap">
               {SCENARIO_PAIRS.map((item, idx) => {
                 const active = activeScenarioIndex === idx
                 const TabIcon = item.icon
@@ -448,7 +448,7 @@ export function ImageStreamHero() {
                   <button
                     key={item.id}
                     onClick={() => setActiveScenarioIndex(idx)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shrink-0 ${
                       active ? "bento-tab-active" : "bento-tab-inactive"
                     }`}
                   >
@@ -459,11 +459,12 @@ export function ImageStreamHero() {
               })}
             </div>
 
-            <div className="flex items-center gap-2 ml-auto">
+            <div className="flex items-center gap-1.5 sm:gap-2 ml-auto shrink-0">
               <button
                 onClick={prevScenario}
                 className="p-1.5 rounded-xl bento-pill text-[#B7E6E5] hover:text-white cursor-pointer"
                 title="Previous Scenario"
+                aria-label="Previous Scenario"
               >
                 <ChevronLeft className="size-4" />
               </button>
@@ -471,6 +472,7 @@ export function ImageStreamHero() {
                 onClick={nextScenario}
                 className="p-1.5 rounded-xl bento-pill text-[#B7E6E5] hover:text-white cursor-pointer"
                 title="Next Scenario"
+                aria-label="Next Scenario"
               >
                 <ChevronRight className="size-4" />
               </button>
