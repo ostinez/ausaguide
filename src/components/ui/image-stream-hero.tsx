@@ -385,20 +385,24 @@ export function ImageStreamHero() {
               )
             })}
 
-            {/* Top Right Label (Scouted Reality) */}
-            <div className="absolute top-3 right-3 sm:top-5 sm:right-6 z-25 pointer-events-none">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/45 backdrop-blur-md border border-white/20 text-white text-[11px] sm:text-xs font-black tracking-wider uppercase drop-shadow-lg transition-all duration-100">
-                <Check className="size-3 text-[#B7E6E5]" />
-                <span>{currentScenario.smart.badge.toUpperCase()}</span>
-              </span>
+            {/* Top Right Icon Badge (Scouted Reality) */}
+            <div 
+              className="absolute top-3 right-3 sm:top-4 sm:right-5 z-25 pointer-events-none" 
+              title={`Scouted: ${currentScenario.smart.badge}`}
+            >
+              <div className="flex size-8 sm:size-9 items-center justify-center rounded-full bg-black/60 backdrop-blur-md border border-emerald-400/50 text-emerald-300 shadow-lg shadow-black/40 transition-transform duration-200">
+                <Check className="size-4 text-emerald-300 stroke-[3]" />
+              </div>
             </div>
 
-            {/* Top Left Label (Trap / Risk) */}
-            <div className="absolute top-3 left-3 sm:top-5 sm:left-6 z-25 pointer-events-none">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/55 backdrop-blur-md border border-red-500/40 text-red-200 text-[11px] sm:text-xs font-black tracking-wider uppercase drop-shadow-lg transition-all duration-100">
-                <AlertTriangle className="size-3 text-red-400" />
-                <span>{currentScenario.trap.badge.toUpperCase()}</span>
-              </span>
+            {/* Top Left Icon Badge (Trap / Risk) */}
+            <div 
+              className="absolute top-3 left-3 sm:top-4 sm:left-5 z-25 pointer-events-none" 
+              title={`Trap: ${currentScenario.trap.badge}`}
+            >
+              <div className="flex size-8 sm:size-9 items-center justify-center rounded-full bg-black/60 backdrop-blur-md border border-red-500/50 text-red-400 shadow-lg shadow-black/40 transition-transform duration-200">
+                <AlertTriangle className="size-4 text-red-400" />
+              </div>
             </div>
 
             {/* ── Center Metallic Slider Handle ── */}
