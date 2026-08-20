@@ -58,6 +58,7 @@ export default function Home() {
           "@type": "TravelAgency",
           "name": "Ausaguide",
           "url": "https://ausaguide.com",
+          "logo": "https://ausaguide.com/logo-mark.png",
           "description": "See destinations live before you book. Connect with real locals in Kenya for unfiltered virtual tours.",
           "image": "https://ausaguide.com/og-image.png",
           "address": {
