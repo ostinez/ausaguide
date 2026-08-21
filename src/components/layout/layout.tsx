@@ -356,21 +356,23 @@ export function Layout() {
           </button>
         </div>
       )}
- <StaggeredMenu
- position="right"
- colors={["#000000", "#0A0A0A"]}
- accentColor="#FFFFFF"
- menuButtonColor="#FFFFFF"
- openMenuButtonColor="#0D6F73"
- displayItemNumbering={true}
- displaySocials={true}
- closeOnClickAway={true}
- isFixed={true}
- items={menuItems}
- socialItems={socialItems}
- logoUrl="/logo-primary.png"
- className={`${!isAuthOrOnboarding ? "has-beta-banner" : ""} ${impersonatedName ? "has-impersonation-banner" : ""}`.trim()}
- />
+      {!userId && !isAuthOrOnboarding && (
+        <StaggeredMenu
+          position="right"
+          colors={["#000000", "#0A0A0A"]}
+          accentColor="#FFFFFF"
+          menuButtonColor="#FFFFFF"
+          openMenuButtonColor="#0D6F73"
+          displayItemNumbering={true}
+          displaySocials={true}
+          closeOnClickAway={true}
+          isFixed={true}
+          items={menuItems}
+          socialItems={socialItems}
+          logoUrl="/logo-primary.png"
+          className={`${!isAuthOrOnboarding ? "has-beta-banner" : ""} ${impersonatedName ? "has-impersonation-banner" : ""}`.trim()}
+        />
+      )}
   <main className={isMessagesPage ? "flex-1 h-screen overflow-hidden pb-0" : "flex-1 pb-16 md:pb-0"}>
   <Outlet />
   </main>

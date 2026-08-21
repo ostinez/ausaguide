@@ -1178,7 +1178,7 @@ export default function MessagesPage() {
 
   if (!authUser) {
     return (
-      <div className="flex h-[calc(100vh-4rem)] items-center justify-center bg-background pt-16">
+      <div className="flex h-screen items-center justify-center bg-background">
         <Loader2 className="size-8 animate-spin text-primary" />
       </div>
     )
@@ -1191,7 +1191,7 @@ export default function MessagesPage() {
     : null
 
   return (
-    <div className="flex h-[calc(100dvh-4rem)] md:h-[calc(100vh-4rem)] bg-background overflow-hidden pt-16">
+    <div className="flex h-[100dvh] md:h-screen bg-background overflow-hidden">
 
       {/* ── Conversation Sidebar ───────────────────────────────────────── */}
       <aside

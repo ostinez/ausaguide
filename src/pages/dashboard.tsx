@@ -1675,7 +1675,7 @@ export default function DashboardPage() {
 
  {/* Main content — full width, sidebar no longer takes permanent space */}
  <div className="relative z-10">
- <div className="mx-auto max-w-5xl px-4 pt-24 pb-16">
+ <div className="mx-auto max-w-5xl px-4 pt-6 sm:pt-8 pb-16">
  {/* Page header */}
  <div className="mb-8 flex flex-col gap-1">
  <div className="flex items-center justify-between gap-3 mb-2 flex-wrap sm:flex-nowrap">
