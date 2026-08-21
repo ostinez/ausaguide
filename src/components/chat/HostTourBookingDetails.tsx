@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { MessageSquare, Video, CheckCircle, Clock, Users, Calendar } from "lucide-react"
+import { MessageSquare, Video, CheckCircle, Clock, Users, Calendar, Receipt, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import AddToCalendarButton from "@/components/common/AddToCalendarButton"
 
@@ -28,9 +28,11 @@ export interface TourBookingInfo {
 interface HostTourBookingDetailsProps {
   booking: TourBookingInfo
   isHost?: boolean
+  priorityNumber?: number
   onStartVideoCall?: () => void
   onConfirmCompletion?: () => void
   onOpenChat?: () => void
+  onViewReceipt?: () => void
   /** kept for back-compat */
   onSendInclusions?: () => void
   /** kept for back-compat */
@@ -146,9 +148,11 @@ function statusDotClass(status: string) {
 export default function HostTourBookingDetails({
   booking,
   isHost = true,
+  priorityNumber,
   onStartVideoCall,
   onConfirmCompletion,
   onOpenChat,
+  onViewReceipt,
 }: HostTourBookingDetailsProps) {
   const [cd, setCd] = useState<CountdownState>(() =>
     calculateCountdown(booking.booking_date, booking.booking_time)
@@ -175,19 +179,27 @@ export default function HostTourBookingDetails({
     <div className="p-4 space-y-3">
       <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
 
-        {/* â”€â”€ Top section: initials avatar | name/date/guests/price | status badge â”€â”€ */}
+        {/* ─── Top section: initials avatar | name/date/guests/price | status badge ─── */}
         <div className="flex items-start gap-3 p-4">
           {/* Initials avatar */}
-          <div className="size-11 rounded-xl bg-muted border border-border flex items-center justify-center shrink-0">
+          <div className="size-11 rounded-xl bg-muted border border-border flex items-center justify-center shrink-0 relative">
             <span className="text-sm font-black text-foreground tracking-tight leading-none">
               {initials(booking.guest_name)}
             </span>
           </div>
 
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-foreground text-sm leading-tight uppercase truncate">
-              {booking.guest_name || "Guest"}
-            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="font-bold text-foreground text-sm leading-tight uppercase truncate">
+                {booking.guest_name || "Guest"}
+              </p>
+              {priorityNumber && priorityNumber > 0 && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-black">
+                  <Sparkles className="size-2.5" />
+                  <span>#{priorityNumber} Next Up</span>
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground flex-wrap">
               <span className="flex items-center gap-1">
                 <Calendar className="size-3 shrink-0" />
@@ -225,8 +237,14 @@ export default function HostTourBookingDetails({
           </span>
         </div>
 
-        {/* â”€â”€ Action buttons â”€â”€ */}
+        {/* ─── Action buttons ─── */}
         <div className="flex items-center gap-2 px-4 pb-4 flex-wrap">
+          {onViewReceipt && (
+            <Button type="button" variant="outline" size="sm" onClick={onViewReceipt}
+              className="flex-1 min-w-[100px] h-8 rounded-lg text-xs font-semibold gap-1.5 border-border hover:bg-muted text-emerald-600 dark:text-emerald-400">
+              <Receipt className="size-3.5" /> View Ticket
+            </Button>
+          )}
           {onOpenChat && (
             <Button type="button" variant="outline" size="sm" onClick={onOpenChat}
               className="flex-1 min-w-[80px] h-8 rounded-lg text-xs font-semibold gap-1.5 border-border hover:bg-muted">
@@ -251,10 +269,10 @@ export default function HostTourBookingDetails({
               className="h-8 text-xs rounded-lg flex-1 min-w-[120px]"
             />
           )}
-          {isHost && !cd.isPast && onConfirmCompletion && (
-            <Button type="button" variant="outline" size="sm" onClick={onConfirmCompletion}
-              className="flex-1 min-w-[140px] h-8 rounded-lg text-xs font-semibold gap-1.5 border-border text-emerald-600 hover:bg-emerald-500/10 hover:border-emerald-500/40">
-              <CheckCircle className="size-3.5" /> Confirm Tour Completion
+          {isHost && booking.status?.toLowerCase() !== "completed" && booking.status?.toLowerCase() !== "cancelled" && onConfirmCompletion && (
+            <Button type="button" variant="default" size="sm" onClick={onConfirmCompletion}
+              className="flex-1 min-w-[140px] h-8 rounded-lg text-xs font-bold gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs">
+              <CheckCircle className="size-3.5" /> Mark Tour as Complete
             </Button>
           )}
         </div>

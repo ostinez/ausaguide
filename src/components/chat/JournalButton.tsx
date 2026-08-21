@@ -38,7 +38,7 @@ export function JournalButton({
         title="Save Travel Notes & Tips"
       >
         <BookOpen className="size-4 text-blue-400 shrink-0" />
-        {showText && <span>Save Notes</span>}
+        {showText && <span className="hidden md:inline">Save Notes</span>}
       </Button>
 
       <JournalModal

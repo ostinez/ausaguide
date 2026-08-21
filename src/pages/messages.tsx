@@ -15,6 +15,10 @@ import {
   Compass,
   Trash2,
   ShieldCheck,
+  CheckCircle,
+  Calendar,
+  Receipt,
+  Sparkles,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -22,6 +26,7 @@ import { ChatWindow } from "@/components/chat/ChatWindow"
 import { JournalButton } from "@/components/chat/JournalButton"
 import { NewChatDialog } from "@/components/chat/NewChatDialog"
 import HostTourBookingDetails, { type TourBookingInfo } from "@/components/chat/HostTourBookingDetails"
+import { TourReceiptTicketModal } from "@/components/chat/TourReceiptTicketModal"
 import { useConversations, type ConversationItem, type Participant } from "@/hooks/useConversations"
 import { useRealtimePresence } from "@/lib/hooks/useRealtimePresence"
 import { supabase } from "@/lib/supabase"
@@ -126,9 +131,11 @@ interface ChatHeaderProps {
   isHostUser?: boolean
   tourName?: string | null
   bookingDate?: string | null
+  priorityNumber?: number
   onBack: () => void
   onVideoCall: () => void
   onViewProfile: () => void
+  onViewReceipt?: () => void
   onClearChat?: () => void
   showBack: boolean
   hostName: string
@@ -143,118 +150,142 @@ function ChatHeader({
   isHostUser,
   tourName,
   bookingDate,
+  priorityNumber,
   onBack,
   onVideoCall,
   onViewProfile,
+  onViewReceipt,
   onClearChat,
   showBack,
   hostName,
 }: ChatHeaderProps) {
   return (
-    <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card shrink-0 shadow-xs">
-      {showBack && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted shrink-0 md:hidden"
-          onClick={onBack}
+    <div className="flex items-center justify-between gap-2 px-3 py-2.5 sm:px-4 sm:py-3 border-b border-border bg-card shrink-0 shadow-xs">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+        {showBack && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8 sm:size-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted shrink-0 md:hidden"
+            onClick={onBack}
+            aria-label="Back"
+          >
+            <ArrowLeft className="size-4" />
+          </Button>
+        )}
+
+        <button
+          onClick={onViewProfile}
+          className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1 hover:opacity-85 transition-opacity cursor-pointer text-left"
+          title="View profile & tour details"
         >
-          <ArrowLeft className="size-4" />
-        </Button>
-      )}
-
-      <button
-        onClick={onViewProfile}
-        className="flex items-center gap-3 min-w-0 flex-1 hover:opacity-85 transition-opacity cursor-pointer text-left"
-        title="View profile & booking receipt"
-      >
-        <div className="relative shrink-0">
-          <Avatar className="size-10 border-2 border-border/60 ring-2 ring-primary/10">
-            {avatarUrl && (
-              <AvatarImage src={avatarUrl} alt={name} className="object-cover" />
-            )}
-            <AvatarFallback className="bg-gradient-to-br from-primary/30 to-brand-light/20 text-primary font-bold text-sm">
-              {initials(name || "U")}
-            </AvatarFallback>
-          </Avatar>
-          {isOnline && (
-            <span className="absolute bottom-0 right-0 size-3 rounded-full bg-emerald-500 ring-2 ring-card animate-pulse" />
-          )}
-        </div>
-
-        <div className="min-w-0 text-left">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-sm text-foreground truncate max-w-[160px] sm:max-w-xs">
-              {name}
-            </span>
-            {isHostUser ? (
-              <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold">
-                {tourName ? "Verified Guest" : "Traveler"}
-              </span>
-            ) : (
-              <>
-                {hostTier === "certified_guide" && (
-                  <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold flex items-center gap-1">
-                    <Award className="size-2.5" />
-                    <span>Guide</span>
-                  </span>
-                )}
-                {hostTier === "local_host" && (
-                  <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold">
-                    Local Host
-                  </span>
-                )}
-              </>
+          <div className="relative shrink-0">
+            <Avatar className="size-9 sm:size-10 border-2 border-border/60 ring-2 ring-primary/10">
+              {avatarUrl && (
+                <AvatarImage src={avatarUrl} alt={name} className="object-cover" />
+              )}
+              <AvatarFallback className="bg-gradient-to-br from-primary/30 to-brand-light/20 text-primary font-bold text-xs sm:text-sm">
+                {initials(name || "U")}
+              </AvatarFallback>
+            </Avatar>
+            {isOnline && (
+              <span className="absolute bottom-0 right-0 size-2.5 sm:size-3 rounded-full bg-emerald-500 ring-2 ring-card animate-pulse" />
             )}
           </div>
 
-          {/* Booking context pill */}
-          {tourName ? (
-            <div className="flex items-center gap-1.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5">
-              <ShieldCheck className="size-3 shrink-0" />
-              <span className="truncate max-w-[160px]">{tourName}</span>
-              {bookingDate && (
+          <div className="min-w-0 flex-1 text-left">
+            <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+              <span className="font-semibold text-xs sm:text-sm text-foreground truncate max-w-[110px] xs:max-w-[150px] sm:max-w-xs">
+                {name}
+              </span>
+
+              {/* Priority badge for upcoming tours in line */}
+              {priorityNumber && priorityNumber > 0 && (
+                <span className="shrink-0 text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 font-black inline-flex items-center gap-0.5">
+                  <Sparkles className="size-2 text-emerald-600" />
+                  <span>#{priorityNumber} Next Up</span>
+                </span>
+              )}
+
+              {isHostUser ? (
+                <span className="shrink-0 text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold">
+                  {tourName ? "Guest" : "Traveler"}
+                </span>
+              ) : (
                 <>
-                  <span className="text-border">·</span>
-                  <CalendarDays className="size-2.5 shrink-0" />
-                  <span>{new Date(bookingDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                  {hostTier === "certified_guide" && (
+                    <span className="shrink-0 text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold flex items-center gap-0.5">
+                      <Award className="size-2.5" />
+                      <span>Guide</span>
+                    </span>
+                  )}
+                  {hostTier === "local_host" && (
+                    <span className="shrink-0 text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold">
+                      Host
+                    </span>
+                  )}
                 </>
               )}
-              <span className="hidden sm:inline text-xs underline ml-1 text-primary cursor-pointer">
-                (View Receipt)
-              </span>
             </div>
-          ) : (
-            <p className="text-[11px] text-muted-foreground leading-tight">
-              {isTyping ? (
-                <span className="text-primary font-medium">
-                  typing
-                  <span className="animate-bounce inline-block ml-0.5">.</span>
-                  <span className="animate-bounce inline-block delay-100">.</span>
-                  <span className="animate-bounce inline-block delay-200">.</span>
-                </span>
-              ) : isOnline ? (
-                <span className="text-emerald-500 font-medium">Active now</span>
-              ) : (
-                "Direct Message"
-              )}
-            </p>
-          )}
-        </div>
-      </button>
 
-      <div className="flex items-center gap-1 shrink-0">
+            {/* Booking context or online subtitle */}
+            {tourName ? (
+              <div className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5 truncate">
+                <ShieldCheck className="size-3 shrink-0" />
+                <span className="truncate max-w-[100px] xs:max-w-[140px] sm:max-w-[200px]">{tourName}</span>
+                {bookingDate && (
+                  <>
+                    <span className="text-border">·</span>
+                    <CalendarDays className="size-2.5 shrink-0 hidden xs:inline" />
+                    <span className="truncate">{new Date(bookingDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                  </>
+                )}
+              </div>
+            ) : (
+              <p className="text-[11px] text-muted-foreground leading-tight truncate">
+                {isTyping ? (
+                  <span className="text-primary font-medium">
+                    typing
+                    <span className="animate-bounce inline-block ml-0.5">.</span>
+                    <span className="animate-bounce inline-block delay-100">.</span>
+                    <span className="animate-bounce inline-block delay-200">.</span>
+                  </span>
+                ) : isOnline ? (
+                  <span className="text-emerald-500 font-medium">Active now</span>
+                ) : (
+                  "Direct Message"
+                )}
+              </p>
+            )}
+          </div>
+        </button>
+      </div>
+
+      {/* Action buttons (uncluttered on mobile, full on tablet/desktop) */}
+      <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
+        {onViewReceipt && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onViewReceipt}
+            className="h-8 px-2 rounded-full text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer font-bold text-xs gap-1.5 border border-emerald-500/20 shadow-2xs"
+            title="View Official Tour Ticket & Receipt"
+          >
+            <Receipt className="size-3.5 shrink-0" />
+            <span className="hidden sm:inline">Receipt</span>
+          </Button>
+        )}
         <JournalButton
           hostName={hostName}
           variant="ghost"
-          className="h-9 px-2.5 sm:px-3 text-xs"
-          showText={true}
+          className="hidden sm:inline-flex h-8 sm:h-9 px-2 sm:px-3 text-xs"
+          showText={false}
         />
         <Button
           variant="ghost"
           size="icon"
           onClick={onVideoCall}
-          className="size-9 rounded-full text-muted-foreground hover:text-blue-500 hover:bg-blue-500/10 cursor-pointer transition-colors"
+          className="size-8 sm:size-9 rounded-full text-muted-foreground hover:text-blue-500 hover:bg-blue-500/10 cursor-pointer transition-colors shrink-0"
           title="Start Live Video Tour"
         >
           <Video className="size-4" />
@@ -264,7 +295,7 @@ function ChatHeader({
             variant="ghost"
             size="icon"
             onClick={onClearChat}
-            className="size-9 rounded-full text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 cursor-pointer transition-colors"
+            className="hidden sm:inline-flex size-8 sm:size-9 rounded-full text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 cursor-pointer transition-colors shrink-0"
             title="Clear conversation on your side"
           >
             <Trash2 className="size-4" />
@@ -274,8 +305,8 @@ function ChatHeader({
           variant="ghost"
           size="icon"
           onClick={onViewProfile}
-          className="size-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
-          title="View profile & booking details"
+          className="size-8 sm:size-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer shrink-0"
+          title="View profile & tour details"
         >
           <Info className="size-4" />
         </Button>
@@ -283,7 +314,6 @@ function ChatHeader({
     </div>
   )
 }
-
 
 // ─── Profile Sidebar ─────────────────────────────────────────────────────────
 
@@ -293,6 +323,7 @@ interface ProfileSidebarProps {
   activeConversation?: ConversationItem | null
   onClose: () => void
   onStartVideoCall?: () => void
+  onOpenReceipt?: (booking: TourBookingInfo) => void
 }
 
 function ProfileSidebar({
@@ -301,10 +332,12 @@ function ProfileSidebar({
   activeConversation,
   onClose,
   onStartVideoCall,
+  onOpenReceipt,
 }: ProfileSidebarProps) {
   const [profile, setProfile] = useState<any>(null)
   const [tours, setTours] = useState<any[]>([])
-  const [booking, setBooking] = useState<TourBookingInfo | null>(null)
+  const [upcomingBookings, setUpcomingBookings] = useState<TourBookingInfo[]>([])
+  const [completedBookings, setCompletedBookings] = useState<TourBookingInfo[]>([])
   const [loading, setLoading] = useState(true)
 
   const isHost = authUser?.role === "host"
@@ -330,23 +363,22 @@ function ProfileSidebar({
           setTours(tourList ?? [])
         }
 
-        // 2. Load any active or confirmed booking between the two users
+        // 2. Load all bookings between the two users
         let bookingQuery = supabase
           .from("bookings")
           .select("id, status, booking_date, booking_time, total_price, currency, guest_count, guest_name, guest_email, guest_phone, notes, status_history, created_at, tours(id, title, location)")
 
-        if (activeConversation?.bookingId) {
-          bookingQuery = bookingQuery.eq("id", activeConversation.bookingId)
-        } else if (authUser?.id) {
+        if (authUser?.id && userId) {
           bookingQuery = bookingQuery
             .or(`and(guest_id.eq.${authUser.id},host_id.eq.${userId}),and(guest_id.eq.${userId},host_id.eq.${authUser.id})`)
-            .order("created_at", { ascending: false })
-            .limit(1)
+            .order("booking_date", { ascending: true })
         }
 
-        const { data: bData } = await bookingQuery.maybeSingle()
-        if (bData) {
-          setBooking({
+        const { data: bDataList } = await bookingQuery
+
+        let allBookings: TourBookingInfo[] = []
+        if (bDataList && bDataList.length > 0) {
+          allBookings = bDataList.map((bData) => ({
             id: bData.id,
             tour_id: (bData.tours as any)?.id,
             tour_name: (bData.tours as any)?.title || activeConversation?.tourName || "Booked Tour",
@@ -362,8 +394,46 @@ function ProfileSidebar({
             notes: bData.notes,
             status_history: Array.isArray((bData as any).status_history) ? (bData as any).status_history : [],
             created_at: (bData as any).created_at,
-          })
+          }))
         }
+
+        // Include active conversation booking if not already fetched
+        if (activeConversation?.bookingId && !allBookings.some((b) => b.id === activeConversation.bookingId)) {
+          const { data: singleB } = await supabase
+            .from("bookings")
+            .select("id, status, booking_date, booking_time, total_price, currency, guest_count, guest_name, guest_email, guest_phone, notes, status_history, created_at, tours(id, title, location)")
+            .eq("id", activeConversation.bookingId)
+            .maybeSingle()
+          if (singleB) {
+            allBookings.push({
+              id: singleB.id,
+              tour_id: (singleB.tours as any)?.id,
+              tour_name: (singleB.tours as any)?.title || activeConversation?.tourName || "Booked Tour",
+              booking_date: singleB.booking_date,
+              booking_time: (singleB as any).booking_time,
+              guest_count: singleB.guest_count || 1,
+              total_price: singleB.total_price || 0,
+              currency: singleB.currency || "KES",
+              status: singleB.status || "confirmed",
+              guest_name: singleB.guest_name || prof?.full_name,
+              guest_email: singleB.guest_email,
+              guest_phone: singleB.guest_phone,
+              notes: singleB.notes,
+              status_history: Array.isArray((singleB as any).status_history) ? (singleB as any).status_history : [],
+              created_at: (singleB as any).created_at,
+            })
+          }
+        }
+
+        const upcoming = allBookings.filter(
+          (b) => b.status?.toLowerCase() !== "completed" && b.status?.toLowerCase() !== "cancelled"
+        )
+        const completed = allBookings.filter(
+          (b) => b.status?.toLowerCase() === "completed"
+        )
+
+        setUpcomingBookings(upcoming)
+        setCompletedBookings(completed)
       } catch (err) {
         console.error("ProfileSidebar load error:", err)
       } finally {
@@ -372,6 +442,65 @@ function ProfileSidebar({
     }
     load()
   }, [userId, isHost, authUser?.id, activeConversation?.bookingId, activeConversation?.tourName])
+
+  const handleCompleteTour = async (bookingId: string) => {
+    const toastId = toast.loading("Confirming tour completion…")
+    try {
+      const target = upcomingBookings.find((b) => b.id === bookingId)
+      const now = new Date().toISOString()
+      const currentHistory = Array.isArray(target?.status_history) ? target.status_history : []
+      const updatedHistory = [...currentHistory, { status: "completed", changed_at: now }]
+
+      const { error } = await supabase
+        .from("bookings")
+        .update({ status: "completed", status_history: updatedHistory })
+        .eq("id", bookingId)
+
+      if (error) throw error
+
+      if (target) {
+        const updatedBooking: TourBookingInfo = {
+          ...target,
+          status: "completed",
+          status_history: updatedHistory,
+        }
+        // Remove from upcoming line of tours and move to completed
+        setUpcomingBookings((prev) => prev.filter((b) => b.id !== bookingId))
+        setCompletedBookings((prev) => [updatedBooking, ...prev])
+      }
+
+      toast.dismiss(toastId)
+      toast.success("Tour marked as completed and removed from pending line!")
+
+      if (activeConversation?.id && authUser?.id && userId && target) {
+        await supabase.from("messages").insert({
+          conversation_id: activeConversation.id,
+          sender_id: authUser.id,
+          receiver_id: userId,
+          message: "🎉 Tour has been confirmed as completed! Official service invoice & receipt generated.",
+          read: false,
+          sender_type: "host",
+          notification_type: "tour_completed",
+          metadata: {
+            type: "tour_completed",
+            booking_id: target.id,
+            tour_name: target.tour_name,
+            host_name: authUser.full_name || "Host",
+            traveler_name: target.guest_name || profile?.full_name || "Traveler",
+            date: target.booking_date,
+            time: target.booking_time,
+            amount: target.total_price,
+            currency: target.currency || "KES",
+            completed_at: now,
+          },
+          booking_id: target.id,
+        })
+      }
+    } catch (e: any) {
+      toast.dismiss(toastId)
+      toast.error(e.message || "Failed to update booking status.")
+    }
+  }
 
   return (
     <div className="w-80 shrink-0 border-l border-border/60 bg-card flex flex-col h-full overflow-hidden shadow-modern">
@@ -426,7 +555,7 @@ function ProfileSidebar({
               )}
               {isHost ? (
                 <span className="inline-flex items-center gap-1 mt-1.5 text-[11px] px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold">
-                  {booking ? "Verified Traveler" : "Ausaguide Traveler"}
+                  {upcomingBookings.length > 0 ? "Verified Traveler" : "Ausaguide Traveler"}
                 </span>
               ) : profile.host_tier && (
                 <span className="inline-flex items-center gap-1 mt-1.5 text-[11px] px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold">
@@ -443,59 +572,6 @@ function ProfileSidebar({
             </div>
           </div>
 
-          {/* If there's an active booking, render the Host Tour Receipt & Countdown Timer */}
-          {booking && (
-            <HostTourBookingDetails
-              booking={booking}
-              isHost={isHost}
-              onStartVideoCall={onStartVideoCall}
-              onConfirmCompletion={isHost ? async () => {
-                const toastId = toast.loading("Confirming tour completion…")
-                try {
-                  const now = new Date().toISOString()
-                  const currentHistory = Array.isArray(booking.status_history) ? booking.status_history : []
-                  const updatedHistory = [...currentHistory, { status: "completed", changed_at: now }]
-                  const { error } = await supabase
-                    .from("bookings")
-                    .update({ status: "completed", status_history: updatedHistory })
-                    .eq("id", booking.id)
-                  if (error) throw error
-                  setBooking((prev) => prev ? { ...prev, status: "completed", status_history: updatedHistory } : null)
-                  toast.dismiss(toastId)
-                  toast.success("Tour marked as completed!")
-
-                  if (activeConversation?.id && authUser?.id && userId) {
-                    await supabase.from("messages").insert({
-                      conversation_id: activeConversation.id,
-                      sender_id: authUser.id,
-                      receiver_id: userId,
-                      message: "🎉 Tour has been confirmed as completed! Official service invoice & receipt generated.",
-                      read: false,
-                      sender_type: "host",
-                      notification_type: "tour_completed",
-                      metadata: {
-                        type: "tour_completed",
-                        booking_id: booking.id,
-                        tour_name: booking.tour_name,
-                        host_name: authUser.full_name || "Host",
-                        traveler_name: booking.guest_name || profile.full_name || "Traveler",
-                        date: booking.booking_date,
-                        time: booking.booking_time,
-                        amount: booking.total_price,
-                        currency: booking.currency || "KES",
-                        completed_at: now,
-                      },
-                      booking_id: booking.id,
-                    })
-                  }
-                } catch (e: any) {
-                  toast.dismiss(toastId)
-                  toast.error(e.message || "Failed to update booking status.")
-                }
-              } : undefined}
-            />
-          )}
-
           {/* Traveler Bio */}
           {profile.bio && (
             <div className="px-4 py-3.5 border-b border-border/60">
@@ -504,9 +580,93 @@ function ProfileSidebar({
             </div>
           )}
 
-          {/* If Host Profile (viewed by traveler), show Host's active tours */}
+          {/* If Host viewing Traveler: Show Pending & Upcoming Tours (Line of Tours to Come) */}
+          {isHost && (
+            <div className="border-b border-border/60">
+              <div className="flex items-center justify-between px-4 py-3 bg-muted/20 border-b border-border/40">
+                <span className="text-[11px] font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Calendar className="size-3.5 text-primary" />
+                  <span>Line of Tours to Come</span>
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                  {upcomingBookings.length} {upcomingBookings.length === 1 ? "tour" : "tours"}
+                </span>
+              </div>
+
+              {upcomingBookings.length > 0 ? (
+                <div className="space-y-3 p-3">
+                  {upcomingBookings.map((b, idx) => (
+                    <div key={b.id} className="space-y-2">
+                      <HostTourBookingDetails
+                        booking={b}
+                        isHost={true}
+                        priorityNumber={idx + 1}
+                        onViewReceipt={() => onOpenReceipt ? onOpenReceipt(b) : undefined}
+                        onStartVideoCall={onStartVideoCall}
+                        onConfirmCompletion={() => handleCompleteTour(b.id)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-4 text-center space-y-1.5">
+                  <div className="size-8 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto">
+                    <CheckCircle className="size-4" />
+                  </div>
+                  <p className="text-xs font-semibold text-foreground">No Pending Tours in Line</p>
+                  <p className="text-[11px] text-muted-foreground">All scheduled tours with this traveler have been completed.</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Completed Tours / Receipts section */}
+          {isHost && completedBookings.length > 0 && (
+            <div className="p-3 border-b border-border/60">
+              <div className="flex items-center justify-between px-1 py-2 mb-2">
+                <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <CheckCircle className="size-3.5 text-emerald-600" />
+                  <span>Completed Receipts</span>
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border/60">
+                  {completedBookings.length}
+                </span>
+              </div>
+              <div className="space-y-3">
+                {completedBookings.map((b) => (
+                  <HostTourBookingDetails
+                    key={b.id}
+                    booking={b}
+                    isHost={true}
+                    onViewReceipt={() => onOpenReceipt ? onOpenReceipt(b) : undefined}
+                    onStartVideoCall={onStartVideoCall}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* If Traveler viewing Host: show Host's tours and any upcoming booking */}
           {!isHost && (
             <>
+              {upcomingBookings.length > 0 && (
+                <div className="p-3 border-b border-border/60">
+                  <p className="text-[11px] font-bold text-foreground uppercase tracking-wider mb-2 px-1">
+                    Your Booked Tour
+                  </p>
+                  {upcomingBookings.map((b, idx) => (
+                    <HostTourBookingDetails
+                      key={b.id}
+                      booking={b}
+                      isHost={false}
+                      priorityNumber={idx + 1}
+                      onViewReceipt={() => onOpenReceipt ? onOpenReceipt(b) : undefined}
+                      onStartVideoCall={onStartVideoCall}
+                    />
+                  ))}
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-px bg-border/60 border-b border-border/60">
                 <div className="bg-card px-4 py-3 text-center">
                   <p className="text-xs text-muted-foreground">Tours</p>
@@ -817,6 +977,91 @@ export default function MessagesPage() {
 
   const selectedConv = conversations.find((c) => c.id === selectedConvId)
   const activeConv = selectedConv || fallbackConv
+
+  // Receipt & Ticket Modal state
+  const [selectedReceiptBooking, setSelectedReceiptBooking] = useState<TourBookingInfo | null>(null)
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false)
+
+  // Chronological Priority Queue Calculation for Upcoming Tours (Host / Traveler)
+  const upcomingTourPriorityMap = new Map<string, number>()
+  const upcomingConvs = conversations
+    .filter(
+      (c) =>
+        c.bookingDate &&
+        c.bookingStatus?.toLowerCase() !== "completed" &&
+        c.bookingStatus?.toLowerCase() !== "cancelled"
+    )
+    .sort((a, b) => {
+      const tA = new Date(`${a.bookingDate}T${a.bookingTime || "09:00"}`).getTime()
+      const tB = new Date(`${b.bookingDate}T${b.bookingTime || "09:00"}`).getTime()
+      return tA - tB
+    })
+
+  upcomingConvs.forEach((c, idx) => {
+    upcomingTourPriorityMap.set(c.id, idx + 1)
+  })
+
+  const handleOpenReceipt = async (bookingOverride?: TourBookingInfo | null) => {
+    if (bookingOverride) {
+      setSelectedReceiptBooking(bookingOverride)
+      setIsReceiptModalOpen(true)
+      return
+    }
+
+    if (activeConv?.bookingId) {
+      try {
+        const { data: bData } = await supabase
+          .from("bookings")
+          .select("id, status, booking_date, booking_time, total_price, currency, guest_count, guest_name, guest_email, guest_phone, notes, status_history, created_at, payment_id, tours(id, title, location)")
+          .eq("id", activeConv.bookingId)
+          .maybeSingle()
+
+        if (bData) {
+          setSelectedReceiptBooking({
+            id: bData.id,
+            tour_id: (bData.tours as any)?.id,
+            tour_name: (bData.tours as any)?.title || activeConv.tourName || "Booked Tour",
+            booking_date: bData.booking_date,
+            booking_time: (bData as any).booking_time,
+            guest_count: bData.guest_count || 1,
+            total_price: bData.total_price || 0,
+            currency: bData.currency || "KES",
+            status: bData.status || "confirmed",
+            payment_id: (bData as any).payment_id,
+            guest_name: bData.guest_name || activeConv.other.full_name,
+            guest_email: bData.guest_email,
+            guest_phone: bData.guest_phone,
+            notes: bData.notes,
+            status_history: Array.isArray((bData as any).status_history) ? (bData as any).status_history : [],
+            created_at: (bData as any).created_at,
+          })
+          setIsReceiptModalOpen(true)
+          return
+        }
+      } catch (err) {
+        console.warn("Could not fetch booking for receipt:", err)
+      }
+    }
+
+    if (activeConv) {
+      setSelectedReceiptBooking({
+        id: activeConv.bookingId || `TICKET-${activeConv.id.slice(0, 8).toUpperCase()}`,
+        tour_name: activeConv.tourName || "Ausaguide Experience",
+        booking_date: activeConv.bookingDate || new Date().toISOString(),
+        booking_time: activeConv.bookingTime || "09:00",
+        guest_count: activeConv.guestCount || 1,
+        total_price: activeConv.totalPrice || 0,
+        currency: activeConv.currency || "KES",
+        status: activeConv.bookingStatus || "confirmed",
+        guest_name: activeConv.guestName || activeConv.other.full_name,
+        guest_email: activeConv.guestEmail,
+        guest_phone: activeConv.guestPhone,
+        notes: activeConv.bookingNotes,
+        created_at: activeConv.created_at,
+      })
+      setIsReceiptModalOpen(true)
+    }
+  }
 
   // Automatically ensure receipt is in chat whenever an active conversation has an associated booking
   useEffect(() => {
@@ -1155,9 +1400,18 @@ export default function MessagesPage() {
                   (c.last_message || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
                   (c.tourName || "").toLowerCase().includes(searchQuery.toLowerCase())
               )
+              .sort((a, b) => {
+                if (activeCategory === "tours") {
+                  const pA = upcomingTourPriorityMap.get(a.id) || 9999
+                  const pB = upcomingTourPriorityMap.get(b.id) || 9999
+                  if (pA !== pB) return pA - pB
+                }
+                return 0
+              })
               .map((conv) => {
                 const isSelected = conv.id === selectedConvId
                 const online = isUserOnline(conv.other.id)
+                const priorityNum = upcomingTourPriorityMap.get(conv.id)
 
                 return (
                   <div key={conv.id} className="relative group/conv">
@@ -1223,10 +1477,18 @@ export default function MessagesPage() {
 
                         {/* Tour or Direct Context */}
                         {conv.tourName ? (
-                          <p className="text-[10px] text-primary/80 font-medium truncate mb-0.5 flex items-center gap-1">
-                            <MapPin className="size-2.5 shrink-0" />
-                            {conv.tourName}
-                          </p>
+                          <div className="flex items-center justify-between gap-1 mb-0.5">
+                            <p className="text-[10px] text-primary/80 font-medium truncate flex items-center gap-1">
+                              <MapPin className="size-2.5 shrink-0" />
+                              <span className="truncate">{conv.tourName}</span>
+                            </p>
+                            {priorityNum && priorityNum > 0 && (
+                              <span className="shrink-0 px-1.5 py-0.2 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 text-[9px] font-black inline-flex items-center gap-0.5">
+                                <Sparkles className="size-2 text-emerald-600" />
+                                #{priorityNum} Next
+                              </span>
+                            )}
+                          </div>
                         ) : conv.isDirect ? (
                           <p className="text-[10px] text-muted-foreground/80 font-medium truncate mb-0.5 flex items-center gap-1">
                             <span className="size-1.5 rounded-full bg-primary/70 inline-block" />
@@ -1273,9 +1535,11 @@ export default function MessagesPage() {
               isHostUser={authUser.role === "host"}
               tourName={activeConv.tourName}
               bookingDate={activeConv.bookingDate}
+              priorityNumber={activeConv ? upcomingTourPriorityMap.get(activeConv.id) : undefined}
               onBack={handleBack}
               onVideoCall={() => handleVideoCall()}
               onViewProfile={() => setShowProfile((v) => !v)}
+              onViewReceipt={() => handleOpenReceipt()}
               onClearChat={handleClearChat}
               showBack={mobileView === "chat"}
               hostName={activeConv.other.full_name}
@@ -1312,6 +1576,7 @@ export default function MessagesPage() {
                     authUser={authUser}
                     activeConversation={activeConv}
                     onStartVideoCall={() => handleVideoCall()}
+                    onOpenReceipt={(b) => handleOpenReceipt(b)}
                     onClose={() => setShowProfile(false)}
                   />
                 </div>
@@ -1343,6 +1608,19 @@ export default function MessagesPage() {
           tourName={activeConv?.tourName}
           bookingId={activeConv?.bookingId}
           currentUserId={authUser.id}
+        />
+      )}
+
+      {/* ── Official Tour Ticket & Receipt Modal ─────────────────────────── */}
+      {selectedReceiptBooking && (
+        <TourReceiptTicketModal
+          isOpen={isReceiptModalOpen}
+          onClose={() => setIsReceiptModalOpen(false)}
+          booking={selectedReceiptBooking}
+          hostName={activeConv?.other.full_name || "Host"}
+          travelerName={selectedReceiptBooking.guest_name || activeConv?.other.full_name || "Traveler"}
+          priorityNumber={activeConv ? upcomingTourPriorityMap.get(activeConv.id) : undefined}
+          isHost={authUser?.role === "host"}
         />
       )}
 
