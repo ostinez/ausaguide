@@ -1,5 +1,6 @@
 import { CheckCircle, Video } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import AddToCalendarButton from "@/components/common/AddToCalendarButton"
 
 interface BookingConfirmedCardProps {
   content: {
@@ -9,6 +10,7 @@ interface BookingConfirmedCardProps {
     daily_room_id?: string | null
     message?: string
     date?: string
+    time?: string
     guests?: number
     total?: number
     currency?: string
@@ -40,21 +42,36 @@ export default function BookingConfirmedCard({ content }: BookingConfirmedCardPr
         <div className="p-4 space-y-3 text-xs">
           <p className="text-foreground leading-relaxed font-medium">{message}</p>
 
-          {roomUrl && (
-            <div className="pt-2 border-t border-border/60">
+          <div className="flex items-center gap-2 pt-2 border-t border-border/60">
+            {content.date && (
+              <AddToCalendarButton
+                event={{
+                  title: tourName,
+                  startDate: content.date,
+                  startTime: content.time,
+                  location: roomUrl || "Ausaguide Live Video Room",
+                  description: `Your live virtual tour: ${tourName}.\nJoin room: ${roomUrl || "Ausaguide Chat"}`,
+                }}
+                className="flex-1 h-9 text-xs rounded-xl"
+              />
+            )}
+
+            {roomUrl && (
               <Button
                 asChild
-                className="w-full h-10 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-semibold gap-2 shadow-sm"
+                className="flex-1 h-9 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-semibold gap-1.5 shadow-sm text-xs"
               >
                 <a href={roomUrl} target="_blank" rel="noopener noreferrer">
-                  <Video className="size-4" />
-                  <span>Join Video Room</span>
+                  <Video className="size-3.5" />
+                  <span>Join Video</span>
                 </a>
               </Button>
-              <p className="text-[10px] text-muted-foreground text-center mt-1.5">
-                Powered by Daily.co video connection
-              </p>
-            </div>
+            )}
+          </div>
+          {roomUrl && (
+            <p className="text-[10px] text-muted-foreground text-center">
+              Powered by Daily.co secure video room
+            </p>
           )}
         </div>
       </div>

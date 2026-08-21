@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { MessageSquare, Video, CheckCircle, Clock, Users, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import AddToCalendarButton from "@/components/common/AddToCalendarButton"
 
 export interface TourBookingInfo {
   id: string
@@ -237,6 +238,18 @@ export default function HostTourBookingDetails({
               className="flex-1 min-w-[80px] h-8 rounded-lg text-xs font-semibold gap-1.5 border-border hover:bg-muted">
               <Video className="size-3.5" /> Join Call
             </Button>
+          )}
+          {booking.booking_date && (
+            <AddToCalendarButton
+              event={{
+                title: booking.tour_name,
+                startDate: booking.booking_date,
+                startTime: booking.booking_time || undefined,
+                location: booking.daily_room_url || "Ausaguide Live Video Room",
+                description: `Ausaguide Tour: ${booking.tour_name}.\nTraveler: ${booking.guest_name || "Guest"}\nMeeting link: ${booking.daily_room_url || "In chat"}`,
+              }}
+              className="h-8 text-xs rounded-lg flex-1 min-w-[120px]"
+            />
           )}
           {isHost && !cd.isPast && onConfirmCompletion && (
             <Button type="button" variant="outline" size="sm" onClick={onConfirmCompletion}
