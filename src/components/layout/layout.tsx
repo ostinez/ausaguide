@@ -376,7 +376,7 @@ export function Layout() {
   <main className={isMessagesPage ? "flex-1 h-screen overflow-hidden pb-0" : "flex-1 pb-16 md:pb-0"}>
   <Outlet />
   </main>
- {!isAuthOrOnboarding && <Footer />}
+      {!userId && !isAuthOrOnboarding && <Footer />}
  {!isAuthOrOnboarding && <ProfileCompletionBanner />}
  {!isAuthOrOnboarding && <MobileNav />}
  {isOffline && (
