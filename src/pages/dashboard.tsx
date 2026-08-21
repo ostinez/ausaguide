@@ -1216,7 +1216,37 @@ function UrgentRequestsSection({
  </CardDescription>
  </CardHeader>
  <CardContent className="space-y-4">
- {filteredRequests.map((req) => {
+ {filteredRequests.map((req) => (
+ <UrgentRequestCardItem
+ key={req.id}
+ req={req}
+ loadingId={loadingId}
+ onChat={onChat}
+ onDecline={handleDecline}
+ onAccept={handleAccept}
+ onRefresh={onRefresh}
+ />
+ ))}
+ </CardContent>
+ </Card>
+ )
+}
+
+function UrgentRequestCardItem({
+ req,
+ loadingId,
+ onChat,
+ onDecline,
+ onAccept,
+ onRefresh,
+}: {
+ req: any
+ loadingId: string | null
+ onChat: (travelerId: string, travelerName: string) => void
+ onDecline: (requestId: string) => void
+ onAccept: (requestId: string, price?: number) => void
+ onRefresh: () => void
+}) {
  const expiresAt = new Date(req.expires_at).getTime()
  const [timeLeft, setTimeLeft] = useState(Math.max(0, Math.floor((expiresAt - Date.now()) / 1000)))
 
@@ -1235,7 +1265,7 @@ function UrgentRequestsSection({
  if (timeLeft <= 0) return null
 
  return (
- <div key={req.id} className="border border-border bg-secondary/40 p-4 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-colors">
+ <div className="border border-border bg-secondary/40 p-4 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-colors">
  <div className="space-y-1">
  <p className="font-bold text-foreground text-sm">
  Traveler: {req.traveler?.full_name || "Anonymous Traveler"}
@@ -1268,7 +1298,7 @@ function UrgentRequestsSection({
  type="button"
  size="sm"
  variant="outline"
- onClick={() => handleDecline(req.id)}
+ onClick={() => onDecline(req.id)}
  disabled={loadingId !== null}
  className="flex-1 sm:flex-initial border-border text-muted-foreground hover:text-foreground hover:bg-secondary rounded-xl font-semibold"
  >
@@ -1285,7 +1315,7 @@ function UrgentRequestsSection({
  toast.error("Please enter a valid price.")
  return
  }
- handleAccept(req.id, price)
+ onAccept(req.id, price)
  }}
  disabled={loadingId !== null}
  className="flex-1 sm:flex-initial bg-gradient-to-r from-[#0B3037] to-[#0D6F73] hover:from-[#0B3037] hover:to-[#0D6F73] text-white font-bold"
@@ -1295,10 +1325,6 @@ function UrgentRequestsSection({
  </Button>
  </div>
  </div>
- )
- })}
- </CardContent>
- </Card>
  )
 }
 
