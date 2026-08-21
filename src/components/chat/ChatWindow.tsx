@@ -37,6 +37,8 @@ export interface ChatWindowProps {
   bookingInfo?: TourBookingInfo | null
   onBack?: () => void
   onStartVideoCall?: () => void
+  onClearChat?: () => void
+  showHeader?: boolean
   className?: string
 }
 
@@ -166,13 +168,15 @@ export function ChatWindow({
   conversationId,
   currentUserId,
   otherUser,
-  currentUserRole = "user",
+  currentUserRole = "traveler",
   currentUserName,
   tourName,
   bookingId,
   bookingInfo,
   onBack,
   onStartVideoCall,
+  onClearChat,
+  showHeader = false,
   className,
 }: ChatWindowProps) {
   const {
@@ -367,92 +371,93 @@ export function ChatWindow({
 
   return (
     <div className={cn("flex flex-col h-full bg-card border border-border rounded-2xl overflow-hidden shadow-modern", className)}>
-      {/* ─── Header ─── */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
-          {onBack && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted md:hidden shrink-0"
-              onClick={onBack}
-            >
-              <ArrowLeft className="size-4" />
-            </Button>
-          )}
+      {/* ─── Header (rendered only when showHeader is true) ─── */}
+      {showHeader && (
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            {onBack && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted md:hidden shrink-0"
+                onClick={onBack}
+              >
+                <ArrowLeft className="size-4" />
+              </Button>
+            )}
 
-          <div className="relative">
-            <Avatar className="size-10 border border-border ring-2 ring-primary/10">
-              {otherUser.avatar_url ? (
-                <AvatarImage src={otherUser.avatar_url} alt={otherUser.full_name} className="object-cover" />
-              ) : null}
-              <AvatarFallback className="bg-primary/15 text-primary font-bold text-xs">
-                {initials(otherUser.full_name || "User")}
-              </AvatarFallback>
-            </Avatar>
-            {otherUser.isOnline && (
-              <span className="absolute bottom-0 right-0 size-3 rounded-full bg-emerald-500 ring-2 ring-card animate-pulse" />
+            <div className="relative">
+              <Avatar className="size-10 border border-border ring-2 ring-primary/10">
+                {otherUser.avatar_url ? (
+                  <AvatarImage src={otherUser.avatar_url} alt={otherUser.full_name} className="object-cover" />
+                ) : null}
+                <AvatarFallback className="bg-primary/15 text-primary font-bold text-xs">
+                  {initials(otherUser.full_name || "User")}
+                </AvatarFallback>
+              </Avatar>
+              {otherUser.isOnline && (
+                <span className="absolute bottom-0 right-0 size-3 rounded-full bg-emerald-500 ring-2 ring-card animate-pulse" />
+              )}
+            </div>
+
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-sm text-foreground truncate max-w-[180px] sm:max-w-xs">
+                  {otherUser.full_name}
+                </h3>
+                {currentUserRole === "host" ? (
+                  <span className="flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-bold border border-blue-500/20">
+                    {activeBooking ? "Verified Guest" : "Traveler"}
+                  </span>
+                ) : otherUser.host_tier ? (
+                  <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 text-[10px] font-bold border border-amber-500/20">
+                    <Star className="size-2.5 fill-amber-500 text-amber-500" />
+                    {otherUser.host_tier}
+                  </span>
+                ) : null}
+              </div>
+              <p className="text-[11px] text-muted-foreground truncate">
+                {otherTyping ? (
+                  <span className="text-primary font-medium flex items-center gap-1">
+                    typing<span className="animate-bounce">.</span><span className="animate-bounce delay-100">.</span><span className="animate-bounce delay-200">.</span>
+                  </span>
+                ) : otherUser.isOnline ? (
+                  <span className="text-emerald-600 font-medium">Active now</span>
+                ) : (
+                  "Direct Message"
+                )}
+              </p>
+            </div>
+          </div>
+
+          {/* Action icons */}
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 rounded-xl text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20 text-xs font-semibold gap-1.5"
+              onClick={onStartVideoCall || handleShareDailyRoom}
+              disabled={isSharingVideo}
+              title="Start Video Meeting Room"
+            >
+              <Video className="size-3.5" />
+              <span className="hidden sm:inline">Video Call</span>
+            </Button>
+
+            {messages.length > 0 && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 rounded-full text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
+                onClick={onClearChat || handleClearChat}
+                title="Clear chat on your side"
+              >
+                <Trash2 className="size-4" />
+              </Button>
             )}
           </div>
-
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-sm text-foreground truncate max-w-[180px] sm:max-w-xs">
-                {otherUser.full_name}
-              </h3>
-              {currentUserRole === "host" ? (
-                <span className="flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-bold border border-blue-500/20">
-                  {activeBooking ? "Verified Guest" : "Traveler"}
-                </span>
-              ) : otherUser.host_tier ? (
-                <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 text-[10px] font-bold border border-amber-500/20">
-                  <Star className="size-2.5 fill-amber-500 text-amber-500" />
-                  {otherUser.host_tier}
-                </span>
-              ) : null}
-            </div>
-            <p className="text-[11px] text-muted-foreground truncate">
-              {otherTyping ? (
-                <span className="text-primary font-medium flex items-center gap-1">
-                  typing<span className="animate-bounce">.</span><span className="animate-bounce delay-100">.</span><span className="animate-bounce delay-200">.</span>
-                </span>
-              ) : otherUser.isOnline ? (
-                <span className="text-emerald-600 font-medium">Active now</span>
-              ) : (
-                "Direct Message"
-              )}
-            </p>
-          </div>
         </div>
-
-        {/* Action icons */}
-        <div className="flex items-center gap-1.5">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 rounded-xl text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20 text-xs font-semibold gap-1.5"
-            onClick={onStartVideoCall || handleShareDailyRoom}
-            disabled={isSharingVideo}
-            title="Start Video Meeting Room"
-          >
-            <Video className="size-3.5" />
-            <span className="hidden sm:inline">Video Call</span>
-          </Button>
-
-          {messages.length > 0 && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 rounded-full text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
-              onClick={handleClearChat}
-              title="Clear chat on your side"
-            >
-              <Trash2 className="size-4" />
-            </Button>
-          )}
-        </div>
-      </div>
-
+      )}
 
       {/* ─── Message Bubbles Container ─── */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 custom-scrollbar bg-background/50">
@@ -508,6 +513,7 @@ export function ChatWindow({
                           sharedByName={msg.metadata?.shared_by_name || (isMe ? "You" : otherUser.full_name)}
                           createdAt={msg.created_at}
                           isMe={isMe}
+                          onJoinCall={onStartVideoCall ? () => onStartVideoCall() : undefined}
                         />
                       )
                     }

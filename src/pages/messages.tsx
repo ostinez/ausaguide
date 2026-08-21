@@ -29,6 +29,8 @@ import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { createGeneralDailyRoom } from "@/lib/api/daily"
 import { Link } from "react-router-dom"
+import DailyCallOverlay from "@/components/chat/DailyCallOverlay"
+import PostCallReviewModal from "@/components/chat/PostCallReviewModal"
 import {
   fetchReachableConnections,
   findOrCreateDirectConversation,
@@ -127,6 +129,7 @@ interface ChatHeaderProps {
   onBack: () => void
   onVideoCall: () => void
   onViewProfile: () => void
+  onClearChat?: () => void
   showBack: boolean
   hostName: string
 }
@@ -143,11 +146,12 @@ function ChatHeader({
   onBack,
   onVideoCall,
   onViewProfile,
+  onClearChat,
   showBack,
   hostName,
 }: ChatHeaderProps) {
   return (
-    <div className="flex items-center gap-3 px-4 py-3 border-b border-border/60 bg-card shrink-0 shadow-modern">
+    <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card shrink-0 shadow-xs">
       {showBack && (
         <Button
           variant="ghost"
@@ -161,7 +165,7 @@ function ChatHeader({
 
       <button
         onClick={onViewProfile}
-        className="flex items-center gap-3 min-w-0 flex-1 hover:opacity-85 transition-opacity"
+        className="flex items-center gap-3 min-w-0 flex-1 hover:opacity-85 transition-opacity cursor-pointer text-left"
         title="View profile & booking receipt"
       >
         <div className="relative shrink-0">
@@ -250,16 +254,27 @@ function ChatHeader({
           variant="ghost"
           size="icon"
           onClick={onVideoCall}
-          className="size-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted"
-          title="Start video room"
+          className="size-9 rounded-full text-muted-foreground hover:text-blue-500 hover:bg-blue-500/10 cursor-pointer transition-colors"
+          title="Start Live Video Tour"
         >
           <Video className="size-4" />
         </Button>
+        {onClearChat && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClearChat}
+            className="size-9 rounded-full text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 cursor-pointer transition-colors"
+            title="Clear conversation on your side"
+          >
+            <Trash2 className="size-4" />
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="icon"
           onClick={onViewProfile}
-          className="size-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted"
+          className="size-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
           title="View profile & booking details"
         >
           <Info className="size-4" />
@@ -434,6 +449,41 @@ function ProfileSidebar({
               booking={booking}
               isHost={isHost}
               onStartVideoCall={onStartVideoCall}
+              onConfirmCompletion={isHost ? async () => {
+                const toastId = toast.loading("Confirming tour completion…")
+                try {
+                  const now = new Date().toISOString()
+                  const currentHistory = Array.isArray(booking.status_history) ? booking.status_history : []
+                  const updatedHistory = [...currentHistory, { status: "completed", changed_at: now }]
+                  const { error } = await supabase
+                    .from("bookings")
+                    .update({ status: "completed", status_history: updatedHistory })
+                    .eq("id", booking.id)
+                  if (error) throw error
+                  setBooking((prev) => prev ? { ...prev, status: "completed", status_history: updatedHistory } : null)
+                  toast.dismiss(toastId)
+                  toast.success("Tour marked as completed!")
+
+                  if (activeConversation?.id && authUser?.id && userId) {
+                    await supabase.from("messages").insert({
+                      conversation_id: activeConversation.id,
+                      sender_id: authUser.id,
+                      receiver_id: userId,
+                      message: "🎉 Tour has been confirmed as completed! Thank you for choosing Ausaguide.",
+                      read: false,
+                      sender_type: "host",
+                      metadata: {
+                        type: "tour_completed",
+                        booking_id: booking.id,
+                      },
+                      booking_id: booking.id,
+                    })
+                  }
+                } catch (e: any) {
+                  toast.dismiss(toastId)
+                  toast.error(e.message || "Failed to update booking status.")
+                }
+              } : undefined}
             />
           )}
 
@@ -538,11 +588,13 @@ export default function MessagesPage() {
   const {
     conversations,
     loading: convsLoading,
-    deleteConversationForMe,
     refreshConversations,
   } = useConversations(authUser?.id ?? null)
   const { isUserOnline } = useRealtimePresence(authUser?.id ?? null)
   const [fallbackConv, setFallbackConv] = useState<ConversationItem | null>(null)
+  const [activeCallUrl, setActiveCallUrl] = useState<string | null>(null)
+  const [isCallOverlayOpen, setIsCallOverlayOpen] = useState(false)
+  const [showPostCallReview, setShowPostCallReview] = useState(false)
 
   // Handle ?userId=... direct messaging from profile / follow actions
   useEffect(() => {
@@ -715,37 +767,96 @@ export default function MessagesPage() {
     setShowProfile(false)
   }
 
-  const handleVideoCall = async () => {
-    if (!selectedConvId || !authUser || !otherUserId) return
-    const loadingToast = toast.loading("Creating video room…")
+  const handleClearChat = async () => {
+    if (!selectedConvId || !authUser?.id) return
+    if (!confirm("Are you sure you want to clear your sent messages in this conversation?")) return
+
+    const toastId = toast.loading("Clearing messages…")
     try {
-      const roomUrl = await createGeneralDailyRoom(selectedConvId)
+      const { error } = await supabase
+        .from("messages")
+        .delete()
+        .eq("conversation_id", selectedConvId)
+        .eq("sender_id", authUser.id)
+
+      toast.dismiss(toastId)
+      if (error) throw error
+      toast.success("Messages cleared on your side.")
+      window.dispatchEvent(new CustomEvent("refresh-chat-messages"))
+    } catch (err: any) {
+      toast.dismiss(toastId)
+      toast.error(err.message || "Failed to clear messages.")
+    }
+  }
+
+  const handleVideoCall = async (customRoomUrl?: string) => {
+    if (!selectedConvId || !authUser || !otherUserId) return
+    const loadingToast = toast.loading("Launching live video room…")
+    try {
+      const roomUrl = customRoomUrl || (await createGeneralDailyRoom(selectedConvId))
       toast.dismiss(loadingToast)
 
-      // Post video room invite into conversation
+      // Post video room invite into conversation if creating a fresh room
+      if (!customRoomUrl) {
+        try {
+          const senderType = authUser.role === "host" ? "host" : authUser.role === "traveler" ? "traveler" : "user"
+          await supabase.from("messages").insert({
+            conversation_id: selectedConvId,
+            sender_id: authUser.id,
+            receiver_id: otherUserId,
+            message: `📹 I've started a live video meeting room: ${roomUrl}`,
+            read: false,
+            sender_type: senderType,
+            notification_type: "daily_room_shared",
+            metadata: {
+              type: "daily_room_shared",
+              daily_room_url: roomUrl,
+              shared_by_name: authUser.full_name || (authUser.role === "host" ? "Host" : "Traveler"),
+            },
+            ...(activeConv?.bookingId ? { booking_id: activeConv.bookingId } : {}),
+          })
+        } catch (_) {}
+      }
+
+      setActiveCallUrl(roomUrl)
+      setIsCallOverlayOpen(true)
+    } catch (err: any) {
+      toast.dismiss(loadingToast)
+      toast.error(err.message || "Failed to start video call.")
+    }
+  }
+
+  const handleEndCall = async () => {
+    setIsCallOverlayOpen(false)
+    setActiveCallUrl(null)
+
+    // Insert automatic post-call ended note
+    if (selectedConvId && authUser && otherUserId) {
       try {
         const senderType = authUser.role === "host" ? "host" : authUser.role === "traveler" ? "traveler" : "user"
         await supabase.from("messages").insert({
           conversation_id: selectedConvId,
           sender_id: authUser.id,
           receiver_id: otherUserId,
-          message: `📹 I've started a live video meeting room: ${roomUrl}`,
+          message: "🎬 Virtual tour call ended. Thank you for connecting on Ausaguide!",
           read: false,
           sender_type: senderType,
-          notification_type: "daily_room_shared",
           metadata: {
-            type: "daily_room_shared",
-            daily_room_url: roomUrl,
-            shared_by_name: authUser.full_name || (authUser.role === "host" ? "Host" : "Traveler"),
+            type: "call_ended",
+            ended_at: new Date().toISOString(),
           },
           ...(activeConv?.bookingId ? { booking_id: activeConv.bookingId } : {}),
         })
-      } catch (_) {}
+      } catch (e) {
+        console.warn("Could not post call ended message:", e)
+      }
+    }
 
-      window.open(roomUrl, "_blank")
-    } catch (err: any) {
-      toast.dismiss(loadingToast)
-      toast.error(err.message || "Failed to start video call.")
+    // Traveler gets automatic review modal popup
+    if (authUser?.role === "traveler") {
+      setShowPostCallReview(true)
+    } else if (authUser?.role === "host") {
+      toast.success("Call ended. You can confirm tour completion in the sidebar receipt.")
     }
   }
 
@@ -983,7 +1094,7 @@ export default function MessagesPage() {
                       id={`conv-item-${conv.id}`}
                       onClick={() => handleSelectConversation(conv.id)}
                       className={cn(
-                        "w-full flex items-center gap-3 px-4 py-3.5 text-left transition-all duration-150 border-b border-border/40 pr-10",
+                        "w-full flex items-center gap-3 px-4 py-3.5 text-left transition-all duration-150 border-b border-border/40 pr-10 cursor-pointer",
                         isSelected
                           ? "bg-primary/[0.08] border-r-2 border-r-primary"
                           : "hover:bg-muted/60"
@@ -1062,25 +1173,6 @@ export default function MessagesPage() {
                         </p>
                       </div>
                     </button>
-
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        if (window.confirm(`Delete conversation with ${conv.other.full_name} for you? This will clear it from your list.`)) {
-                          deleteConversationForMe(conv.id)
-                          if (selectedConvId === conv.id) {
-                            setSelectedConvId("")
-                            setMobileView("list")
-                          }
-                        }
-                      }}
-                      className="absolute right-2 bottom-3 opacity-0 group-hover/conv:opacity-100 focus:opacity-100 p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-rose-500 transition-opacity cursor-pointer z-10"
-                      title="Delete conversation for me"
-                      aria-label="Delete conversation for me"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
                   </div>
                 )
               })
@@ -1088,12 +1180,11 @@ export default function MessagesPage() {
         </div>
       </aside>
 
-      {/* ── Main Chat Panel ──────────────────────────────────────────────── */}
+      {/* ── Chat Main View ──────────────────────────────────────────────── */}
       <main
         className={cn(
-          "flex-1 flex flex-col min-w-0",
-          "md:flex",
-          mobileView === "list" ? "hidden" : "flex"
+          "flex-1 flex flex-col h-full overflow-hidden bg-card min-w-0",
+          mobileView === "list" ? "hidden md:flex" : "flex"
         )}
       >
         {!selectedConvId || !activeConv ? (
@@ -1112,8 +1203,9 @@ export default function MessagesPage() {
               tourName={activeConv.tourName}
               bookingDate={activeConv.bookingDate}
               onBack={handleBack}
-              onVideoCall={handleVideoCall}
+              onVideoCall={() => handleVideoCall()}
               onViewProfile={() => setShowProfile((v) => !v)}
+              onClearChat={handleClearChat}
               showBack={mobileView === "chat"}
               hostName={activeConv.other.full_name}
             />
@@ -1135,6 +1227,8 @@ export default function MessagesPage() {
                       isOnline: isUserOnline(activeConv.other.id),
                     }}
                     currentUserRole={authUser.role}
+                    showHeader={false}
+                    onStartVideoCall={() => handleVideoCall()}
                     className="flex-1 min-h-0 rounded-none border-0 shadow-none bg-background"
                   />
                 )}
@@ -1146,7 +1240,7 @@ export default function MessagesPage() {
                     userId={otherUserId}
                     authUser={authUser}
                     activeConversation={activeConv}
-                    onStartVideoCall={handleVideoCall}
+                    onStartVideoCall={() => handleVideoCall()}
                     onClose={() => setShowProfile(false)}
                   />
                 </div>
@@ -1155,6 +1249,31 @@ export default function MessagesPage() {
           </div>
         )}
       </main>
+
+      {/* ── Daily In-App Video Call Overlay ──────────────────────────────── */}
+      {activeCallUrl && (
+        <DailyCallOverlay
+          isOpen={isCallOverlayOpen}
+          roomUrl={activeCallUrl}
+          callerName={activeConv?.other.full_name || "Live Video Room"}
+          tourName={activeConv?.tourName}
+          onEndCall={handleEndCall}
+          isHost={authUser?.role === "host"}
+        />
+      )}
+
+      {/* ── Post-Call Automatic Review Modal ─────────────────────────────── */}
+      {authUser && otherUserId && (
+        <PostCallReviewModal
+          isOpen={showPostCallReview}
+          onClose={() => setShowPostCallReview(false)}
+          hostName={activeConv?.other.full_name || "Host"}
+          hostId={otherUserId}
+          tourName={activeConv?.tourName}
+          bookingId={activeConv?.bookingId}
+          currentUserId={authUser.id}
+        />
+      )}
 
       {/* ── New Chat Dialog ──────────────────────────────────────────────── */}
       {authUser && (

@@ -8,6 +8,7 @@ interface DailyRoomSharedCardProps {
   sharedByName?: string
   createdAt?: string
   isMe?: boolean
+  onJoinCall?: (url: string) => void
 }
 
 export default function DailyRoomSharedCard({
@@ -15,6 +16,7 @@ export default function DailyRoomSharedCard({
   sharedByName,
   createdAt,
   isMe,
+  onJoinCall,
 }: DailyRoomSharedCardProps) {
   const [copied, setCopied] = useState(false)
 
@@ -59,16 +61,28 @@ export default function DailyRoomSharedCard({
           </p>
 
           <div className="flex items-center gap-2">
-            <Button
-              asChild
-              className="flex-1 h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs gap-2 shadow-md shadow-blue-600/20 transition-transform active:scale-98"
-            >
-              <a href={roomUrl} target="_blank" rel="noopener noreferrer">
+            {onJoinCall ? (
+              <Button
+                type="button"
+                onClick={() => onJoinCall(roomUrl)}
+                className="flex-1 h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs gap-2 shadow-md shadow-blue-600/20 transition-transform active:scale-98 cursor-pointer"
+              >
                 <Video className="size-4" />
                 <span>Join Video Meeting</span>
-                <ExternalLink className="size-3.5 opacity-70 ml-auto" />
-              </a>
-            </Button>
+                <Sparkles className="size-3.5 opacity-80 ml-auto" />
+              </Button>
+            ) : (
+              <Button
+                asChild
+                className="flex-1 h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs gap-2 shadow-md shadow-blue-600/20 transition-transform active:scale-98"
+              >
+                <a href={roomUrl} target="_blank" rel="noopener noreferrer">
+                  <Video className="size-4" />
+                  <span>Join Video Meeting</span>
+                  <ExternalLink className="size-3.5 opacity-70 ml-auto" />
+                </a>
+              </Button>
+            )}
 
             <Button
               type="button"

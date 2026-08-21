@@ -303,7 +303,8 @@ export function Layout() {
  { label: "TikTok", link: "https://tiktok.com/@ausaguide" },
  ]
 
- const isAuthOrOnboarding = location.pathname === "/auth" || location.pathname === "/onboarding"
+  const isMessagesPage = location.pathname.startsWith("/messages")
+  const isAuthOrOnboarding = location.pathname === "/auth" || location.pathname === "/onboarding" || isMessagesPage
 
  if (maintenanceMode && userRole !== "admin" && location.pathname !== "/auth") {
     return (
@@ -370,9 +371,9 @@ export function Layout() {
  logoUrl="/logo-primary.png"
  className={`${!isAuthOrOnboarding ? "has-beta-banner" : ""} ${impersonatedName ? "has-impersonation-banner" : ""}`.trim()}
  />
- <main className="flex-1 pb-16 md:pb-0">
- <Outlet />
- </main>
+  <main className={isMessagesPage ? "flex-1 h-screen overflow-hidden pb-0" : "flex-1 pb-16 md:pb-0"}>
+  <Outlet />
+  </main>
  {!isAuthOrOnboarding && <Footer />}
  {!isAuthOrOnboarding && <ProfileCompletionBanner />}
  {!isAuthOrOnboarding && <MobileNav />}
