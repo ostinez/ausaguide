@@ -76,6 +76,29 @@ export function useConversations(currentUserId: string | null) {
       const deletedConvsMap: Record<string, string> = JSON.parse(localStorage.getItem(deletedConvsKey) || "{}")
 
       const validRows = convRows || []
+      const otherUserIds = Array.from(
+        new Set(
+          validRows.map((r: any) =>
+            r.participant_a === currentUserId ? r.participant_b : r.participant_a
+          )
+        )
+      ).filter(Boolean)
+
+      // Bulk fetch all participant profiles in 1 query
+      const profilesMap = new Map<string, any>()
+      if (otherUserIds.length > 0) {
+        try {
+          const { data: profs } = await supabase
+            .from("profiles")
+            .select("id, full_name, avatar_url, host_tier, bio, role, location")
+            .in("id", otherUserIds)
+          if (profs) {
+            profs.forEach((p) => profilesMap.set(p.id, p))
+          }
+        } catch (e) {
+          console.warn("[useConversations] Batch profile fetch notice:", e)
+        }
+      }
 
       // 2. Enrich with the other participant's profile + last message + unread count + booking context
       const results = await Promise.all(
@@ -113,18 +136,8 @@ export function useConversations(currentUserId: string | null) {
             }
           }
 
-          // Fetch the other user's profile
-          let profile: any = null
-          try {
-            const { data } = await supabase
-              .from("profiles")
-              .select("id, full_name, avatar_url, host_tier, bio, role, location")
-              .eq("id", otherId)
-              .maybeSingle()
-            profile = data
-          } catch (pErr) {
-            console.warn("[useConversations] Profile fetch notice:", pErr)
-          }
+          // Use pre-fetched profile
+          const profile = profilesMap.get(otherId) || null
 
           // Count unread messages
           let unreadCount = 0

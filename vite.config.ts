@@ -15,6 +15,17 @@ export default defineConfig({
     target: "esnext",
     minify: "esbuild",
     cssMinify: true,
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "vendor-react": ["react", "react-dom", "react-router-dom"],
+          "vendor-supabase": ["@supabase/supabase-js"],
+          "vendor-icons": ["lucide-react"],
+          "vendor-date": ["date-fns"],
+        },
+      },
+    },
   },
   test: {
     environment: "jsdom",
