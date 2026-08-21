@@ -54,14 +54,14 @@ export function DailyCallOverlay({
   return (
     <div
       className={cn(
-        "fixed z-50 transition-all duration-300 ease-out flex flex-col shadow-2xl overflow-hidden bg-black/95",
+        "fixed z-[99999] transition-all duration-300 ease-out flex flex-col shadow-2xl overflow-hidden bg-background",
         isMinimized
-          ? "bottom-4 right-4 w-80 h-56 rounded-2xl border-2 border-primary/40"
-          : "inset-0 md:inset-4 md:rounded-3xl border border-border"
+          ? "bottom-4 right-4 w-84 sm:w-96 h-60 sm:h-64 rounded-2xl border-2 border-primary/50 shadow-2xl"
+          : "inset-0"
       )}
     >
-      {/* ─── Top Control Header ─── */}
-      <div className="flex items-center justify-between px-4 py-2.5 bg-card/90 backdrop-blur-md border-b border-border/60 text-foreground shrink-0 select-none">
+      {/* ─── Top Control Header (Always on Top) ─── */}
+      <div className="flex items-center justify-between px-4 py-3 bg-card border-b border-border text-foreground shrink-0 select-none shadow-sm">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="size-3 rounded-full bg-emerald-500 animate-pulse shrink-0" />
           <div className="min-w-0">

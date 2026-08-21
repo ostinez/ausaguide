@@ -632,6 +632,62 @@ export default function MessagesPage() {
     loadSocialContext()
   }, [authUser?.id])
 
+  // ── Auto-Inject Verified Booking Receipt at start of chat ────────────────
+  const ensureBookingReceiptMessageInChat = async (conversationId: string, bookingId: string) => {
+    if (!conversationId || !bookingId) return
+    try {
+      // 1. Check if a receipt / request message for this booking already exists in this conversation
+      const { data: existing } = await supabase
+        .from("messages")
+        .select("id")
+        .eq("conversation_id", conversationId)
+        .or(`booking_id.eq.${bookingId},notification_type.eq.booking_request,notification_type.eq.booking_receipt`)
+        .limit(1)
+        .maybeSingle()
+
+      if (existing?.id) return // Already present in conversation
+
+      // 2. Fetch booking and tour data
+      const { data: booking } = await supabase
+        .from("bookings")
+        .select("id, host_id, guest_id, guest_name, booking_date, booking_time, guest_count, total_price, currency, status, tours:tour_id(title)")
+        .eq("id", bookingId)
+        .maybeSingle()
+
+      if (!booking) return
+
+      const tourTitle = (booking.tours as any)?.title || activeConv?.tourName || "Tour Experience"
+
+      // 3. Insert the verified booking receipt system card into chat
+      await supabase.from("messages").insert({
+        conversation_id: conversationId,
+        sender_id: null,
+        receiver_id: booking.host_id,
+        message: `📋 Verified Tour Booking Receipt for "${tourTitle}" — Traveler: ${booking.guest_name || "Guest"}, Date: ${booking.booking_date}${booking.booking_time ? ` at ${booking.booking_time}` : ""}, ${booking.guest_count} guest(s), Total: ${booking.currency || "KES"} ${booking.total_price}.`,
+        read: false,
+        sender_type: "system",
+        notification_type: "booking_request",
+        booking_id: booking.id,
+        metadata: {
+          type: "booking_request",
+          booking_id: booking.id,
+          tour_name: tourTitle,
+          traveler_name: booking.guest_name || "Traveler",
+          date: booking.booking_date,
+          time: booking.booking_time,
+          guests: booking.guest_count,
+          amount: booking.total_price,
+          currency: booking.currency || "KES",
+          status: booking.status || "confirmed",
+        },
+      })
+
+      window.dispatchEvent(new CustomEvent("refresh-chat-messages"))
+    } catch (err) {
+      console.warn("[ensureBookingReceiptMessageInChat] Notice:", err)
+    }
+  }
+
   // Handle ?bookingId=... from bookings/dashboard
   useEffect(() => {
     if (!authUser?.id || !paramBookingId) return
@@ -652,6 +708,7 @@ export default function MessagesPage() {
         const { id: convId } = await findOrCreateDirectConversation(authUser!.id, otherUserId)
         setSelectedConvId(convId)
         setMobileView("chat")
+        await ensureBookingReceiptMessageInChat(convId, paramBookingId)
         await refreshConversations()
       } catch (err) {
         console.error("Failed to start booking conversation:", err)
@@ -726,9 +783,8 @@ export default function MessagesPage() {
   useEffect(() => {
     if (conversations.length === 0) return
 
-    // 1. If bookingId is provided, find conversation by bookingId
     if (paramBookingId) {
-      const matchByBooking = conversations.find(c => c.bookingId === paramBookingId)
+      const matchByBooking = conversations.find((c) => c.bookingId === paramBookingId)
       if (matchByBooking) {
         setSelectedConvId(matchByBooking.id)
         setMobileView("chat")
@@ -736,9 +792,8 @@ export default function MessagesPage() {
       }
     }
 
-    // 2. If preselectedConvId is provided, match by ID
     if (preselectedConvId) {
-      const matchById = conversations.find(c => c.id === preselectedConvId)
+      const matchById = conversations.find((c) => c.id === preselectedConvId)
       if (matchById) {
         setSelectedConvId(matchById.id)
         setMobileView("chat")
@@ -746,7 +801,6 @@ export default function MessagesPage() {
       }
     }
 
-    // 3. Fallback: select first conversation if none is selected
     if (!selectedConvId && conversations.length > 0 && !paramUserId) {
       setSelectedConvId(conversations[0].id)
     }
@@ -754,6 +808,14 @@ export default function MessagesPage() {
 
   const selectedConv = conversations.find((c) => c.id === selectedConvId)
   const activeConv = selectedConv || fallbackConv
+
+  // Automatically ensure receipt is in chat whenever an active conversation has an associated booking
+  useEffect(() => {
+    const bookingIdToEnsure = activeConv?.bookingId || paramBookingId
+    if (selectedConvId && bookingIdToEnsure) {
+      ensureBookingReceiptMessageInChat(selectedConvId, bookingIdToEnsure)
+    }
+  }, [selectedConvId, activeConv?.bookingId, paramBookingId])
 
   const handleSelectConversation = (convId: string) => {
     setSelectedConvId(convId)
