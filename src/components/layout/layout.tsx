@@ -254,6 +254,7 @@ export function Layout() {
   if (userId && userRole === "host") {
     menuItems = [
       { label: "Host Dashboard", ariaLabel: "Host dashboard overview", link: "/host/dashboard" },
+      { label: "Live Host Map", ariaLabel: "Interactive host radar map", link: "/map" },
       { label: "Manage Bookings", ariaLabel: "Manage booking requests", link: "/host/dashboard?tab=bookings" },
       { label: "My Tours", ariaLabel: "Manage and create tours", link: "/host/dashboard?tab=tours" },
       { label: "Earnings & Payouts", ariaLabel: "Host earnings and payouts", link: "/dashboard/earnings" },
@@ -264,6 +265,7 @@ export function Layout() {
   } else if (userId && userRole === "admin") {
     menuItems = [
       { label: "Admin Portal", ariaLabel: "Admin portal overview", link: "/admin2" },
+      { label: "Live Host Map", ariaLabel: "Interactive host radar map", link: "/map" },
       { label: "Users Management", ariaLabel: "Manage users", link: "/admin2/users" },
       { label: "Tours Management", ariaLabel: "Manage tours", link: "/admin2/tours" },
       { label: "Bookings", ariaLabel: "Manage bookings", link: "/admin2/bookings" },
@@ -275,6 +277,7 @@ export function Layout() {
     menuItems = [
       { label: "Home", ariaLabel: "Go to home", link: "/" },
       { label: "Explore Tours", ariaLabel: "Browse Kenya tours", link: "/tours" },
+      { label: "Live Host Map", ariaLabel: "Interactive host radar map", link: "/map" },
       { label: "My Bookings", ariaLabel: "Your scheduled tours", link: "/dashboard" },
       { label: "Messages", ariaLabel: "Chat with hosts", link: "/messages" },
       { label: "Travel Journal", ariaLabel: "Your travel notes and memories", link: "/journal" },
@@ -288,6 +291,7 @@ export function Layout() {
     menuItems = [
       { label: "Home", ariaLabel: "Go to home", link: "/" },
       { label: "Explore Tours", ariaLabel: "Browse tours", link: "/tours" },
+      { label: "Live Host Map", ariaLabel: "Interactive host radar map", link: "/map" },
       { label: "Tree Planting", ariaLabel: "Plant trees and offset carbon", link: "/tree-planting" },
       { label: "Mental Health", ariaLabel: "Sponsor mental health therapy", link: "/mental-health" },
       { label: "About", ariaLabel: "Learn about us", link: "/about" },

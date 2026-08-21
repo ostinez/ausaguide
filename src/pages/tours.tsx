@@ -264,7 +264,18 @@ export default function ToursPage() {
  aria-label="Search tours or destinations"
  />
  </div>
-          <div className="flex items-center gap-2.5 shrink-0">
+          <div className="flex items-center gap-2.5 shrink-0 flex-wrap sm:flex-nowrap">
+            <Button
+              variant="outline"
+              onClick={() => navigate("/map")}
+              className="h-11 px-4 rounded-full border-border/80 hover:border-[#317978]/50 text-xs font-bold gap-1.5 shrink-0 cursor-pointer"
+              title="Explore live interactive host map"
+            >
+              <Globe className="size-3.5 text-[#317978]" />
+              <span className="hidden sm:inline">Live Host Map</span>
+              <span className="sm:hidden">Map</span>
+            </Button>
+
             <Button
               variant="outline"
               onClick={() => navigate("/onboarding/interests")}
@@ -272,7 +283,7 @@ export default function ToursPage() {
               title="Personalize travel recommendations"
             >
               <Compass className="size-3.5 text-[#317978]" />
-              <span className="hidden sm:inline">Customize Interests</span>
+              <span className="hidden sm:inline">Interests</span>
               <span className="sm:hidden">Interests</span>
             </Button>
             <Button
