@@ -6,6 +6,7 @@ import { AlertTriangle } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { Footer } from "./footer"
 import { ProfileCompletionBanner } from "@/components/ui/ProfileCompletionBanner"
+import { GlobalUrgentHostNotifier } from "@/components/common/GlobalUrgentHostNotifier"
 
 export function Layout() {
  const location = useLocation()
@@ -381,7 +382,8 @@ export function Layout() {
   <Outlet />
   </main>
       {!userId && !isAuthOrOnboarding && <Footer />}
- {!isAuthOrOnboarding && <ProfileCompletionBanner />}
+      <GlobalUrgentHostNotifier />
+      {!isAuthOrOnboarding && <ProfileCompletionBanner />}
  {!isAuthOrOnboarding && <MobileNav />}
  {isOffline && (
  <div

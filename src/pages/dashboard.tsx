@@ -1501,12 +1501,15 @@ export default function DashboardPage() {
          fetchPendingUrgent()
        }
      )
-     .subscribe()
+      .subscribe()
 
-   return () => {
-     channel.unsubscribe()
-     supabase.removeChannel(channel)
-   }
+    const interval = setInterval(fetchPendingUrgent, 3500)
+
+    return () => {
+      clearInterval(interval)
+      channel.unsubscribe()
+      supabase.removeChannel(channel)
+    }
  }, [userId, userRoleState, fetchPendingUrgent])
 
  const refreshHostTours = async () => {
