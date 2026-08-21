@@ -1405,42 +1405,82 @@ export default function DashboardPage() {
  const [urgentRequests, setUrgentRequests] = useState<any[]>([]);
 
  const fetchPendingUrgent = useCallback(async () => {
- if (!userId || userRoleState !== "host") return
- const now = new Date().toISOString()
- const { data, error } = await supabase
- .from("urgent_requests")
- .select("*, traveler:profiles!urgent_requests_traveler_id_fkey(*)")
- .eq("status", "pending")
- .gt("expires_at", now)
- .order("created_at", { ascending: false })
+   if (!userId || userRoleState !== "host") return
+   const now = new Date().toISOString()
+   try {
+     const { data, error } = await supabase
+       .from("urgent_requests")
+       .select("*, traveler:profiles!urgent_requests_traveler_id_fkey(*)")
+       .eq("status", "pending")
+       .gt("expires_at", now)
+       .order("created_at", { ascending: false })
 
- if (error) {
- console.error("Error fetching pending urgent requests:", error)
- } else if (data) {
- setUrgentRequests(data)
- }
+     if (!error && data) {
+       setUrgentRequests(data)
+       return
+     }
+
+     const { data: rawData, error: rawError } = await supabase
+       .from("urgent_requests")
+       .select("*")
+       .eq("status", "pending")
+       .gt("expires_at", now)
+       .order("created_at", { ascending: false })
+
+     if (rawError || !rawData || rawData.length === 0) {
+       setUrgentRequests([])
+       return
+     }
+
+     const travelerIds = Array.from(new Set(rawData.map((r: any) => r.traveler_id).filter(Boolean)))
+     let profilesMap: Record<string, any> = {}
+     if (travelerIds.length > 0) {
+       const { data: profiles } = await supabase
+         .from("profiles")
+         .select("id, full_name, avatar_url, email, phone")
+         .in("id", travelerIds)
+       if (profiles) {
+         profilesMap = Object.fromEntries(profiles.map((p) => [p.id, p]))
+       }
+     }
+
+     const enriched = rawData.map((r: any) => ({
+       ...r,
+       traveler: profilesMap[r.traveler_id] || { full_name: "Traveler" },
+     }))
+
+     setUrgentRequests(enriched)
+   } catch (err) {
+     console.error("Error fetching pending urgent requests:", err)
+     setUrgentRequests([])
+   }
  }, [userId, userRoleState])
 
  useEffect(() => {
- if (userRoleState !== "host" || !userId) return
+   if (userRoleState !== "host" || !userId) return
 
- fetchPendingUrgent()
+   fetchPendingUrgent()
 
- const channel = supabase
- .channel(`urgent_requests_dashboard_${userId}`)
- .on(
- "postgres_changes",
- { event: "*", schema: "public", table: "urgent_requests" },
- () => {
- fetchPendingUrgent()
- }
- )
- .subscribe()
+   const channel = supabase
+     .channel(`urgent_requests_dashboard_${userId}`)
+     .on(
+       "postgres_changes",
+       { event: "*", schema: "public", table: "urgent_requests" },
+       (payload: any) => {
+         const updated = payload.new || payload.old
+         // If a request was cancelled, accepted, or expired, immediately purge it from view
+         if (updated && (updated.status !== "pending" || payload.eventType === "DELETE")) {
+           setUrgentRequests((prev) => prev.filter((r) => r.id !== updated.id))
+         }
+         fetchPendingUrgent()
+       }
+     )
+     .subscribe()
 
- return () => {
- channel.unsubscribe()
- supabase.removeChannel(channel)
- }
+   return () => {
+     channel.unsubscribe()
+     supabase.removeChannel(channel)
+   }
  }, [userId, userRoleState, fetchPendingUrgent])
 
  const refreshHostTours = async () => {
