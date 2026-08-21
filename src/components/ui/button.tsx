@@ -48,20 +48,32 @@ function Button({
  disabled,
  ...props
 }: ButtonProps) {
- const Comp = asChild ? Slot.Root : "button"
+ if (asChild) {
+  return (
+   <Slot.Root
+    data-slot="button"
+    data-variant={variant}
+    data-size={size}
+    className={cn(buttonVariants({ variant, size, className }))}
+    {...props}
+   >
+    {children}
+   </Slot.Root>
+  )
+ }
 
  return (
- <Comp
- data-slot="button"
- data-variant={variant}
- data-size={size}
- disabled={disabled || loading}
- className={cn(buttonVariants({ variant, size, className }))}
- {...props}
- >
- {loading ? <Spinner className="size-4 text-current animate-spin" /> : null}
- {children}
- </Comp>
+  <button
+   data-slot="button"
+   data-variant={variant}
+   data-size={size}
+   disabled={disabled || loading}
+   className={cn(buttonVariants({ variant, size, className }))}
+   {...props}
+  >
+   {loading ? <Spinner className="size-4 text-current animate-spin" /> : null}
+   {children}
+  </button>
  )
 }
 
