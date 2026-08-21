@@ -9,6 +9,7 @@ import BookingRequestCard from "./BookingRequestCard"
 import BookingConfirmedCard from "./BookingConfirmedCard"
 import BookingDeclinedCard from "./BookingDeclinedCard"
 import DailyRoomSharedCard from "./DailyRoomSharedCard"
+import ServiceCompletedReceiptCard from "./ServiceCompletedReceiptCard"
 import MessageContent from "./MessageContent"
 import EmojiPickerPopover from "./EmojiPickerPopover"
 import { type TourBookingInfo } from "./HostTourBookingDetails"
@@ -551,6 +552,24 @@ export function ChatWindow({
                             daily_room_url: msg.metadata?.daily_room_url,
                             daily_room_id: msg.metadata?.daily_room_id,
                             message: msg.message || msg.metadata?.message,
+                          }}
+                        />
+                      )
+                    }
+
+                    if (notifType === "tour_completed" || notifType === "service_receipt") {
+                      return (
+                        <ServiceCompletedReceiptCard
+                          key={msg.id || index}
+                          receipt={{
+                            booking_id: msg.metadata?.booking_id || bookingId || undefined,
+                            tour_name: msg.metadata?.tour_name || tourName || "Virtual Tour Experience",
+                            host_name: msg.metadata?.host_name || (currentUserRole === "host" ? currentUserName : otherUser.full_name),
+                            traveler_name: msg.metadata?.traveler_name || (currentUserRole === "traveler" ? currentUserName : otherUser.full_name),
+                            date: msg.metadata?.date || msg.created_at,
+                            amount: msg.metadata?.amount,
+                            currency: msg.metadata?.currency || "KES",
+                            completed_at: msg.metadata?.completed_at || msg.created_at,
                           }}
                         />
                       )

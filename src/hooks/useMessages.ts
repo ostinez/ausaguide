@@ -282,6 +282,19 @@ export function useMessages(
           throw error
         }
 
+        // Insert notification record for the recipient
+        try {
+          await supabase.from("notifications").insert({
+            user_id: otherUserId,
+            title: "New Message",
+            message: content.trim() || "Shared an attachment",
+            type: notificationType || "new_message",
+            booking_id: bookingId || null,
+            link: `/messages/${conversationId}`,
+            read: false,
+          })
+        } catch (_) {}
+
         // Reset typing status
         broadcastTyping(false)
 
