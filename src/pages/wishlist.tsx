@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { fetchWishlist, removeFromWishlist, type WishlistItem } from "@/lib/api/wishlist"
-import { formatTourPrice, getTourGradient, getHostInitials } from "@/lib/tour-utils"
+import { formatTourPrice, getTourGradient, getHostInitials, getTourImage } from "@/lib/tour-utils"
 import { cn } from "@/lib/utils"
 
 export default function WishlistPage() {
@@ -91,39 +91,52 @@ export default function WishlistPage() {
  ) : (
  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
  {items.map((item) => {
- const tour = item.tour
- if (!tour) return null
- const hostName = tour.host?.full_name ?? "Local Host"
- const hostInitials = getHostInitials(hostName)
- return (
- <div
- key={item.id}
- className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card hover:border-primary/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
- >
- {/* Image / Gradient */}
- <div
- className="relative h-44"
- style={{ background: getTourGradient(tour.category) }}
- >
- <div className="absolute -bottom-5 left-4">
- <Avatar className="size-10 border-2 border-card">
- <AvatarFallback className="bg-primary text-xs font-bold text-primary-foreground">
- {hostInitials}
- </AvatarFallback>
- </Avatar>
- </div>
- <button
- onClick={() => handleRemove(item.tour_id)}
- disabled={removing.has(item.tour_id)}
- className="absolute right-3 top-3 flex size-8 items-center justify-center rounded-full bg-background/70 text-destructive hover:bg-background transition-colors"
- >
- {removing.has(item.tour_id) ? (
- <Spinner className="size-4" />
- ) : (
- <Trash2 className="size-4" />
- )}
- </button>
- </div>
+        const tour = item.tour
+        if (!tour) return null
+        const hostName = tour.host?.full_name ?? "Local Host"
+        const hostInitials = getHostInitials(hostName)
+        const tourImg = getTourImage(tour)
+
+        return (
+          <div
+            key={item.id}
+            className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card hover:border-primary/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+          >
+            {/* Image / Gradient */}
+            <div
+              className="relative h-44 overflow-hidden"
+              style={{ background: getTourGradient(tour.category) }}
+            >
+              {tourImg && (
+                <img
+                  src={tourImg}
+                  alt={tour.title}
+                  loading="lazy"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
+              
+              <div className="absolute -bottom-5 left-4 z-10">
+                <Avatar className="size-10 border-2 border-card shadow-md">
+                  <AvatarFallback className="bg-primary text-xs font-bold text-primary-foreground">
+                    {hostInitials}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+              <button
+                onClick={() => handleRemove(item.tour_id)}
+                disabled={removing.has(item.tour_id)}
+                className="absolute right-3 top-3 z-10 flex size-8 items-center justify-center rounded-full bg-background/80 text-destructive hover:bg-background transition-colors shadow-xs"
+                title="Remove from wishlist"
+              >
+                {removing.has(item.tour_id) ? (
+                  <Spinner className="size-4" />
+                ) : (
+                  <Trash2 className="size-4" />
+                )}
+              </button>
+            </div>
 
  <div className="flex flex-1 flex-col gap-3 px-4 pb-4 pt-8">
  <p className="text-xs font-medium text-muted-foreground">{hostName}</p>

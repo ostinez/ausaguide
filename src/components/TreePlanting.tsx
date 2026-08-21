@@ -151,7 +151,7 @@ export function TreePlanting({ onComplete, className }: TreePlantingProps) {
           )}
 
           <p className="text-emerald-300/80 text-xs font-medium">
-            Join 1,200+ travelers who have planted 4,500+ trees across Kenya's highland water towers.
+            Together with local hosts and travelers, we aim to plant native trees across Kenya's vital highland water towers.
           </p>
 
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -202,22 +202,22 @@ export function TreePlanting({ onComplete, className }: TreePlantingProps) {
         </h2>
 
         <p className="text-emerald-200 text-sm sm:text-base md:text-lg mt-2.5 max-w-2xl leading-relaxed font-normal">
-          Every booking helps restore Kenya's forests. Join us in making travel sustainable.
+          We aim to plant indigenous trees and restore native Kenyan forest buffers through traveler sponsorships.
         </p>
 
-        {/* Stats */}
+        {/* Stats / Goals */}
         <div className="flex flex-wrap items-center gap-3 sm:gap-6 mt-5 text-xs sm:text-sm">
           <span className="flex items-center gap-2 text-emerald-200 bg-white/[0.06] border border-emerald-700/30 px-3 py-1.5 rounded-full">
             <Users className="size-4 text-emerald-400" />
-            <strong className="text-white font-bold">1,200+</strong> travelers
+            <span>Community Initiative</span>
           </span>
           <span className="flex items-center gap-2 text-emerald-200 bg-white/[0.06] border border-emerald-700/30 px-3 py-1.5 rounded-full">
             <Leaf className="size-4 text-emerald-400" />
-            <strong className="text-white font-bold">4,500+</strong> trees planted
+            <span>Target: <strong className="text-white font-bold">10,000+ Native Trees</strong></span>
           </span>
           <span className="hidden sm:flex items-center gap-2 text-emerald-200 bg-white/[0.06] border border-emerald-700/30 px-3 py-1.5 rounded-full">
             <ShieldCheck className="size-4 text-emerald-400" />
-            <span>Verified Impact</span>
+            <span>Community Supervised</span>
           </span>
         </div>
 

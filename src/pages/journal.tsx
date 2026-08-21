@@ -85,6 +85,57 @@ function PrivateJournalImage({ src, alt, className, onClick }: { src: string; al
  )
 }
 
+async function compressImageFile(file: File, maxDimension = 1200, quality = 0.82): Promise<File> {
+  return new Promise((resolve) => {
+    if (file.type === "image/svg+xml" || file.size < 80 * 1024) {
+      return resolve(file)
+    }
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        let width = img.width
+        let height = img.height
+
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width)
+            width = maxDimension
+          } else {
+            width = Math.round((width * maxDimension) / height)
+            height = maxDimension
+          }
+        }
+
+        const canvas = document.createElement("canvas")
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext("2d")
+        if (!ctx) return resolve(file)
+
+        ctx.drawImage(img, 0, 0, width, height)
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) return resolve(file)
+            const cleanName = file.name.replace(/\.[^/.]+$/, "") + ".webp"
+            const compressed = new File([blob], cleanName, {
+              type: "image/webp",
+              lastModified: Date.now(),
+            })
+            resolve(compressed)
+          },
+          "image/webp",
+          quality
+        )
+      }
+      img.onerror = () => resolve(file)
+      img.src = e.target?.result as string
+    }
+    reader.onerror = () => resolve(file)
+    reader.readAsDataURL(file)
+  })
+}
+
 type Mode = "list" | "create" | "edit" | "view"
 
 export default function JournalPage() {
@@ -100,12 +151,14 @@ export default function JournalPage() {
  const [mode, setMode] = useState<Mode>("list")
  const [selected, setSelected] = useState<Journal | null>(null)
  const [saving, setSaving] = useState(false)
+ const [compressing, setCompressing] = useState(false)
 
  // Form state
  const [formTitle, setFormTitle] = useState("")
  const [formContent, setFormContent] = useState("")
  const [formImageFile, setFormImageFile] = useState<File | null>(null)
  const [formImagePreview, setFormImagePreview] = useState<string | null>(null)
+ const [formImageSize, setFormImageSize] = useState<string | null>(null)
  const [instagram, setInstagram] = useState("")
  const [tiktok, setTiktok] = useState("")
  const [facebook, setFacebook] = useState("")
@@ -247,7 +300,7 @@ export default function JournalPage() {
  // ─── Form view ────────────────────────────────────────────────────────────
  if (mode === "create" || mode === "edit") {
  return (
- <div className="min-h-screen bg-background pt-24 pb-20">
+ <div className="min-h-screen bg-background pt-6 sm:pt-10 pb-20">
  <div className="mx-auto max-w-2xl px-4 space-y-5">
  <div className="flex items-center gap-3">
  <Button variant="ghost" size="sm" className="rounded-full" onClick={() => { resetForm(); setMode("list") }}>
@@ -274,40 +327,84 @@ export default function JournalPage() {
  id="journal-content"
  value={formContent}
  onChange={e => setFormContent(e.target.value)}
- rows={12}
+ rows={10}
  placeholder="Write your travel story, tips, or reflections…"
- className="w-full rounded-md border border-border/80 bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-y"
+ className="w-full rounded-xl border border-border/80 bg-background px-3.5 py-2.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-y font-normal leading-relaxed"
  />
  </div>
 
- {/* Cover image */}
- <div className="space-y-1.5">
- <Label>Cover Image (optional)</Label>
- {formImagePreview && (
- <div className="relative w-fit">
- <img src={formImagePreview} alt="Preview" className="max-h-48 rounded-xl" />
+ {/* Compressed Compact Image Window */}
+ <div className="space-y-2 pt-1">
+ <Label className="text-xs font-semibold text-foreground">Travel Photos / Memory (Compressed & Optimized)</Label>
+ 
+ {formImagePreview ? (
+ <div className="relative inline-flex items-center gap-3 p-2 rounded-2xl border border-border/80 bg-background/90 shadow-sm max-w-sm">
+ <div className="size-20 rounded-xl overflow-hidden shrink-0 border border-border/60 bg-muted">
+ <img src={formImagePreview} alt="Preview" className="size-full object-cover" />
+ </div>
+ <div className="flex-1 min-w-0 pr-6 space-y-1">
+ <p className="text-xs font-bold text-foreground truncate">Photo Attached</p>
+ {formImageSize && (
+ <span className="inline-block text-[10px] font-semibold text-emerald-600 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+ {formImageSize}
+ </span>
+ )}
+ <p className="text-[10px] text-muted-foreground">Auto-compressed for fast loading</p>
+ </div>
  <button
- className="absolute top-1 right-1 size-6 rounded-full bg-black/60 flex items-center justify-center"
- onClick={() => { setFormImageFile(null); setFormImagePreview(null) }}
+ type="button"
+ title="Remove photo"
+ className="absolute top-2 right-2 size-6 rounded-full bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground flex items-center justify-center transition-colors cursor-pointer"
+ onClick={() => { setFormImageFile(null); setFormImagePreview(null); setFormImageSize(null) }}
  >
- <X className="size-3 text-white" />
+ <X className="size-3.5" />
  </button>
  </div>
- )}
+ ) : (
+ <div>
  <input
  ref={fileRef}
  type="file"
  accept="image/*"
  className="hidden"
- onChange={e => {
+ onChange={async (e) => {
  const file = e.target.files?.[0]
- if (file) { setFormImageFile(file); setFormImagePreview(URL.createObjectURL(file)) }
+ if (file) {
+ setCompressing(true)
+ try {
+ const compressed = await compressImageFile(file)
+ setFormImageFile(compressed)
+ setFormImagePreview(URL.createObjectURL(compressed))
+ const sizeKb = Math.round(compressed.size / 1024)
+ setFormImageSize(`${sizeKb} KB (WebP)`)
+ toast.success(`Photo compressed to ${sizeKb} KB!`)
+ } catch {
+ setFormImageFile(file)
+ setFormImagePreview(URL.createObjectURL(file))
+ } finally {
+ setCompressing(false)
+ }
+ }
  e.target.value = ""
  }}
  />
- <Button variant="outline" size="sm" className="rounded-full gap-2" onClick={() => fileRef.current?.click()}>
- <ImageIcon className="size-4" /> {formImagePreview ? "Change Image" : "Add Image"}
+ <Button 
+ type="button"
+ variant="outline" 
+ size="sm" 
+ className="rounded-xl gap-2 text-xs font-semibold h-9" 
+ disabled={compressing}
+ onClick={() => fileRef.current?.click()}
+ >
+ {compressing ? (
+ <Loader2 className="size-3.5 animate-spin text-primary" />
+ ) : (
+ <ImageIcon className="size-3.5 text-primary" />
+ )}
+ <span>{compressing ? "Compressing Photo…" : "Attach Photo"}</span>
  </Button>
+ </div>
+ )}
  </div>
 
  {/* Social Links Section */}
@@ -353,7 +450,7 @@ export default function JournalPage() {
  // ─── View single entry ────────────────────────────────────────────────────
  if (mode === "view" && selected) {
  return (
- <div className="min-h-screen bg-background pt-24 pb-20">
+ <div className="min-h-screen bg-background pt-6 sm:pt-10 pb-20">
  <div className="mx-auto max-w-2xl px-4 space-y-5">
  <div className="flex items-center gap-2">
  <Button variant="ghost" size="sm" className="rounded-full" onClick={() => setMode("list")}>
@@ -446,7 +543,7 @@ export default function JournalPage() {
 
  // ─── List view ────────────────────────────────────────────────────────────
  return (
- <div className="min-h-screen bg-background pt-24 pb-20 relative">
+ <div className="min-h-screen bg-background pt-6 sm:pt-10 pb-20 relative">
  {/* Soft warm gold background ambient light */}
  <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
  <div className="absolute -top-40 right-1/4 h-[500px] w-[500px] rounded-full bg-amber-500/5 blur-[120px]" />

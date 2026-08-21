@@ -189,7 +189,7 @@ function ChatHeader({
               </AvatarFallback>
             </Avatar>
             {isOnline && (
-              <span className="absolute bottom-0 right-0 size-2.5 sm:size-3 rounded-full bg-emerald-500 ring-2 ring-card animate-pulse" />
+              <span className="absolute bottom-0 right-0 size-2.5 sm:size-3 rounded-full bg-emerald-500 ring-2 ring-card" />
             )}
           </div>
 
@@ -1204,7 +1204,14 @@ export default function MessagesPage() {
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3.5 border-b border-border/60 bg-card/95 shrink-0">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate(authUser.role === "host" ? "/host/dashboard" : "/dashboard")}
+              title="Back to Dashboard"
+              className="size-8 rounded-xl bg-muted/60 hover:bg-muted border border-border/60 flex items-center justify-center text-muted-foreground hover:text-foreground transition-all duration-200 cursor-pointer"
+            >
+              <ArrowLeft className="size-4" />
+            </button>
             <div className="size-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
               <MessageSquare className="size-4 text-primary" />
             </div>

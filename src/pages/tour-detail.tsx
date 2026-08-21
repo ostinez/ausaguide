@@ -520,10 +520,7 @@ export default function TourDetailPage() {
  )}
  {isHostBusy && (
  <div className="mt-4 flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
- <div className="relative flex size-2.5">
- <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-75"></span>
- <span className="relative inline-flex size-2.5 rounded-full bg-destructive"></span>
- </div>
+ <span className="size-2 rounded-full bg-destructive inline-block" />
  <strong>Status:</strong> {hostBusyReason}
  </div>
  )}

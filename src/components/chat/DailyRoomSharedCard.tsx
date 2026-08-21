@@ -41,8 +41,8 @@ export default function DailyRoomSharedCard({
                 <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
                   Live Video Room
                 </span>
-                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-600 text-[10px] font-bold">
-                  <span className="size-1.5 rounded-full bg-emerald-500 animate-ping" />
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-600 text-[10px] font-bold">
+                  <span className="size-1.5 rounded-full bg-emerald-500" />
                   Ready
                 </span>
               </div>

@@ -17,6 +17,7 @@ import {
   Heart,
   CreditCard,
   Mountain,
+  LayoutDashboard,
 } from "lucide-react"
 import "./image-stream-hero.css"
 
@@ -521,14 +522,31 @@ export function ImageStreamHero() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1 max-w-md mx-auto">
-            <Link
-              to="/waitlist"
-              className="w-full sm:w-auto px-7 py-3 bento-btn-primary font-bold rounded-2xl text-sm flex items-center justify-center gap-2 cursor-pointer min-h-[44px]"
-            >
-              <ShieldCheck className="size-4 text-[#B7E6E5]" />
-              <span>Get Early Access</span>
-              <ArrowRight className="size-4 text-[#B7E6E5]" />
-            </Link>
+            {localStorage.getItem("user_id") ? (
+              <Link
+                to={
+                  localStorage.getItem("user_role") === "host"
+                    ? "/host/dashboard"
+                    : localStorage.getItem("user_role") === "admin"
+                    ? "/admin2"
+                    : "/dashboard"
+                }
+                className="w-full sm:w-auto px-7 py-3 bento-btn-primary font-bold rounded-2xl text-sm flex items-center justify-center gap-2 cursor-pointer min-h-[44px]"
+              >
+                <LayoutDashboard className="size-4 text-[#B7E6E5]" />
+                <span>Go to Dashboard</span>
+                <ArrowRight className="size-4 text-[#B7E6E5]" />
+              </Link>
+            ) : (
+              <Link
+                to="/waitlist"
+                className="w-full sm:w-auto px-7 py-3 bento-btn-primary font-bold rounded-2xl text-sm flex items-center justify-center gap-2 cursor-pointer min-h-[44px]"
+              >
+                <ShieldCheck className="size-4 text-[#B7E6E5]" />
+                <span>Get Early Access</span>
+                <ArrowRight className="size-4 text-[#B7E6E5]" />
+              </Link>
+            )}
             <Link
               to="/tours"
               className="w-full sm:w-auto px-7 py-3 bento-btn-secondary font-bold rounded-2xl text-sm flex items-center justify-center gap-2 cursor-pointer min-h-[44px]"
@@ -546,7 +564,7 @@ export function ImageStreamHero() {
               { icon: ShieldCheck, label: "Vetted Local Guides", desc: "100% background checked" },
               { icon: Video, label: "Live Video Recon", desc: "See it real-time before paying" },
               { icon: DollarSign, label: "Zero Hidden Fees", desc: "Transparent escrow pricing" },
-              { icon: Users, label: "1,200+ Smart Travelers", desc: "Saved from vacation scams" },
+              { icon: Users, label: "Community Protected", desc: "Safe verified local tours" },
             ].map((badge, idx) => {
               const Icon = badge.icon
               return (

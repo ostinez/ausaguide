@@ -46,9 +46,8 @@ export function ImpactPreview() {
                   loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#113B3A]/60 to-transparent" />
-                <span className="absolute top-4 right-4 flex items-center gap-1.5 text-[9px] bg-[#317978] text-white px-3 py-1 rounded-full font-black tracking-wider uppercase shadow">
-                  <span className="size-1.5 rounded-full bg-white animate-ping" />
-                  BETA
+                <span className="absolute top-4 right-4 flex items-center text-[10px] bg-[#317978] text-white px-3 py-1 rounded-full font-bold tracking-wider uppercase shadow-sm">
+                  Eco Initiative
                 </span>
               </div>
 
@@ -62,7 +61,7 @@ export function ImpactPreview() {
                     </h3>
                   </div>
                   <p className="text-xs sm:text-sm text-[#599D9C] leading-relaxed">
-                    Offset the carbon footprint of your Kenyan travels. For every sponsored package, we work hand-in-hand with local conservation communities to plant indigenous saplings in degraded forests.
+                    We aim to help offset the carbon footprint of Kenyan travels. For every sponsored package, we work hand-in-hand with local conservation communities to plant indigenous saplings in degraded forests.
                   </p>
                 </div>
 
@@ -93,9 +92,8 @@ export function ImpactPreview() {
                   loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#113B3A]/60 to-transparent" />
-                <span className="absolute top-4 right-4 flex items-center gap-1.5 text-[9px] bg-[#317978] text-white px-3 py-1 rounded-full font-black tracking-wider uppercase shadow">
-                  <span className="size-1.5 rounded-full bg-white animate-ping" />
-                  LIVE
+                <span className="absolute top-4 right-4 flex items-center text-[10px] bg-[#317978] text-white px-3 py-1 rounded-full font-bold tracking-wider uppercase shadow-sm">
+                  Wellness
                 </span>
               </div>
 

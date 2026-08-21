@@ -105,16 +105,18 @@ export async function fetchTours(): Promise<Tour[]> {
  return (data ?? []).map((row) => mapTour(row as Parameters<typeof mapTour>[0]))
 }
 
-export async function fetchFeaturedTours(limit = 4): Promise<Tour[]> {
- const { data, error } = await supabase
- .from("tours")
- .select(TOUR_SELECT)
- .eq("is_published", true)
- .order("created_at", { ascending: false })
- .limit(limit)
+export async function fetchFeaturedTours(limit = 6): Promise<Tour[]> {
+  const { data, error } = await supabase
+    .from("tours")
+    .select(TOUR_SELECT)
+    .eq("is_published", true)
+    .order("rating", { ascending: false })
+    .order("review_count", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(limit)
 
- if (error) throw error
- return (data ?? []).map((row) => mapTour(row as Parameters<typeof mapTour>[0]))
+  if (error) throw error
+  return (data ?? []).map((row) => mapTour(row as Parameters<typeof mapTour>[0]))
 }
 
 export async function fetchTourById(id: string): Promise<Tour | null> {
