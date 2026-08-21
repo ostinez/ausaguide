@@ -530,3 +530,77 @@ export async function sendMentalHealthConfirmationEmail(
   return dispatchEmail({ to, subject, html, name })
 }
 
+export async function sendTourReminderEmail(
+  to: string,
+  guestName: string,
+  tourTitle: string,
+  hostName: string,
+  date: string,
+  time: string,
+  roomUrl: string,
+  timeframe: "24h" | "1h" | "15min"
+): Promise<boolean> {
+  const timeLabels = {
+    "24h": "Tomorrow (in 24 Hours)",
+    "1h": "In 1 Hour",
+    "15min": "Starting in 15 Minutes!",
+  }
+  const badgeText = timeLabels[timeframe] || "Upcoming Soon"
+  const subject = `⏰ Reminder: "${tourTitle}" starts ${badgeText}`
+
+  const html = `
+  <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 24px; background-color: #16161A; color: #fffffe; line-height: 1.6;">
+    <div style="text-align: center; margin-bottom: 24px;">
+      <span style="font-size: 26px; font-weight: 800; color: #0D6F73; letter-spacing: -0.5px;">AUSAGUIDE</span>
+    </div>
+    
+    <div style="background: rgba(13, 111, 115, 0.15); border: 1px solid #0D6F73; border-radius: 12px; padding: 12px; text-align: center; margin-bottom: 24px;">
+      <span style="font-size: 13px; font-weight: 700; color: #4ade80; text-transform: uppercase; letter-spacing: 0.05em;">⏰ Tour Reminder • ${badgeText}</span>
+    </div>
+
+    <p style="font-size: 18px; font-weight: 700; color: #fffffe; margin-bottom: 8px;">Hi ${guestName},</p>
+    <p style="font-size: 15px; color: #a7a9be; margin-bottom: 20px;">
+      Your virtual tour <strong>"${tourTitle}"</strong> with host <strong>${hostName}</strong> is coming up soon!
+    </p>
+
+    <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 20px; margin-bottom: 24px;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+        <tr>
+          <td style="padding: 6px 0; color: #a7a9be; font-weight: 600;">Scheduled Date:</td>
+          <td style="padding: 6px 0; color: #fffffe; font-weight: 700; text-align: right;">${date}</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; color: #a7a9be; font-weight: 600;">Time:</td>
+          <td style="padding: 6px 0; color: #fffffe; font-weight: 700; text-align: right;">${time || "Scheduled Time"}</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; color: #a7a9be; font-weight: 600;">Host:</td>
+          <td style="padding: 6px 0; color: #4ade80; font-weight: 700; text-align: right;">${hostName}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 28px;">
+      <a href="${roomUrl || "https://ausaguide.com/messages"}" style="background-color: #0D6F73; color: #ffffff; padding: 14px 36px; border-radius: 9999px; text-decoration: none; font-weight: bold; display: inline-block; font-size: 15px; box-shadow: 0 4px 14px rgba(13, 111, 115, 0.4);">
+        📹 Enter Live Video Tour →
+      </a>
+    </div>
+
+    <div style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 14px; margin-bottom: 24px; font-size: 13px; color: #a7a9be;">
+      <strong style="color: #fffffe;">Quick Tips:</strong>
+      <ul style="margin: 6px 0 0 16px; padding: 0;">
+        <li>Check that your microphone & camera are working.</li>
+        <li>Join a few minutes early to test your internet.</li>
+        <li>Feel free to ask questions anytime during the experience!</li>
+      </ul>
+    </div>
+
+    <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 32px 0;" />
+    <p style="font-size: 13px; color: #0D6F73; font-weight: 700; text-align: center; margin-bottom: 4px;">Ausaguide — Live Virtual Kenyan Experiences</p>
+    <p style="font-size: 11px; color: #5f6368; text-align: center; margin: 0;">© 2026 Ausaguide. Nairobi, Kenya.</p>
+  </div>
+  `
+  return dispatchEmail({ to, subject, html, name: guestName })
+}
+
+
