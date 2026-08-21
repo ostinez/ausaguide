@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { Send, Image as ImageIcon, ArrowLeft, Check, CheckCheck, Loader2, Video, Star, Trash2, X } from "lucide-react"
+import { Send, Image as ImageIcon, ArrowLeft, Check, CheckCheck, Loader2, Video, Star, Trash2, X, Lock, Clock } from "lucide-react"
 import { format, isToday, isYesterday } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -744,65 +744,180 @@ export function ChatWindow({
         </div>
       )}
 
-      {/* ─── Composer Input Bar (Sticky for Mobile) ─── */}
-      <div className="p-3 bg-card/95 backdrop-blur-md border-t border-border shrink-0 sticky bottom-0 z-20 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        <form onSubmit={handleSend} className="flex items-center gap-1.5 max-w-4xl mx-auto">
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleImageSelect}
-            accept="image/*"
-            className="hidden"
-          />
+      {/* ─── 24-Hour Wind-Down / Lock Status Banner ─── */}
+      {(() => {
+        const tourCompletedMessage = messages.find(
+          (m) => m.notification_type === "tour_completed" || m.metadata?.type === "tour_completed"
+        )
+        const isTourCompleted = bookingInfo?.status === "completed" || !!tourCompletedMessage
+        const completedTimestamp = tourCompletedMessage?.created_at || (bookingInfo as any)?.completed_at || null
 
-          {/* Attach Image Button */}
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploadingImage || sending}
-            className="size-10 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted shrink-0 touch-target"
-            title="Attach photo"
-          >
-            {uploadingImage ? (
-              <Loader2 className="size-5 animate-spin text-primary" />
-            ) : (
-              <ImageIcon className="size-5" />
-            )}
-          </Button>
+        if (!isTourCompleted) return null
 
-          {/* Emoji Picker Popover */}
-          <EmojiPickerPopover
-            onSelectEmoji={handleSelectEmoji}
-            disabled={sending || uploadingImage}
-          />
+        let hoursRemaining = 24
+        let isThreadLocked = false
 
-          {/* Text Input */}
-          <Input
-            ref={inputRef}
-            value={inputVal}
-            onChange={handleInputChange}
-            placeholder={selectedImage ? "Add a caption..." : "Type a message, link, or question..."}
-            disabled={sending || uploadingImage}
-            className="flex-1 bg-muted/60 border-border text-foreground placeholder:text-muted-foreground rounded-full px-4 h-11 text-base focus-visible:ring-1 focus-visible:ring-primary"
-          />
+        if (completedTimestamp) {
+          const elapsedMs = Date.now() - new Date(completedTimestamp).getTime()
+          const elapsedHours = elapsedMs / (1000 * 60 * 60)
+          if (elapsedHours >= 24) {
+            isThreadLocked = true
+          } else {
+            hoursRemaining = Math.max(1, Math.ceil(24 - elapsedHours))
+          }
+        }
 
-          {/* Send Button */}
-          <Button
-            type="submit"
-            size="icon"
-            disabled={(!inputVal.trim() && !selectedImage) || sending || uploadingImage}
-            className="size-11 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shrink-0 disabled:opacity-40 transition-all shadow-sm touch-target cursor-pointer"
-          >
-            {sending || uploadingImage ? (
-              <Loader2 className="size-5 animate-spin" />
-            ) : (
-              <Send className="size-5" />
-            )}
-          </Button>
-        </form>
-      </div>
+        if (isThreadLocked) {
+          return (
+            <div className="p-4 bg-muted/95 backdrop-blur-md border-t border-border shrink-0 sticky bottom-0 z-20 pb-[max(1rem,env(safe-area-inset-bottom))] text-center space-y-1">
+              <div className="flex items-center justify-center gap-2 text-foreground font-bold text-xs">
+                <Lock className="size-4 text-primary" />
+                <span>Tour Completed · Conversation Closed</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground max-w-md mx-auto">
+                Messaging has locked following the completed tour. Your messages, verified receipts, and downloadable invoices remain permanently accessible.
+              </p>
+            </div>
+          )
+        }
+
+        return (
+          <>
+            {/* Grace Period Banner */}
+            <div className="px-4 py-2 bg-amber-500/10 border-t border-b border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs font-medium flex items-center justify-between shrink-0">
+              <span className="flex items-center gap-1.5 font-semibold">
+                <Clock className="size-3.5 text-amber-500 shrink-0" />
+                <span>Service Done · 24h Grace Period</span>
+              </span>
+              <span className="text-[11px] font-bold bg-amber-500/20 px-2 py-0.5 rounded-full">
+                {hoursRemaining}h left before chat locks
+              </span>
+            </div>
+
+            {/* Normal Composer Bar */}
+            <div className="p-3 bg-card/95 backdrop-blur-md border-t border-border shrink-0 sticky bottom-0 z-20 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+              <form onSubmit={handleSend} className="flex items-center gap-1.5 max-w-4xl mx-auto">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageSelect}
+                  accept="image/*"
+                  className="hidden"
+                />
+
+                {/* Attach Image Button */}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingImage || sending}
+                  className="size-10 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted shrink-0 touch-target"
+                  title="Attach photo"
+                >
+                  {uploadingImage ? (
+                    <Loader2 className="size-5 animate-spin text-primary" />
+                  ) : (
+                    <ImageIcon className="size-5" />
+                  )}
+                </Button>
+
+                {/* Emoji Picker Popover */}
+                <EmojiPickerPopover
+                  onSelectEmoji={handleSelectEmoji}
+                  disabled={sending || uploadingImage}
+                />
+
+                {/* Text Input */}
+                <Input
+                  ref={inputRef}
+                  value={inputVal}
+                  onChange={handleInputChange}
+                  placeholder={selectedImage ? "Add a caption..." : "Type a message, link, or question..."}
+                  disabled={sending || uploadingImage}
+                  className="flex-1 bg-muted/60 border-border text-foreground placeholder:text-muted-foreground rounded-full px-4 h-11 text-base focus-visible:ring-1 focus-visible:ring-primary"
+                />
+
+                {/* Send Button */}
+                <Button
+                  type="submit"
+                  size="icon"
+                  disabled={(!inputVal.trim() && !selectedImage) || sending || uploadingImage}
+                  className="size-11 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shrink-0 disabled:opacity-40 transition-all shadow-sm touch-target cursor-pointer"
+                >
+                  {sending || uploadingImage ? (
+                    <Loader2 className="size-5 animate-spin" />
+                  ) : (
+                    <Send className="size-5" />
+                  )}
+                </Button>
+              </form>
+            </div>
+          </>
+        )
+      })()}
+
+      {/* Fallback Composer for uncompleted tours */}
+      {!bookingInfo?.status && !messages.some((m) => m.notification_type === "tour_completed" || m.metadata?.type === "tour_completed") && (
+        <div className="p-3 bg-card/95 backdrop-blur-md border-t border-border shrink-0 sticky bottom-0 z-20 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <form onSubmit={handleSend} className="flex items-center gap-1.5 max-w-4xl mx-auto">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImageSelect}
+              accept="image/*"
+              className="hidden"
+            />
+
+            {/* Attach Image Button */}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingImage || sending}
+              className="size-10 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted shrink-0 touch-target"
+              title="Attach photo"
+            >
+              {uploadingImage ? (
+                <Loader2 className="size-5 animate-spin text-primary" />
+              ) : (
+                <ImageIcon className="size-5" />
+              )}
+            </Button>
+
+            {/* Emoji Picker Popover */}
+            <EmojiPickerPopover
+              onSelectEmoji={handleSelectEmoji}
+              disabled={sending || uploadingImage}
+            />
+
+            {/* Text Input */}
+            <Input
+              ref={inputRef}
+              value={inputVal}
+              onChange={handleInputChange}
+              placeholder={selectedImage ? "Add a caption..." : "Type a message, link, or question..."}
+              disabled={sending || uploadingImage}
+              className="flex-1 bg-muted/60 border-border text-foreground placeholder:text-muted-foreground rounded-full px-4 h-11 text-base focus-visible:ring-1 focus-visible:ring-primary"
+            />
+
+            {/* Send Button */}
+            <Button
+              type="submit"
+              size="icon"
+              disabled={(!inputVal.trim() && !selectedImage) || sending || uploadingImage}
+              className="size-11 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shrink-0 disabled:opacity-40 transition-all shadow-sm touch-target cursor-pointer"
+            >
+              {sending || uploadingImage ? (
+                <Loader2 className="size-5 animate-spin" />
+              ) : (
+                <Send className="size-5" />
+              )}
+            </Button>
+          </form>
+        </div>
+      )}
     </div>
   )
 }

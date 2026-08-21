@@ -40,6 +40,8 @@ export function PostCallReviewModal({
   const [rating, setRating] = useState<number>(5)
   const [hoverRating, setHoverRating] = useState<number>(0)
   const [comment, setComment] = useState<string>("")
+  const [hadIssues, setHadIssues] = useState<boolean>(false)
+  const [issueCategory, setIssueCategory] = useState<string>("audio_video")
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   const [submitted, setSubmitted] = useState<boolean>(false)
 
@@ -88,8 +90,8 @@ export function PostCallReviewModal({
           tour_id: resolvedTourId,
           booking_id: resolvedBookingId || undefined,
           rating,
-          comment: comment.trim() || null,
-          status: "visible",
+          comment: comment.trim() ? (hadIssues ? `[⚠️ Issue Reported: ${issueCategory}] ${comment.trim()}` : comment.trim()) : (hadIssues ? `[⚠️ Issue Reported: ${issueCategory}]` : null),
+          status: hadIssues ? "hidden" : "visible",
         })
 
         if (error) {
@@ -101,21 +103,34 @@ export function PostCallReviewModal({
               tour_id: resolvedTourId,
               rating,
               comment: comment.trim() || null,
-              status: "visible",
+              status: hadIssues ? "hidden" : "visible",
             })
-          } else {
-            throw error
           }
         }
       }
 
+      // If traveler reported issues, notify support/admin
+      if (hadIssues && currentUserId) {
+        try {
+          await supabase.from("notifications").insert({
+            user_id: currentUserId,
+            title: "⚠️ Tour Issue Flagged for Review",
+            message: `You reported an issue (${issueCategory}) for ${tourName || "your tour"}. Support will investigate before payment release.`,
+            type: "dispute_reported",
+            booking_id: resolvedBookingId || null,
+            read: false,
+          })
+        } catch (_) {}
+      }
+
       setSubmitted(true)
-      toast.success("Thank you for reviewing your host!")
+      toast.success(hadIssues ? "Feedback & issue logged. Support is reviewing." : "Thank you for reviewing your host!")
       if (onReviewSubmitted) onReviewSubmitted()
       setTimeout(() => {
         onClose()
         setSubmitted(false)
         setComment("")
+        setHadIssues(false)
       }, 2000)
     } catch (err: any) {
       console.error("Failed to submit post-call review:", err)
@@ -202,6 +217,35 @@ export function PostCallReviewModal({
                   rows={3}
                   className="rounded-xl resize-none text-xs bg-muted/60 border-border placeholder:text-muted-foreground focus:ring-primary"
                 />
+              </div>
+
+              {/* Issue / Complication Verification */}
+              <div className="p-3 bg-muted/30 rounded-2xl border border-border/50 space-y-2 text-xs">
+                <label className="flex items-center gap-2 cursor-pointer font-medium text-foreground select-none">
+                  <input
+                    type="checkbox"
+                    checked={hadIssues}
+                    onChange={(e) => setHadIssues(e.target.checked)}
+                    className="rounded border-border text-primary focus:ring-primary size-4"
+                  />
+                  <span>Did you experience any technical or tour issues?</span>
+                </label>
+
+                {hadIssues && (
+                  <div className="pt-2 space-y-1.5 animate-in fade-in">
+                    <label className="text-[11px] font-semibold text-muted-foreground">Select Issue Type:</label>
+                    <select
+                      value={issueCategory}
+                      onChange={(e) => setIssueCategory(e.target.value)}
+                      className="w-full h-8 text-xs rounded-lg bg-background border border-border px-2 text-foreground focus:ring-primary"
+                    >
+                      <option value="audio_video">Audio / Video connection issues</option>
+                      <option value="host_no_show">Host was late or did not show up</option>
+                      <option value="incomplete_itinerary">Tour was cut short / incomplete itinerary</option>
+                      <option value="other">Other issue</option>
+                    </select>
+                  </div>
+                )}
               </div>
 
               {/* Actions */}

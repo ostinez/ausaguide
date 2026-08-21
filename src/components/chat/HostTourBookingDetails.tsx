@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react"
+import { useState, useEffect } from "react"
 import { MessageSquare, Video, CheckCircle, Clock, Users, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -103,6 +103,21 @@ function fmtDateTime(ts: string) {
 
 function fmtCurrency(val: number, currency = "KES") {
   return new Intl.NumberFormat("en-KE", { style: "currency", currency, maximumFractionDigits: 0 }).format(val)
+}
+
+function maskEmail(email?: string | null) {
+  if (!email) return "—"
+  const parts = email.split("@")
+  if (parts.length < 2) return email
+  const user = parts[0]
+  const domain = parts[1]
+  return `${user.slice(0, 2)}***@${domain}`
+}
+
+function maskPhone(phone?: string | null) {
+  if (!phone) return "—"
+  if (phone.length < 6) return "***"
+  return `${phone.slice(0, 4)} *** ${phone.slice(-3)}`
 }
 
 function statusBadgeClass(status: string) {
@@ -247,13 +262,25 @@ export default function HostTourBookingDetails({
               {booking.guest_email && (
                 <p>
                   <span className="text-muted-foreground">Email: </span>
-                  <a href={`mailto:${booking.guest_email}`} className="hover:underline text-foreground">{booking.guest_email}</a>
+                  {booking.status?.toLowerCase() === "completed" ? (
+                    <span className="text-foreground font-mono text-[11px]">
+                      {maskEmail(booking.guest_email)} <span className="text-[9px] text-muted-foreground italic">(Protected post-tour)</span>
+                    </span>
+                  ) : (
+                    <a href={`mailto:${booking.guest_email}`} className="hover:underline text-foreground">{booking.guest_email}</a>
+                  )}
                 </p>
               )}
               {booking.guest_phone && (
                 <p>
                   <span className="text-muted-foreground">Phone: </span>
-                  <a href={`tel:${booking.guest_phone}`} className="text-primary font-semibold hover:underline">{booking.guest_phone}</a>
+                  {booking.status?.toLowerCase() === "completed" ? (
+                    <span className="text-foreground font-mono text-[11px]">
+                      {maskPhone(booking.guest_phone)} <span className="text-[9px] text-muted-foreground italic">(Protected post-tour)</span>
+                    </span>
+                  ) : (
+                    <a href={`tel:${booking.guest_phone}`} className="text-primary font-semibold hover:underline">{booking.guest_phone}</a>
+                  )}
                 </p>
               )}
             </div>
