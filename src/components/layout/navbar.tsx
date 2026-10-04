@@ -355,6 +355,7 @@ export function Navbar() {
                       </span>
                     </Link>
 
+
                     <button
                       onClick={() => { handleSignOut(); setMobileOpen(false) }}
                       className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all mt-1"

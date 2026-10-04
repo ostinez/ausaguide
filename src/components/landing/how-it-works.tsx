@@ -69,7 +69,7 @@ export function HowItWorks() {
                     <img
                       src={stepImages[i]}
                       alt={`Traveler experience: ${step.title}`}
-                      className="w-full h-32 object-cover rounded-xl border border-[#235E5D] mb-3"
+                      className="w-full h-36 sm:h-40 object-cover object-top rounded-xl border border-[#235E5D]/60 bg-[#0c1a19] mb-3 shadow-md group-hover:scale-[1.02] transition-transform duration-300"
                     />
                     <h3 className="text-lg font-bold text-white group-hover:text-[#B7E6E5] transition-colors">
                       {step.title}

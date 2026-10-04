@@ -1,180 +1,132 @@
-// deno-lint-ignore-file
-// inta-pay-callback: Webhook handler for IntaSend M-PESA & Card payments
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.8";
+// @ts-nocheck
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { createHmac } from "https://deno.land/std@0.177.0/node/crypto.ts"
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-intasend-challenge",
-};
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-intasend-signature",
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: corsHeaders });
+    return new Response(null, { status: 204, headers: corsHeaders })
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const rawBody = await req.text()
+    const body = JSON.parse(rawBody || "{}")
 
-    const challengeSecret = Deno.env.get("INTASEND_WEBHOOK_CHALLENGE") || "ausaguide_webhook_secret_2026";
-    const headerChallenge = req.headers.get("x-intasend-challenge") || req.headers.get("X-Intasend-Challenge");
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    )
 
-    const payload = await req.json().catch(() => ({}));
-    console.log("📩 IntaSend callback received:", JSON.stringify(payload, null, 2));
+    const webhookSecret = Deno.env.get("INTASEND_WEBHOOK_SECRET") || ""
+    const signatureHeader = req.headers.get("x-intasend-signature") || ""
 
-    // Optional challenge check if header is present
-    if (headerChallenge && challengeSecret && headerChallenge !== challengeSecret) {
-      console.warn("⚠️ Webhook challenge mismatch! Incoming:", headerChallenge);
+    // Verify HMAC-SHA256 signature if secret is configured
+    if (webhookSecret && signatureHeader) {
+      const hmac = createHmac("sha256", webhookSecret)
+      hmac.update(rawBody)
+      const expectedSig = hmac.digest("hex")
+      if (signatureHeader !== expectedSig) {
+        console.warn("IntaSend Webhook: signature mismatch")
+        return new Response(
+          JSON.stringify({ error: "Invalid webhook signature" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        )
+      }
     }
 
-    // Extract event, state, order_id / api_ref, and payment ID
-    const event = payload.event || payload.challenge || "";
-    const state = (payload.state || payload.invoice?.state || payload.data?.state || "").toUpperCase();
-    const invoiceId = payload.invoice?.invoice_id || payload.invoice_id || payload.data?.transaction_id || payload.data?.id || "";
-    const apiRef = payload.invoice?.api_ref || payload.api_ref || payload.data?.order_id || payload.order_id || "";
-    const amount = payload.invoice?.net_amount || payload.invoice?.amount || payload.amount || payload.data?.amount || 0;
+    const state = body.state || body.status || ""
+    const apiRef = body.api_ref || body.invoice?.api_ref || body.invoice?.order_id || ""
+    const invoiceId = body.invoice_id || body.invoice?.invoice_id || ""
+    const amount = body.value || body.amount || body.invoice?.net_amount || 0
+    const currency = body.currency || "KES"
 
-    console.log(`📦 Event: ${event}, State: ${state}, Invoice/Txn: ${invoiceId}, Ref: ${apiRef}`);
+    console.log(`IntaSend Webhook received. State: ${state}, ApiRef: ${apiRef}, InvoiceId: ${invoiceId}`)
 
-    // If event is collection or state is COMPLETE/SUCCESS
-    const isSuccess =
-      event === "collection" ||
-      ["COMPLETE", "COMPLETED", "SUCCESS", "SUCCESSFUL", "PAID"].includes(state);
+    const isSuccess = state === "COMPLETE" || state === "SUCCESS" || state === "COMPLETED"
 
     if (!isSuccess) {
-      console.log(`⏩ Ignoring non-successful webhook state: ${state} / event: ${event}`);
+      console.log(`IntaSend Webhook: non-success state (${state}), no DB update`)
       return new Response(
-        JSON.stringify({ received: true, action: "ignored", state, event }),
+        JSON.stringify({ received: true, action: "ignored", state }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      )
     }
 
-    // Find the booking by api_ref (bookingId) or payment_id (invoiceId)
-    let booking: any = null;
-    if (apiRef) {
-      const { data } = await supabase
+    // Look up booking by api_ref or invoice_id
+    let bookingId = apiRef
+    if (!bookingId || bookingId.startsWith("ORD_") || bookingId.startsWith("BK_")) {
+      // api_ref may be the booking ID directly if it was passed as such
+      // Try to find by matching api_ref in booking table
+    }
+
+    if (supabase && bookingId) {
+      const { data: booking, error: fetchErr } = await supabase
         .from("bookings")
         .select("*, tours(title, currency)")
-        .eq("id", apiRef)
-        .maybeSingle();
-      booking = data;
-    }
-    if (!booking && invoiceId) {
-      const { data } = await supabase
-        .from("bookings")
-        .select("*, tours(title, currency)")
-        .eq("payment_id", invoiceId)
-        .maybeSingle();
-      booking = data;
-    }
+        .eq("id", bookingId)
+        .maybeSingle()
 
-    if (!booking) {
-      console.error(`❌ No booking found for apiRef=${apiRef} or invoiceId=${invoiceId}`);
-      return new Response(
-        JSON.stringify({ received: true, error: "Booking record not found", ref: apiRef }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    console.log(`✅ Confirming booking ${booking.id}...`);
-
-    // Update booking status to confirmed & payment_status to paid
-    await supabase
-      .from("bookings")
-      .update({
-        status: "confirmed",
-        payment_status: "paid",
-        payment_id: invoiceId || booking.payment_id,
-        payment_amount: amount || booking.total_price,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", booking.id);
-
-    // Find or create conversation between traveler and host
-    const travelerId = booking.guest_id || booking.traveler_id;
-    const hostId = booking.host_id;
-
-    if (travelerId && hostId) {
-      let convId: string | null = null;
-      const [pA, pB] = [travelerId, hostId].sort();
-
-      const { data: existingConv } = await supabase
-        .from("conversations")
-        .select("id")
-        .or(
-          `and(participant_a.eq.${pA},participant_b.eq.${pB}),and(participant_a.eq.${pB},participant_b.eq.${pA})`
-        )
-        .maybeSingle();
-
-      if (existingConv) {
-        convId = existingConv.id;
-      } else {
-        const { data: newConv } = await supabase
-          .from("conversations")
-          .insert({
-            participant_a: pA,
-            participant_b: pB,
-          })
-          .select("id")
-          .single();
-        convId = newConv?.id ?? null;
+      if (fetchErr) {
+        console.error("IntaSend Webhook: error fetching booking:", fetchErr)
       }
 
-      if (convId) {
-        // Check if receipt message already exists
-        const { data: existingReceipt } = await supabase
-          .from("messages")
-          .select("id")
-          .eq("conversation_id", convId)
-          .eq("sender_type", "system")
-          .like("message", `%${booking.id}%`)
-          .maybeSingle();
+      if (booking) {
+        const currentHistory = Array.isArray(booking.status_history) ? [...booking.status_history] : []
+        currentHistory.push({
+          status: "confirmed",
+          timestamp: new Date().toISOString(),
+          note: `IntaSend payment confirmed (Invoice: ${invoiceId})`,
+        })
 
-        if (!existingReceipt) {
-          const receiptMeta = {
-            type: "booking_receipt",
-            booking_id: booking.id,
-            tour_name: booking.tours?.title || "Tour",
-            date: booking.booking_date,
-            time: booking.booking_time,
-            guests: booking.guest_count,
-            total: amount || booking.total_price,
-            currency: booking.tours?.currency || booking.currency || "KES",
-            payment_id: invoiceId,
-            confirmed_at: new Date().toISOString(),
-          };
+        const { error: updateErr } = await supabase
+          .from("bookings")
+          .update({
+            status: "confirmed",
+            payment_status: "paid",
+            payment_id: invoiceId || apiRef,
+            payment_amount: Number(amount) || booking.total_price,
+            currency: currency || booking.currency,
+            status_history: currentHistory,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", bookingId)
 
-          const { error: msgErr } = await supabase.from("messages").insert({
-            conversation_id: convId,
-            sender_id: travelerId,
-            receiver_id: travelerId,
-            message: `✅ Booking confirmed for ${receiptMeta.tour_name} on ${receiptMeta.date}`,
-            sender_type: "system",
-            metadata: receiptMeta,
+        if (updateErr) {
+          console.error("IntaSend Webhook: error updating booking:", updateErr)
+        } else {
+          console.log(`IntaSend Webhook: booking ${bookingId} marked as paid & confirmed`)
+        }
+
+        // Notify host
+        if (booking.host_id) {
+          await supabase.from("notifications").insert({
+            user_id: booking.host_id,
+            title: "Payment Received",
+            message: `Payment of ${currency} ${Number(amount).toLocaleString()} received for booking ${bookingId.slice(0, 8)}`,
+            type: "booking_confirmed",
+            data: { booking_id: bookingId, amount, invoice_id: invoiceId },
             read: false,
-          });
-
-          if (msgErr) {
-            console.error("❌ Error inserting receipt message:", msgErr);
-          } else {
-            console.log(`💬 Receipt inserted into conversation ${convId}`);
-          }
+          }).catch(console.warn)
         }
       }
     }
 
     return new Response(
-      JSON.stringify({ received: true, action: "confirmed", booking_id: booking.id }),
+      JSON.stringify({ received: true, action: "processed", state, api_ref: apiRef }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  } catch (error: any) {
-    console.error("🔥 inta-pay-callback error:", error);
+    )
+  } catch (err) {
+    console.error("inta-pay-callback error:", err)
     return new Response(
-      JSON.stringify({ received: true, error: error.message }),
+      JSON.stringify({ received: true, error: err?.message || "Processing error" }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    )
   }
-});
+})

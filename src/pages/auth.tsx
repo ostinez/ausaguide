@@ -619,13 +619,11 @@ function SignUpForm() {
 
  try {
  // Check if email already exists in profiles
- const { data: existingEmail, error: emailCheckError } = await supabase
+ const { data: existingEmail } = await supabase
  .from("profiles")
  .select("id")
  .eq("email", email.trim().toLowerCase())
  .maybeSingle()
-
- if (emailCheckError) throw emailCheckError
 
  if (existingEmail) {
  clearTimeout(safetyTimeoutId)
@@ -634,13 +632,11 @@ function SignUpForm() {
  return
  }
 
- const { data: existingUser, error: checkError } = await supabase
+ const { data: existingUser } = await supabase
  .from("profiles")
  .select("id")
  .eq("username", username.trim().toLowerCase())
  .maybeSingle()
-
- if (checkError) throw checkError
 
  if (existingUser) {
  clearTimeout(safetyTimeoutId)
@@ -698,7 +694,7 @@ function SignUpForm() {
  } catch (err: any) {
  clearTimeout(safetyTimeoutId)
  console.error("SignUp error details:", err)
- setError("We couldn't send the email. Please check your email address and try again.")
+ setError(friendlyAuthError(err?.message ?? "Registration failed. Please check your email and details and try again."))
  } finally {
  clearTimeout(safetyTimeoutId)
  setLoading(false)

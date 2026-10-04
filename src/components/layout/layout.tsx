@@ -5,6 +5,7 @@ import { MobileNav } from "./MobileNav"
 import { AlertTriangle } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { Footer } from "./footer"
+import { NoticeBanner } from "@/components/NoticeBanner"
 import { ProfileCompletionBanner } from "@/components/ui/ProfileCompletionBanner"
 import { GlobalUrgentHostNotifier } from "@/components/common/GlobalUrgentHostNotifier"
 
@@ -361,6 +362,7 @@ export function Layout() {
           </button>
         </div>
       )}
+      <NoticeBanner />
       {!userId && !isAuthOrOnboarding && (
         <StaggeredMenu
           position="right"

@@ -50,15 +50,30 @@ export function WaitlistHero() {
         name: name.trim() || null,
         email: email.trim().toLowerCase(),
         role: role,
+        interest: [role],
       })
 
       if (error) {
-        if (error.code === "23505") {
+        if (error.code === "23505" || error.message?.includes("duplicate") || error.message?.includes("unique")) {
           toast.info("You're already on the waitlist! We'll keep you posted.")
           setSubmitted(true)
           return
         }
-        throw error
+
+        // Schema fallback attempt: Try minimal fields if column cache issue
+        const { error: retryErr } = await supabase.from("waitlist").insert({
+          email: email.trim().toLowerCase(),
+          name: name.trim() || null,
+        })
+
+        if (retryErr) {
+          if (retryErr.code === "23505" || retryErr.message?.includes("duplicate") || retryErr.message?.includes("unique")) {
+            toast.info("You're already on the waitlist! We'll keep you posted.")
+            setSubmitted(true)
+            return
+          }
+          throw error
+        }
       }
 
       await sendGeneralWaitlistEmail(email.trim(), name.trim() || "Traveler", role)

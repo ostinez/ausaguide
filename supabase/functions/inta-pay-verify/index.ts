@@ -1,122 +1,105 @@
-// @ts-nocheck -- Deno edge function
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.8"
+// @ts-nocheck
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders })
+    return new Response(null, { status: 204, headers: corsHeaders })
   }
 
   try {
-    const { payment_id, booking_id } = await req.json()
+    const body = await req.json()
+    const { invoice_id, api_ref } = body
 
-    if (!payment_id && !booking_id) {
+    if (!invoice_id && !api_ref) {
       return new Response(
-        JSON.stringify({ error: "Missing required parameter: payment_id or booking_id" }),
+        JSON.stringify({ error: "Missing invoice_id or api_ref" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       )
     }
 
-    const apiKey = Deno.env.get("INTASEND_API_KEY") || ""
-    const baseUrl = Deno.env.get("INTASEND_IS_PRODUCTION") === "true"
+    const secretKey = Deno.env.get("INTASEND_SECRET_KEY") || ""
+
+    if (!secretKey) {
+      return new Response(
+        JSON.stringify({ error: "Payment gateway not configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
+
+    const publishableKey = Deno.env.get("INTASEND_PUBLISHABLE_KEY") || ""
+    const isLive = !publishableKey.startsWith("ISPubKey_test")
+    const intasendBaseUrl = isLive
       ? "https://payment.intasend.com/api/v1"
       : "https://sandbox.intasend.com/api/v1"
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") || ""
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    // Verify payment status with IntaSend
+    const verifyEndpoint = invoice_id
+      ? `${intasendBaseUrl}/payment/status/?invoice_id=${invoice_id}`
+      : `${intasendBaseUrl}/payment/status/?api_ref=${api_ref}`
 
-    // Retrieve booking record first
-    let query = supabase.from("bookings").select("*")
-    if (payment_id) {
-      query = query.eq("payment_id", payment_id)
-    } else {
-      query = query.eq("id", booking_id)
-    }
+    const response = await fetch(verifyEndpoint, {
+      headers: {
+        "Authorization": `Bearer ${secretKey}`,
+        "Content-Type": "application/json",
+      },
+    })
 
-    const { data: booking, error: fetchErr } = await query.single()
+    const data = await response.json()
 
-    if (fetchErr || !booking) {
+    if (!response.ok) {
       return new Response(
-        JSON.stringify({ error: "Booking record not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Failed to verify payment", details: data }),
+        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       )
     }
 
-    const targetPaymentId = payment_id || booking.payment_id
+    const state = data.invoice?.state || data.state || ""
+    const isPaid = state === "COMPLETE" || state === "SUCCESS" || state === "COMPLETED"
 
-    let isPaid = false
-    let intaSendStatus = "PENDING"
-    let statusResponse: any = {}
+    // If payment is confirmed, update booking in Supabase
+    if (isPaid) {
+      const bookingId = api_ref || data.invoice?.api_ref
+      if (bookingId) {
+        const supabase = createClient(
+          Deno.env.get("SUPABASE_URL") ?? "",
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+          { auth: { persistSession: false } }
+        )
 
-    if (targetPaymentId) {
-      try {
-        const verifyRes = await fetch(`${baseUrl}/payment/status/`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({ invoice_id: targetPaymentId }),
-        })
-
-        if (verifyRes.ok) {
-          statusResponse = await verifyRes.json()
-          const state = (statusResponse.invoice?.state || statusResponse.state || statusResponse.status || "").toUpperCase()
-          intaSendStatus = state
-          if (["COMPLETE", "SUCCESS", "SUCCESSFUL", "PAID"].includes(state)) {
-            isPaid = true
-          }
-        }
-      } catch (err) {
-        console.warn("IntaSend API status check warning:", err)
+        await supabase
+          .from("bookings")
+          .update({
+            status: "confirmed",
+            payment_status: "paid",
+            payment_id: invoice_id || data.invoice?.invoice_id,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", bookingId)
+          .catch(console.warn)
       }
     }
 
-    // In Sandbox mode, if status check returned PENDING or mock test, we verify and update payment_status
-    if (isPaid || booking.payment_status === "paid") {
-      const { error: updateErr } = await supabase
-        .from("bookings")
-        .update({
-          payment_status: "paid",
-          status: booking.status === "pending" ? "confirmed" : booking.status,
-        })
-        .eq("id", booking.id)
-
-      if (updateErr) {
-        console.error("Failed to update booking status:", updateErr)
-      }
-
-      return new Response(
-        JSON.stringify({
-          verified: true,
-          payment_status: "paid",
-          booking_id: booking.id,
-          raw: statusResponse,
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      )
-    } else {
-      return new Response(
-        JSON.stringify({
-          verified: false,
-          payment_status: booking.payment_status || intaSendStatus,
-          booking_id: booking.id,
-          raw: statusResponse,
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      )
-    }
-  } catch (error: any) {
-    console.error("inta-pay-verify error:", error)
     return new Response(
-      JSON.stringify({ error: error.message || "Failed to verify payment status" }),
+      JSON.stringify({
+        success: true,
+        paid: isPaid,
+        state,
+        invoice_id: data.invoice?.invoice_id || invoice_id,
+        api_ref: data.invoice?.api_ref || api_ref,
+      }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    )
+  } catch (err) {
+    console.error("inta-pay-verify error:", err)
+    return new Response(
+      JSON.stringify({ error: err?.message || "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     )
   }

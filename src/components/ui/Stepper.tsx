@@ -47,6 +47,9 @@ export function Stepper({ steps, currentStep, children }: StepperProps) {
   const fillPercentage =
     steps.length > 1 ? Math.min(100, Math.max(0, (currentStep / (steps.length - 1)) * 100)) : 100
 
+  // Calculate the horizontal offset percentage so the track line connects bead centers
+  const stepOffsetPercent = steps.length > 1 ? 100 / (2 * steps.length) : 50
+
   return (
     <div className="neu-stepper-container">
       {/* ── Top Neumorphic Widget Card ── */}
@@ -75,17 +78,24 @@ export function Stepper({ steps, currentStep, children }: StepperProps) {
 
         {/* ── Inset Groove Track with Milestone Beads ── */}
         <div className="neu-track-container">
-          <div className="neu-groove-track">
-            {/* Animated Gradient Fill Bar */}
+          {/* Recessed connecting line behind beads */}
+          <div
+            className="neu-groove-line"
+            style={{
+              left: `${stepOffsetPercent}%`,
+              right: `${stepOffsetPercent}%`,
+            }}
+          >
             <div
               className="neu-groove-fill"
               style={{
-                width: `calc(${fillPercentage}% - 1.5rem)`,
-                maxWidth: "calc(100% - 2rem)",
+                width: `${fillPercentage}%`,
               }}
             />
+          </div>
 
-            {/* Inset Milestone Beads */}
+          {/* Beads and Labels Row */}
+          <div className="neu-steps-row">
             {steps.map((step, idx) => {
               const isCompleted = idx < currentStep
               const isActive = idx === currentStep
@@ -106,7 +116,7 @@ export function Stepper({ steps, currentStep, children }: StepperProps) {
                     {isCompleted ? (
                       <Check className="size-4 stroke-[3]" />
                     ) : isActive ? (
-                      <Check className="size-4.5 stroke-[3] animate-pulse" />
+                      <Check className="size-4 stroke-[3]" />
                     ) : (
                       <Plus className="size-3.5 opacity-40" />
                     )}
@@ -117,6 +127,7 @@ export function Stepper({ steps, currentStep, children }: StepperProps) {
                       "neu-node-label",
                       isCompleted ? "completed" : "",
                       isActive ? "active" : "",
+                      isUpcoming ? "upcoming" : "",
                     ]
                       .filter(Boolean)
                       .join(" ")}

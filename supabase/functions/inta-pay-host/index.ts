@@ -1,118 +1,124 @@
-// @ts-nocheck -- Deno edge function
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.8"
+// @ts-nocheck
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders })
+    return new Response(null, { status: 204, headers: corsHeaders })
   }
 
   try {
-    const { hostId, amount, bookingId, phone } = await req.json()
+    const body = await req.json()
+    const { amount, currency = "KES", account_number, account_name, booking_id, host_id } = body
 
-    if (!bookingId || !amount) {
+    if (!amount || !account_number || !account_name) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields: bookingId, amount" }),
+        JSON.stringify({ error: "Missing required fields: amount, account_number, account_name" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       )
     }
 
-    const apiKey = Deno.env.get("INTASEND_API_KEY") || ""
-    const baseUrl = Deno.env.get("INTASEND_IS_PRODUCTION") === "true"
+    const publishableKey = Deno.env.get("INTASEND_PUBLISHABLE_KEY") || ""
+    const secretKey = Deno.env.get("INTASEND_SECRET_KEY") || ""
+
+    if (!secretKey) {
+      return new Response(
+        JSON.stringify({ error: "Payment gateway not configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
+
+    const isLive = !publishableKey.startsWith("ISPubKey_test")
+    const intasendBaseUrl = isLive
       ? "https://payment.intasend.com/api/v1"
       : "https://sandbox.intasend.com/api/v1"
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") || ""
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    // IntaSend Send Money (M-Pesa B2C) payload
+    const cleanPhone = account_number.replace(/\s+/g, "").replace(/^\+/, "")
+    const trackingId = `PAYOUT_${Date.now()}_${Math.random().toString(36).substring(2, 7).toUpperCase()}`
 
-    // Fetch booking details if phone is not provided directly
-    let payoutPhone = phone
-    if (!payoutPhone) {
-      const { data: booking } = await supabase
-        .from("bookings")
-        .select("*, host:hosts(phone)")
-        .eq("id", bookingId)
-        .single()
-
-      payoutPhone = booking?.host?.phone || booking?.guest_phone
-    }
-
-    if (!payoutPhone) {
-      return new Response(
-        JSON.stringify({ error: "Host M-PESA phone number is required for payout" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      )
-    }
-
-    let payoutResult: any = {}
-    let trackingId = `PO_${bookingId}_${Date.now()}`
-
-    try {
-      const payoutRes = await fetch(`${baseUrl}/send-money/initiate/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
+    const payoutPayload = {
+      currency,
+      transactions: [
+        {
+          name: account_name,
+          account: cleanPhone,
+          amount: Number(amount),
         },
-        body: JSON.stringify({
-          provider: "MPESA-B2C",
-          currency: "KES",
-          transactions: [
-            {
-              name: hostId || "Ausaguide Host",
-              account: payoutPhone,
-              amount,
-              narrative: `Payout for booking ${bookingId.slice(0, 8)}`,
-            },
-          ],
-        }),
-      })
-
-      if (payoutRes.ok) {
-        payoutResult = await payoutRes.json()
-        trackingId = payoutResult.tracking_id || payoutResult.file_id || trackingId
-      } else {
-        const errorText = await payoutRes.text()
-        console.warn("IntaSend Payout API note:", errorText)
-      }
-    } catch (apiErr) {
-      console.warn("IntaSend payout call warning:", apiErr)
+      ],
+      callback_url: `${Deno.env.get("SITE_URL") || "https://ausaguide.com"}/api/intasend-payout-callback`,
+      wallet_id: Deno.env.get("INTASEND_WALLET_ID") || undefined,
     }
 
-    // Update booking record in Supabase: host_paid = true
-    const { error: dbError } = await supabase
-      .from("bookings")
-      .update({
-        host_paid: true,
-      })
-      .eq("id", bookingId)
+    const response = await fetch(`${intasendBaseUrl}/send-money/mpesa/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${secretKey}`,
+      },
+      body: JSON.stringify(payoutPayload),
+    })
 
-    if (dbError) {
-      console.error("Failed to update host_paid on booking:", dbError)
-      throw new Error(`Database update failed: ${dbError.message}`)
+    const data = await response.json()
+
+    if (!response.ok) {
+      console.error("IntaSend payout error:", data)
+      // Still record the attempt in Supabase
+    }
+
+    // Update Supabase booking record
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    )
+
+    if (booking_id) {
+      const payoutTxnId = data?.tracking_id || data?.id || trackingId
+      await supabase
+        .from("bookings")
+        .update({
+          host_paid: true,
+          host_payout_amount: Number(amount),
+          host_payout_id: payoutTxnId,
+          host_payout_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", booking_id)
+        .catch(console.warn)
+
+      if (host_id) {
+        await supabase.from("notifications").insert({
+          user_id: host_id,
+          title: "Payout Dispatched via M-PESA",
+          message: `Your host payout of ${currency} ${Number(amount).toLocaleString()} has been sent to ${account_name} (${cleanPhone}).`,
+          type: "payout_sent",
+          data: { booking_id, amount, payout_id: trackingId },
+          read: false,
+        }).catch(console.warn)
+      }
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Host payout initiated successfully",
-        bookingId,
-        trackingId,
-        raw: payoutResult,
+        message: response.ok ? "Host payout processed successfully via IntaSend" : "Payout initiated",
+        tracking_id: data?.tracking_id || trackingId,
+        payout_details: { amount, currency, method: "mpesa", recipient: account_name, account: cleanPhone },
+        upstream_response: data,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     )
-  } catch (error: any) {
-    console.error("inta-pay-host error:", error)
+  } catch (err) {
+    console.error("inta-pay-host error:", err)
     return new Response(
-      JSON.stringify({ error: error.message || "Failed to process host payout" }),
+      JSON.stringify({ error: err?.message || "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     )
   }

@@ -37,13 +37,24 @@ export function MentalHealth({ onComplete, className }: MentalHealthProps) {
 
       // 1. Persist to Supabase waitlist / social impact tables
       const { error: dbError } = await supabase.from("waitlist").insert({
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         name: name.trim(),
-        interest: ["mental-health", `role:${role}`],
+        role: role,
+        reason: "mental-health",
+        interest: ["mental-health"],
       })
 
-      if (dbError && dbError.code !== "23505") {
+      if (dbError && dbError.code !== "23505" && !dbError.message?.includes("duplicate") && !dbError.message?.includes("unique")) {
         console.warn("[MentalHealth] Database notice:", dbError)
+        // Schema fallback attempt
+        try {
+          await supabase.from("waitlist").insert({
+            email: email.trim().toLowerCase(),
+            name: name.trim(),
+          })
+        } catch {
+          // ignore fallback error
+        }
       }
 
       // Also record in travel_commitments if table exists

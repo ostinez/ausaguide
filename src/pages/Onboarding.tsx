@@ -266,6 +266,17 @@ function StepProfile({
 
     setLoading(true)
     try {
+      // Re-verify auth session to ensure we use the authoritative user ID & email
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      const effectiveUserId = authUser?.id || userId || propUserId
+      const effectiveEmail = (authUser?.email || email || "").trim().toLowerCase()
+
+      if (!effectiveUserId) {
+        setError("Please sign in to save your profile details.")
+        setLoading(false)
+        return
+      }
+
       // Check if username is taken by anyone else
       const { data: existingUser, error: checkError } = await supabase
         .from("profiles")
@@ -273,42 +284,73 @@ function StepProfile({
         .eq("username", username.trim().toLowerCase())
         .maybeSingle()
 
-      if (checkError) throw checkError
-      if (existingUser && existingUser.id !== userId) {
-        setError("This username is already taken.")
+      if (checkError && checkError.code !== "PGRST116") throw checkError
+      if (existingUser && existingUser.id !== effectiveUserId) {
+        setError("This username is already taken. Please choose another username.")
         setLoading(false)
         return
       }
 
+      // Check if email already belongs to a different profile
+      if (effectiveEmail) {
+        const { data: existingEmailUser } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("email", effectiveEmail)
+          .maybeSingle()
+
+        if (existingEmailUser && existingEmailUser.id !== effectiveUserId) {
+          setError("An account with this email address already exists. Please log in instead.")
+          setLoading(false)
+          return
+        }
+      }
+
+      // Check what the existing profile looks like (role, etc.)
+      const { data: existingProfile } = await supabase
+        .from("profiles")
+        .select("id, role")
+        .eq("id", effectiveUserId)
+        .maybeSingle()
+
+      const profilePayload: any = {
+        id: effectiveUserId,
+        full_name: name.trim(),
+        username: username.trim().toLowerCase(),
+        languages: role === "host" ? ["English", "Swahili"] : ["English"],
+        bio: role === "host" ? communityBio.trim() : null,
+      }
+      if (effectiveEmail) {
+        profilePayload.email = effectiveEmail
+      }
+
+      // Only include `role` if the profile doesn't have one yet.
+      // The DB trigger prevent_profile_role_change blocks role changes after initial set.
+      if (!existingProfile?.role) {
+        profilePayload.role = role
+      }
+
       const { error: upsertError } = await supabase
         .from("profiles")
-        .upsert(
-          {
-            id: userId,
-            email: email.trim(),
-            full_name: name.trim(),
-            username: username.trim().toLowerCase(),
-            role: role,
-            languages: role === "host" ? ["English", "Swahili"] : ["English"],
-            bio: role === "host" ? communityBio.trim() : null,
-          },
-          { onConflict: "id" }
-        )
+        .upsert(profilePayload, { onConflict: "id" })
 
       if (upsertError) throw upsertError
 
-      // Save role & ID to localStorage
-      localStorage.setItem("user_id", userId)
-      localStorage.setItem("user_role", role)
+      // Use the effective role (existing or newly set)
+      const effectiveRole = existingProfile?.role || role
 
-      if (role === "host") {
+      // Save role & ID to localStorage
+      localStorage.setItem("user_id", effectiveUserId)
+      localStorage.setItem("user_role", effectiveRole)
+
+      if (effectiveRole === "host") {
         await supabase
           .from("hosts")
           .upsert(
             {
-              user_id: userId,
+              user_id: effectiveUserId,
               full_name: name.trim(),
-              email: email.trim(),
+              email: effectiveEmail,
               city: "Nairobi",
               host_type: "local_host",
               bio: communityBio.trim() || "New host registered on Ausaguide.",
@@ -318,16 +360,29 @@ function StepProfile({
       }
 
       toast.success("Profile details saved!")
-      onComplete(name.trim(), effectiveId)
+      onComplete(name.trim(), effectiveUserId)
     } catch (err: any) {
       console.error("[StepProfile] Error updating profile:", err)
-      setError(err.message || "Failed to update profile. Please try again.")
+      const msg = err?.message || err?.details || String(err)
+      if (msg.includes("role cannot be changed")) {
+        // The role was already set from a previous attempt — just proceed
+        toast.success("Profile details saved!")
+        const effectiveUserId2 = (await supabase.auth.getUser()).data.user?.id || userId || propUserId
+        onComplete(name.trim(), effectiveUserId2)
+        return
+      } else if (msg.includes("profiles_email_key") || (msg.includes("duplicate key") && msg.includes("email"))) {
+        setError("An account with this email address already exists. Please log in or use a different email.")
+      } else if (msg.includes("profiles_username_key") || (msg.includes("duplicate key") && msg.includes("username"))) {
+        setError("This username is already taken. Please choose another username.")
+      } else if (msg.includes("duplicate key") || msg.includes("unique constraint")) {
+        setError("An account or profile with these details already exists.")
+      } else {
+        setError(err.message || "Failed to update profile. Please try again.")
+      }
     } finally {
       setLoading(false)
     }
   }
-
-  const effectiveId = userId || propUserId
 
   return (
     <div className="flex flex-col items-center gap-6 py-4 px-2 w-full max-w-md mx-auto">

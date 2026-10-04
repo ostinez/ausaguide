@@ -100,48 +100,52 @@
   height: 14px;
 }
 
-/* ── Inset Debossed Groove Track ────────────────────────────────────── */
+/* ── Milestone Inset Beads & Connecting Line ──────────────────────── */
 .neu-track-container {
   width: 100%;
   position: relative;
-  padding: 0.5rem 0.25rem;
+  padding: 0.25rem 0.5rem;
 }
 
-.neu-groove-track {
-  width: 100%;
-  height: 52px;
-  background: #091413;
-  border-radius: 9999px;
-  box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.75), inset -3px -3px 7px rgba(25, 55, 53, 0.4);
-  border: 1px solid rgba(35, 94, 93, 0.25);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 0.5rem;
-  position: relative;
-  overflow: visible;
-}
-
-/* Active Fill Bar inside Groove */
-.neu-groove-fill {
+/* Connecting Line behind the beads */
+.neu-groove-line {
   position: absolute;
-  left: 1rem;
+  top: 22px; /* Centers with the 38px bead (4px padding + 19px center - 3px half-height) */
   height: 6px;
+  background: #081312;
+  border-radius: 9999px;
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.9), inset -1px -1px 2px rgba(35, 75, 73, 0.3);
+  border: 1px solid rgba(35, 94, 93, 0.25);
+  z-index: 1;
+  overflow: hidden;
+}
+
+/* Animated Gradient Fill Bar */
+.neu-groove-fill {
+  height: 100%;
   background: linear-gradient(90deg, #0D6F73, #10b981, #34d399);
   box-shadow: 0 0 10px rgba(52, 211, 153, 0.6);
   border-radius: 9999px;
   transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 1;
 }
 
-/* ── Milestone Inset Beads (Nodes) ─────────────────────────────────── */
+/* Flex row containing step items */
+.neu-steps-row {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
+}
+
 .neu-node-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  position: relative;
-  z-index: 2;
   flex: 1;
+  min-width: 0;
+  text-align: center;
 }
 
 .neu-bead {
@@ -156,43 +160,47 @@
   transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
   user-select: none;
   cursor: default;
+  flex-shrink: 0;
 }
 
 /* Completed Node */
 .neu-bead.completed {
-  background: #113B3A;
+  background: #0d3836;
   color: #34d399;
   box-shadow: 3px 3px 7px rgba(0, 0, 0, 0.6), -2px -2px 5px rgba(35, 78, 76, 0.45);
-  border: 1px solid rgba(52, 211, 153, 0.3);
+  border: 1.5px solid rgba(52, 211, 153, 0.4);
 }
 
 /* Active Glowing Node */
 .neu-bead.active {
   background: linear-gradient(135deg, #10b981, #34d399);
   color: #062321;
-  box-shadow: 0 0 20px rgba(52, 211, 153, 0.85), 3px 3px 8px rgba(0, 0, 0, 0.5), -2px -2px 6px rgba(255, 255, 255, 0.3);
-  transform: scale(1.12);
+  box-shadow: 0 0 18px rgba(52, 211, 153, 0.85), 3px 3px 8px rgba(0, 0, 0, 0.5), -2px -2px 6px rgba(255, 255, 255, 0.3);
+  transform: scale(1.08);
   border: 2px solid #ffffff;
 }
 
 /* Upcoming Node */
 .neu-bead.upcoming {
-  background: #0a1716;
+  background: #091514;
   color: rgba(255, 255, 255, 0.25);
   box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.65), inset -1px -1px 3px rgba(30, 65, 63, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* Node Labels */
 .neu-node-label {
-  margin-top: 0.65rem;
-  font-size: 0.7rem;
+  margin-top: 0.55rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  letter-spacing: 0.02em;
-  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: -0.01em;
+  color: rgba(255, 255, 255, 0.38);
   transition: all 0.3s ease;
   white-space: nowrap;
   text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .neu-node-label.active {
@@ -202,7 +210,27 @@
 }
 
 .neu-node-label.completed {
-  color: #B7E6E5;
+  color: #a7d7d5;
+}
+
+.neu-node-label.upcoming {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+@media (max-width: 440px) {
+  .neu-bead {
+    width: 32px;
+    height: 32px;
+  }
+
+  .neu-groove-line {
+    top: 19px;
+  }
+
+  .neu-node-label {
+    font-size: 0.65rem;
+    margin-top: 0.45rem;
+  }
 }
 
 /* ── Inset Tip Pill at Bottom ───────────────────────────────────────── */
@@ -238,3 +266,4 @@
   width: 100%;
   margin-top: 0.5rem;
 }
+

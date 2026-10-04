@@ -85,7 +85,7 @@ export default function ConfirmationPage() {
  })
 
  if (functionErr) {
- let errorMsg = "Failed to create IntaSend tip payment"
+ let errorMsg = "Failed to create tip payment"
  if (functionErr instanceof Error) {
  errorMsg = functionErr.message
  }
@@ -95,7 +95,7 @@ export default function ConfirmationPage() {
  if (data?.checkout_url || data?.sessionUrl) {
  window.location.href = data.checkout_url || data.sessionUrl
  } else {
- toast.success("Tip payment initiated! IntaSend reference: " + (data?.payment_id || booking.id))
+ toast.success("Tip payment initiated! Payment reference: " + (data?.payment_id || booking.id))
  setTipping(false)
  }
  } catch (err: any) {

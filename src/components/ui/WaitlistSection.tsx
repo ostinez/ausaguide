@@ -19,49 +19,67 @@ export function WaitlistSection({ defaultInterest }: WaitlistSectionProps) {
  const [success, setSuccess] = useState(false)
 
  const handleSubmit = async (e: React.FormEvent) => {
- e.preventDefault()
- if (!name.trim() || !email.trim()) {
- toast.error("Please fill in all required fields.")
- return
- }
+    e.preventDefault()
+    if (!name.trim() || !email.trim()) {
+      toast.error("Please fill in all required fields.")
+      return
+    }
 
- const interests: string[] = []
- if (treePlanting) interests.push("tree-planting")
- if (mentalHealth) interests.push("mental-health-travel")
+    const interests: string[] = []
+    if (treePlanting) interests.push("tree-planting")
+    if (mentalHealth) interests.push("mental-health-travel")
 
- if (interests.length === 0) {
- toast.error("Please select at least one area of interest.")
- return
- }
+    if (interests.length === 0) {
+      toast.error("Please select at least one area of interest.")
+      return
+    }
 
- setSubmitting(true)
- try {
- const { error } = await supabase
- .from("waitlist")
- .insert({
- name: name.trim(),
- email: email.trim(),
- interest: interests,
- })
+    setSubmitting(true)
+    try {
+      const { error } = await supabase
+        .from("waitlist")
+        .insert({
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          role: "traveler",
+          reason: interests.join(", "),
+          interest: interests,
+        })
 
- if (error) {
- if (error.code === "23505") {
- toast.info("You've already signed up with this email! Thank you.")
- setSuccess(true)
- return
- }
- throw error
- }
+      if (error) {
+        if (error.code === "23505" || error.message?.includes("duplicate") || error.message?.includes("unique")) {
+          toast.info("You've already signed up with this email! Thank you.")
+          setSuccess(true)
+          return
+        }
 
- toast.success("You're on the list! We'll notify you when we launch.")
- setSuccess(true)
- } catch (err: any) {
- console.error(err)
- toast.error(err.message || "Failed to submit. Please try again.")
- } finally {
- setSubmitting(false)
- }
- }
+        // Fallback retry
+        const { error: retryErr } = await supabase
+          .from("waitlist")
+          .insert({
+            email: email.trim().toLowerCase(),
+            name: name.trim(),
+          })
+
+        if (retryErr) {
+          if (retryErr.code === "23505" || retryErr.message?.includes("duplicate") || retryErr.message?.includes("unique")) {
+            toast.info("You've already signed up with this email! Thank you.")
+            setSuccess(true)
+            return
+          }
+          throw error
+        }
+      }
+
+      toast.success("You're on the list! We'll notify you when we launch.")
+      setSuccess(true)
+    } catch (err: any) {
+      console.error(err)
+      toast.error(err.message || "Failed to submit. Please try again.")
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
  return (
  <SpotlightCard className="p-8 border border-border bg-card shadow-modern rounded-2xl space-y-6">

@@ -6,6 +6,10 @@ import { defineConfig } from "vitest/config"
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  envPrefix: ["VITE_", "NEXT_PUBLIC_"],
+  define: {
+    "process.env.NEXT_PUBLIC_PAYMENTS_ENABLED": JSON.stringify(process.env.NEXT_PUBLIC_PAYMENTS_ENABLED ?? "false"),
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
