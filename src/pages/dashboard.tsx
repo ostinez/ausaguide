@@ -370,29 +370,43 @@ function BookingRow({
  const [payingOut, setPayingOut] = useState(false)
  const [payoutDone, setPayoutDone] = useState(booking.host_paid === true)
 
- async function handleConfirmCompletion(e: React.MouseEvent) {
- e.stopPropagation()
- if (payoutDone) return
- setPayingOut(true)
- try {
- const { data, error: fnErr } = await supabase.functions.invoke("inta-pay-host", {
- body: {
- bookingId: booking.id,
- hostId: booking.host_id,
- amount: booking.payment_amount || booking.total_price,
- phone: booking.guest_phone,
- },
- })
- if (fnErr) throw new Error(fnErr.message || "Payout failed")
- if (data?.error) throw new Error(data.error)
- setPayoutDone(true)
- toast.success("Tour marked complete and host payout initiated!")
- } catch (err: any) {
- toast.error(err?.message || "Failed to initiate host payout")
- } finally {
- setPayingOut(false)
- }
- }
+  async function handleConfirmCompletion(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (payoutDone) return
+    setPayingOut(true)
+    try {
+      // Retrieve host payout account information
+      const { data: hostProf } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", booking.host_id)
+        .maybeSingle()
+
+      const targetPhone = (hostProf as any)?.mpesa_phone || hostProf?.phone || booking.guest_phone
+      const targetName = hostProf?.full_name || "Ausaguide Host"
+
+      const { data, error: fnErr } = await supabase.functions.invoke("inta-pay-host", {
+        body: {
+          booking_id: booking.id,
+          bookingId: booking.id,
+          host_id: booking.host_id,
+          hostId: booking.host_id,
+          amount: booking.payment_amount || booking.total_price,
+          account_number: targetPhone,
+          account_name: targetName,
+          phone: targetPhone,
+        },
+      })
+      if (fnErr) throw new Error(fnErr.message || "Payout failed")
+      if (data?.error) throw new Error(data.error)
+      setPayoutDone(true)
+      toast.success("Tour marked complete and host payout initiated!")
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to initiate host payout")
+    } finally {
+      setPayingOut(false)
+    }
+  }
 
  useEffect(() => {
  const startStr = booking.booking_time 

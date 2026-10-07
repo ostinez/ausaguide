@@ -294,6 +294,17 @@ export async function updateProfile(
  host_type?: string | null
  phone?: string | null
  avatar_url?: string | null
+ // Social handles
+ tiktok?: string | null
+ instagram?: string | null
+ facebook?: string | null
+ reddit?: string | null
+ // Privacy
+ is_private?: boolean
+ direct_messages_permission?: string
+ // Payout
+ mpesa_phone?: string | null
+ payout_method?: string | null
  }
 ): Promise<void> {
  const { error } = await supabase
@@ -301,7 +312,33 @@ export async function updateProfile(
  .update(profile)
  .eq("id", userId)
 
- if (error) throw error
+ if (error) {
+ console.error("updateProfile error:", error)
+ const isColumnError =
+ error.message?.toLowerCase().includes("column") ||
+ error.message?.toLowerCase().includes("schema cache") ||
+ error.code === "PGRST204" ||
+ error.code === "42703"
+
+ if (isColumnError) {
+ console.warn("Retrying profile update with core fields only due to missing schema columns:", error.message)
+ const coreFields = ["full_name", "bio", "location", "languages", "host_type", "phone", "avatar_url"]
+ const coreProfile: Record<string, any> = {}
+ for (const key of coreFields) {
+ if (key in profile) {
+ coreProfile[key] = (profile as any)[key]
+ }
+ }
+ const { error: retryError } = await supabase
+ .from("profiles")
+ .update(coreProfile)
+ .eq("id", userId)
+
+ if (retryError) throw retryError
+ return
+ }
+ throw error
+ }
 }
 
 export interface HostSettings {

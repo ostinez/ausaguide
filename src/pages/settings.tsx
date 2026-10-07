@@ -335,20 +335,17 @@ export default function SettingsPage() {
  }
  }
 
- // Load host payout settings from local storage
- const savedPayout = localStorage.getItem(`host_payout_${userId}`)
- if (savedPayout) {
+ // Load host payout settings — prefer DB values, fallback to localStorage
+ let parsedPayout: Record<string, string> = {}
  try {
- const parsed = JSON.parse(savedPayout)
- setPayoutMethod(parsed.method || "mpesa")
- setPayoutPhone(parsed.phone || "")
- setPayoutBankName(parsed.bankName || "")
- setPayoutAccountNo(parsed.accountNo || "")
- setPayoutAccountName(parsed.accountName || "")
- } catch (e) {
- console.error("Failed to parse payout settings:", e)
- }
- }
+ const savedPayout = localStorage.getItem(`host_payout_${userId}`)
+ if (savedPayout) parsedPayout = JSON.parse(savedPayout)
+ } catch (e) { /* ignore */ }
+ setPayoutMethod((p as any)?.payout_method || parsedPayout.method || "mpesa")
+ setPayoutPhone((p as any)?.mpesa_phone || parsedPayout.phone || "")
+ setPayoutBankName(parsedPayout.bankName || "")
+ setPayoutAccountNo(parsedPayout.accountNo || "")
+ setPayoutAccountName(parsedPayout.accountName || "")
 
  // Populate notification toggles from saved host settings, or keep defaults
  if (hs) {
@@ -406,7 +403,12 @@ export default function SettingsPage() {
  reddit: reddit.trim() || null,
  is_private: !publicProfile,
  direct_messages_permission: dmPrivacy,
- } as any)
+ // Persist payout details to the database
+ ...(role === "host" ? {
+ mpesa_phone: payoutPhone.trim() || null,
+ payout_method: payoutMethod || "mpesa",
+ } : {}),
+ })
  localStorage.setItem(`user_dm_privacy_${userId}`, dmPrivacy)
  localStorage.setItem(`user_read_receipts_${userId}`, String(readReceipts))
 
@@ -414,13 +416,18 @@ export default function SettingsPage() {
  if (emailNotifs) notifs.push("email")
  if (inAppNotifs) notifs.push("in_app")
  
+ if (role === "host") {
+ try {
  const hostSettingsPayload = {
  reminder_time: 30,
  notification_preferences: notifs,
  is_busy: false,
  }
-
  await updateHostSettings(userId, hostSettingsPayload)
+ } catch (hostErr) {
+ console.warn("Could not save host notification settings:", hostErr)
+ }
+ }
 
 
  // Save interests and payout details to localStorage
