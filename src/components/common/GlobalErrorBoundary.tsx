@@ -26,9 +26,34 @@ export class GlobalErrorBoundary extends React.Component<
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error("[GlobalErrorBoundary] Uncaught application error:", error, errorInfo)
+
+    // Check if error is due to a stale chunk from a previous deployment
+    const isChunkError =
+      error?.message?.includes("Failed to fetch dynamically imported module") ||
+      error?.message?.includes("Importing a module script failed") ||
+      error?.message?.includes("error loading dynamically imported module")
+
+    if (isChunkError) {
+      const lastReload = sessionStorage.getItem("chunk_reload_time")
+      const now = Date.now()
+      if (!lastReload || now - parseInt(lastReload, 10) > 10000) {
+        sessionStorage.setItem("chunk_reload_time", String(now))
+        this.handleReload()
+      }
+    }
   }
 
-  handleReload = () => {
+  handleReload = async () => {
+    try {
+      if ("caches" in window) {
+        const cacheKeys = await caches.keys()
+        await Promise.all(cacheKeys.map((k) => caches.delete(k)))
+      }
+      if ("serviceWorker" in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations()
+        await Promise.all(registrations.map((r) => r.unregister()))
+      }
+    } catch (_) {}
     window.location.reload()
   }
 

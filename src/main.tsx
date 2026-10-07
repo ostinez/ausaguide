@@ -45,17 +45,31 @@ if (savedTheme === "dark") {
   }
 })()
 
-// Register Service Worker for offline support
+// Auto-recover from stale deployment chunks (Failed to fetch dynamically imported module)
+window.addEventListener("vite:preloadError", (event) => {
+  event.preventDefault()
+  const lastReload = sessionStorage.getItem("chunk_reload_time")
+  const now = Date.now()
+  if (!lastReload || now - parseInt(lastReload, 10) > 10000) {
+    sessionStorage.setItem("chunk_reload_time", String(now))
+    const win = window as any
+    if (win.caches) {
+      win.caches.keys().then((keys: string[]) => Promise.all(keys.map((k: string) => win.caches.delete(k)))).then(() => {
+        win.location.reload()
+      })
+    } else {
+      win.location.reload()
+    }
+  }
+})
+
+// Clean up any stale service workers to prevent cached chunk errors
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js")
-      .then((reg) => {
-        console.log("Service Worker registered successfully with scope:", reg.scope)
-      })
-      .catch((err) => {
-        console.error("Service Worker registration failed:", err)
-      })
-  })
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const reg of registrations) {
+      reg.unregister().catch(() => {})
+    }
+  }).catch(() => {})
 }
 
 createRoot(document.getElementById("root")!).render(

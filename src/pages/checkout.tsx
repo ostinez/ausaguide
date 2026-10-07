@@ -222,30 +222,88 @@ export default function CheckoutPage() {
         setCreatedBookingId(booking.id)
       }
 
-      setPaymentStatusMessage("Redirecting to secure checkout...")
-
-      // 2. Call IntaSend via Supabase Edge Function
-      const { data, error: fnError } = await supabase.functions.invoke("inta-pay-init", {
-        body: {
-          amount: total,
-          currency: tour!.currency || "KES",
-          email: email.trim().toLowerCase(),
-          phone: phone.trim(),
-          first_name: sanitizeText(name).split(" ")[0] || sanitizeText(name),
-          last_name: sanitizeText(name).split(" ").slice(1).join(" ") || "",
-          api_ref: bookingId,
-          booking_id: bookingId,
-        },
-      })
-
-      if (fnError) {
-        throw new Error(fnError.message || "Failed to initialize payment session.")
+      const cleanDigits = phone.trim().replace(/\D/g, "")
+      let normalizedPhone = cleanDigits
+      if (cleanDigits.startsWith("254") && cleanDigits.length === 12) {
+        normalizedPhone = cleanDigits
+      } else if (cleanDigits.startsWith("0") && cleanDigits.length === 10) {
+        normalizedPhone = "254" + cleanDigits.slice(1)
+      } else if (cleanDigits.length === 9) {
+        normalizedPhone = "254" + cleanDigits
       }
 
-      const paymentUrl = data?.checkout_url || data?.url
+      const firstName = sanitizeText(name).split(" ")[0] || sanitizeText(name)
+      const lastName = sanitizeText(name).split(" ").slice(1).join(" ") || ""
+
+      setPaymentStatusMessage("Redirecting to secure checkout...")
+
+      let paymentUrl: string | null = null
+      let detailedError: string | null = null
+
+      // 2a. Call IntaSend via Supabase Edge Function
+      try {
+        const { data, error: fnError } = await supabase.functions.invoke("inta-pay-init", {
+          body: {
+            amount: total,
+            currency: tour!.currency || "KES",
+            email: email.trim().toLowerCase(),
+            phone: normalizedPhone,
+            first_name: firstName,
+            last_name: lastName,
+            api_ref: bookingId,
+            booking_id: bookingId,
+            bookingId: bookingId,
+          },
+        })
+
+        if (fnError) {
+          try {
+            if ((fnError as any).context && typeof (fnError as any).context.json === "function") {
+              const errBody = await (fnError as any).context.json()
+              detailedError =
+                errBody?.error ||
+                errBody?.message ||
+                (Array.isArray(errBody?.errors) ? errBody.errors[0]?.detail : null)
+            }
+          } catch (_) {}
+          if (!detailedError) detailedError = fnError.message
+        } else if (data?.checkout_url || data?.url) {
+          paymentUrl = data.checkout_url || data.url
+        } else if (data?.error) {
+          detailedError = data.error
+        }
+      } catch (e: any) {
+        detailedError = e?.message || null
+      }
+
+      // 2b. Fallback: If Edge Function failed, try Vercel serverless /api/create-checkout
+      if (!paymentUrl) {
+        try {
+          const res = await fetch("/api/create-checkout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              amount: total,
+              currency: tour!.currency || "KES",
+              email: email.trim().toLowerCase(),
+              phone: normalizedPhone,
+              first_name: firstName,
+              last_name: lastName,
+              api_ref: bookingId,
+              booking_id: bookingId,
+            }),
+          })
+          const vercelData = await res.json().catch(() => null)
+          if (res.ok && (vercelData?.checkout_url || vercelData?.url)) {
+            paymentUrl = vercelData.checkout_url || vercelData.url
+          } else if (vercelData?.error) {
+            detailedError = vercelData.error
+          }
+        } catch (_) {}
+      }
 
       if (!paymentUrl) {
-        throw new Error("Payment checkout URL was not returned by the payment gateway.")
+        throw new Error(detailedError || "Payment checkout URL was not returned by the payment gateway.")
       }
 
       // 3. Redirect to IntaSend checkout page

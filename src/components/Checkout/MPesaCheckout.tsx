@@ -98,6 +98,9 @@ export function MPesaCheckout({
 
     try {
       const { supabase } = await import("@/lib/supabase")
+      let paymentUrl: string | null = null
+      let detailedMsg: string | null = null
+
       const { data, error: fnError } = await supabase.functions.invoke("inta-pay-init", {
         body: {
           amount,
@@ -106,16 +109,50 @@ export function MPesaCheckout({
           phone: normalizePhone(phone),
           api_ref: bookingId,
           booking_id: bookingId,
+          bookingId: bookingId,
         },
       })
 
       if (fnError) {
-        throw new Error(fnError.message || "Failed to initialize payment session.")
+        try {
+          if ((fnError as any).context && typeof (fnError as any).context.json === "function") {
+            const errJson = await (fnError as any).context.json()
+            detailedMsg = errJson?.error || errJson?.message || (Array.isArray(errJson?.errors) ? errJson.errors[0]?.detail : null)
+          }
+        } catch (_) {}
+        if (!detailedMsg) detailedMsg = fnError.message
+      } else if (data?.checkout_url || data?.url) {
+        paymentUrl = data.checkout_url || data.url
+      } else if (data?.error) {
+        detailedMsg = data.error
       }
 
-      const paymentUrl = data?.checkout_url || data?.url
+      // Fallback: try Vercel /api/create-checkout
       if (!paymentUrl) {
-        throw new Error("Payment checkout URL was not returned by the payment gateway.")
+        try {
+          const res = await fetch("/api/create-checkout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              amount,
+              currency,
+              email: "guest@ausaguide.com",
+              phone: normalizePhone(phone),
+              api_ref: bookingId,
+              booking_id: bookingId,
+            }),
+          })
+          const vercelData = await res.json().catch(() => null)
+          if (res.ok && (vercelData?.checkout_url || vercelData?.url)) {
+            paymentUrl = vercelData.checkout_url || vercelData.url
+          } else if (vercelData?.error) {
+            detailedMsg = vercelData.error
+          }
+        } catch (_) {}
+      }
+
+      if (!paymentUrl) {
+        throw new Error(detailedMsg || "Payment checkout URL was not returned by the payment gateway.")
       }
 
       window.location.href = paymentUrl
