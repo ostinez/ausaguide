@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { cn } from "@/lib/utils"
 import { arePaymentsEnabled } from "@/lib/payments-config"
+import IntaSendTrustBadge from "@/components/IntaSendTrustBadge"
 
 interface IntaSendCheckoutProps {
   amount: number
@@ -199,11 +200,8 @@ export function IntaSendCheckout({
         )}
       </Button>
 
-      {/* IntaSend branding footer */}
-      <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
-        <ShieldCheck className="size-3.5 text-primary" />
-        <span>256-bit SSL · Powered by IntaSend</span>
-      </div>
+      {/* IntaSend trust badge */}
+      <IntaSendTrustBadge variant="compact" className="pt-2" />
     </div>
   )
 }

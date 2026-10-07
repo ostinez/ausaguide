@@ -6,10 +6,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { arePaymentsEnabled } from "@/lib/payments-config"
+import IntaSendTrustBadge from "@/components/IntaSendTrustBadge"
 import {
   AlertCircle,
   Phone,
-  ShieldCheck,
   ArrowRight,
   Smartphone,
   Calendar,
@@ -294,10 +294,7 @@ export function MPesaCheckout({
           </span>
         </button>
 
-        <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
-          <ShieldCheck className="size-3.5 text-primary" />
-          <span>256-bit SSL · Powered by IntaSend</span>
-        </div>
+        <IntaSendTrustBadge variant="compact" className="pt-2" />
       </div>
     </div>
   )

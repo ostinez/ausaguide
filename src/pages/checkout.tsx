@@ -21,6 +21,7 @@ import {
   Wrench,
 } from "lucide-react"
 import { arePaymentsEnabled } from "@/lib/payments-config"
+import IntaSendTrustBadge from "@/components/IntaSendTrustBadge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -386,15 +387,7 @@ export default function CheckoutPage() {
 
       {/* Trust & Security Badge or Maintenance Badge */}
       {paymentsEnabled ? (
-        <div className="rounded-xl border border-primary/20 bg-primary/5 p-3.5 text-center space-y-1.5">
-          <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-primary">
-            <ShieldCheck className="size-4 text-primary" />
-            <span>Secure Checkout</span>
-          </div>
-          <p className="text-[11px] text-muted-foreground">
-            256-bit SSL encryption · M-PESA & Card supported
-          </p>
-        </div>
+        <IntaSendTrustBadge variant="compact" />
       ) : (
         <div className="rounded-xl border border-[#F97316]/20 bg-[#F97316]/5 p-3.5 text-center space-y-1.5">
           <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-[#F97316]">
@@ -744,10 +737,7 @@ export default function CheckoutPage() {
                       )}
                     </Button>
 
-                    <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                       <Lock className="size-3.5 text-primary" />
-                       <span>256-bit SSL · Powered by IntaSend</span>
-                     </div>
+                    <IntaSendTrustBadge variant="compact" className="pt-2" />
                   </section>
                 )}
               </div>
