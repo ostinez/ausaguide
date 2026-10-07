@@ -522,7 +522,7 @@ export async function updateBookingStatus(
         booking.guest_name,
         booking.tour?.title || "your tour",
         booking.booking_date,
-        `$${booking.total_price.toLocaleString()} USD`
+        `KSh ${booking.total_price.toLocaleString()}`
       ).catch(err => console.error("Failed to send booking confirmation email:", err))
     }
   } catch (notifErr) {

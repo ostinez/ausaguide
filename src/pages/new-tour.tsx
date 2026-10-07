@@ -73,10 +73,10 @@ export default function NewTourPage() {
  const [galleryImages, setGalleryImages] = useState<string[]>([])
 
  // Pricing
- const [price, setPrice] = useState("35")
- const [physicalPrice, setPhysicalPrice] = useState("35")
- const [virtualPrice, setVirtualPrice] = useState("15")
- const [currency, setCurrency] = useState("USD")
+ const [price, setPrice] = useState("4375")
+ const [physicalPrice, setPhysicalPrice] = useState("4375")
+ const [virtualPrice, setVirtualPrice] = useState("1875")
+ const [currency, setCurrency] = useState("KES")
  const [groupDiscount, setGroupDiscount] = useState("10") // % discount for large groups
  const [groupSizeThreshold, setGroupSizeThreshold] = useState("5") // guests threshold for discount
 
@@ -580,9 +580,9 @@ export default function NewTourPage() {
  <p className="text-xs text-muted-foreground">See what similar experiences charge. Use this to price competitively without undervaluing your time.</p>
  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
  {[
- { platform: "Global Travel Platforms", type: "City walks / culture", low: "$25", high: "$60", avg: "$40", color: "#FF5A5F" },
- { platform: "Sightseeing Marketplaces", type: "Safari / nature day trips", low: "$50", high: "$180", avg: "$95", color: "#FF8000" },
- { platform: "Local Tour Aggregates", type: "Food & cooking tours", low: "$30", high: "$85", avg: "$52", color: "#0B6EFD" },
+ { platform: "Global Travel Platforms", type: "City walks / culture", low: "KSh 3,125", high: "KSh 7,500", avg: "KSh 5,000", color: "#FF5A5F" },
+ { platform: "Sightseeing Marketplaces", type: "Safari / nature day trips", low: "KSh 6,250", high: "KSh 22,500", avg: "KSh 11,875", color: "#FF8000" },
+ { platform: "Local Tour Aggregates", type: "Food & cooking tours", low: "KSh 3,750", high: "KSh 10,625", avg: "KSh 6,500", color: "#0B6EFD" },
  ].map((b) => (
  <div key={b.platform} className="rounded-lg border border-border/50 bg-card shadow-modern p-3 space-y-1.5">
  <div className="flex items-center gap-1.5">
@@ -611,7 +611,7 @@ export default function NewTourPage() {
  <SelectValue placeholder="Currency" />
  </SelectTrigger>
  <SelectContent>
- <SelectItem value="USD">USD (US Dollar)</SelectItem>
+ <SelectItem value="KES">KES (Kenyan Shilling - KSh)</SelectItem>
  </SelectContent>
  </Select>
  </div>

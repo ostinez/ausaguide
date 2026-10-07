@@ -2,15 +2,24 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+const ALLOWED_ORIGIN = Deno.env.get("SITE_URL") || "https://ausaguide.com"
+
+function corsHeaders(req: Request) {
+  const origin = req.headers.get("origin") || ""
+  const allowed = origin === "http://localhost:5173" ? origin : ALLOWED_ORIGIN
+  return {
+    "Access-Control-Allow-Origin": allowed,
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Vary": "Origin",
+  }
 }
 
 serve(async (req) => {
+  const hdrs = corsHeaders(req)
+
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: corsHeaders })
+    return new Response(null, { status: 204, headers: hdrs })
   }
 
   try {
@@ -20,7 +29,7 @@ serve(async (req) => {
     if (!amount || !email || !phone) {
       return new Response(
         JSON.stringify({ error: "Missing required fields: amount, email, phone" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...hdrs, "Content-Type": "application/json" } }
       )
     }
 
@@ -31,7 +40,7 @@ serve(async (req) => {
       console.error("IntaSend API keys not configured")
       return new Response(
         JSON.stringify({ error: "Payment gateway not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 500, headers: { ...hdrs, "Content-Type": "application/json" } }
       )
     }
 
@@ -72,7 +81,7 @@ serve(async (req) => {
       console.error("IntaSend checkout error:", data)
       return new Response(
         JSON.stringify({ error: data?.message || "Payment initialization failed", details: data }),
-        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: response.status, headers: { ...hdrs, "Content-Type": "application/json" } }
       )
     }
 
@@ -83,13 +92,13 @@ serve(async (req) => {
         reference,
         data,
       }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 200, headers: { ...hdrs, "Content-Type": "application/json" } }
     )
   } catch (err) {
     console.error("inta-pay-init error:", err)
     return new Response(
       JSON.stringify({ error: err?.message || "Internal server error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...corsHeaders(req), "Content-Type": "application/json" } }
     )
   }
 })

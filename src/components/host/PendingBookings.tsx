@@ -194,7 +194,7 @@ export function PendingBookings({
  {b.guest_count} {b.guest_count === 1 ? "guest" : "guests"}
  </span>
  <span className="font-semibold text-foreground">
- ${b.total_price?.toLocaleString() || "0"} USD
+ KSh ${b.total_price?.toLocaleString() || "0"}
  </span>
  </div>
  </div>

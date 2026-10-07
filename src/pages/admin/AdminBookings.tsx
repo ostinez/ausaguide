@@ -188,7 +188,7 @@ export default function AdminBookings() {
  })}
  </td>
  <td className="px-6 py-4.5 font-mono text-emerald-400 font-bold">
- USD {Number(b.total_price || 0).toFixed(2)}
+ KSh {Number(b.total_price || 0).toLocaleString()}
  </td>
  <td className="px-6 py-4.5">
  <select

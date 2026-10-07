@@ -51,7 +51,7 @@ export default function ThankYouPage() {
  return () => clearTimeout(timer)
  }, [sessionId])
 
- const formattedAmount = donation ? `$${(donation.amount / 100).toFixed(2)} USD` : ""
+ const formattedAmount = donation ? `KSh ${Number(donation.amount).toLocaleString()}` : ""
  const isTree = donationType === "tree-planting"
 
  return (

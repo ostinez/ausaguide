@@ -334,7 +334,7 @@ export default function TourDetailPage() {
  "image": tour.images?.[0] || "https://ausaguide.com/og-image.png",
  "offers": {
  "@type": "Offer",
- "priceCurrency": "USD",
+ "priceCurrency": "KES",
  "price": tour.price,
  "availability": "https://schema.org/InStock"
  }

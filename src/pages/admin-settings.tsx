@@ -329,7 +329,7 @@ export default function AdminSettingsPage() {
  <DollarSign className="size-5" />
  </div>
  <div>
- <p className="text-2xl font-bold text-foreground">$4,750 USD</p>
+ <p className="text-2xl font-bold text-foreground">KSh 593,750</p>
  <p className="text-xs text-muted-foreground">Gross Booking Volume</p>
  </div>
  </CardContent>
@@ -474,7 +474,7 @@ export default function AdminSettingsPage() {
  {t.title}
  </div>
  <div className="text-[10px] text-muted-foreground capitalize">
- {t.category} · {t.price ? `$${t.price.toLocaleString()} USD` : '$0 USD'}
+ {t.category} · {t.price ? `KSh ${t.price.toLocaleString()}` : 'KSh 0'}
  </div>
  </div>
  <Button

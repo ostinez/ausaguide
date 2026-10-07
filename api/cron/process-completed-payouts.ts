@@ -19,13 +19,27 @@ import { createClient } from "@supabase/supabase-js"
 
 const INTASEND_PUBLISHABLE_KEY = process.env.INTASEND_PUBLISHABLE_KEY || ""
 const INTASEND_SECRET_KEY = process.env.INTASEND_SECRET_KEY || ""
+const CRON_SECRET = process.env.CRON_SECRET || ""
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || ""
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || ""
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || ""
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ""
 
 const HOST_COMMISSION_RATE = 0.85 // Host receives 85%, platform retains 15%
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // ── AUTH GUARD: require CRON_SECRET bearer token ──────────────────────
+  if (!CRON_SECRET) {
+    console.error("[IntaSend 24h Payout Cron] CRON_SECRET is not configured")
+    return res.status(500).json({ error: "Cron not configured" })
+  }
+
+  const authHeader = req.headers["authorization"] || ""
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : ""
+  if (token !== CRON_SECRET) {
+    console.warn("[IntaSend 24h Payout Cron] Unauthorized request")
+    return res.status(401).json({ error: "Unauthorized" })
+  }
+
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     return res.status(500).json({ error: "Supabase credentials not configured." })
   }

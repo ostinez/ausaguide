@@ -270,7 +270,7 @@ export function TourReceiptTicketModal({
                     <div className="flex items-center gap-1.5">
                       <p className="text-xs font-bold text-sky-200">Credit / Debit Card</p>
                       <span className="text-[9px] font-black px-1.5 py-0.2 rounded-full bg-sky-900/60 text-sky-300 border border-sky-500/30">
-                        USD
+                        KES
                       </span>
                     </div>
                     <p className="text-[10px] font-mono text-sky-300/70">

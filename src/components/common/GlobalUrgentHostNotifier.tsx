@@ -151,7 +151,7 @@ export function GlobalUrgentHostNotifier() {
             </span>
           </div>
           <span className="font-bold text-emerald-400">
-            {activeRequest.budget ? `$${activeRequest.budget} USD/hr` : "Negotiable"}
+            {activeRequest.budget ? `KSh ${activeRequest.budget.toLocaleString()}/hr` : "Negotiable"}
           </span>
         </div>
 

@@ -13,7 +13,7 @@ const mockTours: Tour[] = [
  description: "Experience the real wilderness in Masai Mara.",
  short_description: "Real wilderness tour",
  price: 3500,
- currency: "USD",
+ currency: "KES",
  duration_hours: 48,
  max_guests: 8,
  location_name: "Masai Mara",
@@ -93,7 +93,7 @@ describe("Tours Page Unit Tests", () => {
  })
 
  // Check tour card elements
- expect(screen.getByText("$3,500 USD")).toBeInTheDocument()
+ expect(screen.getByText("KSh 3,500")).toBeInTheDocument()
  expect(screen.getAllByText(/Masai Mara/i)[0]).toBeInTheDocument()
  })
 

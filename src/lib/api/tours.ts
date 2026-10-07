@@ -151,7 +151,7 @@ export async function createTour(tourData: Partial<Tour>): Promise<Tour> {
  description: tourData.description,
  short_description: tourData.short_description || tourData.description?.substring(0, 150) || "",
  price: tourData.price,
- currency: tourData.currency || "USD",
+ currency: tourData.currency || "KES",
  duration_hours: tourData.duration_hours,
  max_guests: tourData.max_guests || 10,
  location_name: tourData.location_name,

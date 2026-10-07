@@ -472,7 +472,7 @@ function BookingRow({
                 {booking.guest_count} {booking.guest_count === 1 ? "guest" : "guests"}
               </span>
               <span className="font-semibold text-foreground">
-                {booking.total_price ? `$${booking.total_price.toLocaleString()} USD` : "$0 USD"}
+                {booking.total_price ? `KSh ${booking.total_price.toLocaleString()}` : "KSh 0"}
               </span>
               {countdown && (booking.status === "confirmed" || booking.status === "pending") && (
                 <span className="inline-flex items-center rounded-full bg-teal-500/10 px-2 py-0.5 text-[10px] font-semibold text-teal-400">
@@ -636,7 +636,7 @@ function PendingBookingRow({
  <Users className="size-3" />
  {booking.guest_count} {booking.guest_count === 1 ? "guest" : "guests"}
  </span>
- <span>{booking.total_price ? `$${booking.total_price.toLocaleString()} USD` : "$0 USD"}</span>
+ <span>{booking.total_price ? `KSh ${booking.total_price.toLocaleString()}` : "KSh 0"}</span>
  </div>
  </div>
  </div>
@@ -1054,7 +1054,7 @@ export function HostDashboard({
  <StatCard
  icon={DollarSign}
  label="Total Earnings"
- value={`$${totalEarnings.toLocaleString()} USD`}
+ value={`KSh ${totalEarnings.toLocaleString()}`}
  accent
  />
  <StatCard
@@ -1275,7 +1275,7 @@ function UrgentRequestCardItem({
  {req.experience_type?.join(", ") || "General"}
  </span>
  <span className="font-semibold text-emerald-600">
- Budget: {req.budget ? `$${req.budget} USD/hr` : "N/A"}
+ Budget: {req.budget ? `KSh ${req.budget.toLocaleString()}/hr` : "N/A"}
  </span>
  </div>
  <p className="text-[10px] text-rose-500 font-mono font-bold">
@@ -1308,7 +1308,7 @@ function UrgentRequestCardItem({
  type="button"
  size="sm"
  onClick={() => {
- const priceStr = window.prompt("Enter negotiated price (USD):", String(req.budget || 25))
+ const priceStr = window.prompt("Enter negotiated price (KES / KSh):", String(req.budget || 3125))
  if (priceStr === null) return
  const price = parseFloat(priceStr)
  if (isNaN(price) || price <= 0) {
@@ -1345,7 +1345,7 @@ function TravelerDashboard({ bookings = [], onChat }: { bookings?: Booking[]; on
  <StatCard
  icon={TrendingUp}
  label="Total Spent"
- value={`$${totalSpent.toLocaleString()} USD`}
+ value={`KSh ${totalSpent.toLocaleString()}`}
  />
  </div>
 
@@ -1878,7 +1878,7 @@ export default function DashboardPage() {
  <StatCard
  icon={DollarSign}
  label="Total Earnings"
- value={`$${hostBookings.filter((b) => b.status === "completed" || b.status === "confirmed").reduce((sum, b) => sum + b.total_price, 0).toLocaleString()} USD`}
+ value={`$${hostBookings.filter((b) => b.status === "completed" || b.status === "confirmed").reduce((sum, b) => sum + b.total_price, 0).toLocaleString()}`}
  accent
  />
  <StatCard

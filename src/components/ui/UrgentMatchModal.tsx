@@ -47,7 +47,7 @@ export function UrgentMatchModal({ isOpen, onClose }: UrgentMatchModalProps) {
   const [selectedCity, setSelectedCity] = useState(PRESET_CITIES[0].name)
 
   // Form Details
-  const [budget, setBudget] = useState<number>(30)
+  const [budget, setBudget] = useState<number>(3750)
   const [experienceType, setExperienceType] = useState<string>("culture")
   const [guestsCount, setGuestsCount] = useState<number>(1)
   const [specialNotes, setSpecialNotes] = useState<string>("")
@@ -339,20 +339,20 @@ export function UrgentMatchModal({ isOpen, onClose }: UrgentMatchModalProps) {
               <div className="space-y-1.5">
                 <div className="flex justify-between text-xs font-bold text-white">
                   <span className="text-[11px] text-[#B7E6E5] uppercase tracking-wider">Target Rate / Hour</span>
-                  <span className="text-emerald-400 font-black">${budget} USD/hr</span>
+                  <span className="text-emerald-400 font-black">KSh {budget.toLocaleString()}/hr</span>
                 </div>
                 <input
                   type="range"
-                  min="15"
-                  max="80"
-                  step="5"
+                  min="1875"
+                  max="10000"
+                  step="625"
                   value={budget}
                   onChange={(e) => setBudget(Number(e.target.value))}
                   className="w-full h-2 bg-[#0E2F2F] rounded-lg appearance-none cursor-pointer accent-[#B7E6E5]"
                 />
                 <div className="flex justify-between text-[10px] text-[#599D9C] font-semibold">
-                  <span>$15 USD (Economy)</span>
-                  <span>$80 USD (VIP / Safari)</span>
+                  <span>KSh 1,875 (Economy)</span>
+                  <span>KSh 10,000 (VIP / Safari)</span>
                 </div>
               </div>
 
@@ -417,11 +417,11 @@ export function UrgentMatchModal({ isOpen, onClose }: UrgentMatchModalProps) {
               </div>
               <div className="flex justify-between items-center text-xs">
                 <span className="text-white/70">Hourly Rate</span>
-                <span className="font-semibold text-white">${budget} USD / hr</span>
+                <span className="font-semibold text-white">KSh {budget.toLocaleString()} / hr</span>
               </div>
               <div className="border-t border-white/10 pt-2 flex justify-between items-center">
                 <span className="font-bold text-sm text-white">Authorized Escrow Hold:</span>
-                <span className="font-black text-base text-emerald-400">${budget * 2} USD</span>
+                <span className="font-black text-base text-emerald-400">KSh {(budget * 2).toLocaleString()}</span>
               </div>
             </div>
 

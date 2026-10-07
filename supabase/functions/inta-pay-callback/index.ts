@@ -3,20 +3,57 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { createHmac } from "https://deno.land/std@0.177.0/node/crypto.ts"
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-intasend-signature",
+const ALLOWED_ORIGIN = Deno.env.get("SITE_URL") || "https://ausaguide.com"
+
+function corsHeaders(req: Request) {
+  const origin = req.headers.get("origin") || ""
+  const allowed = origin === "http://localhost:5173" ? origin : ALLOWED_ORIGIN
+  return {
+    "Access-Control-Allow-Origin": allowed,
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type, x-intasend-signature",
+    "Vary": "Origin",
+  }
 }
 
 serve(async (req) => {
+  const hdrs = corsHeaders(req)
+
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: corsHeaders })
+    return new Response(null, { status: 204, headers: hdrs })
   }
 
   try {
     const rawBody = await req.text()
     const body = JSON.parse(rawBody || "{}")
+
+    const webhookSecret = Deno.env.get("INTASEND_WEBHOOK_SECRET") || ""
+
+    // ── SECURITY: require webhook secret to be configured ──────────────
+    if (!webhookSecret) {
+      console.error("inta-pay-callback: INTASEND_WEBHOOK_SECRET is not configured")
+      return new Response(
+        JSON.stringify({ error: "Webhook not configured" }),
+        { status: 500, headers: { ...hdrs, "Content-Type": "application/json" } }
+      )
+    }
+
+    // ── SECURITY: verify HMAC-SHA256 signature ──────────────────────────
+    const signatureHeader = req.headers.get("x-intasend-signature") || ""
+    const hmac = createHmac("sha256", webhookSecret)
+    hmac.update(rawBody)
+    const expectedSig = hmac.digest("hex")
+
+    if (!signatureHeader || signatureHeader !== expectedSig) {
+      console.warn(
+        `inta-pay-callback: signature mismatch. Got="${signatureHeader}" Expected="${expectedSig}"`
+      )
+      return new Response(
+        JSON.stringify({ error: "Invalid webhook signature" }),
+        { status: 401, headers: { ...hdrs, "Content-Type": "application/json" } }
+      )
+    }
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -24,47 +61,29 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     )
 
-    const webhookSecret = Deno.env.get("INTASEND_WEBHOOK_SECRET") || ""
-    const signatureHeader = req.headers.get("x-intasend-signature") || ""
-
-    // Verify HMAC-SHA256 signature if secret is configured
-    if (webhookSecret && signatureHeader) {
-      const hmac = createHmac("sha256", webhookSecret)
-      hmac.update(rawBody)
-      const expectedSig = hmac.digest("hex")
-      if (signatureHeader !== expectedSig) {
-        console.warn("IntaSend Webhook: signature mismatch")
-        return new Response(
-          JSON.stringify({ error: "Invalid webhook signature" }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        )
-      }
-    }
-
     const state = body.state || body.status || ""
     const apiRef = body.api_ref || body.invoice?.api_ref || body.invoice?.order_id || ""
     const invoiceId = body.invoice_id || body.invoice?.invoice_id || ""
     const amount = body.value || body.amount || body.invoice?.net_amount || 0
     const currency = body.currency || "KES"
 
-    console.log(`IntaSend Webhook received. State: ${state}, ApiRef: ${apiRef}, InvoiceId: ${invoiceId}`)
+    console.log(
+      `IntaSend Webhook received. State: ${state}, ApiRef: ${apiRef}, InvoiceId: ${invoiceId}`
+    )
 
-    const isSuccess = state === "COMPLETE" || state === "SUCCESS" || state === "COMPLETED"
+    const isSuccess =
+      state === "COMPLETE" || state === "SUCCESS" || state === "COMPLETED"
 
     if (!isSuccess) {
       console.log(`IntaSend Webhook: non-success state (${state}), no DB update`)
       return new Response(
         JSON.stringify({ received: true, action: "ignored", state }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...hdrs, "Content-Type": "application/json" } }
       )
     }
 
-    // Look up booking by api_ref or invoice_id
-    let bookingId = apiRef
-    if (!bookingId || bookingId.startsWith("ORD_") || bookingId.startsWith("BK_")) {
-      // api_ref may be the booking ID directly if it was passed as such
-      // Try to find by matching api_ref in booking table
-    }
+    // Look up booking by api_ref (which is the booking UUID)
+    const bookingId = apiRef
 
     if (supabase && bookingId) {
       const { data: booking, error: fetchErr } = await supabase
@@ -78,7 +97,9 @@ serve(async (req) => {
       }
 
       if (booking) {
-        const currentHistory = Array.isArray(booking.status_history) ? [...booking.status_history] : []
+        const currentHistory = Array.isArray(booking.status_history)
+          ? [...booking.status_history]
+          : []
         currentHistory.push({
           status: "confirmed",
           timestamp: new Date().toISOString(),
@@ -106,27 +127,33 @@ serve(async (req) => {
 
         // Notify host
         if (booking.host_id) {
-          await supabase.from("notifications").insert({
-            user_id: booking.host_id,
-            title: "Payment Received",
-            message: `Payment of ${currency} ${Number(amount).toLocaleString()} received for booking ${bookingId.slice(0, 8)}`,
-            type: "booking_confirmed",
-            data: { booking_id: bookingId, amount, invoice_id: invoiceId },
-            read: false,
-          }).catch(console.warn)
+          await supabase
+            .from("notifications")
+            .insert({
+              user_id: booking.host_id,
+              title: "Payment Received",
+              message: `Payment of ${currency} ${Number(amount).toLocaleString()} received for booking ${bookingId.slice(0, 8)}`,
+              type: "booking_confirmed",
+              data: { booking_id: bookingId, amount, invoice_id: invoiceId },
+              read: false,
+            })
+            .catch(console.warn)
         }
+      } else {
+        console.warn(`IntaSend Webhook: booking not found for api_ref="${bookingId}"`)
       }
     }
 
     return new Response(
       JSON.stringify({ received: true, action: "processed", state, api_ref: apiRef }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 200, headers: { ...hdrs, "Content-Type": "application/json" } }
     )
   } catch (err) {
     console.error("inta-pay-callback error:", err)
     return new Response(
       JSON.stringify({ received: true, error: err?.message || "Processing error" }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      // Still return 200 so IntaSend doesn't retry forever
+      { status: 200, headers: { ...corsHeaders(req), "Content-Type": "application/json" } }
     )
   }
 })

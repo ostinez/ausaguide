@@ -117,7 +117,13 @@ export function getTourFilterTags(tour: {
 }
 
 export function formatTourPrice(price: number, _currency?: string): string {
- return `$${price.toLocaleString()} USD`
+  if (typeof price !== "number" || isNaN(price)) return "KSh 0"
+  const formatted = new Intl.NumberFormat("en-KE", {
+    style: "currency",
+    currency: "KES",
+    maximumFractionDigits: 0,
+  }).format(price)
+  return formatted.replace(/^Ksh\s*/i, "KSh ")
 }
 
 export function getHostInitials(fullName: string): string {

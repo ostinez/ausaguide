@@ -123,7 +123,7 @@ export default function Admin2Tours() {
  <div className="text-xs text-gray-500">{tour.profiles?.email || ''}</div>
  </td>
  <td className="px-6 py-4 text-gray-300">
- {tour.price ? `$${tour.price.toLocaleString()} USD` : '$0 USD'}
+ {tour.price ? `KSh ${tour.price.toLocaleString()}` : 'KSh 0'}
  </td>
  <td className="px-6 py-4">
  <span className={`px-2 py-1 rounded-full text-xs font-medium ${

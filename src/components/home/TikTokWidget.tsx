@@ -1,19 +1,24 @@
-import { useEffect } from "react"
 import { Music } from "lucide-react"
 
-export function TikTokWidget() {
-  useEffect(() => {
-    // Load TikTok embed script if not already loaded
-    if (!document.querySelector('script[src="https://www.tiktok.com/embed.js"]')) {
-      const script = document.createElement("script")
-      script.src = "https://www.tiktok.com/embed.js"
-      script.async = true
-      document.body.appendChild(script)
-    } else if ((window as any).tiktokEmbed?.load) {
-      (window as any).tiktokEmbed.load()
-    }
-  }, [])
+const TikTokLogo = () => (
+  <svg viewBox="0 0 48 48" fill="none" className="size-10" aria-hidden="true">
+    <rect width="48" height="48" rx="12" fill="#010101" />
+    <path
+      d="M34.1 19.8a10.6 10.6 0 0 1-6.2-2V28a8.4 8.4 0 1 1-8.4-8.4c.3 0 .5 0 .8.02v4.17c-.27-.04-.54-.06-.8-.06a4.27 4.27 0 1 0 4.27 4.27V10h4.1a6.5 6.5 0 0 0 6.2 5.67v4.13Z"
+      fill="white"
+    />
+    <path
+      d="M34.1 15.67a10.6 10.6 0 0 1-6.2-2V22a8.4 8.4 0 1 1-8.4-8.4c.3 0 .5 0 .8.02v4.17c-.27-.04-.54-.06-.8-.06a4.27 4.27 0 1 0 4.27 4.27V10h4.1a6.5 6.5 0 0 0 6.2 5.67h.03Z"
+      fill="#69C9D0"
+    />
+    <path
+      d="M27.9 21.4V28a8.4 8.4 0 1 1-8.4-8.4c.3 0 .5 0 .8.02v4.17c-.27-.04-.54-.06-.8-.06a4.27 4.27 0 1 0 4.27 4.27V13.8a6.5 6.5 0 0 0 6.2 5.67v4.13a10.62 10.62 0 0 1-6.2-2.2h.13Z"
+      fill="#EE1D52"
+    />
+  </svg>
+)
 
+export function TikTokWidget() {
   return (
     <section className="py-14 sm:py-16 px-4 bg-card/40 border-t border-border/40 overflow-hidden relative">
       {/* Subtle ambient glow */}
@@ -27,45 +32,23 @@ export function TikTokWidget() {
           Follow us for real travel stories, scam warnings, and Kenya insights.
         </p>
 
-        {/* TikTok Profile Embed */}
-        <div className="flex justify-center w-full">
-          <div className="w-full max-w-[605px] min-w-[280px]">
-            <blockquote
-              className="tiktok-embed"
-              cite="https://www.tiktok.com/@ausaguide"
-              data-unique-id="ausaguide"
-              data-type="profile"
-              style={{
-                maxWidth: "605px",
-                minWidth: "280px",
-                width: "100%",
-                margin: "0 auto",
-              }}
-            >
-              <section>
-                <a
-                  target="_blank"
-                  href="https://www.tiktok.com/@ausaguide"
-                  rel="noopener noreferrer"
-                  className="text-primary font-bold hover:underline"
-                >
-                  @ausaguide
-                </a>
-              </section>
-            </blockquote>
-          </div>
-        </div>
-
-        {/* Follow Button */}
-        <div className="mt-7">
+        {/* TikTok CTA Card */}
+        <div className="flex justify-center w-full mb-8">
           <a
             href="https://www.tiktok.com/@ausaguide"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-black hover:bg-neutral-900 text-white rounded-xl font-bold text-sm sm:text-base transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] border border-white/20 min-h-[44px]"
+            className="group flex flex-col items-center gap-4 w-full max-w-sm bg-black/80 hover:bg-black border border-white/10 hover:border-white/25 rounded-2xl px-8 py-8 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-[0.99]"
           >
-            <Music className="size-4" />
-            <span>Follow @ausaguide on TikTok</span>
+            <TikTokLogo />
+            <div className="text-center">
+              <p className="text-white font-bold text-xl tracking-tight">@ausaguide</p>
+              <p className="text-white/60 text-sm mt-1">Real travel. Real Kenya. No fluff.</p>
+            </div>
+            <div className="flex items-center gap-2 bg-[#EE1D52] hover:bg-[#d41848] text-white text-sm font-bold px-6 py-2.5 rounded-full transition-colors">
+              <Music className="size-4" />
+              Follow on TikTok
+            </div>
           </a>
         </div>
       </div>
