@@ -203,7 +203,10 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
  .select("*")
  .single()
 
- if (error) throw error
+  if (error) {
+    console.error(? Booking creation failed! Supabase Error:, error);
+    throw error;
+  }
 
  // 6. Create alert notification for host
  try {
@@ -448,7 +451,10 @@ export async function updateBookingStatus(
     `)
     .single()
 
-  if (error) throw error
+  if (error) {
+    console.error("❌ Booking creation failed! Supabase Error:", error)
+    throw error
+  }
 
   try {
     const booking = mapBooking(data as BookingRow & { tour?: (TourRow & { host?: ProfileRow | null }) | null })

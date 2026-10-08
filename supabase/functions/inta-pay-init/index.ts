@@ -1,14 +1,17 @@
 // @ts-nocheck
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
 
-const ALLOWED_ORIGIN = Deno.env.get("SITE_URL") || "https://ausaguide.com"
+const ALLOWED_ORIGINS = [
+  "https://ausaguide.com",
+  "https://www.ausaguide.com",
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "http://localhost:4173",
+]
 
 function corsHeaders(req: Request) {
   const origin = req.headers.get("origin") || ""
-  const allowed =
-    origin === "http://localhost:5173" || origin === "http://localhost:3000"
-      ? origin
-      : ALLOWED_ORIGIN
+  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : "https://www.ausaguide.com"
   return {
     "Access-Control-Allow-Origin": allowed,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -79,7 +82,7 @@ serve(async (req) => {
     const secretKey = secKeyRaw || secKeyAlt1 || secKeyAlt2 || ""
 
     const walletId = Deno.env.get("INTASEND_WALLET_ID") || ""
-    const siteUrl = Deno.env.get("SITE_URL") || "https://ausaguide.com"
+    const siteUrl = Deno.env.get("SITE_URL") || "https://www.ausaguide.com"
 
     console.log(`${reqId} ▶ Env vars check:`, {
       INTASEND_PUBLISHABLE_KEY: pubKeyRaw ? `${pubKeyRaw.slice(0, 18)}...` : "❌ NOT SET",

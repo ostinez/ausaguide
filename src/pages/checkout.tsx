@@ -241,60 +241,74 @@ export default function CheckoutPage() {
       let paymentUrl: string | null = null
       let detailedError: string | null = null
 
-      // 2a. Call IntaSend via Supabase Edge Function
+      // Build the payload once — log it so we can verify all values in the browser console
+      const intaPayload = {
+        amount: Number(total),
+        currency: tour!.currency || "KES",
+        email: email.trim().toLowerCase(),
+        phone: normalizedPhone,
+        first_name: firstName,
+        last_name: lastName,
+        api_ref: bookingId,
+        booking_id: bookingId,
+        bookingId: bookingId,
+        booking_type: typeParam,
+      }
+
+      console.log("[Checkout] Payment payload (pre-send):", {
+        ...intaPayload,
+        phone: normalizedPhone ? `${normalizedPhone.slice(0, 5)}****` : "(empty!)",
+        email: email ? `${email.slice(0, 4)}****` : "(empty!)",
+      })
+
+      // 2a. Call IntaSend via Supabase Edge Function (explicit fetch to avoid invoke body-serialization bug)
       try {
-        const { data, error: fnError } = await supabase.functions.invoke("inta-pay-init", {
-          body: {
-            amount: total,
-            currency: tour!.currency || "KES",
-            email: email.trim().toLowerCase(),
-            phone: normalizedPhone,
-            first_name: firstName,
-            last_name: lastName,
-            api_ref: bookingId,
-            booking_id: bookingId,
-            bookingId: bookingId,
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ""
+        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ""
+        const { data: { session } } = await supabase.auth.getSession()
+        const authToken = session?.access_token || supabaseAnonKey
+
+        const fnRes = await fetch(`${supabaseUrl}/functions/v1/inta-pay-init`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${authToken}`,
+            "apikey": supabaseAnonKey,
           },
+          body: JSON.stringify(intaPayload),
         })
 
-        if (fnError) {
-          try {
-            if ((fnError as any).context && typeof (fnError as any).context.json === "function") {
-              const errBody = await (fnError as any).context.json()
-              detailedError =
-                errBody?.error ||
-                errBody?.message ||
-                (Array.isArray(errBody?.errors) ? errBody.errors[0]?.detail : null)
-            }
-          } catch (_) {}
-          if (!detailedError) detailedError = fnError.message
-        } else if (data?.checkout_url || data?.url) {
-          paymentUrl = data.checkout_url || data.url
-        } else if (data?.error) {
-          detailedError = data.error
+        const fnData = await fnRes.json().catch(() => null)
+        console.log("[Checkout] Edge Function response:", fnRes.status, fnData)
+
+        if (fnRes.ok && (fnData?.checkout_url || fnData?.url)) {
+          paymentUrl = fnData.checkout_url || fnData.url
+        } else {
+          detailedError =
+            fnData?.error ||
+            fnData?.message ||
+            `Edge Function returned HTTP ${fnRes.status}`
         }
       } catch (e: any) {
-        detailedError = e?.message || null
+        console.error("[Checkout] Edge Function call failed:", e)
+        detailedError = e?.message || "Edge Function unreachable"
       }
 
       // 2b. Fallback: If Edge Function failed, try Vercel serverless /api/create-checkout
       if (!paymentUrl) {
+        console.warn("[Checkout] Edge Function failed, trying Vercel fallback. Reason:", detailedError)
         try {
+          const { data: { session } } = await supabase.auth.getSession()
           const res = await fetch("/api/create-checkout", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              amount: total,
-              currency: tour!.currency || "KES",
-              email: email.trim().toLowerCase(),
-              phone: normalizedPhone,
-              first_name: firstName,
-              last_name: lastName,
-              api_ref: bookingId,
-              booking_id: bookingId,
-            }),
+            headers: {
+              "Content-Type": "application/json",
+              ...(session?.access_token ? { "Authorization": `Bearer ${session.access_token}` } : {}),
+            },
+            body: JSON.stringify(intaPayload),
           })
           const vercelData = await res.json().catch(() => null)
+          console.log("[Checkout] Vercel fallback response:", res.status, vercelData)
           if (res.ok && (vercelData?.checkout_url || vercelData?.url)) {
             paymentUrl = vercelData.checkout_url || vercelData.url
           } else if (vercelData?.error) {

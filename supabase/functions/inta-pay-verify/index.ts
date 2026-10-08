@@ -2,11 +2,17 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
-const ALLOWED_ORIGIN = Deno.env.get("SITE_URL") || "https://ausaguide.com"
+const ALLOWED_ORIGINS = [
+  "https://ausaguide.com",
+  "https://www.ausaguide.com",
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "http://localhost:4173",
+]
 
 function corsHeaders(req: Request) {
   const origin = req.headers.get("origin") || ""
-  const allowed = origin === "http://localhost:5173" ? origin : ALLOWED_ORIGIN
+  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : "https://www.ausaguide.com"
   return {
     "Access-Control-Allow-Origin": allowed,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -109,7 +115,7 @@ serve(async (req) => {
     console.error("inta-pay-verify error:", err)
     return new Response(
       JSON.stringify({ error: err?.message || "Internal server error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...corsHeaders(req), "Content-Type": "application/json" } }
     )
   }
 })
