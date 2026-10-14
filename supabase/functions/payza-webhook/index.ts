@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import * as crypto from 'https://deno.land/std@0.170.0/crypto/mod.ts'
+
+// Note: crypto.subtle is available as a Deno built-in global — no import needed
 
 serve(async (req) => {
   try {

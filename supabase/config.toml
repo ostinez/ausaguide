@@ -9,3 +9,9 @@ verify_jwt = false
 
 [functions.inta-pay-host]
 verify_jwt = false
+
+[functions.payza-pay-init]
+verify_jwt = false
+
+[functions.payza-webhook]
+verify_jwt = false
