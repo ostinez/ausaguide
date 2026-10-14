@@ -55,7 +55,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-    console.log("[Payout Cron] Looking for bookings updated before:", twentyFourHoursAgo)
+    console.log("[Payout Cron] Looking for bookings with paid_at before:", twentyFourHoursAgo)
 
     // ── STEP 1: Query eligible bookings ────────────────────────────────────
     const { data: eligibleBookings, error: queryError } = await supabase
@@ -67,6 +67,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         total_price,
         payment_amount,
         currency,
+        paid_at,
         updated_at,
         created_at,
         host_id,
@@ -80,8 +81,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       `)
       .eq("status", "completed")
       .eq("payment_status", "paid")
-      .or("host_paid.is.null,host_paid.eq.false")
-      .lte("updated_at", twentyFourHoursAgo)
+      .eq("host_paid", false)
+      .lt("paid_at", twentyFourHoursAgo)
       .limit(50)
 
     if (queryError) {
