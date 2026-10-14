@@ -11,7 +11,9 @@ serve(async (req) => {
   }
 
   try {
-    const { amount, currency, reference, customer, callback_url } = await req.json()
+    const { amount, currency, reference, customer, callback_url, metadata, booking_id } = await req.json()
+
+    const bookingId = metadata?.booking_id || booking_id || reference
 
     const payzaResponse = await fetch('https://payzaapi.co.ke/api/v1/pay', {
       method: 'POST',
@@ -26,6 +28,10 @@ serve(async (req) => {
         reference,
         customer,
         callback_url,
+        metadata: {
+          ...(metadata || {}),
+          booking_id: bookingId,
+        },
       }),
     })
 

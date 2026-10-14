@@ -252,6 +252,9 @@ export default function CheckoutPage() {
           name: `${firstName} ${lastName}`.trim(),
           phone: normalizedPhone,
         },
+        metadata: {
+          booking_id: bookingId,
+        },
         callback_url: "https://sdbvvcjnlergsmcsorrv.functions.supabase.co/payza-webhook",
       }
 

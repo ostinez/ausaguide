@@ -34,21 +34,34 @@ serve(async (req) => {
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
       )
 
+      const booking_id = event.metadata?.booking_id || event.data?.metadata?.booking_id
+
+      if (!booking_id) {
+        console.error('Missing booking_id in webhook metadata:', event)
+        return new Response('Missing booking_id in metadata', { status: 400 })
+      }
+
+      const updateData: Record<string, any> = { 
+        payment_status: 'paid', 
+        payment_reference: event.reference,
+        paid_at: new Date().toISOString()
+      }
+
+      if (event.currency) {
+        updateData.currency = event.currency
+      }
+
       const { error } = await supabaseClient
         .from('bookings')
-        .update({ 
-            payment_status: 'paid', 
-            payment_reference: event.reference,
-            paid_at: new Date().toISOString()
-        })
-        .eq('payment_reference', event.reference)
+        .update(updateData)
+        .eq('id', booking_id)
 
       if (error) {
         console.error('Error updating booking:', error)
         return new Response('Database update failed', { status: 500 })
       }
 
-      console.log(`Booking ${event.reference} marked as paid.`)
+      console.log(`Booking ${booking_id} marked as paid with reference ${event.reference}.`)
     }
 
     return new Response('OK', { status: 200 })
