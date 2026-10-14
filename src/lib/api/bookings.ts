@@ -191,7 +191,7 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
  booking_date: input.booking_date,
  guest_count: input.guest_count,
  total_price: input.total_price,
- currency: input.currency || "KES",
+ currency: input.currency && input.currency.toUpperCase() !== "USD" ? input.currency : "KES",
  status: "pending",
  guest_name: input.guest_name,
  guest_email: input.guest_email,
@@ -248,7 +248,7 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
  bookingTime: input.booking_time,
  guestCount: input.guest_count,
  amount: input.total_price,
- currency: input.currency || "KES",
+ currency: input.currency && input.currency.toUpperCase() !== "USD" ? input.currency : "KES",
  }
  ).catch(err => console.warn("Failed to inject booking_request system message into chat:", err))
  }

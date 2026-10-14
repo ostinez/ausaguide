@@ -201,6 +201,10 @@ export default function CheckoutPage() {
     try {
       let bookingId = createdBookingId
 
+      // Ensure currency defaults to KES for Kenya payments
+      const bookingCurrency =
+        tour?.currency && tour.currency.toUpperCase() !== "USD" ? tour.currency : "KES"
+
       // 1. Create booking in Supabase if not created yet
       if (!bookingId) {
         const userAuth = await supabase.auth.getUser()
@@ -217,7 +221,7 @@ export default function CheckoutPage() {
           notes: notes.trim() ? sanitizeText(notes) : undefined,
           guest_id: userAuth.data.user?.id || localStorage.getItem("user_id") || undefined,
           booking_type: typeParam,
-          currency: tour!.currency || "KES",
+          currency: bookingCurrency,
         })
         bookingId = booking.id
         setCreatedBookingId(booking.id)
@@ -245,7 +249,7 @@ export default function CheckoutPage() {
       const reference = bookingId || `ORDER_${Date.now()}`
       const payzaPayload = {
         amount: Number(total),
-        currency: tour!.currency || "KES",
+        currency: bookingCurrency,
         reference,
         customer: {
           email: email.trim().toLowerCase(),

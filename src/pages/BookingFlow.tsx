@@ -81,7 +81,7 @@ export default function BookingFlow() {
  guest_phone: phone.trim(),
  guest_id: localStorage.getItem("user_id") || undefined,
  booking_type: typeParam,
- currency: tour!.currency,
+ currency: tour?.currency && tour.currency.toUpperCase() !== "USD" ? tour.currency : "KES",
  })
 
  setCreatedBookingId(booking.id)

@@ -58,13 +58,19 @@ serve(async (req) => {
     const cleanPhone = account_number.replace(/\s+/g, "").replace(/^\+/, "")
     const trackingId = `PAYOUT_${Date.now()}_${Math.random().toString(36).substring(2, 7).toUpperCase()}`
 
+    const total = Number(amount)
+    const payoutAmount = Math.round(total * 0.80)
+    const platformFee = total - payoutAmount
+
+    console.log(`[Payout] Booking ${booking_id}: Total ${total}, Host 80% = ${payoutAmount}, Platform 20% = ${platformFee}`)
+
     const payoutPayload = {
       currency,
       transactions: [
         {
           name: account_name,
           account: cleanPhone,
-          amount: Number(amount),
+          amount: payoutAmount,
         },
       ],
       callback_url: `${Deno.env.get("SITE_URL") || "https://www.ausaguide.com"}/api/intasend-payout-callback`,
@@ -100,7 +106,7 @@ serve(async (req) => {
         .from("bookings")
         .update({
           host_paid: true,
-          host_payout_amount: Number(amount),
+          host_payout_amount: payoutAmount,
           host_payout_id: payoutTxnId,
           host_payout_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -112,9 +118,9 @@ serve(async (req) => {
         await supabase.from("notifications").insert({
           user_id: host_id,
           title: "Payout Dispatched via M-PESA",
-          message: `Your host payout of ${currency} ${Number(amount).toLocaleString()} has been sent to ${account_name} (${cleanPhone}).`,
+          message: `Your host payout of ${currency} ${Number(payoutAmount).toLocaleString()} has been sent to ${account_name} (${cleanPhone}).`,
           type: "payout_sent",
-          data: { booking_id, amount, payout_id: trackingId },
+          data: { booking_id, amount: payoutAmount, payout_id: trackingId },
           read: false,
         }).catch(console.warn)
       }
@@ -125,7 +131,7 @@ serve(async (req) => {
         success: true,
         message: response.ok ? "Host payout processed successfully via IntaSend" : "Payout initiated",
         tracking_id: data?.tracking_id || trackingId,
-        payout_details: { amount, currency, method: "mpesa", recipient: account_name, account: cleanPhone },
+        payout_details: { amount: payoutAmount, currency, method: "mpesa", recipient: account_name, account: cleanPhone },
         upstream_response: data,
       }),
       { status: 200, headers: { ...hdrs, "Content-Type": "application/json" } }

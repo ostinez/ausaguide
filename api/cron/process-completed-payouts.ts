@@ -24,7 +24,7 @@ const CRON_SECRET = process.env.CRON_SECRET || ""
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || ""
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ""
 
-const HOST_COMMISSION_RATE = 0.85 // Host receives 85%, platform retains 15%
+const HOST_COMMISSION_RATE = 0.80 // Host receives 80%, platform retains 20%
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // ── AUTH GUARD: require CRON_SECRET bearer token ──────────────────────
@@ -103,7 +103,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const totalAmount = Number(booking.payment_amount || booking.total_price || 0)
       const hostShare = Math.round(totalAmount * HOST_COMMISSION_RATE)
+      const platformFee = totalAmount - hostShare
       const cleanPhone = hostPhone.replace(/\s+/g, "").replace(/^\+/, "")
+
+      console.log(`[Payout] Booking ${booking.id}: Total ${totalAmount}, Host 80% = ${hostShare}, Platform 20% = ${platformFee}`)
 
       const payoutBody = {
         currency: booking.currency || "KES",
