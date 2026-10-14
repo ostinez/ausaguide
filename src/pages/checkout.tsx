@@ -241,24 +241,27 @@ export default function CheckoutPage() {
       let paymentUrl: string | null = null
       let detailedError: string | null = null
 
-      // Build the payload once — log it so we can verify all values in the browser console
-      const intaPayload = {
+      // Build Payza-compatible payload
+      const reference = bookingId || `ORDER_${Date.now()}`
+      const payzaPayload = {
         amount: Number(total),
         currency: tour!.currency || "KES",
-        email: email.trim().toLowerCase(),
-        phone: normalizedPhone,
-        first_name: firstName,
-        last_name: lastName,
-        api_ref: bookingId,
-        booking_id: bookingId,
-        bookingId: bookingId,
-        booking_type: typeParam,
+        reference,
+        customer: {
+          email: email.trim().toLowerCase(),
+          name: `${firstName} ${lastName}`.trim(),
+          phone: normalizedPhone,
+        },
+        callback_url: "https://sdbvvcjnlergsmcsorrv.functions.supabase.co/payza-webhook",
       }
 
-      console.log("[Checkout] Payment payload (pre-send):", {
-        ...intaPayload,
-        phone: normalizedPhone ? `${normalizedPhone.slice(0, 5)}****` : "(empty!)",
-        email: email ? `${email.slice(0, 4)}****` : "(empty!)",
+      console.log("[Checkout] Payza payment payload (pre-send):", {
+        ...payzaPayload,
+        customer: {
+          ...payzaPayload.customer,
+          phone: normalizedPhone ? `${normalizedPhone.slice(0, 5)}****` : "(empty!)",
+          email: email ? `${email.slice(0, 4)}****` : "(empty!)",
+        },
       })
 
       // Resolve active Supabase session token (if one exists and is valid)
@@ -283,7 +286,7 @@ export default function CheckoutPage() {
         console.warn("[Checkout] Failed to retrieve session, proceeding as guest:", authErr)
       }
 
-      // 2a. Call IntaSend via Supabase Edge Function (explicit fetch to avoid invoke body-serialization bug)
+      // Call Payza via Supabase Edge Function payza-pay-init
       try {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ""
         const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ""
@@ -294,67 +297,38 @@ export default function CheckoutPage() {
         if (supabaseAnonKey) {
           edgeHeaders["apikey"] = supabaseAnonKey
         }
-        // When there is NO session, the Authorization header is NOT included (skipped).
-        // Only attach Authorization if a valid session token exists.
+        // Only attach Authorization if a valid session token exists — never send "Bearer undefined"
         if (validAccessToken && validAccessToken !== "undefined" && validAccessToken !== "null") {
           edgeHeaders["Authorization"] = `Bearer ${validAccessToken}`
         }
 
-        const fnRes = await fetch(`${supabaseUrl}/functions/v1/inta-pay-init`, {
+        const fnRes = await fetch(`${supabaseUrl}/functions/v1/payza-pay-init`, {
           method: "POST",
           headers: edgeHeaders,
-          body: JSON.stringify(intaPayload),
+          body: JSON.stringify(payzaPayload),
         })
 
         const fnData = await fnRes.json().catch(() => null)
-        console.log("[Checkout] Edge Function response:", fnRes.status, fnData)
+        console.log("[Checkout] Payza Edge Function response:", fnRes.status, fnData)
 
-        if (fnRes.ok && (fnData?.checkout_url || fnData?.url)) {
-          paymentUrl = fnData.checkout_url || fnData.url
+        if (fnRes.ok && fnData?.payment_url) {
+          paymentUrl = fnData.payment_url
         } else {
           detailedError =
             fnData?.error ||
             fnData?.message ||
-            `Edge Function returned HTTP ${fnRes.status}`
+            `payza-pay-init returned HTTP ${fnRes.status}`
         }
       } catch (e: any) {
-        console.error("[Checkout] Edge Function call failed:", e)
+        console.error("[Checkout] Payza Edge Function call failed:", e)
         detailedError = e?.message || "Edge Function unreachable"
       }
 
-      // 2b. Fallback: If Edge Function failed, try Vercel serverless /api/create-checkout
       if (!paymentUrl) {
-        console.warn("[Checkout] Edge Function failed, trying Vercel fallback. Reason:", detailedError)
-        try {
-          const vercelHeaders: Record<string, string> = {
-            "Content-Type": "application/json",
-          }
-          // Only send Authorization header if we have a verified, non-empty, non-undefined token
-          // Ensures we NEVER send "Authorization: Bearer undefined" for guest checkouts
-          if (validAccessToken && validAccessToken !== "undefined" && validAccessToken !== "null") {
-            vercelHeaders["Authorization"] = `Bearer ${validAccessToken}`
-          }
-
-          const res = await fetch("/api/create-checkout", {
-            method: "POST",
-            headers: vercelHeaders,
-            body: JSON.stringify(intaPayload),
-          })
-          const vercelData = await res.json().catch(() => null)
-          console.log("[Checkout] Vercel fallback response:", res.status, vercelData)
-          if (res.ok && (vercelData?.checkout_url || vercelData?.url)) {
-            paymentUrl = vercelData.checkout_url || vercelData.url
-          } else if (vercelData?.error) {
-            detailedError = vercelData.error
-          }
-        } catch (_) {}
+        throw new Error(detailedError || "Payment URL was not returned by Payza.")
       }
 
-      if (!paymentUrl) {
-        throw new Error(detailedError || "Payment checkout URL was not returned by the payment gateway.")
-      }
-
-      // 3. Redirect to IntaSend checkout page
+      // Redirect user to Payza checkout page
       window.location.href = paymentUrl
     } catch (err: unknown) {
       console.error("[Checkout] Payment initiation failed:", err)

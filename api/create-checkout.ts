@@ -119,15 +119,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       process.env.VITE_INTASEND_PUBLIC_KEY ||
       ""
 
-    const secretKey =
+    const secretKey = (
+      process.env.INTASEND_SECRET_KEY_V2 ||
       process.env.INTASEND_SECRET_KEY ||
       process.env.INTASEND_API_TOKEN ||
       process.env.INTASEND_PRIVATE_KEY ||
       ""
+    ).trim()
 
     if (!publishableKey || !secretKey) {
       console.error("[api/create-checkout] IntaSend keys not set in Vercel environment variables!")
       console.error("  INTASEND_PUBLISHABLE_KEY present:", !!process.env.INTASEND_PUBLISHABLE_KEY)
+      console.error("  INTASEND_SECRET_KEY_V2 present:", !!process.env.INTASEND_SECRET_KEY_V2)
       console.error("  INTASEND_SECRET_KEY present:", !!process.env.INTASEND_SECRET_KEY)
       return res.status(500).json({
         error: "Payment gateway is not configured. INTASEND_PUBLISHABLE_KEY and INTASEND_SECRET_KEY must be set as Vercel Environment Variables.",
@@ -158,22 +161,49 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ? "https://payment.intasend.com/api/v1"
       : "https://sandbox.intasend.com/api/v1"
 
-    console.log("[api/create-checkout] Calling IntaSend:", {
-      url: `${baseUrl}/checkout/`,
-      mode: isLive ? "LIVE" : "SANDBOX",
-      resolvedBookingId,
-    })
+    const targetUrl = `${baseUrl}/checkout/`
 
-    const response = await fetch(`${baseUrl}/checkout/`, {
+    console.log("[api/create-checkout] Publishable key prefix:", publishableKey ? publishableKey.substring(0, 20) : "(none)")
+    console.log("[api/create-checkout] Secret key prefix:", secretKey ? secretKey.substring(0, 20) : "(none)")
+    console.log("[api/create-checkout] Publishable key length:", publishableKey.length)
+    console.log("[api/create-checkout] Secret key length:", secretKey.length)
+
+    const actualHeaders = {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${secretKey.trim()}`,
+    }
+
+    const maskedHeaders = {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${secretKey.substring(0, 8)}...[masked] (length: ${secretKey.length})`,
+    }
+
+    console.log("[api/create-checkout] Calling IntaSend URL:", targetUrl)
+    console.log("[api/create-checkout] Request headers being sent:", JSON.stringify(maskedHeaders, null, 2))
+
+    const response = await fetch(targetUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${secretKey}`,
-      },
+      headers: actualHeaders,
       body: JSON.stringify(payload),
     })
 
-    const data: any = await response.json().catch(() => null)
+    const rawResponseText = await response.text()
+
+    if (response.status === 401) {
+      console.error("[api/create-checkout] ❌ IntaSend 401 Unauthorized! FULL response body:")
+      console.error(rawResponseText)
+      console.error("[api/create-checkout] IntaSend response statusText:", response.statusText)
+      console.error("[api/create-checkout] IntaSend response headers:", JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2))
+    } else {
+      console.log("[api/create-checkout] IntaSend response status:", response.status, rawResponseText)
+    }
+
+    let data: any = null
+    try {
+      data = JSON.parse(rawResponseText)
+    } catch (_) {
+      console.error("[api/create-checkout] IntaSend returned non-JSON. Raw:", rawResponseText)
+    }
 
     if (!response.ok) {
       const isGatewayAuthError = response.status === 401 || response.status === 403
@@ -191,7 +221,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Never return 401 for upstream gateway credential errors — map to 502 so client does not treat it as a session expiry
       return res.status(response.status >= 500 || isGatewayAuthError ? 502 : response.status).json({
         error: errorMsg,
+        raw_response: rawResponseText,
         details: data,
+        status: response.status,
+        target_url: targetUrl,
+        pub_key_prefix: publishableKey ? publishableKey.substring(0, 20) : null,
+        sec_key_prefix: secretKey ? secretKey.substring(0, 20) : null,
       })
     }
 

@@ -116,25 +116,30 @@ serve(async (req) => {
     // ── 3. Read API keys — log which env var name was found ───────────────────
     const pubKeyRaw = Deno.env.get("INTASEND_PUBLISHABLE_KEY")
     const pubKeyAlt = Deno.env.get("INTASEND_PUBLIC_KEY")
-    const publishableKey = pubKeyRaw || pubKeyAlt || ""
+    const publishableKey = (pubKeyRaw || pubKeyAlt || "").trim()
 
-    const secKeyRaw = Deno.env.get("INTASEND_SECRET_KEY")
+    const secKeyV2 = Deno.env.get("INTASEND_SECRET_KEY_V2")
+    const secKeyV1 = Deno.env.get("INTASEND_SECRET_KEY")
     const secKeyAlt1 = Deno.env.get("INTASEND_API_TOKEN")
     const secKeyAlt2 = Deno.env.get("INTASEND_PRIVATE_KEY")
-    const secretKey = secKeyRaw || secKeyAlt1 || secKeyAlt2 || ""
 
-    const walletId = Deno.env.get("INTASEND_WALLET_ID") || ""
+    console.log("Using secret from:", Deno.env.get("INTASEND_SECRET_KEY_V2") ? "V2" : "V1");
+
+    const secretKey = (secKeyV2 || secKeyV1 || secKeyAlt1 || secKeyAlt2 || "").trim()
+
+    const walletId = (Deno.env.get("INTASEND_WALLET_ID") || "").trim()
     const siteUrl = Deno.env.get("SITE_URL") || "https://www.ausaguide.com"
 
     console.log(`${reqId} ▶ Env vars check:`, {
-      INTASEND_PUBLISHABLE_KEY: pubKeyRaw ? `${pubKeyRaw.slice(0, 18)}...` : "❌ NOT SET",
-      INTASEND_PUBLIC_KEY: pubKeyAlt ? `${pubKeyAlt.slice(0, 18)}...` : "not set",
-      INTASEND_SECRET_KEY: secKeyRaw ? `${secKeyRaw.slice(0, 18)}...` : "❌ NOT SET",
-      INTASEND_API_TOKEN: secKeyAlt1 ? `${secKeyAlt1.slice(0, 18)}...` : "not set",
+      INTASEND_PUBLISHABLE_KEY: pubKeyRaw ? `${pubKeyRaw.slice(0, 20)}... (length: ${pubKeyRaw.length})` : "❌ NOT SET",
+      INTASEND_PUBLIC_KEY: pubKeyAlt ? `${pubKeyAlt.slice(0, 20)}... (length: ${pubKeyAlt.length})` : "not set",
+      INTASEND_SECRET_KEY_V2: secKeyV2 ? `${secKeyV2.slice(0, 20)}... (length: ${secKeyV2.length})` : "not set",
+      INTASEND_SECRET_KEY: secKeyV1 ? `${secKeyV1.slice(0, 20)}... (length: ${secKeyV1.length})` : "❌ NOT SET",
+      INTASEND_API_TOKEN: secKeyAlt1 ? `${secKeyAlt1.slice(0, 20)}... (length: ${secKeyAlt1.length})` : "not set",
       INTASEND_WALLET_ID: walletId || "not set",
       SITE_URL: siteUrl,
       publishableKeySource: pubKeyRaw ? "INTASEND_PUBLISHABLE_KEY" : pubKeyAlt ? "INTASEND_PUBLIC_KEY" : "❌ NONE",
-      secretKeySource: secKeyRaw ? "INTASEND_SECRET_KEY" : secKeyAlt1 ? "INTASEND_API_TOKEN" : secKeyAlt2 ? "INTASEND_PRIVATE_KEY" : "❌ NONE",
+      secretKeySource: secKeyV2 ? "INTASEND_SECRET_KEY_V2" : secKeyV1 ? "INTASEND_SECRET_KEY" : secKeyAlt1 ? "INTASEND_API_TOKEN" : secKeyAlt2 ? "INTASEND_PRIVATE_KEY" : "❌ NONE",
     })
 
     if (!publishableKey || !secretKey) {
@@ -190,25 +195,37 @@ serve(async (req) => {
 
     const targetUrl = `${intasendBaseUrl}/checkout/`
 
-    console.log(`${reqId} ▶ Sending to IntaSend:`, {
-      url: targetUrl,
-      mode: isLive ? "LIVE" : "SANDBOX",
-      payload: {
-        ...intasendPayload,
-        public_key: `${publishableKey.slice(0, 18)}...`,
-      },
-    })
+    // Log key prefixes and details right before request
+    console.log("Publishable key prefix:", publishableKey ? publishableKey.substring(0, 20) : "(not set)")
+    console.log("Secret key prefix:", secretKey ? secretKey.substring(0, 20) : "(not set)")
+    console.log("Publishable key length:", publishableKey.length)
+    console.log("Secret key length:", secretKey.length)
+
+    const actualHeaders = {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${secretKey}`,
+      "Accept": "application/json",
+    }
+
+    const loggedHeaders = {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${secretKey.substring(0, 8)}...[masked] (length: ${secretKey.length})`,
+      "Accept": "application/json",
+    }
+
+    console.log("Calling IntaSend URL:", targetUrl)
+    console.log("Exact request headers being sent:", JSON.stringify(loggedHeaders, null, 2))
+    console.log(`${reqId} ▶ Sending payload:`, JSON.stringify({
+      ...intasendPayload,
+      public_key: `${publishableKey.substring(0, 20)}... (length: ${publishableKey.length})`,
+    }, null, 2))
 
     // ── 6. Call IntaSend API ──────────────────────────────────────────────────
     let response: Response
     try {
       response = await fetch(targetUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${secretKey}`,
-          "Accept": "application/json",
-        },
+        headers: actualHeaders,
         body: JSON.stringify(intasendPayload),
       })
     } catch (fetchErr) {
@@ -221,7 +238,15 @@ serve(async (req) => {
 
     // ── 7. Parse IntaSend response ────────────────────────────────────────────
     const rawResponseText = await response.text()
-    console.log(`${reqId} ▶ IntaSend response: status=${response.status} body=${rawResponseText}`)
+
+    if (response.status === 401) {
+      console.error("❌ IntaSend 401 Unauthorized! FULL response body:")
+      console.error(rawResponseText)
+      console.error("IntaSend response statusText:", response.statusText)
+      console.error("IntaSend response headers:", JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2))
+    } else {
+      console.log(`${reqId} ▶ IntaSend response: status=${response.status} body=${rawResponseText}`)
+    }
 
     let data: any = null
     try {
@@ -245,7 +270,16 @@ serve(async (req) => {
       console.error(`${reqId} ✗ IntaSend error (HTTP ${response.status}):`, errorMsg, "full_data:", data)
       // Never return 401 for upstream payment gateway credential errors — map to 502 so client does not treat it as a session expiry
       return new Response(
-        JSON.stringify({ error: errorMsg, details: data, status: response.status }),
+        JSON.stringify({
+          error: errorMsg,
+          raw_response: rawResponseText,
+          details: data,
+          status: response.status,
+          target_url: targetUrl,
+          pub_key_prefix: publishableKey ? publishableKey.substring(0, 20) : null,
+          sec_key_prefix: secretKey ? secretKey.substring(0, 20) : null,
+          sec_key_length: secretKey ? secretKey.length : 0,
+        }),
         { status: response.status >= 500 || isGatewayAuthError ? 502 : response.status, headers: { ...hdrs, "Content-Type": "application/json" } }
       )
     }
