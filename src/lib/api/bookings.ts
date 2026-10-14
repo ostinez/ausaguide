@@ -204,7 +204,7 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
  .single()
 
   if (error) {
-    console.error(? Booking creation failed! Supabase Error:, error);
+    console.error("❌ Booking creation failed! Supabase Error:", error);
     throw error;
   }
 
