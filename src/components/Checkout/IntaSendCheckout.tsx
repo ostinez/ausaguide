@@ -74,9 +74,21 @@ export function IntaSendCheckout({
       // Fallback to /api/create-checkout
       if (!checkoutUrl) {
         try {
+          const { data: { session } } = await import("@/lib/supabase").then(({ supabase }) =>
+            supabase.auth.getSession()
+          ).catch(() => ({ data: { session: null } }))
+
+          const rawToken = session?.access_token ? String(session.access_token).trim() : null
+          const hasValidToken = Boolean(rawToken && rawToken !== "undefined" && rawToken !== "null")
+
+          const vercelHeaders: Record<string, string> = { "Content-Type": "application/json" }
+          if (hasValidToken && rawToken) {
+            vercelHeaders["Authorization"] = `Bearer ${rawToken}`
+          }
+
           const res = await fetch("/api/create-checkout", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: vercelHeaders,
             body: JSON.stringify({
               amount,
               currency,

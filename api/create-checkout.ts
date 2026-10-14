@@ -24,7 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", allowedOrigin)
   res.setHeader("Vary", "Origin")
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization")
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-client-info, apikey")
 
   if (req.method === "OPTIONS") {
     return res.status(204).end()
@@ -34,29 +34,66 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: "Method not allowed" })
   }
 
-  // ── Auth check (optional but recommended) ──────────────────────────────────
-  // We verify the Supabase session token if provided, but do NOT block unauthenticated
-  // users — guest checkout is allowed. This prevents false 401s.
+  // ── Auth check ─────────────────────────────────────────────────────────────
+  // 1. If NO session token is present (guest checkout), allow the request to proceed with null user_id.
+  // 2. If a Supabase session token is present in the Authorization header, validate it.
+  // 3. Only return 401 if a token is present but invalid/expired.
   const authHeader = req.headers["authorization"] as string | undefined
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || ""
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || ""
+  const supabaseUrl =
+    process.env.SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.VITE_SUPABASE_URL ||
+    ""
+  const supabaseAnonKey =
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.VITE_SUPABASE_ANON_KEY ||
+    ""
 
-  if (authHeader && supabaseUrl && supabaseAnonKey) {
-    try {
-      const token = authHeader.replace(/^Bearer\s+/i, "")
-      const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-        global: { headers: { Authorization: `Bearer ${token}` } },
-        auth: { persistSession: false },
-      })
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
-      if (authError) {
-        console.warn("[api/create-checkout] Auth token check failed (proceeding as guest):", authError.message)
-      } else if (user) {
-        console.log("[api/create-checkout] Authenticated user:", user.id)
+  let user_id: string | null = null
+
+  if (authHeader) {
+    const rawToken = authHeader.replace(/^Bearer\s+/i, "").trim()
+    const isTokenProvided =
+      Boolean(rawToken) &&
+      rawToken !== "undefined" &&
+      rawToken !== "null" &&
+      rawToken !== supabaseAnonKey
+
+    if (isTokenProvided) {
+      if (supabaseUrl && supabaseAnonKey) {
+        try {
+          const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+            global: { headers: { Authorization: `Bearer ${rawToken}` } },
+            auth: { persistSession: false },
+          })
+          const { data: { user }, error: authError } = await supabase.auth.getUser(rawToken)
+
+          if (authError || !user) {
+            console.warn("[api/create-checkout] Session token is invalid or expired:", authError?.message)
+            return res.status(401).json({
+              error: "Session expired or invalid token. Please log in again or continue as guest.",
+              details: authError?.message || "Invalid session token",
+            })
+          }
+
+          user_id = user.id
+          console.log("[api/create-checkout] Authenticated user:", user_id)
+        } catch (authEx: any) {
+          console.error("[api/create-checkout] Token verification exception:", authEx?.message)
+          return res.status(401).json({
+            error: "Session verification failed.",
+            details: authEx?.message,
+          })
+        }
+      } else {
+        console.warn("[api/create-checkout] Supabase credentials not set on server; skipping token validation.")
       }
-    } catch (authEx: any) {
-      console.warn("[api/create-checkout] Auth exception (proceeding as guest):", authEx?.message)
+    } else {
+      console.log("[api/create-checkout] No user session token provided (proceeding as guest with null user_id)")
     }
+  } else {
+    console.log("[api/create-checkout] Guest checkout (no Authorization header, user_id is null)")
   }
 
   try {
@@ -139,7 +176,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const data: any = await response.json().catch(() => null)
 
     if (!response.ok) {
+      const isGatewayAuthError = response.status === 401 || response.status === 403
       const errorMsg =
+        (isGatewayAuthError
+          ? "Payment gateway configuration error: IntaSend rejected credentials. Please check INTASEND_SECRET_KEY in Vercel environment variables."
+          : null) ||
         data?.message ||
         data?.detail ||
         (Array.isArray(data?.errors) ? data.errors[0]?.detail : null) ||
@@ -147,7 +188,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         `Payment initiation failed with status ${response.status}`
 
       console.error("[api/create-checkout] IntaSend error:", errorMsg, data)
-      return res.status(response.status >= 500 ? 502 : response.status).json({ error: errorMsg, details: data })
+      // Never return 401 for upstream gateway credential errors — map to 502 so client does not treat it as a session expiry
+      return res.status(response.status >= 500 || isGatewayAuthError ? 502 : response.status).json({
+        error: errorMsg,
+        details: data,
+      })
     }
 
     const checkoutUrl = data?.url || data?.checkout_url

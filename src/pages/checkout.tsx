@@ -261,20 +261,48 @@ export default function CheckoutPage() {
         email: email ? `${email.slice(0, 4)}****` : "(empty!)",
       })
 
+      // Resolve active Supabase session token (if one exists and is valid)
+      let validAccessToken: string | null = null
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.access_token) {
+          const raw = String(session.access_token).trim()
+          if (raw && raw !== "undefined" && raw !== "null") {
+            const isExpired = session.expires_at ? session.expires_at * 1000 <= Date.now() : false
+            if (isExpired) {
+              const { data: refreshData, error: refreshErr } = await supabase.auth.refreshSession()
+              if (!refreshErr && refreshData.session?.access_token) {
+                validAccessToken = refreshData.session.access_token.trim()
+              }
+            } else {
+              validAccessToken = raw
+            }
+          }
+        }
+      } catch (authErr) {
+        console.warn("[Checkout] Failed to retrieve session, proceeding as guest:", authErr)
+      }
+
       // 2a. Call IntaSend via Supabase Edge Function (explicit fetch to avoid invoke body-serialization bug)
       try {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ""
         const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ""
-        const { data: { session } } = await supabase.auth.getSession()
-        const authToken = session?.access_token || supabaseAnonKey
+
+        const edgeHeaders: Record<string, string> = {
+          "Content-Type": "application/json",
+        }
+        if (supabaseAnonKey) {
+          edgeHeaders["apikey"] = supabaseAnonKey
+        }
+        // When there is NO session, the Authorization header is NOT included (skipped).
+        // Only attach Authorization if a valid session token exists.
+        if (validAccessToken && validAccessToken !== "undefined" && validAccessToken !== "null") {
+          edgeHeaders["Authorization"] = `Bearer ${validAccessToken}`
+        }
 
         const fnRes = await fetch(`${supabaseUrl}/functions/v1/inta-pay-init`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${authToken}`,
-            "apikey": supabaseAnonKey,
-          },
+          headers: edgeHeaders,
           body: JSON.stringify(intaPayload),
         })
 
@@ -298,13 +326,18 @@ export default function CheckoutPage() {
       if (!paymentUrl) {
         console.warn("[Checkout] Edge Function failed, trying Vercel fallback. Reason:", detailedError)
         try {
-          const { data: { session } } = await supabase.auth.getSession()
+          const vercelHeaders: Record<string, string> = {
+            "Content-Type": "application/json",
+          }
+          // Only send Authorization header if we have a verified, non-empty, non-undefined token
+          // Ensures we NEVER send "Authorization: Bearer undefined" for guest checkouts
+          if (validAccessToken && validAccessToken !== "undefined" && validAccessToken !== "null") {
+            vercelHeaders["Authorization"] = `Bearer ${validAccessToken}`
+          }
+
           const res = await fetch("/api/create-checkout", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...(session?.access_token ? { "Authorization": `Bearer ${session.access_token}` } : {}),
-            },
+            headers: vercelHeaders,
             body: JSON.stringify(intaPayload),
           })
           const vercelData = await res.json().catch(() => null)

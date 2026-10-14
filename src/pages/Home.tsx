@@ -73,6 +73,11 @@ export default function Home() {
         <HeroSection />
       </div>
 
+      {/* Interactive How It Works Section */}
+      <div id="how-it-works" className="w-full">
+        <HowItWorks />
+      </div>
+
       {/* Action Selector Section */}
       <section className="bg-transparent py-20 px-6 relative overflow-hidden flex flex-col items-center border-b border-[#235E5D]/40">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-[#317978]/10 rounded-full blur-[120px] pointer-events-none" />
@@ -130,9 +135,6 @@ export default function Home() {
       </div>
       <div className="defer-render">
         <DiscoverToursStack />
-      </div>
-      <div className="defer-render">
-        <HowItWorks />
       </div>
       <div className="defer-render">
         <ImpactPreview />

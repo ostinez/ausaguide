@@ -1,0 +1,11 @@
+[functions.inta-pay-init]
+verify_jwt = false
+
+[functions.inta-pay-callback]
+verify_jwt = false
+
+[functions.inta-pay-verify]
+verify_jwt = false
+
+[functions.inta-pay-host]
+verify_jwt = false

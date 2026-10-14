@@ -31,6 +31,48 @@ serve(async (req) => {
 
   console.log(`${reqId} ▶ Request received. Method=${req.method}`)
 
+  // ── Optional Auth Check (Guest checkout supported) ─────────────────────────
+  const authHeader = req.headers.get("authorization") || ""
+  const rawToken = authHeader.replace(/^Bearer\s+/i, "").trim()
+  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || ""
+  const supabaseUrl = Deno.env.get("SUPABASE_URL") || ""
+
+  const isUserTokenProvided =
+    Boolean(rawToken) &&
+    rawToken !== "undefined" &&
+    rawToken !== "null" &&
+    rawToken !== supabaseAnonKey
+
+  if (isUserTokenProvided) {
+    try {
+      const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2")
+      const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: `Bearer ${rawToken}` } },
+        auth: { persistSession: false },
+      })
+      const { data: { user }, error: authErr } = await supabase.auth.getUser(rawToken)
+      if (authErr || !user) {
+        console.warn(`${reqId} ⚠ Invalid or expired session token:`, authErr?.message)
+        return new Response(
+          JSON.stringify({
+            error: "Session expired or invalid token. Please log in again or continue as guest.",
+            details: authErr?.message,
+          }),
+          { status: 401, headers: { ...hdrs, "Content-Type": "application/json" } }
+        )
+      }
+      console.log(`${reqId} ✓ Authenticated user: ${user.id}`)
+    } catch (authEx: any) {
+      console.warn(`${reqId} ⚠ Auth check exception:`, authEx?.message)
+      return new Response(
+        JSON.stringify({ error: "Session verification error", details: authEx?.message }),
+        { status: 401, headers: { ...hdrs, "Content-Type": "application/json" } }
+      )
+    }
+  } else {
+    console.log(`${reqId} ▶ Guest checkout (unauthenticated request allowed)`)
+  }
+
   try {
     // ── 1. Parse body ──────────────────────────────────────────────────────────
     let body: Record<string, any>
@@ -189,7 +231,11 @@ serve(async (req) => {
     }
 
     if (!response.ok) {
+      const isGatewayAuthError = response.status === 401 || response.status === 403
       const errorMsg =
+        (isGatewayAuthError
+          ? "Payment gateway configuration error: IntaSend rejected credentials. Please check INTASEND_SECRET_KEY in Edge Function secrets."
+          : null) ||
         data?.message ||
         data?.detail ||
         (Array.isArray(data?.errors) ? data.errors.map((e: any) => e?.detail || JSON.stringify(e)).join("; ") : null) ||
@@ -197,9 +243,10 @@ serve(async (req) => {
         `IntaSend returned HTTP ${response.status}`
 
       console.error(`${reqId} ✗ IntaSend error (HTTP ${response.status}):`, errorMsg, "full_data:", data)
+      // Never return 401 for upstream payment gateway credential errors — map to 502 so client does not treat it as a session expiry
       return new Response(
         JSON.stringify({ error: errorMsg, details: data, status: response.status }),
-        { status: response.status >= 500 ? 502 : response.status, headers: { ...hdrs, "Content-Type": "application/json" } }
+        { status: response.status >= 500 || isGatewayAuthError ? 502 : response.status, headers: { ...hdrs, "Content-Type": "application/json" } }
       )
     }
 
