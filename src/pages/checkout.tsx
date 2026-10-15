@@ -21,6 +21,7 @@ import {
   Wrench,
 } from "lucide-react"
 import { arePaymentsEnabled } from "@/lib/payments-config"
+import { PaymentsComingSoon } from "@/components/PaymentsComingSoon"
 import IntaSendTrustBadge from "@/components/IntaSendTrustBadge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -106,6 +107,24 @@ export default function CheckoutPage() {
       }
     })
   }, [])
+
+  // ── Payment Gate Feature Flag ─────────────────────────────────────────────
+  if (import.meta.env.VITE_PAYMENTS_ENABLED !== "true") {
+    return (
+      <div className="min-h-[85vh] flex flex-col items-center justify-center px-4 py-12 sm:py-20 bg-ambient-flow-d">
+        <div className="w-full max-w-[480px] mx-auto mb-6">
+          <Link
+            to={tourId ? `/tours/${tourId}` : "/tours"}
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-[#0A5F5F] dark:hover:text-[#B7E6E5] transition-colors"
+          >
+            <ArrowLeft className="size-4" />
+            <span>Back to tour</span>
+          </Link>
+        </div>
+        <PaymentsComingSoon />
+      </div>
+    )
+  }
 
   // ── Guards ────────────────────────────────────────────────────────────────
 

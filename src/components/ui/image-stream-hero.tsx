@@ -540,10 +540,9 @@ export function ImageStreamHero() {
             ) : (
               <Link
                 to="/waitlist"
-                className="w-full sm:w-auto px-7 py-3 bento-btn-primary font-bold rounded-2xl text-sm flex items-center justify-center gap-2 cursor-pointer min-h-[44px]"
+                className="w-full sm:w-auto px-7 py-3 bento-btn-secondary font-bold rounded-2xl text-sm flex items-center justify-center gap-2 cursor-pointer min-h-[44px] hover:text-white transition-colors"
               >
-                <ShieldCheck className="size-4 text-[#B7E6E5]" />
-                <span>Get Early Access</span>
+                <span>Join the waitlist</span>
                 <ArrowRight className="size-4 text-[#B7E6E5]" />
               </Link>
             )}
