@@ -1,7 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-import crypto from "node:crypto"
-import { Buffer } from "node:buffer"
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,46 +16,6 @@ function normalizePhoneNumber(raw: string): string {
   if (digits.startsWith("0") && digits.length === 10) return "254" + digits.slice(1)
   if (digits.length === 9 && (digits.startsWith("7") || digits.startsWith("1"))) return "254" + digits
   return digits
-}
-
-/**
- * Formats the public certificate string into standard PEM format.
- * Handles:
- *  - Multiline or single-line PEM with literal '\n'
- *  - Raw base64 DER certificate strings without headers
- */
-function formatCertificate(rawCert: string): string {
-  let cert = rawCert.trim()
-  // Replace literal '\n' characters with actual line breaks
-  cert = cert.replace(/\\n/g, "\n")
-
-  if (cert.includes("-----BEGIN CERTIFICATE-----") || cert.includes("-----BEGIN PUBLIC KEY-----")) {
-    return cert
-  }
-
-  // Pure base64 string: chunk into 64-character lines and wrap in PEM boundaries
-  const cleaned = cert.replace(/\s+/g, "")
-  const lines = cleaned.match(/.{1,64}/g)?.join("\n") || cleaned
-  return `-----BEGIN CERTIFICATE-----\n${lines}\n-----END CERTIFICATE-----\n`
-}
-
-/**
- * Generates Safaricom Daraja SecurityCredential by RSA-encrypting the initiator password
- * with the Safaricom X.509 public certificate using PKCS#1 v1.5 padding.
- */
-function generateSecurityCredential(initiatorPassword: string, rawCert: string): string {
-  const pemCert = formatCertificate(rawCert)
-  const passwordBuffer = Buffer.from(initiatorPassword, "utf-8")
-
-  const encrypted = crypto.publicEncrypt(
-    {
-      key: pemCert,
-      padding: crypto.constants.RSA_PKCS1_PADDING,
-    },
-    passwordBuffer
-  )
-
-  return encrypted.toString("base64")
 }
 
 serve(async (req) => {
@@ -117,13 +75,11 @@ serve(async (req) => {
       )
     }
 
-    // 2. Environment Variables
+    // 2. Read Environment Variables directly from Supabase Secrets
     const consumerKey = Deno.env.get("MPESA_CONSUMER_KEY")
     const consumerSecret = Deno.env.get("MPESA_CONSUMER_SECRET")
     const initiatorName = Deno.env.get("MPESA_INITIATOR_NAME")
-    const pregeneratedCredential = Deno.env.get("MPESA_SECURITY_CREDENTIAL")
-    const initiatorPassword = Deno.env.get("MPESA_INITIATOR_PASSWORD")
-    const certificate = Deno.env.get("MPESA_CERTIFICATE") || Deno.env.get("MPESA_PUBLIC_CERT")
+    const securityCredential = Deno.env.get("MPESA_SECURITY_CREDENTIAL")
     const shortcode = Deno.env.get("MPESA_B2C_SHORTCODE") || Deno.env.get("MPESA_SHORTCODE") || "1327856"
     const mpesaEnv = (Deno.env.get("MPESA_ENVIRONMENT") || "production").toLowerCase().trim()
 
@@ -131,11 +87,7 @@ serve(async (req) => {
     if (!consumerKey) missingConfigs.push("MPESA_CONSUMER_KEY")
     if (!consumerSecret) missingConfigs.push("MPESA_CONSUMER_SECRET")
     if (!initiatorName) missingConfigs.push("MPESA_INITIATOR_NAME")
-
-    // Must have either pre-generated MPESA_SECURITY_CREDENTIAL OR (MPESA_INITIATOR_PASSWORD + MPESA_CERTIFICATE)
-    if (!pregeneratedCredential && (!initiatorPassword || !certificate)) {
-      missingConfigs.push("MPESA_SECURITY_CREDENTIAL (or MPESA_INITIATOR_PASSWORD + MPESA_CERTIFICATE)")
-    }
+    if (!securityCredential) missingConfigs.push("MPESA_SECURITY_CREDENTIAL")
 
     if (missingConfigs.length > 0) {
       console.error(`[M-Pesa B2C] Missing required environment variables: ${missingConfigs.join(", ")}`)
@@ -155,31 +107,7 @@ serve(async (req) => {
         ? "https://sandbox.safaricom.co.ke"
         : "https://api.safaricom.co.ke"
 
-    // 3. Resolve SecurityCredential
-    let securityCredential = ""
-    if (pregeneratedCredential && pregeneratedCredential.trim()) {
-      securityCredential = pregeneratedCredential.trim()
-      console.log("[M-Pesa B2C] Using pre-generated MPESA_SECURITY_CREDENTIAL from environment")
-    } else {
-      try {
-        securityCredential = generateSecurityCredential(initiatorPassword!, certificate!)
-        console.log("[M-Pesa B2C] Generated SecurityCredential from MPESA_CERTIFICATE successfully")
-      } catch (certErr: any) {
-        console.error("[M-Pesa B2C] Failed to generate SecurityCredential:", certErr)
-        return new Response(
-          JSON.stringify({
-            error: "Failed to generate M-Pesa SecurityCredential from provided certificate.",
-            details: certErr.message,
-          }),
-          {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        )
-      }
-    }
-
-    // 4. Fetch OAuth Token via Basic Auth
+    // 3. Fetch OAuth Token via Basic Auth
     const authString = btoa(`${consumerKey}:${consumerSecret}`)
     const authUrl = `${baseUrl}/oauth/v1/generate?grant_type=client_credentials`
 
@@ -213,18 +141,18 @@ serve(async (req) => {
       throw new Error("Access token missing from Safaricom OAuth response.")
     }
 
-    // 5. Build B2C Payment Request
+    // 4. Build B2C Payment Request
     const b2cUrl = `${baseUrl}/mpesa/b2c/v1/paymentrequest`
     const callbackUrl =
       Deno.env.get("MPESA_B2C_CALLBACK_URL") ||
       "https://sdbvvcjnlergsmcsorrv.supabase.co/functions/v1/mpesa-b2c-callback"
 
     const b2cPayload = {
-      InitiatorName: initiatorName,
-      SecurityCredential: securityCredential,
+      InitiatorName: initiatorName.trim(),
+      SecurityCredential: securityCredential.trim(),
       CommandID: "BusinessPayment",
       Amount: numericAmount,
-      PartyA: shortcode,
+      PartyA: shortcode.trim(),
       PartyB: formattedPhone,
       Remarks: "Ausaguide Host Payout",
       QueueTimeOutURL: callbackUrl,
@@ -252,7 +180,7 @@ serve(async (req) => {
 
     const isAccepted = b2cResponse.ok && (b2cData.ResponseCode === "0" || b2cData.ConversationID)
 
-    // 6. Record in Supabase payouts table
+    // 5. Record in Supabase payouts table
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? ""
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     const supabase = createClient(supabaseUrl, supabaseKey, {
@@ -273,36 +201,40 @@ serve(async (req) => {
     const trackingId = b2cData.ConversationID || b2cData.OriginatorConversationID || `B2C_${booking_id}`
 
     // Insert payout record tracking the request
-    const { error: payoutInsertError } = await supabase
-      .from("payouts")
-      .insert({
-        booking_id: booking_id,
-        host_id: resolvedHostId,
-        amount: numericAmount,
-        currency: "KES",
-        status: isAccepted ? "processing" : "failed",
-        payout_method: "mpesa",
-        recipient_phone: formattedPhone,
-        recipient_name: host_name || "Ausaguide Host",
-        gateway_reference: b2cData.OriginatorConversationID || booking_id,
-        tracking_id: trackingId,
-        failure_reason: isAccepted ? null : (b2cData.errorMessage || b2cData.ResponseDescription || "Safaricom B2C rejected"),
-        metadata: {
-          b2c_request: {
-            PartyA: shortcode,
-            PartyB: formattedPhone,
-            Amount: numericAmount,
-            CommandID: "BusinessPayment",
+    try {
+      const { error: payoutInsertError } = await supabase
+        .from("payouts")
+        .insert({
+          booking_id: booking_id,
+          host_id: resolvedHostId,
+          amount: numericAmount,
+          currency: "KES",
+          status: isAccepted ? "processing" : "failed",
+          payout_method: "mpesa",
+          recipient_phone: formattedPhone,
+          recipient_name: host_name || "Ausaguide Host",
+          gateway_reference: b2cData.OriginatorConversationID || booking_id,
+          tracking_id: trackingId,
+          failure_reason: isAccepted ? null : (b2cData.errorMessage || b2cData.ResponseDescription || "Safaricom B2C rejected"),
+          metadata: {
+            b2c_request: {
+              PartyA: shortcode,
+              PartyB: formattedPhone,
+              Amount: numericAmount,
+              CommandID: "BusinessPayment",
+            },
+            b2c_response: b2cData,
           },
-          b2c_response: b2cData,
-        },
-        processed_at: new Date().toISOString(),
-      })
+          processed_at: new Date().toISOString(),
+        })
 
-    if (payoutInsertError) {
-      console.error("[M-Pesa B2C] Failed to record payout row:", payoutInsertError)
-    } else {
-      console.log(`[M-Pesa B2C] Payout row inserted (status: ${isAccepted ? "processing" : "failed"})`)
+      if (payoutInsertError) {
+        console.error("[M-Pesa B2C] Failed to record payout row:", payoutInsertError)
+      } else {
+        console.log(`[M-Pesa B2C] Payout row inserted (status: ${isAccepted ? "processing" : "failed"})`)
+      }
+    } catch (insertErr) {
+      console.error("[M-Pesa B2C] Exception inserting payout row:", insertErr)
     }
 
     // Return the response to the caller (e.g. cron)
