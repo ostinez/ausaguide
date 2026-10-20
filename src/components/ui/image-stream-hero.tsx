@@ -540,10 +540,10 @@ export function ImageStreamHero() {
             ) : (
               <Link
                 to="/waitlist"
-                className="w-full sm:w-auto px-7 py-3 bento-btn-secondary font-bold rounded-2xl text-sm flex items-center justify-center gap-2 cursor-pointer min-h-[44px] hover:text-white transition-colors"
+                className="w-full sm:w-auto px-8 py-3.5 bg-[#E07A5F] hover:bg-[#d46549] text-white font-extrabold rounded-2xl text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer min-h-[48px] shadow-lg shadow-[#E07A5F]/30 hover:shadow-[#E07A5F]/50 transition-all transform hover:-translate-y-0.5"
               >
-                <span>Join the waitlist</span>
-                <ArrowRight className="size-4 text-[#B7E6E5]" />
+                <span>Join the Waitlist</span>
+                <ArrowRight className="size-4 stroke-[2.5]" />
               </Link>
             )}
             <Link

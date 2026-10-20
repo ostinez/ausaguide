@@ -43,8 +43,9 @@ const MentalHealthPage = lazy(() => import("@/pages/MentalHealth"))
 const TravelCommitmentThankYouPage = lazy(() => import("@/pages/TravelCommitmentThankYou"))
 const ThankYouPage = lazy(() => import("@/pages/ThankYou"))
 const HostWaitlistPage = lazy(() => import("@/pages/host-waitlist"))
-const WaitlistPage = lazy(() => import("@/pages/waitlist"))
+const WaitlistPage = lazy(() => import("@/pages/Waitlist"))
 const AboutPage = lazy(() => import("@/pages/about"))
+const FounderPage = lazy(() => import("@/pages/Founder"))
 const JournalPage = lazy(() => import("@/pages/journal"))
 const FeedPage = lazy(() => import("@/pages/feed"))
 const TravelerProfilePage = lazy(() => import("@/pages/traveler-profile"))
@@ -148,6 +149,7 @@ export default function App() {
             {/* Public routes */}
             <Route path="/explore" element={<Navigate to="/tours" replace />} />
             <Route path="/about" element={<AboutPage />} />
+            <Route path="/founder" element={<FounderPage />} />
             <Route path="/help" element={<HelpPage />} />
             <Route path="/map" element={<MapPage />} />
             <Route path="/host-waitlist" element={<HostWaitlistPage />} />

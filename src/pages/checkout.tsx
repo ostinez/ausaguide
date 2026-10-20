@@ -15,8 +15,6 @@ import {
   CheckCircle2,
   ArrowRight,
   ShieldCheck,
-  Lock,
-  CreditCard,
   Smartphone,
   Wrench,
 } from "lucide-react"
@@ -79,6 +77,7 @@ export default function CheckoutPage() {
   const [paymentStatusMessage, setPaymentStatusMessage] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [createdBookingId, setCreatedBookingId] = useState<string | null>(null)
+  const [stkPromptSent, setStkPromptSent] = useState(false)
 
   // Load tour
   useEffect(() => {
@@ -246,49 +245,25 @@ export default function CheckoutPage() {
         setCreatedBookingId(booking.id)
       }
 
+      // Safaricom Daraja requires standard Kenyan format: 2547XXXXXXXX or 2541XXXXXXXX
       const cleanDigits = phone.trim().replace(/\D/g, "")
-      let normalizedPhone = cleanDigits
+      let formattedPhone = cleanDigits
       if (cleanDigits.startsWith("254") && cleanDigits.length === 12) {
-        normalizedPhone = cleanDigits
+        formattedPhone = cleanDigits
       } else if (cleanDigits.startsWith("0") && cleanDigits.length === 10) {
-        normalizedPhone = "254" + cleanDigits.slice(1)
-      } else if (cleanDigits.length === 9) {
-        normalizedPhone = "254" + cleanDigits
+        formattedPhone = "254" + cleanDigits.slice(1)
+      } else if (cleanDigits.length === 9 && (cleanDigits.startsWith("7") || cleanDigits.startsWith("1"))) {
+        formattedPhone = "254" + cleanDigits
       }
 
-      const firstName = sanitizeText(name).split(" ")[0] || sanitizeText(name)
-      const lastName = sanitizeText(name).split(" ").slice(1).join(" ") || ""
-
-      setPaymentStatusMessage("Redirecting to secure checkout...")
-
-      let paymentUrl: string | null = null
-      let detailedError: string | null = null
-
-      // Build Payza-compatible payload
-      const reference = bookingId || `ORDER_${Date.now()}`
-      const payzaPayload = {
-        amount: Number(total),
-        currency: bookingCurrency,
-        reference,
-        customer: {
-          email: email.trim().toLowerCase(),
-          name: `${firstName} ${lastName}`.trim(),
-          phone: normalizedPhone,
-        },
-        metadata: {
-          booking_id: bookingId,
-        },
-        callback_url: "https://sdbvvcjnlergsmcsorrv.functions.supabase.co/payza-webhook",
+      if (!/^254[17]\d{8}$/.test(formattedPhone)) {
+        setSubmitError("Failed to initiate M-Pesa. Please check your phone number and try again.")
+        setPaying(false)
+        setPaymentStatusMessage(null)
+        return
       }
 
-      console.log("[Checkout] Payza payment payload (pre-send):", {
-        ...payzaPayload,
-        customer: {
-          ...payzaPayload.customer,
-          phone: normalizedPhone ? `${normalizedPhone.slice(0, 5)}****` : "(empty!)",
-          email: email ? `${email.slice(0, 4)}****` : "(empty!)",
-        },
-      })
+      setPaymentStatusMessage("Sending M-Pesa prompt to your phone...")
 
       // Resolve active Supabase session token (if one exists and is valid)
       let validAccessToken: string | null = null
@@ -312,56 +287,57 @@ export default function CheckoutPage() {
         console.warn("[Checkout] Failed to retrieve session, proceeding as guest:", authErr)
       }
 
-      // Call Payza via Supabase Edge Function payza-pay-init
-      try {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ""
-        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ""
+      // Call M-Pesa STK Push via Supabase Edge Function mpesa-stk-push
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ""
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ""
 
-        const edgeHeaders: Record<string, string> = {
-          "Content-Type": "application/json",
-        }
-        if (supabaseAnonKey) {
-          edgeHeaders["apikey"] = supabaseAnonKey
-        }
-        // Only attach Authorization if a valid session token exists — never send "Bearer undefined"
-        if (validAccessToken && validAccessToken !== "undefined" && validAccessToken !== "null") {
-          edgeHeaders["Authorization"] = `Bearer ${validAccessToken}`
-        }
-
-        const fnRes = await fetch(`${supabaseUrl}/functions/v1/payza-pay-init`, {
-          method: "POST",
-          headers: edgeHeaders,
-          body: JSON.stringify(payzaPayload),
-        })
-
-        const fnData = await fnRes.json().catch(() => null)
-        console.log("[Checkout] Payza Edge Function response:", fnRes.status, fnData)
-
-        if (fnRes.ok && fnData?.payment_url) {
-          paymentUrl = fnData.payment_url
-        } else {
-          detailedError =
-            fnData?.error ||
-            fnData?.message ||
-            `payza-pay-init returned HTTP ${fnRes.status}`
-        }
-      } catch (e: any) {
-        console.error("[Checkout] Payza Edge Function call failed:", e)
-        detailedError = e?.message || "Edge Function unreachable"
+      const edgeHeaders: Record<string, string> = {
+        "Content-Type": "application/json",
+      }
+      if (supabaseAnonKey) {
+        edgeHeaders["apikey"] = supabaseAnonKey
+      }
+      // Only attach Authorization if a valid session token exists — never send "Bearer undefined"
+      if (validAccessToken && validAccessToken !== "undefined" && validAccessToken !== "null") {
+        edgeHeaders["Authorization"] = `Bearer ${validAccessToken}`
       }
 
-      if (!paymentUrl) {
-        throw new Error(detailedError || "Payment URL was not returned by Payza.")
+      const mpesaPayload = {
+        phone: formattedPhone,
+        amount: Number(total),
+        reference: bookingId,
       }
 
-      // Redirect user to Payza checkout page
-      window.location.href = paymentUrl
+      const fnRes = await fetch(`${supabaseUrl}/functions/v1/mpesa-stk-push`, {
+        method: "POST",
+        headers: edgeHeaders,
+        body: JSON.stringify(mpesaPayload),
+      })
+
+      const fnData = await fnRes.json().catch(() => null)
+      console.log("[Checkout] M-Pesa STK Push response:", fnRes.status, fnData)
+
+      if (fnRes.ok || fnRes.status === 200) {
+        // On success (HTTP 200), do NOT redirect. Instead show success state with loading spinner.
+        setStkPromptSent(true)
+        setPaymentStatusMessage(
+          "An M-Pesa prompt has been sent to your phone. Please enter your PIN to complete the booking."
+        )
+        setSubmitError(null)
+      } else {
+        // On error (HTTP 400/500), show error message
+        console.error(`[Checkout] mpesa-stk-push failed with HTTP ${fnRes.status}`, fnData)
+        setSubmitError("Failed to initiate M-Pesa. Please check your phone number and try again.")
+        setStkPromptSent(false)
+        setPaymentStatusMessage(null)
+      }
     } catch (err: unknown) {
       console.error("[Checkout] Payment initiation failed:", err)
-      const message = err instanceof Error ? err.message : "Payment initialization failed. Please try again."
-      setSubmitError(message)
-      setPaying(false)
+      setSubmitError("Failed to initiate M-Pesa. Please check your phone number and try again.")
+      setStkPromptSent(false)
       setPaymentStatusMessage(null)
+    } finally {
+      setPaying(false)
     }
   }
 
@@ -741,27 +717,86 @@ export default function CheckoutPage() {
                       No charge has been made to your account. We will notify you by email as soon as checkout is back online.
                     </p>
                   </section>
+                ) : stkPromptSent ? (
+                  /* M-Pesa STK Push Sent Success State */
+                  <section className="rounded-2xl border border-primary/40 bg-primary/5 p-6 sm:p-8 space-y-6 text-center shadow-lg animate-in fade-in zoom-in-95 duration-300">
+                    <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+                      <Spinner className="size-8 text-primary" />
+                    </div>
+
+                    <div className="space-y-2 max-w-md mx-auto">
+                      <h3 className="text-xl font-bold text-foreground">
+                        M-Pesa Prompt Sent
+                      </h3>
+                      <p className="text-sm font-semibold text-foreground leading-relaxed">
+                        An M-Pesa prompt has been sent to your phone. Please enter your PIN to complete the booking.
+                      </p>
+                      <div className="inline-flex items-center gap-2 rounded-full bg-background px-3.5 py-1.5 border border-border text-xs text-muted-foreground mt-2">
+                        <Smartphone className="size-3.5 text-primary" />
+                        <span>Phone: <strong className="text-foreground font-mono">{phone}</strong></span>
+                        <span>•</span>
+                        <span>Amount: <strong className="text-primary font-bold">{formatTourPrice(total, tour.currency)}</strong></span>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl bg-card border border-border/70 p-4 text-xs text-muted-foreground text-left max-w-sm mx-auto space-y-2">
+                      <p className="font-semibold text-foreground flex items-center gap-1.5">
+                        <CheckCircle2 className="size-4 text-primary" /> Next Steps:
+                      </p>
+                      <ol className="list-decimal list-inside space-y-1.5 text-muted-foreground/90 pl-1">
+                        <li>Check your mobile phone for the Safaricom STK prompt</li>
+                        <li>Enter your secret M-Pesa PIN to complete payment</li>
+                        <li>Your booking will be automatically confirmed upon completion</li>
+                      </ol>
+                    </div>
+
+                    <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setStkPromptSent(false)
+                          handlePayNow()
+                        }}
+                        className="w-full sm:w-auto h-11 text-xs font-semibold gap-2 border-primary/30 hover:bg-primary/10"
+                      >
+                        <Smartphone className="size-3.5" />
+                        Resend M-Pesa Prompt
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => {
+                          setStkPromptSent(false)
+                          setStep(2)
+                        }}
+                        className="w-full sm:w-auto h-11 text-xs"
+                      >
+                        Edit Phone Number
+                      </Button>
+                    </div>
+                  </section>
                 ) : (
-                  /* Clean Payment Section */
+                  /* Clean Direct M-Pesa Payment Section */
                   <section className="rounded-2xl border border-border bg-card p-6 space-y-5 shadow-sm">
                     <div className="flex items-center justify-between border-b border-border/60 pb-4">
                       <div className="flex items-center gap-3">
                         <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                          <ShieldCheck className="size-5" />
+                          <Smartphone className="size-5" />
                         </div>
                         <div>
-                          <h3 className="font-semibold text-foreground">Safe & Secure Checkout</h3>
-                          <p className="text-xs text-muted-foreground">Powered by IntaSend · M-PESA & Cards</p>
+                          <h3 className="font-semibold text-foreground">Direct M-Pesa STK Push</h3>
+                          <p className="text-xs text-muted-foreground">Direct Safaricom Daraja API</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Smartphone className="size-4 text-primary" />
-                        <CreditCard className="size-4 text-primary" />
+                        <ShieldCheck className="size-4 text-primary" />
                       </div>
                     </div>
 
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                      Click <strong>Pay Now</strong> to proceed to our secure checkout page to complete your payment via M-PESA STK Push or Card.
+                      Click <strong>Pay with M-Pesa</strong> to send an instant STK push prompt to your phone. Simply enter your M-Pesa PIN to complete the booking.
                     </p>
 
                     <Button
@@ -773,18 +808,16 @@ export default function CheckoutPage() {
                       {paying ? (
                         <>
                           <Spinner className="size-5" />
-                          {paymentStatusMessage || "Redirecting to Payment..."}
+                          {paymentStatusMessage || "Sending M-Pesa Prompt..."}
                         </>
                       ) : (
                         <>
-                          <Lock className="size-4" />
-                          Pay Now ({formatTourPrice(total, tour.currency)})
+                          <Smartphone className="size-4" />
+                          Pay with M-Pesa ({formatTourPrice(total, tour.currency)})
                           <ArrowRight className="size-4 ml-auto" />
                         </>
                       )}
                     </Button>
-
-                    <IntaSendTrustBadge variant="compact" className="pt-2" />
                   </section>
                 )}
               </div>

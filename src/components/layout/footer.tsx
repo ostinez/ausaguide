@@ -18,6 +18,7 @@ const footerLinks = {
  ],
  company: [
  { href: "/about", label: "About" },
+ { href: "/founder", label: "Founder" },
  { href: "/help", label: "Help & FAQ" },
  { href: "/onboarding?become-host=true", label: "Become a Host" },
  { href: "/settings", label: "Account Settings" },

@@ -90,19 +90,22 @@ export default function Home() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-            {/* Find a Tour Card */}
+            {/* Waitlist Early Access Card */}
             <Link 
-              to="/tours" 
-              className="group relative rounded-2xl p-8 tactile-glow-card flex flex-col justify-between h-48 cursor-pointer"
+              to="/waitlist" 
+              className="group relative rounded-2xl p-8 tactile-glow-card flex flex-col justify-between h-48 cursor-pointer border border-[#E07A5F]/30 hover:border-[#E07A5F]/60"
             >
               <div className="space-y-2">
-                <h3 className="text-xl font-bold text-white group-hover:text-[#B7E6E5] transition-colors">Find a Tour</h3>
+                <h3 className="text-xl font-bold text-white group-hover:text-[#FDFBF7] transition-colors flex items-center justify-between">
+                  <span>Early Access Waitlist</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#E07A5F]/20 text-[#E07A5F] border border-[#E07A5F]/30">Live Nairobi</span>
+                </h3>
                 <p className="text-xs text-[#599D9C] leading-relaxed">
-                  Browse immersive virtual and in-person experiences led by certified guides.
+                  Payments paused for compliance. Join the early access waitlist for priority access and founder perks.
                 </p>
               </div>
-              <div className="flex items-center gap-1.5 text-xs font-bold text-[#B7E6E5] group-hover:underline">
-                <span>Browse Tours</span>
+              <div className="flex items-center gap-1.5 text-xs font-bold text-[#E07A5F] group-hover:underline">
+                <span>Join the Waitlist</span>
                 <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
               </div>
             </Link>

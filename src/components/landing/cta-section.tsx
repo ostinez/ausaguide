@@ -42,17 +42,17 @@ export function CTASection() {
  </div>
 
  <div className="relative z-10 pt-6">
- <Link to="/tours">
+ <Link to="/waitlist">
  <GlareHover style={{ borderRadius: "9999px", display: "inline-block" }}>
  <StarBorder
  as="div"
- color="#317978"
+ color="#E07A5F"
  speed="4s"
  thickness={2}
  className="rounded-full inline-block"
  >
- <Button className="bg-[#317978] text-white hover:bg-[#317978]/90 rounded-full font-bold px-6 py-5 shadow-neo-pill border border-[#B7E6E5]/20">
- Explore Tours
+ <Button className="bg-[#E07A5F] text-white hover:bg-[#d46549] rounded-full font-bold px-6 py-5 shadow-neo-pill border border-[#E07A5F]/40 cursor-pointer">
+ Join the Waitlist
  <ArrowRight className="size-4" />
  </Button>
  </StarBorder>

@@ -35,6 +35,8 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
       { loc: "/", priority: "1.0", changefreq: "daily" },
       { loc: "/tours", priority: "0.9", changefreq: "daily" },
       { loc: "/about", priority: "0.8", changefreq: "monthly" },
+      { loc: "/founder", priority: "0.8", changefreq: "monthly" },
+      { loc: "/waitlist", priority: "0.8", changefreq: "weekly" },
       { loc: "/help", priority: "0.7", changefreq: "monthly" },
       { loc: "/tree-planting", priority: "0.8", changefreq: "weekly" },
       { loc: "/mental-health", priority: "0.8", changefreq: "weekly" },
@@ -95,6 +97,16 @@ ${allPages
   <url>
     <loc>https://ausaguide.com/about</loc>
     <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://ausaguide.com/founder</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://ausaguide.com/waitlist</loc>
+    <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
 </urlset>`
