@@ -20,8 +20,21 @@ function normalizePhoneNumber(raw: string): string {
 
 /**
  * Helper to log errors to public.error_logs
+ * Schema: id, user_email, error_context, error_message, metadata, created_at
  */
-async function logErrorToDb(service: string, errorMessage: string, details?: any, bookingId?: string) {
+async function logErrorToDb({
+  errorContext,
+  errorMessage,
+  userEmail,
+  metadata,
+  bookingId,
+}: {
+  errorContext: string
+  errorMessage: string
+  userEmail?: string | null
+  metadata?: any
+  bookingId?: string | null
+}) {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? ""
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -31,16 +44,26 @@ async function logErrorToDb(service: string, errorMessage: string, details?: any
       auth: { persistSession: false },
     })
 
-    const isUuid = bookingId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bookingId)
+    let resolvedEmail = userEmail || null
+    if (!resolvedEmail && bookingId && bookingId.length === 36) {
+      try {
+        const { data } = await supabase
+          .from("bookings")
+          .select("guest_email")
+          .eq("id", bookingId)
+          .maybeSingle()
+        if (data?.guest_email) resolvedEmail = data.guest_email
+      } catch (_) {}
+    }
 
     await supabase.from("error_logs").insert({
-      service,
+      user_email: resolvedEmail,
+      error_context: errorContext,
       error_message: errorMessage,
-      details: {
-        ...(details || {}),
-        raw_booking_reference: bookingId || null,
+      metadata: {
+        ...(metadata || {}),
+        booking_id: bookingId || null,
       },
-      booking_id: isUuid ? bookingId : null,
       created_at: new Date().toISOString(),
     })
   } catch (err) {
@@ -62,18 +85,26 @@ serve(async (req) => {
   }
 
   let currentBookingId: string | undefined = undefined
+  let currentEmail: string | undefined = undefined
 
   try {
     const body = await req.json()
-    const { phone, amount, booking_id, host_name, host_id } = body
+    const { phone, amount, booking_id, host_name, host_id, email, user_email } = body
     currentBookingId = booking_id
+    currentEmail = email || user_email
 
     console.log(`[M-Pesa B2C] Request received for booking "${booking_id}" — Amount: KES ${amount}`)
 
     // 1. Validation
     if (!phone || !amount || !booking_id) {
       const err = "Missing required fields: phone, amount, and booking_id are required."
-      await logErrorToDb("mpesa-b2c-payout", err, { phone, amount, booking_id }, booking_id)
+      await logErrorToDb({
+        errorContext: "mpesa-b2c-payout:validation",
+        errorMessage: err,
+        userEmail: currentEmail,
+        metadata: { phone, amount, booking_id },
+        bookingId: booking_id,
+      })
       return new Response(
         JSON.stringify({
           error: err,
@@ -90,7 +121,13 @@ serve(async (req) => {
 
     if (!/^254[17]\d{8}$/.test(formattedPhone)) {
       const err = `Invalid Kenyan phone number format: "${phone}". Expected 2547XXXXXXXX or 2541XXXXXXXX.`
-      await logErrorToDb("mpesa-b2c-payout", err, { rawPhone: phone, formattedPhone }, booking_id)
+      await logErrorToDb({
+        errorContext: "mpesa-b2c-payout:validation",
+        errorMessage: err,
+        userEmail: currentEmail,
+        metadata: { rawPhone: phone, formattedPhone },
+        bookingId: booking_id,
+      })
       return new Response(
         JSON.stringify({
           error: err,
@@ -104,7 +141,13 @@ serve(async (req) => {
 
     if (!numericAmount || numericAmount <= 0) {
       const err = "Amount must be a positive integer."
-      await logErrorToDb("mpesa-b2c-payout", err, { amount, numericAmount }, booking_id)
+      await logErrorToDb({
+        errorContext: "mpesa-b2c-payout:validation",
+        errorMessage: err,
+        userEmail: currentEmail,
+        metadata: { amount, numericAmount },
+        bookingId: booking_id,
+      })
       return new Response(
         JSON.stringify({ error: err }),
         {
@@ -131,7 +174,13 @@ serve(async (req) => {
     if (missingConfigs.length > 0) {
       const err = `Server configuration error: missing ${missingConfigs.join(", ")}`
       console.error(`[M-Pesa B2C] ${err}`)
-      await logErrorToDb("mpesa-b2c-payout", err, { missingConfigs }, booking_id)
+      await logErrorToDb({
+        errorContext: "mpesa-b2c-payout:config",
+        errorMessage: err,
+        userEmail: currentEmail,
+        metadata: { missingConfigs },
+        bookingId: booking_id,
+      })
       return new Response(
         JSON.stringify({
           error: err,
@@ -163,12 +212,13 @@ serve(async (req) => {
     if (!tokenResponse.ok) {
       const errText = await tokenResponse.text()
       console.error("[M-Pesa B2C] OAuth token fetch failed:", errText)
-      await logErrorToDb(
-        "mpesa-b2c-payout",
-        "Failed to authenticate with Safaricom Daraja API.",
-        { status: tokenResponse.status, details: errText },
-        booking_id
-      )
+      await logErrorToDb({
+        errorContext: "mpesa-b2c-payout:oauth",
+        errorMessage: "Failed to authenticate with Safaricom Daraja API.",
+        userEmail: currentEmail,
+        metadata: { status: tokenResponse.status, details: errText },
+        bookingId: booking_id,
+      })
       return new Response(
         JSON.stringify({
           error: "Failed to authenticate with Safaricom Daraja API.",
@@ -185,8 +235,15 @@ serve(async (req) => {
     const accessToken = tokenData.access_token
 
     if (!accessToken) {
-      await logErrorToDb("mpesa-b2c-payout", "Access token missing from Safaricom OAuth response.", { tokenData }, booking_id)
-      throw new Error("Access token missing from Safaricom OAuth response.")
+      const err = "Access token missing from Safaricom OAuth response."
+      await logErrorToDb({
+        errorContext: "mpesa-b2c-payout:oauth",
+        errorMessage: err,
+        userEmail: currentEmail,
+        metadata: { tokenData },
+        bookingId: booking_id,
+      })
+      throw new Error(err)
     }
 
     // 4. Build B2C Payment Request
@@ -229,12 +286,13 @@ serve(async (req) => {
     const isAccepted = b2cResponse.ok && (b2cData.ResponseCode === "0" || b2cData.ConversationID)
 
     if (!isAccepted) {
-      await logErrorToDb(
-        "mpesa-b2c-payout",
-        b2cData.errorMessage || b2cData.ResponseDescription || "Safaricom B2C rejected the payout request",
-        { b2cData, phone: formattedPhone, amount: numericAmount },
-        booking_id
-      )
+      await logErrorToDb({
+        errorContext: "mpesa-b2c-payout:daraja_rejection",
+        errorMessage: b2cData.errorMessage || b2cData.ResponseDescription || "Safaricom B2C rejected the payout request",
+        userEmail: currentEmail,
+        metadata: { b2cData, phone: formattedPhone, amount: numericAmount },
+        bookingId: booking_id,
+      })
     }
 
     // 5. Record in Supabase payouts table
@@ -287,23 +345,25 @@ serve(async (req) => {
 
       if (payoutInsertError) {
         console.error("[M-Pesa B2C] Failed to record payout row:", payoutInsertError)
-        await logErrorToDb(
-          "mpesa-b2c-payout",
-          "Failed to insert payout tracking record into database",
-          { payoutInsertError },
-          booking_id
-        )
+        await logErrorToDb({
+          errorContext: "mpesa-b2c-payout:db_insert",
+          errorMessage: "Failed to insert payout tracking record into database",
+          userEmail: currentEmail,
+          metadata: { payoutInsertError },
+          bookingId: booking_id,
+        })
       } else {
         console.log(`[M-Pesa B2C] Payout row inserted (status: ${isAccepted ? "processing" : "failed"})`)
       }
     } catch (insertErr) {
       console.error("[M-Pesa B2C] Exception inserting payout row:", insertErr)
-      await logErrorToDb(
-        "mpesa-b2c-payout",
-        "Exception inserting payout row",
-        { error: String(insertErr) },
-        booking_id
-      )
+      await logErrorToDb({
+        errorContext: "mpesa-b2c-payout:db_exception",
+        errorMessage: "Exception inserting payout row",
+        userEmail: currentEmail,
+        metadata: { error: String(insertErr) },
+        bookingId: booking_id,
+      })
     }
 
     // Return the response to the caller (e.g. cron)
@@ -313,12 +373,13 @@ serve(async (req) => {
     })
   } catch (error: any) {
     console.error("[M-Pesa B2C] Unexpected error:", error)
-    await logErrorToDb(
-      "mpesa-b2c-payout",
-      error.message || "An unexpected error occurred during M-Pesa B2C payout.",
-      { stack: error.stack },
-      currentBookingId
-    )
+    await logErrorToDb({
+      errorContext: "mpesa-b2c-payout:catch",
+      errorMessage: error.message || "An unexpected error occurred during M-Pesa B2C payout.",
+      userEmail: currentEmail,
+      metadata: { stack: error.stack },
+      bookingId: currentBookingId,
+    })
     return new Response(
       JSON.stringify({
         error: error.message || "An unexpected error occurred during M-Pesa B2C payout.",

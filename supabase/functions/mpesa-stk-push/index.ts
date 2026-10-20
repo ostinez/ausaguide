@@ -28,9 +28,22 @@ function getMpesaTimestamp(): string {
 }
 
 /**
- * Helper to log errors to the public.error_logs table
+ * Helper to log errors to public.error_logs
+ * Schema: id, user_email, error_context, error_message, metadata, created_at
  */
-async function logErrorToDb(service: string, errorMessage: string, details?: any, bookingId?: string) {
+async function logErrorToDb({
+  errorContext,
+  errorMessage,
+  userEmail,
+  metadata,
+  bookingId,
+}: {
+  errorContext: string
+  errorMessage: string
+  userEmail?: string | null
+  metadata?: any
+  bookingId?: string | null
+}) {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? ""
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -40,17 +53,26 @@ async function logErrorToDb(service: string, errorMessage: string, details?: any
       auth: { persistSession: false },
     })
 
-    // Only set booking_id if it matches a UUID format, otherwise preserve in details
-    const isUuid = bookingId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bookingId)
+    let resolvedEmail = userEmail || null
+    if (!resolvedEmail && bookingId && bookingId.length === 36) {
+      try {
+        const { data } = await supabase
+          .from("bookings")
+          .select("guest_email")
+          .eq("id", bookingId)
+          .maybeSingle()
+        if (data?.guest_email) resolvedEmail = data.guest_email
+      } catch (_) {}
+    }
 
     await supabase.from("error_logs").insert({
-      service,
+      user_email: resolvedEmail,
+      error_context: errorContext,
       error_message: errorMessage,
-      details: {
-        ...(details || {}),
-        raw_booking_reference: bookingId || null,
+      metadata: {
+        ...(metadata || {}),
+        booking_id: bookingId || null,
       },
-      booking_id: isUuid ? bookingId : null,
       created_at: new Date().toISOString(),
     })
   } catch (err) {
@@ -72,22 +94,27 @@ serve(async (req) => {
   }
 
   let requestRef: string | undefined = undefined
+  let requestEmail: string | undefined = undefined
 
   try {
-    const { phone, amount, reference } = await req.json()
+    const body = await req.json()
+    const { phone, amount, reference, email, user_email } = body
     requestRef = reference
+    requestEmail = email || user_email
 
     // 1. Validation
     if (!phone || !amount || !reference) {
-      await logErrorToDb(
-        "mpesa-stk-push",
-        "Missing required fields: phone, amount, and reference are required.",
-        { phone, amount, reference },
-        reference
-      )
+      const err = "Missing required fields: phone, amount, and reference are required."
+      await logErrorToDb({
+        errorContext: "mpesa-stk-push:validation",
+        errorMessage: err,
+        userEmail: requestEmail,
+        metadata: { phone, amount, reference },
+        bookingId: reference,
+      })
       return new Response(
         JSON.stringify({
-          error: "Missing required fields: phone, amount, and reference are required.",
+          error: err,
         }),
         {
           status: 400,
@@ -100,14 +127,16 @@ serve(async (req) => {
     const numericAmount = Math.round(Number(amount))
 
     if (!numericAmount || numericAmount <= 0) {
-      await logErrorToDb(
-        "mpesa-stk-push",
-        "Amount must be a positive number.",
-        { amount, numericAmount, reference },
-        reference
-      )
+      const err = "Amount must be a positive number."
+      await logErrorToDb({
+        errorContext: "mpesa-stk-push:validation",
+        errorMessage: err,
+        userEmail: requestEmail,
+        metadata: { amount, numericAmount, reference },
+        bookingId: reference,
+      })
       return new Response(
-        JSON.stringify({ error: "Amount must be a positive number." }),
+        JSON.stringify({ error: err }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -125,12 +154,13 @@ serve(async (req) => {
     if (!consumerKey || !consumerSecret || !passkey) {
       const configErrMsg = "Server configuration error: M-Pesa credentials not configured."
       console.error("[M-Pesa STK Push] " + configErrMsg)
-      await logErrorToDb(
-        "mpesa-stk-push",
-        configErrMsg,
-        { hasKey: !!consumerKey, hasSecret: !!consumerSecret, hasPasskey: !!passkey },
-        reference
-      )
+      await logErrorToDb({
+        errorContext: "mpesa-stk-push:config",
+        errorMessage: configErrMsg,
+        userEmail: requestEmail,
+        metadata: { hasKey: !!consumerKey, hasSecret: !!consumerSecret, hasPasskey: !!passkey },
+        bookingId: reference,
+      })
       return new Response(
         JSON.stringify({
           error: configErrMsg,
@@ -163,12 +193,13 @@ serve(async (req) => {
     if (!tokenResponse.ok) {
       const errText = await tokenResponse.text()
       console.error("[M-Pesa STK Push] OAuth token fetch failed:", errText)
-      await logErrorToDb(
-        "mpesa-stk-push",
-        "Failed to authenticate with Safaricom Daraja API.",
-        { status: tokenResponse.status, details: errText },
-        reference
-      )
+      await logErrorToDb({
+        errorContext: "mpesa-stk-push:oauth",
+        errorMessage: "Failed to authenticate with Safaricom Daraja API.",
+        userEmail: requestEmail,
+        metadata: { status: tokenResponse.status, details: errText },
+        bookingId: reference,
+      })
       return new Response(
         JSON.stringify({
           error: "Failed to authenticate with Safaricom Daraja API.",
@@ -185,13 +216,15 @@ serve(async (req) => {
     const accessToken = tokenData.access_token
 
     if (!accessToken) {
-      await logErrorToDb(
-        "mpesa-stk-push",
-        "Access token missing from Safaricom OAuth response.",
-        { tokenData },
-        reference
-      )
-      throw new Error("Access token missing from Safaricom OAuth response.")
+      const err = "Access token missing from Safaricom OAuth response."
+      await logErrorToDb({
+        errorContext: "mpesa-stk-push:oauth",
+        errorMessage: err,
+        userEmail: requestEmail,
+        metadata: { tokenData },
+        bookingId: reference,
+      })
+      throw new Error(err)
     }
 
     // 3. Generate Timestamp and Password
@@ -239,12 +272,13 @@ serve(async (req) => {
 
     // If Safaricom rejected or returned non-zero ResponseCode
     if (stkData.ResponseCode && stkData.ResponseCode !== "0") {
-      await logErrorToDb(
-        "mpesa-stk-push",
-        stkData.ResponseDescription || "Safaricom STK push was not accepted",
-        { stkData, phone: formattedPhone, amount: numericAmount },
-        reference
-      )
+      await logErrorToDb({
+        errorContext: "mpesa-stk-push:daraja_rejection",
+        errorMessage: stkData.ResponseDescription || "Safaricom STK push was not accepted",
+        userEmail: requestEmail,
+        metadata: { stkData, phone: formattedPhone, amount: numericAmount },
+        bookingId: reference,
+      })
     }
 
     // 5. If Safaricom accepted the push (ResponseCode === "0"), save the CheckoutRequestID
@@ -274,12 +308,13 @@ serve(async (req) => {
           `[M-Pesa STK Push] Warning: failed to save CheckoutRequestID to booking ${reference}:`,
           updateError
         )
-        await logErrorToDb(
-          "mpesa-stk-push",
-          "Failed to save CheckoutRequestID to booking",
-          { updateError, checkoutRequestId },
-          reference
-        )
+        await logErrorToDb({
+          errorContext: "mpesa-stk-push:db_update",
+          errorMessage: "Failed to save CheckoutRequestID to booking",
+          userEmail: requestEmail,
+          metadata: { updateError, checkoutRequestId },
+          bookingId: reference,
+        })
       } else {
         console.log(
           `[M-Pesa STK Push] booking ${reference}.payment_reference = "${checkoutRequestId}"`
@@ -294,12 +329,13 @@ serve(async (req) => {
     })
   } catch (error: any) {
     console.error("[M-Pesa STK Push] Unexpected error:", error)
-    await logErrorToDb(
-      "mpesa-stk-push",
-      error.message || "An unexpected error occurred during STK push.",
-      { stack: error.stack },
-      requestRef
-    )
+    await logErrorToDb({
+      errorContext: "mpesa-stk-push:catch",
+      errorMessage: error.message || "An unexpected error occurred during STK push.",
+      userEmail: requestEmail,
+      metadata: { stack: error.stack },
+      bookingId: requestRef,
+    })
     return new Response(
       JSON.stringify({
         error: error.message || "An unexpected error occurred during STK push.",
