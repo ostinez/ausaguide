@@ -28,11 +28,34 @@ function getMpesaTimestamp(): string {
 }
 
 /**
- * Returns first 12 chars of the booking UUID, safe for Safaricom's AccountReference limit.
- * E.g. "a1b2c3d4-e5f6-..." -> "a1b2c3d4-e5f"
+ * Helper to log errors to the public.error_logs table
  */
-function shortRef(bookingId: string): string {
-  return bookingId.replace(/-/g, "").slice(0, 12).toUpperCase()
+async function logErrorToDb(service: string, errorMessage: string, details?: any, bookingId?: string) {
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? ""
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    if (!supabaseUrl || !supabaseKey) return
+
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: { persistSession: false },
+    })
+
+    // Only set booking_id if it matches a UUID format, otherwise preserve in details
+    const isUuid = bookingId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bookingId)
+
+    await supabase.from("error_logs").insert({
+      service,
+      error_message: errorMessage,
+      details: {
+        ...(details || {}),
+        raw_booking_reference: bookingId || null,
+      },
+      booking_id: isUuid ? bookingId : null,
+      created_at: new Date().toISOString(),
+    })
+  } catch (err) {
+    console.error("[error_logs] Failed to log error to database:", err)
+  }
 }
 
 serve(async (req) => {
@@ -48,11 +71,20 @@ serve(async (req) => {
     })
   }
 
+  let requestRef: string | undefined = undefined
+
   try {
     const { phone, amount, reference } = await req.json()
+    requestRef = reference
 
     // 1. Validation
     if (!phone || !amount || !reference) {
+      await logErrorToDb(
+        "mpesa-stk-push",
+        "Missing required fields: phone, amount, and reference are required.",
+        { phone, amount, reference },
+        reference
+      )
       return new Response(
         JSON.stringify({
           error: "Missing required fields: phone, amount, and reference are required.",
@@ -68,6 +100,12 @@ serve(async (req) => {
     const numericAmount = Math.round(Number(amount))
 
     if (!numericAmount || numericAmount <= 0) {
+      await logErrorToDb(
+        "mpesa-stk-push",
+        "Amount must be a positive number.",
+        { amount, numericAmount, reference },
+        reference
+      )
       return new Response(
         JSON.stringify({ error: "Amount must be a positive number." }),
         {
@@ -85,10 +123,17 @@ serve(async (req) => {
     const mpesaEnv = (Deno.env.get("MPESA_ENVIRONMENT") || "production").toLowerCase().trim()
 
     if (!consumerKey || !consumerSecret || !passkey) {
-      console.error("[M-Pesa STK Push] Missing required credentials in environment variables.")
+      const configErrMsg = "Server configuration error: M-Pesa credentials not configured."
+      console.error("[M-Pesa STK Push] " + configErrMsg)
+      await logErrorToDb(
+        "mpesa-stk-push",
+        configErrMsg,
+        { hasKey: !!consumerKey, hasSecret: !!consumerSecret, hasPasskey: !!passkey },
+        reference
+      )
       return new Response(
         JSON.stringify({
-          error: "Server configuration error: M-Pesa credentials not configured.",
+          error: configErrMsg,
         }),
         {
           status: 500,
@@ -118,6 +163,12 @@ serve(async (req) => {
     if (!tokenResponse.ok) {
       const errText = await tokenResponse.text()
       console.error("[M-Pesa STK Push] OAuth token fetch failed:", errText)
+      await logErrorToDb(
+        "mpesa-stk-push",
+        "Failed to authenticate with Safaricom Daraja API.",
+        { status: tokenResponse.status, details: errText },
+        reference
+      )
       return new Response(
         JSON.stringify({
           error: "Failed to authenticate with Safaricom Daraja API.",
@@ -134,6 +185,12 @@ serve(async (req) => {
     const accessToken = tokenData.access_token
 
     if (!accessToken) {
+      await logErrorToDb(
+        "mpesa-stk-push",
+        "Access token missing from Safaricom OAuth response.",
+        { tokenData },
+        reference
+      )
       throw new Error("Access token missing from Safaricom OAuth response.")
     }
 
@@ -142,10 +199,7 @@ serve(async (req) => {
     const password = btoa(`${shortcode}${passkey}${timestamp}`)
 
     // 4. Build STK Push request
-    //    AccountReference: Safaricom hard-limits this to 12 chars.
-    //    We send a shortened reference. The booking is identified via
-    //    CheckoutRequestID which we persist after the STK push succeeds.
-    const accountReference = shortRef(String(reference))
+    const accountReference = "AUSAGUIDE"
 
     const stkUrl = `${baseUrl}/mpesa/stkpush/v1/processrequest`
     const callbackUrl =
@@ -168,7 +222,7 @@ serve(async (req) => {
 
     console.log(
       `[M-Pesa STK Push] Sending STK push to ${formattedPhone} for KES ${numericAmount}` +
-      ` (BookingID: ${reference}, ShortRef: ${accountReference})`
+      ` (BookingID: ${reference}, AccountRef: ${accountReference})`
     )
 
     const stkResponse = await fetch(stkUrl, {
@@ -183,8 +237,17 @@ serve(async (req) => {
     const stkData = await stkResponse.json()
     console.log("[M-Pesa STK Push] Response from Safaricom:", JSON.stringify(stkData))
 
-    // 5. If Safaricom accepted the push (ResponseCode === "0"), save the
-    //    CheckoutRequestID onto the booking row so the callback can look it up.
+    // If Safaricom rejected or returned non-zero ResponseCode
+    if (stkData.ResponseCode && stkData.ResponseCode !== "0") {
+      await logErrorToDb(
+        "mpesa-stk-push",
+        stkData.ResponseDescription || "Safaricom STK push was not accepted",
+        { stkData, phone: formattedPhone, amount: numericAmount },
+        reference
+      )
+    }
+
+    // 5. If Safaricom accepted the push (ResponseCode === "0"), save the CheckoutRequestID
     if (stkData.ResponseCode === "0" && stkData.CheckoutRequestID) {
       const checkoutRequestId: string = stkData.CheckoutRequestID
 
@@ -207,10 +270,15 @@ serve(async (req) => {
         .eq("id", reference)
 
       if (updateError) {
-        // Non-fatal: log and continue — the front-end still gets the 200 STK response
         console.error(
           `[M-Pesa STK Push] Warning: failed to save CheckoutRequestID to booking ${reference}:`,
           updateError
+        )
+        await logErrorToDb(
+          "mpesa-stk-push",
+          "Failed to save CheckoutRequestID to booking",
+          { updateError, checkoutRequestId },
+          reference
         )
       } else {
         console.log(
@@ -226,6 +294,12 @@ serve(async (req) => {
     })
   } catch (error: any) {
     console.error("[M-Pesa STK Push] Unexpected error:", error)
+    await logErrorToDb(
+      "mpesa-stk-push",
+      error.message || "An unexpected error occurred during STK push.",
+      { stack: error.stack },
+      requestRef
+    )
     return new Response(
       JSON.stringify({
         error: error.message || "An unexpected error occurred during STK push.",

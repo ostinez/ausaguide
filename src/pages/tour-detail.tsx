@@ -43,6 +43,7 @@ import { formatTourPrice, getHostInitials, getTourImage } from "@/lib/tour-utils
 import { addDays } from "date-fns"
 import { useSEO } from "@/hooks/useSEO"
 import { JsonLd } from "@/components/seo/JsonLd"
+import { DuplicateBookingModal } from "@/components/booking/DuplicateBookingModal"
 import { DirectMessageButton } from "@/components/common/DirectMessageButton"
 import { useUser } from "@/hooks/useUser"
 
@@ -96,6 +97,8 @@ export default function TourDetailPage() {
  const [hostAvailability, setHostAvailability] = useState<HostAvailability[]>([])
  const [bookingType, setBookingType] = useState<'physical' | 'virtual'>('physical')
  const [hostSettings, setHostSettings] = useState<HostSettings | null>(null)
+ const [duplicateModalOpen, setDuplicateModalOpen] = useState(false)
+ const [checkingDuplicate, setCheckingDuplicate] = useState(false)
 
  // Reset selectedTime when date changes
  useEffect(() => {
@@ -200,14 +203,51 @@ export default function TourDetailPage() {
  // Auth guard — consistent with rest of app (localStorage pattern)
  const isAuthenticated = !!localStorage.getItem("user_id")
 
- function handleBookNow() {
- if (!isAuthenticated) {
- navigate("/auth?redirect=" + encodeURIComponent(`/tours/${id}`) + "&message=book")
- return
- }
- if (!selectedDate || !tour || !selectedTime) return
- const dateStr = selectedDate.toISOString().slice(0, 10)
- navigate(`/checkout/${tour.id}?date=${dateStr}&time=${selectedTime}&guests=${guests}&type=${bookingType}`)
+ async function handleBookNow() {
+  if (!isAuthenticated) {
+    navigate("/auth?redirect=" + encodeURIComponent(`/tours/${id}`) + "&message=book")
+    return
+  }
+  if (!selectedDate || !tour || !selectedTime) return
+
+  setCheckingDuplicate(true)
+  try {
+    const currentUserId = localStorage.getItem("user_id")
+    const currentUserEmail = user?.email || localStorage.getItem("user_email") || ""
+
+    // Check if user already has an active booking for this tour
+    let query = supabase
+      .from("bookings")
+      .select("id, status")
+      .eq("tour_id", tour.id)
+      .not("status", "in", '("cancelled","completed")')
+
+    if (currentUserId && currentUserEmail) {
+      query = query.or(`guest_id.eq.${currentUserId},guest_email.eq.${currentUserEmail}`)
+    } else if (currentUserId) {
+      query = query.eq("guest_id", currentUserId)
+    } else if (currentUserEmail) {
+      query = query.eq("guest_email", currentUserEmail)
+    }
+
+    const { data: existingBookings, error: checkError } = await query
+
+    if (checkError) {
+      console.error("Duplicate booking check error:", checkError)
+    }
+
+    if (existingBookings && existingBookings.length > 0) {
+      setDuplicateModalOpen(true)
+      return
+    }
+  } catch (err) {
+    console.error("Duplicate check exception:", err)
+  } finally {
+    setCheckingDuplicate(false)
+  }
+
+  const dateStr = selectedDate.toISOString().slice(0, 10)
+  navigate(`/checkout/${tour.id}?date=${dateStr}&time=${selectedTime}&guests=${guests}&type=${bookingType}`)
  }
 
  function handleJoinWaitlist() {
@@ -884,10 +924,12 @@ export default function TourDetailPage() {
  >
  <Button
  className="w-full rounded-full py-6 text-base font-semibold"
- disabled={!selectedDate || !selectedTime}
+ disabled={!selectedDate || !selectedTime || checkingDuplicate}
  onClick={handleBookNow}
  >
- {!selectedDate 
+ {checkingDuplicate
+ ? "Checking availability..."
+ : !selectedDate 
  ? "Select a date to book" 
  : !selectedTime 
  ? "Select a time slot" 
@@ -972,6 +1014,12 @@ export default function TourDetailPage() {
  onClose={() => setActivePhotoIndex(null)}
  />
  )}
+
+ <DuplicateBookingModal
+   isOpen={duplicateModalOpen}
+   onClose={() => setDuplicateModalOpen(false)}
+   tourTitle={tour.title}
+ />
  </div>
  )
 }

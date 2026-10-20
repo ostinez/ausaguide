@@ -41,6 +41,8 @@ import {
   validateBookingDate,
   sanitizeText,
 } from "@/lib/validation"
+import { DuplicateBookingModal } from "@/components/booking/DuplicateBookingModal"
+import { ErrorState } from "@/components/ui/ErrorState"
 
 const STEPS = [
   { label: "Experience" },
@@ -79,6 +81,7 @@ export default function CheckoutPage() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [createdBookingId, setCreatedBookingId] = useState<string | null>(null)
   const [stkPromptSent, setStkPromptSent] = useState(false)
+  const [duplicateModalOpen, setDuplicateModalOpen] = useState(false)
 
   // Listen / poll for payment confirmation once STK push is sent
   useEffect(() => {
@@ -255,6 +258,32 @@ export default function CheckoutPage() {
       // 1. Create booking in Supabase if not created yet
       if (!bookingId) {
         const userAuth = await supabase.auth.getUser()
+        const currentGuestId = userAuth.data.user?.id || localStorage.getItem("user_id") || undefined
+        const currentGuestEmail = email.trim().toLowerCase()
+
+        // Check if user already has an active booking for this tour
+        let dupQuery = supabase
+          .from("bookings")
+          .select("id, status")
+          .eq("tour_id", tour!.id)
+          .not("status", "in", '("cancelled","completed")')
+
+        if (currentGuestId && currentGuestEmail) {
+          dupQuery = dupQuery.or(`guest_id.eq.${currentGuestId},guest_email.eq.${currentGuestEmail}`)
+        } else if (currentGuestId) {
+          dupQuery = dupQuery.eq("guest_id", currentGuestId)
+        } else if (currentGuestEmail) {
+          dupQuery = dupQuery.eq("guest_email", currentGuestEmail)
+        }
+
+        const { data: existingActive } = await dupQuery
+        if (existingActive && existingActive.length > 0) {
+          setPaying(false)
+          setPaymentStatusMessage(null)
+          setDuplicateModalOpen(true)
+          return
+        }
+
         const booking = await createBooking({
           tour_id: tour!.id,
           host_id: tour!.host_id,
@@ -263,10 +292,10 @@ export default function CheckoutPage() {
           guest_count: guests,
           total_price: total,
           guest_name: sanitizeText(name),
-          guest_email: email.trim().toLowerCase(),
+          guest_email: currentGuestEmail,
           guest_phone: phone.trim(),
           notes: notes.trim() ? sanitizeText(notes) : undefined,
-          guest_id: userAuth.data.user?.id || localStorage.getItem("user_id") || undefined,
+          guest_id: currentGuestId,
           booking_type: typeParam,
           currency: bookingCurrency,
         })
@@ -702,9 +731,16 @@ export default function CheckoutPage() {
 
                 {/* Error display */}
                 {submitError && (
-                  <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                    {submitError}
-                  </div>
+                  <ErrorState
+                    compact
+                    title="Payment / Booking Issue"
+                    message={submitError}
+                    bookingId={createdBookingId}
+                    onRetry={() => {
+                      setSubmitError(null)
+                      handlePayNow()
+                    }}
+                  />
                 )}
 
                 {/* Payments Maintenance Notice / Payment Form */}
@@ -857,6 +893,12 @@ export default function CheckoutPage() {
           <OrderSummary />
         </div>
       </div>
+
+      <DuplicateBookingModal
+        isOpen={duplicateModalOpen}
+        onClose={() => setDuplicateModalOpen(false)}
+        tourTitle={tour?.title}
+      />
     </div>
   )
 }

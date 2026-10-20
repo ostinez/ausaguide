@@ -54,6 +54,7 @@ import { LocationToggle } from "@/components/host/LocationToggle"
 import { GlassmorphismSidebar } from "@/components/ui/GlassmorphismSidebar"
 import { BorderGlow } from "@/components/ui/BorderGlow"
 import { usePlatform } from "@/hooks/use-platform"
+import { EditBookingModal } from "@/components/dashboard/EditBookingModal"
 
 
 function statusColorClass(status: BookingStatus) {
@@ -355,20 +356,26 @@ function BookingExpandedDetails({ booking }: { booking: Booking }) {
 }
 
 function BookingRow({
- booking,
- showTour,
- onChat,
+  booking,
+  showTour,
+  onChat,
+  onRefresh,
 }: {
- booking: Booking
- showTour?: boolean
- onChat?: (booking: Booking) => void
+  booking: Booking
+  showTour?: boolean
+  onChat?: (booking: Booking) => void
+  onRefresh?: () => void
 }) {
- const [expanded, setExpanded] = useState(false)
- const dateStr = format(new Date(booking.booking_date), "MMM d, yyyy")
- const [joiningCall, setJoiningCall] = useState(false)
- const [countdown, setCountdown] = useState<string>("")
- const [payingOut, setPayingOut] = useState(false)
- const [payoutDone, setPayoutDone] = useState(booking.host_paid === true)
+  const [expanded, setExpanded] = useState(false)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const dateStr = format(new Date(booking.booking_date), "MMM d, yyyy")
+  const [joiningCall, setJoiningCall] = useState(false)
+  const [countdown, setCountdown] = useState<string>("")
+  const [payingOut, setPayingOut] = useState(false)
+  const [payoutDone, setPayoutDone] = useState(booking.host_paid === true)
+
+  const isFutureBooking = new Date(booking.booking_date).getTime() >= new Date().setHours(0, 0, 0, 0)
+  const canEditBooking = isFutureBooking && booking.status !== "cancelled" && booking.status !== "declined"
 
   async function handleConfirmCompletion(e: React.MouseEvent) {
     e.stopPropagation()
@@ -516,8 +523,22 @@ function BookingRow({
       </div>
 
       {/* Action buttons row */}
-      {(onChat || (booking.status as string) === "confirmed" || (((booking.status as string) === "confirmed" || (booking.status as string) === "completed") && !showTour) || (booking.status === "declined" && booking.decline_reason)) && (
+      {(onChat || canEditBooking || (booking.status as string) === "confirmed" || (((booking.status as string) === "confirmed" || (booking.status as string) === "completed") && !showTour) || (booking.status === "declined" && booking.decline_reason)) && (
         <div className="flex flex-wrap items-center gap-2 pt-2.5 border-t border-border/50">
+          {canEditBooking && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="rounded-full border-primary/50 text-primary hover:bg-primary/10 h-8 text-xs font-semibold px-3 gap-1.5"
+              onClick={(e) => {
+                e.stopPropagation()
+                setEditModalOpen(true)
+              }}
+            >
+              <Pencil className="size-3.5" />
+              Edit Booking
+            </Button>
+          )}
           {onChat && (
             <Button
               size="sm"
@@ -579,6 +600,15 @@ function BookingRow({
       )}
 
       {expanded && <BookingExpandedDetails booking={booking} />}
+
+      <EditBookingModal
+        isOpen={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        booking={booking}
+        onSuccess={() => {
+          if (onRefresh) onRefresh()
+        }}
+      />
     </div>
  )
 }
@@ -1342,66 +1372,74 @@ function UrgentRequestCardItem({
  )
 }
 
-function TravelerDashboard({ bookings = [], onChat }: { bookings?: Booking[]; onChat?: (booking: Booking) => void }) {
- const upcoming = bookings.filter(
- (b) => b.status === "confirmed" || b.status === "pending",
- )
- const past = bookings.filter(
- (b) => b.status === "completed" || b.status === "declined",
- )
- const totalSpent = bookings.reduce((sum, b) => sum + b.total_price, 0)
+function TravelerDashboard({
+  bookings = [],
+  onChat,
+  onRefresh,
+}: {
+  bookings?: Booking[]
+  onChat?: (booking: Booking) => void
+  onRefresh?: () => void
+}) {
+  const upcoming = bookings.filter(
+    (b) => b.status === "confirmed" || b.status === "pending",
+  )
+  const past = bookings.filter(
+    (b) => b.status === "completed" || b.status === "declined",
+  )
+  const totalSpent = bookings.reduce((sum, b) => sum + b.total_price, 0)
 
- return (
- <div className="space-y-8">
- <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
- <StatCard icon={Calendar} label="Upcoming" value={upcoming.length.toString()} />
- <StatCard icon={Clock} label="Past Trips" value={past.length.toString()} accent />
- <StatCard
- icon={TrendingUp}
- label="Total Spent"
- value={`KSh ${totalSpent.toLocaleString()}`}
- />
- </div>
+  return (
+    <div className="space-y-8">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+        <StatCard icon={Calendar} label="Upcoming" value={upcoming.length.toString()} />
+        <StatCard icon={Clock} label="Past Trips" value={past.length.toString()} accent />
+        <StatCard
+          icon={TrendingUp}
+          label="Total Spent"
+          value={`KSh ${totalSpent.toLocaleString()}`}
+        />
+      </div>
 
- {/* Upcoming */}
- <Card>
- <CardHeader>
- <CardTitle>Upcoming Tours</CardTitle>
- <CardDescription>Your scheduled experiences</CardDescription>
- </CardHeader>
- <CardContent className="space-y-3">
- {upcoming.length === 0 ? (
- <p className="py-6 text-center text-sm text-muted-foreground">
- No upcoming tours yet
- </p>
- ) : (
- upcoming.map((b) => (
- <BookingRow key={b.id} booking={b} showTour onChat={onChat} />
- ))
- )}
- </CardContent>
- </Card>
+      {/* Upcoming */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Upcoming Tours</CardTitle>
+          <CardDescription>Your scheduled experiences</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {upcoming.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              No upcoming tours yet
+            </p>
+          ) : (
+            upcoming.map((b) => (
+              <BookingRow key={b.id} booking={b} showTour onChat={onChat} onRefresh={onRefresh} />
+            ))
+          )}
+        </CardContent>
+      </Card>
 
- {/* Past trips */}
- <Card>
- <CardHeader>
- <CardTitle>Past Trips</CardTitle>
- <CardDescription>
- Your completed experiences
- </CardDescription>
- </CardHeader>
- <CardContent className="space-y-3">
- {past.length === 0 ? (
- <p className="py-6 text-center text-sm text-muted-foreground">
- No past trips yet.
- </p>
- ) : (
- past.map((b) => (
- <BookingRow key={b.id} booking={b} showTour onChat={onChat} />
- ))
- )}
- </CardContent>
- </Card>
+      {/* Past trips */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Past Trips</CardTitle>
+          <CardDescription>
+            Your completed experiences
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {past.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              No past trips yet.
+            </p>
+          ) : (
+            past.map((b) => (
+              <BookingRow key={b.id} booking={b} showTour onChat={onChat} onRefresh={onRefresh} />
+            ))
+          )}
+        </CardContent>
+      </Card>
 
  {/* CTA */}
  <div className="flex justify-center">
@@ -2140,7 +2178,7 @@ export default function DashboardPage() {
  )
  ) : (
  <div className="animate-in fade-in duration-300">
- <TravelerDashboard bookings={travelerBookings} onChat={handleChatClick} />
+ <TravelerDashboard bookings={travelerBookings} onChat={handleChatClick} onRefresh={loadDashboard} />
  </div>
  )}
  </div>
