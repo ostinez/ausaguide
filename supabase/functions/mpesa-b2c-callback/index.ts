@@ -77,16 +77,20 @@ serve(async (req) => {
     // Resolve booking
     let booking: any = null
     if (originatorConversationId) {
-      const { data, error } = await supabase
-        .from("bookings")
-        .select("id, host_id, total_price, payment_amount, host_paid")
-        .eq("id", originatorConversationId)
-        .maybeSingle()
+      try {
+        const { data, error } = await supabase
+          .from("bookings")
+          .select("id, host_id, total_price, payment_amount, host_paid")
+          .eq("id", originatorConversationId)
+          .maybeSingle()
 
-      if (error) {
-        console.error(`[M-Pesa B2C Callback] Error querying booking "${originatorConversationId}":`, error)
-      } else {
-        booking = data
+        if (error) {
+          console.error(`[M-Pesa B2C Callback] Error querying booking "${originatorConversationId}":`, error)
+        } else {
+          booking = data
+        }
+      } catch (err: any) {
+        console.error(`[M-Pesa B2C Callback] Exception querying booking "${originatorConversationId}":`, err)
       }
     }
 
@@ -99,69 +103,82 @@ serve(async (req) => {
         (booking ? Math.round(Number(booking.payment_amount || booking.total_price || 0) * 0.8) : 0)
 
       // 1. Update payouts table
-      const { error: payoutUpdateError } = await supabase
-        .from("payouts")
-        .update({
-          status: "completed",
-          gateway_reference: transactionId || conversationId || originatorConversationId,
-          amount: finalAmount,
-          failure_reason: null,
-          metadata: {
-            b2c_result: result,
-            completed_at: new Date().toISOString(),
-          },
-          processed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .or(
-          `booking_id.eq.${originatorConversationId},gateway_reference.eq.${originatorConversationId},tracking_id.eq.${conversationId}`
-        )
+      try {
+        const { error: payoutUpdateError } = await supabase
+          .from("payouts")
+          .update({
+            status: "completed",
+            gateway_reference: transactionId || conversationId || originatorConversationId,
+            amount: finalAmount,
+            failure_reason: null,
+            metadata: {
+              b2c_result: result,
+              completed_at: new Date().toISOString(),
+            },
+            processed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .or(
+            `booking_id.eq.${originatorConversationId},gateway_reference.eq.${originatorConversationId},tracking_id.eq.${conversationId}`
+          )
 
-      if (payoutUpdateError) {
-        console.error("[M-Pesa B2C Callback] Failed to update payouts row:", payoutUpdateError)
-      } else {
+        if (payoutUpdateError) {
+          throw payoutUpdateError
+        }
         console.log(`[M-Pesa B2C Callback] payouts table marked as status='completed', gateway_reference='${transactionId}'`)
+      } catch (error: any) {
+        console.error("[M-Pesa B2C Callback] Database update failed on payouts:", error)
       }
 
       // 2. Update bookings table
       if (originatorConversationId) {
-        const { error: bookingUpdateError } = await supabase
-          .from("bookings")
-          .update({
-            host_paid: true,
-            host_payout_amount: finalAmount,
-            host_payout_id: transactionId || conversationId,
-            host_payout_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", originatorConversationId)
+        try {
+          const { error: bookingUpdateError } = await supabase
+            .from("bookings")
+            .update({
+              host_paid: true,
+              host_payout_amount: finalAmount,
+              host_payout_id: transactionId || conversationId,
+              host_payout_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", originatorConversationId)
 
-        if (bookingUpdateError) {
-          console.error(`[M-Pesa B2C Callback] Failed to update booking "${originatorConversationId}":`, bookingUpdateError)
-        } else {
+          if (bookingUpdateError) {
+            throw bookingUpdateError
+          }
           console.log(
             `[M-Pesa B2C Callback] bookings table updated: host_paid=true, host_payout_amount=${finalAmount}`
           )
+        } catch (error: any) {
+          console.error(`[M-Pesa B2C Callback] Database update failed on booking "${originatorConversationId}":`, error)
         }
       }
 
       // 3. Create host in-app notification
       if (booking?.host_id) {
-        await supabase
-          .from("notifications")
-          .insert({
-            user_id: booking.host_id,
-            title: "Payout Dispatched via M-Pesa",
-            message: `Your host payout of KES ${Number(finalAmount).toLocaleString()} for booking #${originatorConversationId.slice(0, 8)} has been completed (Receipt: ${transactionId || "Confirmed"}).`,
-            type: "payout_sent",
-            data: {
-              booking_id: originatorConversationId,
-              transaction_id: transactionId,
-              amount: finalAmount,
-            },
-            read: false,
-          })
-          .catch((err: any) => console.warn("[M-Pesa B2C Callback] Notification insert warning:", err))
+        try {
+          const { error: notifError } = await supabase
+            .from("notifications")
+            .insert({
+              user_id: booking.host_id,
+              title: "Payout Dispatched via M-Pesa",
+              message: `Your host payout of KES ${Number(finalAmount).toLocaleString()} for booking #${originatorConversationId.slice(0, 8)} has been completed (Receipt: ${transactionId || "Confirmed"}).`,
+              type: "payout_sent",
+              data: {
+                booking_id: originatorConversationId,
+                transaction_id: transactionId,
+                amount: finalAmount,
+              },
+              read: false,
+            })
+
+          if (notifError) {
+            console.warn("[M-Pesa B2C Callback] Notification insert warning:", notifError)
+          }
+        } catch (err: any) {
+          console.warn("[M-Pesa B2C Callback] Notification exception:", err)
+        }
       }
     } else {
       // FAILURE (ResultCode !== 0)
@@ -171,21 +188,28 @@ serve(async (req) => {
 
       // Update payouts table as failed
       if (originatorConversationId) {
-        await supabase
-          .from("payouts")
-          .update({
-            status: "failed",
-            failure_reason: resultDesc || `M-Pesa error code ${resultCode}`,
-            metadata: {
-              b2c_result: result,
-              failed_at: new Date().toISOString(),
-            },
-            updated_at: new Date().toISOString(),
-          })
-          .or(
-            `booking_id.eq.${originatorConversationId},gateway_reference.eq.${originatorConversationId},tracking_id.eq.${conversationId}`
-          )
-          .catch((err: any) => console.warn("[M-Pesa B2C Callback] Payout fail update warning:", err))
+        try {
+          const { error: payoutFailError } = await supabase
+            .from("payouts")
+            .update({
+              status: "failed",
+              failure_reason: resultDesc || `M-Pesa error code ${resultCode}`,
+              metadata: {
+                b2c_result: result,
+                failed_at: new Date().toISOString(),
+              },
+              updated_at: new Date().toISOString(),
+            })
+            .or(
+              `booking_id.eq.${originatorConversationId},gateway_reference.eq.${originatorConversationId},tracking_id.eq.${conversationId}`
+            )
+
+          if (payoutFailError) {
+            throw payoutFailError
+          }
+        } catch (error: any) {
+          console.error("[M-Pesa B2C Callback] Database update failed on failed payout:", error)
+        }
       }
     }
 
