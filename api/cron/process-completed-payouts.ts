@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node"
 import { createClient } from "@supabase/supabase-js"
 
 /**
- * 24-Hour Post-Tour Completion Payout Processor (Payza API)
+ * 24-Hour Post-Tour Completion Payout Processor (Direct Daraja M-Pesa B2C)
  *
  * Route: GET/POST /api/cron/process-completed-payouts
  *
@@ -12,18 +12,14 @@ import { createClient } from "@supabase/supabase-js"
  *    - payment_status = 'paid'
  *    - host_paid = false
  *    - paid_at was more than 24 hours ago
- * 2. Calculate host share: total_price * 0.80 (80%)
- * 3. Invoke Payza Payout API (/api/v1/payout) for each eligible booking
- * 4. Insert into payouts table and mark booking host_paid = true
+ * 2. Fetch the host's phone number from the profiles table using host_id
+ * 3. Calculate 80% of the booking amount (total_price * 0.80)
+ * 4. Invoke the Supabase Edge Function mpesa-b2c-payout
  */
 
-const PAYZA_PUBLIC_KEY = process.env.PAYZA_PUBLIC_KEY || ""
-const PAYZA_SECRET_KEY = process.env.PAYZA_SECRET_KEY || ""
 const CRON_SECRET = process.env.CRON_SECRET || ""
-
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || ""
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ""
-
 const HOST_COMMISSION_RATE = 0.80 // Host receives 80%, platform retains 20%
 
 /**
@@ -58,14 +54,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ success: false, error: "Supabase credentials not configured." })
   }
 
-  console.log("[Payout Cron] Starting run at", new Date().toISOString())
-  console.log("[Payout Cron] SUPABASE_URL:", SUPABASE_URL ? "SET" : "MISSING")
-  console.log("[Payout Cron] PAYZA_PUBLIC_KEY:", PAYZA_PUBLIC_KEY ? "SET" : "MISSING")
-  console.log("[Payout Cron] PAYZA_SECRET_KEY:", PAYZA_SECRET_KEY ? "SET" : "MISSING")
-
-  if (!PAYZA_PUBLIC_KEY || !PAYZA_SECRET_KEY) {
-    console.error("[Payout Cron] PAYZA_PUBLIC_KEY or PAYZA_SECRET_KEY missing in environment!")
-  }
+  console.log("[Payout Cron] Starting M-Pesa B2C Payout run at", new Date().toISOString())
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false },
@@ -73,7 +62,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-    console.log("[Payout Cron] Looking for bookings with paid_at before:", twentyFourHoursAgo)
+    console.log("[Payout Cron] Looking for completed & paid bookings with paid_at before:", twentyFourHoursAgo)
 
     // ── STEP 1: Query eligible bookings ────────────────────────────────────
     const { data: eligibleBookings, error: queryError } = await supabase
@@ -86,16 +75,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         payment_amount,
         currency,
         paid_at,
-        updated_at,
-        created_at,
         host_id,
-        guest_phone,
-        host:profiles!bookings_host_id_fkey(
-          id,
-          full_name,
-          phone,
-          email
-        )
+        guest_phone
       `)
       .eq("status", "completed")
       .eq("payment_status", "paid")
@@ -104,8 +85,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .limit(50)
 
     if (queryError) {
-      console.error("[Payout Cron] Query error:", JSON.stringify(queryError))
-      return res.status(500).json({ success: false, error: queryError.message, detail: queryError })
+      console.error("[Payout Cron] Query error:", queryError)
+      return res.status(500).json({ success: false, error: queryError.message })
     }
 
     console.log(`[Payout Cron] Found ${eligibleBookings?.length ?? 0} eligible booking(s)`)
@@ -120,203 +101,121 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const results: any[] = []
-    const payzaPayoutUrl = "https://payzaapi.co.ke/api/v1/payout"
+    const edgeFunctionUrl = `${SUPABASE_URL}/functions/v1/mpesa-b2c-payout`
 
     for (const booking of eligibleBookings) {
       console.log(`\n[Payout Cron] ─── Processing booking ${booking.id} ───`)
 
-      const hostProfile: any = booking.host
-      const rawPhone = hostProfile?.phone || booking.guest_phone
-      const hostName = hostProfile?.full_name || "Ausaguide Host"
-      const hostEmail = hostProfile?.email || null
+      // ── STEP 2: Fetch host phone from profiles table using host_id ───────
+      let hostPhone = ""
+      let hostName = "Ausaguide Host"
 
-      console.log(`[Payout Cron]   host_id:    ${booking.host_id}`)
-      console.log(`[Payout Cron]   host_name:  ${hostName}`)
-      console.log(`[Payout Cron]   raw_phone:  ${rawPhone ?? "MISSING"}`)
-      console.log(`[Payout Cron]   host_email: ${hostEmail ?? "N/A"}`)
-      console.log(`[Payout Cron]   currency:   ${booking.currency || "NULL → will use KES"}`)
-      console.log(`[Payout Cron]   total_price:    ${booking.total_price}`)
-      console.log(`[Payout Cron]   payment_amount: ${booking.payment_amount}`)
+      if (booking.host_id) {
+        const { data: hostProfile, error: profileError } = await supabase
+          .from("profiles")
+          .select("id, full_name, phone, email")
+          .eq("id", booking.host_id)
+          .maybeSingle()
 
-      // Skip if no phone
-      if (!rawPhone) {
-        console.warn(`[Payout Cron]   ⚠ SKIPPED: Host phone number missing for booking ${booking.id}`)
+        if (profileError) {
+          console.warn(`[Payout Cron] Error fetching profile for host ${booking.host_id}:`, profileError)
+        } else if (hostProfile) {
+          hostPhone = hostProfile.phone || ""
+          if (hostProfile.full_name) hostName = hostProfile.full_name
+        }
+      }
+
+      // Fallback: if profile didn't have phone, check guest_phone or log warning
+      if (!hostPhone) {
+        console.warn(`[Payout Cron] ⚠ SKIPPED: Host phone number missing in profiles for booking ${booking.id}`)
         results.push({ booking_id: booking.id, status: "skipped", reason: "missing_host_phone" })
         continue
       }
 
+      const formattedPhone = formatKenyaPhone(hostPhone)
+      if (!/^254[17]\d{8}$/.test(formattedPhone)) {
+        console.warn(`[Payout Cron] ⚠ SKIPPED: Host phone "${formattedPhone}" is not a valid Kenyan number`)
+        results.push({ booking_id: booking.id, status: "skipped", reason: "invalid_phone_format", phone: formattedPhone })
+        continue
+      }
+
+      // ── STEP 3: Calculate 80% host payout amount ─────────────────────────
       const totalAmount = Number(booking.payment_amount || booking.total_price || 0)
       const hostShare = Math.round(totalAmount * HOST_COMMISSION_RATE)
       const platformFee = totalAmount - hostShare
-      const currency = "KES"
-      const formattedPhone = formatKenyaPhone(rawPhone)
-
-      console.log(`[Payout] Booking ${booking.id}: Total ${totalAmount}, Host 80% = ${hostShare}, Platform 20% = ${platformFee}`)
-      console.log(`[Payout Cron]   account_number (phone): ${formattedPhone}`)
 
       if (hostShare <= 0) {
-        console.warn(`[Payout Cron]   ⚠ SKIPPED: Payout amount is 0 for booking ${booking.id}`)
+        console.warn(`[Payout Cron] ⚠ SKIPPED: Payout amount is 0 for booking ${booking.id}`)
         results.push({ booking_id: booking.id, status: "skipped", reason: "zero_amount" })
         continue
       }
 
-      // Payza Payout Request Payload
-      const payoutBody = {
+      console.log(`[Payout Cron] Booking ${booking.id}: Total ${totalAmount}, Host 80% = ${hostShare}, Platform 20% = ${platformFee}`)
+      console.log(`[Payout Cron] Sending payout to ${hostName} (${formattedPhone})...`)
+
+      // ── STEP 4: Call mpesa-b2c-payout Edge Function ──────────────────────
+      const payoutPayload = {
+        phone: formattedPhone,
         amount: hostShare,
-        currency: "KES",
-        method: "mpesa",
-        account_number: formattedPhone,
-        account_name: hostName,
+        booking_id: booking.id,
+        host_name: hostName,
+        host_id: booking.host_id,
       }
 
-      console.log(`[Payout Cron] → Payza Payout Request:`, JSON.stringify(payoutBody, null, 2))
-
-      let payzaOk = false
-      let trackingId = `PAYZA_PO_${booking.id}_${Date.now()}`
-      let responseJson: any = {}
-      let httpStatus = 0
-
       try {
-        const payzaRes = await fetch(payzaPayoutUrl, {
+        const edgeRes = await fetch(edgeFunctionUrl, {
           method: "POST",
           headers: {
-            "X-Public-Key": PAYZA_PUBLIC_KEY,
-            "X-Secret-Key": PAYZA_SECRET_KEY,
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            "apikey": SUPABASE_SERVICE_ROLE_KEY,
           },
-          body: JSON.stringify(payoutBody),
+          body: JSON.stringify(payoutPayload),
         })
 
-        httpStatus = payzaRes.status
-        console.log(`[Payout Cron] ← Payza HTTP status: ${httpStatus}`)
+        const edgeData = await edgeRes.json().catch(() => ({}))
+        console.log(`[Payout Cron] Edge Function response (HTTP ${edgeRes.status}):`, edgeData)
 
-        try {
-          responseJson = await payzaRes.json()
-        } catch {
-          responseJson = { raw: await payzaRes.text(), ok: payzaRes.ok }
-        }
+        const isSuccess = edgeRes.ok && (edgeData.ResponseCode === "0" || edgeData.ConversationID)
 
-        console.log(`[Payout Cron] ← Payza Response Body:`, JSON.stringify(responseJson, null, 2))
-
-        const returnedStatus = String(
-          responseJson?.payout?.status || responseJson?.data?.status || responseJson?.status || ""
-        ).toLowerCase()
-
-        // Payza considers 200/201 without explicit failure status as success
-        const isFailedStatus = returnedStatus === "failed" || returnedStatus === "error"
-        if (payzaRes.ok && !isFailedStatus) {
-          payzaOk = true
+        if (isSuccess) {
+          results.push({
+            booking_id: booking.id,
+            status: "initiated",
+            amount: hostShare,
+            host_name: hostName,
+            phone: formattedPhone,
+            conversation_id: edgeData.ConversationID,
+            originator_conversation_id: edgeData.OriginatorConversationID,
+          })
         } else {
-          console.error(`[Payout Cron] ✗ Payza API rejected payout:`, JSON.stringify(responseJson))
+          console.error(`[Payout Cron] ✗ Payout rejected by M-Pesa B2C:`, edgeData)
+          results.push({
+            booking_id: booking.id,
+            status: "failed",
+            error: edgeData.errorMessage || edgeData.ResponseDescription || edgeData.error || `HTTP ${edgeRes.status}`,
+            details: edgeData,
+          })
         }
-      } catch (fetchErr: any) {
-        console.error(`[Payout Cron] ✗ Payza fetch threw exception:`, fetchErr?.message)
+      } catch (callErr: any) {
+        console.error(`[Payout Cron] ✗ Error calling mpesa-b2c-payout for booking ${booking.id}:`, callErr)
         results.push({
           booking_id: booking.id,
           status: "failed",
-          error: `Payza fetch error: ${fetchErr?.message}`,
-        })
-        continue
-      }
-
-      // Extract reference from Payza response
-      const gatewayReference =
-        responseJson?.payout?.reference ||
-        responseJson?.data?.reference ||
-        responseJson?.reference ||
-        trackingId
-
-      const payoutStatus = payzaOk ? "completed" : "failed"
-
-      // ── STEP 2: Insert into payouts table ──────────────────────────────
-      console.log(`[Payout Cron] → Inserting record into payouts table (gateway_reference: ${gatewayReference})...`)
-      const { data: payoutRow, error: payoutInsertError } = await supabase
-        .from("payouts")
-        .insert({
-          booking_id: booking.id,
-          host_id: booking.host_id,
-          amount: hostShare,
-          currency: "KES",
-          payout_method: "mpesa",
-          recipient_phone: formattedPhone,
-          recipient_name: hostName,
-          gateway_reference: gatewayReference,
-          tracking_id: trackingId,
-          status: payoutStatus,
-          failure_reason: payzaOk ? null : (responseJson?.message || responseJson?.error || `HTTP ${httpStatus}`),
-          metadata: {
-            payza_response: responseJson,
-            payza_request: payoutBody,
-            http_status: httpStatus,
-          },
-          processed_at: new Date().toISOString(),
-        })
-        .select("id")
-        .single()
-
-      if (payoutInsertError) {
-        console.error(`[Payout Cron] ✗ payouts insert error:`, JSON.stringify(payoutInsertError))
-      } else {
-        console.log(`[Payout Cron] ✓ payouts row created: ${payoutRow?.id}`)
-      }
-
-      // ── STEP 3: Update bookings to mark host_paid ──────────────────────
-      if (payzaOk) {
-        console.log(`[Payout Cron] → Marking booking ${booking.id} as host_paid = true...`)
-        const { error: updateError } = await supabase
-          .from("bookings")
-          .update({
-            host_paid: true,
-            host_payout_amount: hostShare,
-            host_payout_id: gatewayReference,
-            host_payout_at: new Date().toISOString(),
-            currency: "KES",
-          })
-          .eq("id", booking.id)
-
-        if (updateError) {
-          console.error(`[Payout Cron] ✗ bookings update error:`, JSON.stringify(updateError))
-          results.push({
-            booking_id: booking.id,
-            status: "payout_sent_but_db_update_failed",
-            error: updateError.message,
-            gateway_reference: gatewayReference,
-            payza_response: responseJson,
-          })
-        } else {
-          console.log(`[Payout Cron] ✓ Booking ${booking.id} marked host_paid = true`)
-          results.push({
-            booking_id: booking.id,
-            status: "paid",
-            host_share: hostShare,
-            platform_fee: platformFee,
-            host_name: hostName,
-            account_number: formattedPhone,
-            gateway_reference: gatewayReference,
-            currency: "KES",
-            payza_response: responseJson,
-          })
-        }
-      } else {
-        results.push({
-          booking_id: booking.id,
-          status: "payza_failed",
-          http_status: httpStatus,
-          gateway_reference: gatewayReference,
-          payza_response: responseJson,
+          error: callErr.message || "Failed to call mpesa-b2c-payout edge function",
         })
       }
     }
 
-    const failedCount = results.filter((r) => r.status !== "paid" && r.status !== "skipped").length
-    const paidCount = results.filter((r) => r.status === "paid").length
+    const initiatedCount = results.filter((r) => r.status === "initiated").length
+    const failedCount = results.filter((r) => r.status === "failed").length
 
-    console.log(`\n[Payout Cron] Finished. Paid: ${paidCount}, Failed: ${failedCount}, Total: ${results.length}`)
+    console.log(`\n[Payout Cron] Finished run. Initiated: ${initiatedCount}, Failed: ${failedCount}, Total: ${results.length}`)
 
     return res.status(200).json({
       success: failedCount === 0,
       processed_count: results.length,
-      paid_count: paidCount,
+      initiated_count: initiatedCount,
       failed_count: failedCount,
       timestamp: new Date().toISOString(),
       results,
