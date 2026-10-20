@@ -121,6 +121,7 @@ serve(async (req) => {
     const consumerKey = Deno.env.get("MPESA_CONSUMER_KEY")
     const consumerSecret = Deno.env.get("MPESA_CONSUMER_SECRET")
     const initiatorName = Deno.env.get("MPESA_INITIATOR_NAME")
+    const pregeneratedCredential = Deno.env.get("MPESA_SECURITY_CREDENTIAL")
     const initiatorPassword = Deno.env.get("MPESA_INITIATOR_PASSWORD")
     const certificate = Deno.env.get("MPESA_CERTIFICATE") || Deno.env.get("MPESA_PUBLIC_CERT")
     const shortcode = Deno.env.get("MPESA_B2C_SHORTCODE") || Deno.env.get("MPESA_SHORTCODE") || "1327856"
@@ -130,8 +131,11 @@ serve(async (req) => {
     if (!consumerKey) missingConfigs.push("MPESA_CONSUMER_KEY")
     if (!consumerSecret) missingConfigs.push("MPESA_CONSUMER_SECRET")
     if (!initiatorName) missingConfigs.push("MPESA_INITIATOR_NAME")
-    if (!initiatorPassword) missingConfigs.push("MPESA_INITIATOR_PASSWORD")
-    if (!certificate) missingConfigs.push("MPESA_CERTIFICATE")
+
+    // Must have either pre-generated MPESA_SECURITY_CREDENTIAL OR (MPESA_INITIATOR_PASSWORD + MPESA_CERTIFICATE)
+    if (!pregeneratedCredential && (!initiatorPassword || !certificate)) {
+      missingConfigs.push("MPESA_SECURITY_CREDENTIAL (or MPESA_INITIATOR_PASSWORD + MPESA_CERTIFICATE)")
+    }
 
     if (missingConfigs.length > 0) {
       console.error(`[M-Pesa B2C] Missing required environment variables: ${missingConfigs.join(", ")}`)
@@ -151,23 +155,28 @@ serve(async (req) => {
         ? "https://sandbox.safaricom.co.ke"
         : "https://api.safaricom.co.ke"
 
-    // 3. Generate SecurityCredential
+    // 3. Resolve SecurityCredential
     let securityCredential = ""
-    try {
-      securityCredential = generateSecurityCredential(initiatorPassword!, certificate!)
-      console.log("[M-Pesa B2C] Generated SecurityCredential successfully")
-    } catch (certErr: any) {
-      console.error("[M-Pesa B2C] Failed to generate SecurityCredential:", certErr)
-      return new Response(
-        JSON.stringify({
-          error: "Failed to generate M-Pesa SecurityCredential from provided certificate.",
-          details: certErr.message,
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      )
+    if (pregeneratedCredential && pregeneratedCredential.trim()) {
+      securityCredential = pregeneratedCredential.trim()
+      console.log("[M-Pesa B2C] Using pre-generated MPESA_SECURITY_CREDENTIAL from environment")
+    } else {
+      try {
+        securityCredential = generateSecurityCredential(initiatorPassword!, certificate!)
+        console.log("[M-Pesa B2C] Generated SecurityCredential from MPESA_CERTIFICATE successfully")
+      } catch (certErr: any) {
+        console.error("[M-Pesa B2C] Failed to generate SecurityCredential:", certErr)
+        return new Response(
+          JSON.stringify({
+            error: "Failed to generate M-Pesa SecurityCredential from provided certificate.",
+            details: certErr.message,
+          }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        )
+      }
     }
 
     // 4. Fetch OAuth Token via Basic Auth
