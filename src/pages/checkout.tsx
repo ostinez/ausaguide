@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useParams, useSearchParams, Link } from "react-router-dom"
+import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom"
 import { format } from "date-fns"
 import {
   ArrowLeft,
@@ -49,6 +49,7 @@ const STEPS = [
 ]
 
 export default function CheckoutPage() {
+  const navigate = useNavigate()
   const { tourId } = useParams<{ tourId: string }>()
   const [searchParams] = useSearchParams()
 
@@ -78,6 +79,34 @@ export default function CheckoutPage() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [createdBookingId, setCreatedBookingId] = useState<string | null>(null)
   const [stkPromptSent, setStkPromptSent] = useState(false)
+
+  // Listen / poll for payment confirmation once STK push is sent
+  useEffect(() => {
+    if (!stkPromptSent || !createdBookingId) return
+
+    let cancelled = false
+    const pollInterval = setInterval(async () => {
+      try {
+        const { data } = await supabase
+          .from("bookings")
+          .select("payment_status")
+          .eq("id", createdBookingId)
+          .maybeSingle()
+
+        if (!cancelled && data?.payment_status === "paid") {
+          clearInterval(pollInterval)
+          navigate(`/confirmation/${createdBookingId}`)
+        }
+      } catch (err) {
+        console.error("[Checkout] Polling error:", err)
+      }
+    }, 2500)
+
+    return () => {
+      cancelled = true
+      clearInterval(pollInterval)
+    }
+  }, [stkPromptSent, createdBookingId, navigate])
 
   // Load tour
   useEffect(() => {

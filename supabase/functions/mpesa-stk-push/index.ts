@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,6 +25,14 @@ function getMpesaTimestamp(): string {
   const now = new Date()
   const pad = (n: number) => n.toString().padStart(2, "0")
   return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`
+}
+
+/**
+ * Returns first 12 chars of the booking UUID, safe for Safaricom's AccountReference limit.
+ * E.g. "a1b2c3d4-e5f6-..." -> "a1b2c3d4-e5f"
+ */
+function shortRef(bookingId: string): string {
+  return bookingId.replace(/-/g, "").slice(0, 12).toUpperCase()
 }
 
 serve(async (req) => {
@@ -132,7 +141,12 @@ serve(async (req) => {
     const timestamp = getMpesaTimestamp()
     const password = btoa(`${shortcode}${passkey}${timestamp}`)
 
-    // 4. Send STK Push request
+    // 4. Build STK Push request
+    //    AccountReference: Safaricom hard-limits this to 12 chars.
+    //    We send a shortened reference. The booking is identified via
+    //    CheckoutRequestID which we persist after the STK push succeeds.
+    const accountReference = shortRef(String(reference))
+
     const stkUrl = `${baseUrl}/mpesa/stkpush/v1/processrequest`
     const callbackUrl =
       Deno.env.get("MPESA_CALLBACK_URL") ||
@@ -148,12 +162,13 @@ serve(async (req) => {
       PartyB: shortcode,
       PhoneNumber: formattedPhone,
       CallBackURL: callbackUrl,
-      AccountReference: reference,
+      AccountReference: accountReference,
       TransactionDesc: "Ausaguide Booking",
     }
 
     console.log(
-      `[M-Pesa STK Push] Sending STK push to ${formattedPhone} for KES ${numericAmount} (Ref: ${reference})`
+      `[M-Pesa STK Push] Sending STK push to ${formattedPhone} for KES ${numericAmount}` +
+      ` (BookingID: ${reference}, ShortRef: ${accountReference})`
     )
 
     const stkResponse = await fetch(stkUrl, {
@@ -166,11 +181,47 @@ serve(async (req) => {
     })
 
     const stkData = await stkResponse.json()
-    console.log("[M-Pesa STK Push] Response from Safaricom:", stkData)
+    console.log("[M-Pesa STK Push] Response from Safaricom:", JSON.stringify(stkData))
 
-    // 5. Return response from Safaricom to the frontend
+    // 5. If Safaricom accepted the push (ResponseCode === "0"), save the
+    //    CheckoutRequestID onto the booking row so the callback can look it up.
+    if (stkData.ResponseCode === "0" && stkData.CheckoutRequestID) {
+      const checkoutRequestId: string = stkData.CheckoutRequestID
+
+      console.log(
+        `[M-Pesa STK Push] Saving CheckoutRequestID "${checkoutRequestId}" to booking ${reference}`
+      )
+
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? ""
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      const supabase = createClient(supabaseUrl, supabaseKey, {
+        auth: { persistSession: false },
+      })
+
+      const { error: updateError } = await supabase
+        .from("bookings")
+        .update({
+          payment_reference: checkoutRequestId,
+          payment_status: "pending",
+        })
+        .eq("id", reference)
+
+      if (updateError) {
+        // Non-fatal: log and continue — the front-end still gets the 200 STK response
+        console.error(
+          `[M-Pesa STK Push] Warning: failed to save CheckoutRequestID to booking ${reference}:`,
+          updateError
+        )
+      } else {
+        console.log(
+          `[M-Pesa STK Push] booking ${reference}.payment_reference = "${checkoutRequestId}"`
+        )
+      }
+    }
+
+    // 6. Return Safaricom's raw response to the frontend
     return new Response(JSON.stringify(stkData), {
-      status: stkResponse.status,
+      status: stkResponse.ok ? 200 : stkResponse.status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     })
   } catch (error: any) {
