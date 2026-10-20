@@ -52,7 +52,7 @@ describe("Waitlist Page Unit Tests", () => {
 
     // Subheadline with vision
     expect(
-      screen.getByText(/Our vision is a world where anyone can travel to a new place and feel like a local—before they even leave home. Join the waitlist for early access./i)
+      screen.getByText(/Our vision is a world where anyone can travel to a new place and feel like a local—before they even leave home\./i)
     ).toBeInTheDocument()
 
     // Email Input field with placeholder
@@ -63,9 +63,9 @@ describe("Waitlist Page Unit Tests", () => {
     const submitBtn = screen.getByRole("button", { name: /^Join the Waitlist$/i })
     expect(submitBtn).toBeInTheDocument()
 
-    // Privacy note
+    // Microcopy note
     expect(
-      screen.getByText(/We respect your privacy\. No spam, just launch updates\./i)
+      screen.getByText(/No spam\. Just launch updates\./i)
     ).toBeInTheDocument()
   })
 

@@ -309,8 +309,9 @@ export function Layout() {
  { label: "TikTok", link: "https://tiktok.com/@ausaguide" },
  ]
 
+  const isWaitlistPage = location.pathname === "/waitlist"
   const isMessagesPage = location.pathname.startsWith("/messages")
-  const isAuthOrOnboarding = location.pathname === "/auth" || location.pathname === "/onboarding" || isMessagesPage
+  const isAuthOrOnboarding = location.pathname === "/auth" || location.pathname === "/onboarding" || isMessagesPage || isWaitlistPage
 
  if (maintenanceMode && userRole !== "admin" && location.pathname !== "/auth") {
     return (
@@ -362,7 +363,7 @@ export function Layout() {
           </button>
         </div>
       )}
-      <Banner />
+      {!isWaitlistPage && <Banner />}
       {!userId && !isAuthOrOnboarding && (
         <StaggeredMenu
           position="right"
@@ -380,11 +381,11 @@ export function Layout() {
           className={`${!isAuthOrOnboarding ? "has-beta-banner" : ""} ${impersonatedName ? "has-impersonation-banner" : ""}`.trim()}
         />
       )}
-  <main className={isMessagesPage ? "flex-1 h-screen overflow-hidden pb-0" : "flex-1 pb-16 md:pb-0"}>
+  <main className={isMessagesPage ? "flex-1 h-screen overflow-hidden pb-0" : isWaitlistPage ? "flex-1 pb-0" : "flex-1 pb-16 md:pb-0"}>
   <Outlet />
   </main>
       {!userId && !isAuthOrOnboarding && <Footer />}
-      <GlobalUrgentHostNotifier />
+      {!isWaitlistPage && <GlobalUrgentHostNotifier />}
       {!isAuthOrOnboarding && <ProfileCompletionBanner />}
  {!isAuthOrOnboarding && <MobileNav />}
  {isOffline && (
