@@ -32,10 +32,10 @@ export default function Home() {
   }, [role, userLoading, navigate])
 
   useSEO({
-    title: "Stop Wasting Money on Tourist Traps — Ausaguide Kenya",
+    title: "See the world live before you go. | Ausaguide",
     description:
-      "Explore Kenya through a local's eyes before you book. Connect with vetted guides for live video tours and discover authentic local experiences.",
-    keywords: "Kenya tours, local guides Kenya, Nairobi tours, live video tours, try before you fly, Kenya safaris, Maasai Mara, Mombasa travel, virtual tours",
+      "Ausaguide is a live-video marketplace connecting travelers with local hosts globally. See the real destination live before you book. Launching first in Nairobi, Kenya.",
+    keywords: "live video tours, global travel, local guides, authentic travel, Kenya, Nairobi tours, try before you fly",
     url: "https://ausaguide.com",
     jsonLd: {
       "@context": "https://schema.org",
@@ -98,7 +98,7 @@ export default function Home() {
               <div className="space-y-2">
                 <h3 className="text-xl font-bold text-white group-hover:text-[#FDFBF7] transition-colors flex items-center justify-between">
                   <span>Early Access Waitlist</span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#E07A5F]/20 text-[#E07A5F] border border-[#E07A5F]/30">Live Nairobi</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#E07A5F]/20 text-[#E07A5F] border border-[#E07A5F]/30">Launching in Nairobi</span>
                 </h3>
                 <p className="text-xs text-[#599D9C] leading-relaxed">
                   Payments paused for compliance. Join the early access waitlist for priority access and founder perks.

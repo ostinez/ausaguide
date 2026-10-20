@@ -47,7 +47,7 @@ describe("Waitlist Page Unit Tests", () => {
 
     // Prominent Headline
     expect(
-      screen.getByRole("heading", { name: /See Nairobi Live/i })
+      screen.getByRole("heading", { name: /See the world live before you go/i })
     ).toBeInTheDocument()
 
     // Subheadline with vision

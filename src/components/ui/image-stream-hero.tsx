@@ -511,14 +511,14 @@ export function ImageStreamHero() {
         {/* ── Primary Call to Action Bar ── */}
         <div className="bento-card-main p-6 sm:p-8 text-center space-y-4">
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight font-headline max-w-2xl mx-auto">
-            Stop Wasting Money on Tourist Traps.{" "}
+            See the world live before you go.{" "}
             <span className="block mt-1 text-transparent bg-clip-text bg-gradient-to-r from-[#B7E6E5] via-[#88C2C1] to-[#317978]">
-              Preview Kenya Live With Real Locals.
+              Travel authentically, anywhere.
             </span>
           </h1>
 
           <p className="text-[#599D9C] text-sm sm:text-base leading-relaxed max-w-xl mx-auto">
-            Connect live with vetted Kenyan hosts who verify the weather, inspect summits, scout private beaches, and secure authentic journeys.
+            Connect live with vetted local hosts who scout, verify, and guide your journey—before you spend a cent. Launching first in Kenya.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1 max-w-md mx-auto">

@@ -1,10 +1,10 @@
 import { useEffect } from "react"
 
-const DEFAULT_TITLE = "Ausaguide — Try Before You Fly | Live Tours in Kenya"
+const DEFAULT_TITLE = "Ausaguide | See the world live before you go."
 const DEFAULT_DESCRIPTION =
-  "Experience Kenya live before you book. Connect directly with verified local hosts for unfiltered virtual tours, private safaris, and authentic cultural walks."
+  "Ausaguide is a live-video marketplace connecting travelers with local hosts globally. See the real destination live before you book. Launching first in Nairobi, Kenya."
 const DEFAULT_KEYWORDS =
-  "Kenya tours, local guides Kenya, Nairobi tours, live video tours, try before you fly, Kenya safaris, Maasai Mara, Mombasa travel"
+  "live video tours, global travel, local guides, authentic travel, Kenya, Nairobi tours, travel before you book, virtual tours"
 const DEFAULT_IMAGE = "https://ausaguide.com/og-image.png"
 const BASE_URL = "https://ausaguide.com"
 

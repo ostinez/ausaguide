@@ -274,6 +274,26 @@ html, body, button, a, [role="button"], input, select {
 .font-body {
   font-family: 'Inter', sans-serif;
 }
+/* Serif editorial � premium travel-magazine headings */
+.font-playfair {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+/* Handwritten � warmth and personality A/B test variant */
+.font-caveat {
+  font-family: 'Caveat', cursive;
+}
+
+
+/* Serif editorial - premium travel-magazine headings */
+.font-playfair {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+/* Handwritten - warmth and personality A/B test variant */
+.font-caveat {
+  font-family: 'Caveat', cursive;
+}
 
 /* ── Dark Section & Contrast Utilities ───────────────────────────────────── */
 /* Use on sections that must always remain dark (hero globe, special pages) */

@@ -8,9 +8,11 @@ import { trackEvent } from "@/lib/posthog"
 
 export default function WaitlistPage() {
   useSEO({
-    title: "Join the Waitlist — See Nairobi Live Before You Go | Ausaguide",
+    title: "Ausaguide | See the world live before you go.",
     description:
-      "Our vision is a world where anyone can travel to a new place and feel like a local—before they even leave home. Join the waitlist for early access to live Nairobi tours.",
+      "Ausaguide is a live-video marketplace connecting travelers with local hosts globally. See the real destination live before you book. Launching first in Nairobi, Kenya.",
+    keywords:
+      "live video tours, global travel, local guides, waitlist, Nairobi early access, travel authentically",
     url: "https://ausaguide.com/waitlist",
     image: "https://ausaguide.com/images/home/nairobi_skyline.jpg",
   })
@@ -90,7 +92,7 @@ export default function WaitlistPage() {
       try {
         trackEvent("waitlist_joined", {
           email: trimmedEmail,
-          page: "waitlist_nairobi",
+          page: "waitlist_global",
           source: "dedicated_waitlist_page",
         })
       } catch {
@@ -162,14 +164,20 @@ export default function WaitlistPage() {
               </span>
             </div>
 
+            {/* TO TEST HANDWRITTEN FONT: Swap 'font-playfair italic' with 'font-caveat' and remove italic */}
             {/* Headline */}
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white leading-[1.15] font-headline">
-              See Nairobi Live Before You Go.
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-playfair italic font-bold tracking-tight text-white leading-[1.15]">
+              See the world live before you go.
             </h1>
 
             {/* Subheadline */}
             <p className="text-base sm:text-lg text-white/70 max-w-lg mx-auto leading-relaxed">
               Our vision is a world where anyone can travel to a new place and feel like a local—before they even leave home.
+            </p>
+
+            {/* Local launch anchor */}
+            <p className="text-xs tracking-widest font-semibold text-white/40 uppercase">
+              Launching first in Nairobi, Kenya.
             </p>
 
             {/* Form / Success State */}
@@ -180,7 +188,7 @@ export default function WaitlistPage() {
                   <span>You're on the list! We'll be in touch soon.</span>
                 </p>
                 <p className="text-xs text-white/70">
-                  Priority access to unfiltered Nairobi live video tours will be sent to your inbox.
+                  Your early access invite will be sent to your inbox. Launching first in Nairobi, Kenya.
                 </p>
               </div>
             ) : (
