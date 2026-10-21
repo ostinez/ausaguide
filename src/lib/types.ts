@@ -29,6 +29,7 @@ export interface Profile {
  host_tier?: "certified_guide" | "local_host" | null
  license_url?: string | null
  license_status?: "pending" | "approved" | "rejected" | null
+ verification_status?: "pending" | "approved" | "declined" | "failed" | "unverified" | string | null
  // Guide verification fields
  tra_number?: string | null
  kpsga_number?: string | null

@@ -32,6 +32,7 @@ const Admin2Settings = lazy(() => import("@/pages/admin2/Admin2Settings"))
 const HostDashboardPage = lazy(() => import("@/pages/HostDashboard"))
 const HowItWorksPage = lazy(() => import("@/pages/HowItWorks"))
 const SignupPage = lazy(() => import("@/pages/Signup"))
+const PendingVerificationPage = lazy(() => import("@/pages/PendingVerification"))
 
 const HostProfilePage = lazy(() => import("@/pages/host-profile"))
 const NewTourPage = lazy(() => import("@/pages/new-tour"))
@@ -137,6 +138,7 @@ export default function App() {
               <Route path="/host/earnings" element={<Navigate to="/dashboard/earnings" replace />} />
               <Route path="/dashboard/earnings" element={<EarningsDashboard />} />
               <Route path="/host/tours/new" element={<NewTourPage />} />
+              <Route path="/create-tour" element={<NewTourPage />} />
               <Route path="/host/tours/:id/edit" element={<EditTourPage />} />
             </Route>
 
@@ -172,6 +174,7 @@ export default function App() {
             <Route path="/traveler/:id" element={<TravelerProfilePage />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/pending-verification" element={<PendingVerificationPage />} />
             <Route path="/tree-planting" element={<TreePlantingPage />} />
             <Route path="/tree-planted" element={<TreePlantedPage />} />
             <Route path="/mental-health" element={<MentalHealthPage />} />

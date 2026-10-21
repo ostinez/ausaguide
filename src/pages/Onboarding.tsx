@@ -1208,7 +1208,7 @@ export default function OnboardingPage() {
 
  const { data: profile } = await supabase
  .from("profiles")
- .select("role, host_tier, license_status, tra_number, onboarding_completed")
+ .select("role, host_tier, license_status, tra_number, verified_guide, verification_status, onboarding_completed")
  .eq("id", user.id)
  .maybeSingle()
 
@@ -1220,12 +1220,20 @@ export default function OnboardingPage() {
 
  if (isHostOnboarded || isTravelerOnboarded || isAdminOnboarded) {
  localStorage.setItem("user_id", user.id)
- localStorage.setItem("user_role", isHost ? "host" : profile.role)
  if (profile.role === "admin") {
+ localStorage.setItem("user_role", "admin")
  navigate("/admin2", { replace: true })
  } else if (isHost) {
- navigate("/host-dashboard", { replace: true })
+ const isVerified = Boolean(profile.verified_guide || profile.license_status === "approved" || profile.verification_status === "approved");
+ if (isVerified) {
+  localStorage.setItem("user_role", "host")
+  navigate("/host-dashboard", { replace: true })
  } else {
+  localStorage.setItem("user_role", "traveler")
+  navigate("/pending-verification", { replace: true })
+ }
+ } else {
+ localStorage.setItem("user_role", "traveler")
  navigate("/dashboard", { replace: true })
  }
  return
@@ -1362,8 +1370,8 @@ export default function OnboardingPage() {
   console.error("Session refresh error:", e)
  }
  localStorage.setItem("user_id", userId)
- localStorage.setItem("user_role", "host")
- navigate("/host-dashboard", { replace: true })
+ localStorage.setItem("user_role", "traveler")
+ navigate("/pending-verification", { replace: true })
  }}
  />
  )}

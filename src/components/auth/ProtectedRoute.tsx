@@ -13,6 +13,7 @@ export function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) 
  const [loading, setLoading] = useState(true)
  const [authenticated, setAuthenticated] = useState(false)
  const [userRole, setUserRole] = useState<string | null>(null)
+ const [isPendingHost, setIsPendingHost] = useState(false)
 
  useEffect(() => {
  let active = true
@@ -28,10 +29,10 @@ export function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) 
  return
  }
 
- // Fetch user role and banned status from profiles
+ // Fetch user role, banned status, and verification credentials
  const { data: profile } = await supabase
  .from("profiles")
- .select("role, banned, host_tier, license_status, tra_number, verified_guide")
+ .select("role, banned, host_tier, license_status, tra_number, verified_guide, verification_status, is_verified")
  .eq("id", session.user.id)
  .maybeSingle()
 
@@ -48,24 +49,55 @@ export function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) 
 
  // ADMIN BYPASS: check by email (UUID differs between email/password and Google OAuth)
  const ADMIN_EMAIL = 'ausaguides@gmail.com'
+ const isAdmin = session.user.email === ADMIN_EMAIL || profile?.role === 'admin'
 
- let role = profile?.role ?? null
- if (session.user.email === ADMIN_EMAIL) {
- role = 'admin'
- } else if (
-  role === "host" ||
+ // Check if user has applied as a Host/Guide
+ const hasAppliedAsHost = Boolean(
+  profile?.role === "host" ||
+  profile?.host_tier !== null ||
+  profile?.tra_number ||
   profile?.license_status === "pending" ||
-  Boolean(profile?.tra_number) ||
-  profile?.host_tier === "certified_guide" ||
-  profile?.host_tier === "local_host"
- ) {
-  // If a user applies for guide verification, they must STILL be able to access host routes while waiting
-  role = "host"
+  profile?.license_status === "unverified"
+ )
+
+ // Verified guide/host
+ const isVerifiedHost = Boolean(
+  !isAdmin &&
+  (
+   profile?.verified_guide === true ||
+   profile?.license_status === "approved" ||
+   (profile?.role === "host" && (profile?.is_verified === true || profile?.verification_status === "approved") && profile?.license_status !== "pending")
+  )
+ )
+
+ // Pending Host/Guide: applied, but awaiting admin approval or license verification
+ const isPending = Boolean(
+  !isAdmin &&
+  hasAppliedAsHost &&
+  !isVerifiedHost &&
+  (
+   profile?.license_status === "pending" ||
+   profile?.license_status === "unverified" ||
+   profile?.verification_status === "pending" ||
+   profile?.verification_status === "unverified" ||
+   !profile?.verified_guide
+  )
+ )
+
+ let role: "admin" | "host" | "traveler" = "traveler"
+ if (isAdmin) {
+  role = 'admin'
+ } else if (isVerifiedHost) {
+  role = 'host'
+ } else {
+  // Normal travelers AND pending hosts while awaiting verification retain the standard traveler role
+  role = 'traveler'
  }
 
  if (active) {
  setAuthenticated(true)
  setUserRole(role)
+ setIsPendingHost(isPending)
  setLoading(false)
  }
  } catch (err) {
@@ -98,7 +130,18 @@ export function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) 
  // Check roles if allowedRoles is defined
  if (allowedRoles && allowedRoles.length > 0) {
  const role = userRole as any
+
+ // TASK 1: Block pending hosts from accessing host-only features / host dashboard
+ if (isPendingHost && allowedRoles.includes("host") && !allowedRoles.includes("traveler")) {
+  return <Navigate to="/pending-verification" replace />
+ }
+
  if (!allowedRoles.includes(role)) {
+ // If a pending host tried to access a host route, send to pending verification
+ if (isPendingHost && allowedRoles.includes("host")) {
+  return <Navigate to="/pending-verification" replace />
+ }
+
  // Redirect to appropriate dashboard based on role
  if (role === "admin") {
  return <Navigate to="/admin2" replace />

@@ -42,7 +42,9 @@ export function Navbar() {
         const p = await fetchProfileById(userId!)
         setProfile(p)
         if (p) {
-          localStorage.setItem("user_role", p.role)
+          const isVerifiedHost = p.role === "host" && Boolean(p.verified_guide || p.license_status === "approved" || p.verification_status === "approved")
+          const effectiveRole = p.role === "admin" ? "admin" : (isVerifiedHost ? "host" : "traveler")
+          localStorage.setItem("user_role", effectiveRole)
         }
       } catch (err) {
         console.error("Failed to load profile in navbar", err)
@@ -82,7 +84,8 @@ export function Navbar() {
     }
   }, [userId])
 
-  const userRole = profile?.role || localStorage.getItem("user_role") || "traveler"
+  const isVerifiedHost = profile?.role === "host" && Boolean(profile?.verified_guide || profile?.license_status === "approved" || profile?.verification_status === "approved")
+  const userRole = profile?.role === "admin" ? "admin" : (isVerifiedHost ? "host" : "traveler")
   const userInitials = profile?.full_name ? getHostInitials(profile.full_name) : "U"
 
   async function handleSignOut() {
