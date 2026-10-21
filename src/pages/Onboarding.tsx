@@ -14,7 +14,6 @@ import { sendGuideApplicationNotification } from "@/lib/api/emails"
 import { OnboardingInterests } from "@/components/auth/OnboardingInterests"
 import { 
  Loader2, 
- Globe, 
  Sparkles, 
  Shield, 
  UserCheck, 
@@ -66,17 +65,21 @@ function useConfetti(active: boolean): Particle[] {
 
 // ── Step 1: Welcome ─────────────────────────────────────
 function StepWelcome({ onNext }: { onNext: () => void }) {
+  const navigate = useNavigate()
   return (
     <div className="flex flex-col items-center text-center gap-6 py-4 px-2 w-full">
-      {/* Animated Lucide globe */}
+      {/* Ausaguide logo */}
       <motion.div
         initial={{ scale: 0.5, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 200, damping: 14 }}
-        className="select-none text-primary"
-        aria-hidden
+        className="select-none flex items-center justify-center py-2"
       >
-        <Globe className="size-16 animate-pulse" />
+        <img
+          src="/logo-primary.png"
+          alt="Ausaguide Logo"
+          className="h-16 sm:h-20 w-auto object-contain drop-shadow-md"
+        />
       </motion.div>
 
       <motion.div
@@ -101,6 +104,7 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.35, duration: 0.4 }}
+        className="space-y-4"
       >
         <Button
           id="onboarding-welcome-next"
@@ -111,6 +115,16 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
           Let's get started
           <ArrowRight className="size-4" />
         </Button>
+        <p className="text-xs text-muted-foreground">
+          Already have an account?{" "}
+          <button
+            type="button"
+            onClick={() => navigate("/login")}
+            className="text-primary font-bold hover:underline cursor-pointer"
+          >
+            Log in
+          </button>
+        </p>
       </motion.div>
     </div>
   )
@@ -859,7 +873,7 @@ function StepDone({ name, role, hostTier }: { name: string; role: Role; hostTier
  id="onboarding-done-primary"
  size="lg"
  disabled={navigating}
- onClick={() => handleNavigate("/host/dashboard")}
+ onClick={() => handleNavigate("/host-dashboard")}
  className="rounded-full px-8 bg-linear-to-r from-[#0D6F73] to-[#0D6F73] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#0D6F73]/30 flex items-center justify-center gap-2"
  >
  {navigating ? <Loader2 className="size-4 animate-spin" /> : "Start Hosting"} <Home className="size-4" />
@@ -1194,25 +1208,27 @@ export default function OnboardingPage() {
 
  const { data: profile } = await supabase
  .from("profiles")
- .select("role, host_tier")
+ .select("role, host_tier, license_status, tra_number, onboarding_completed")
  .eq("id", user.id)
  .maybeSingle()
 
  if (profile) {
- const isHostOnboarded = profile.role === "host" && profile.host_tier !== null;
- const isTravelerOnboarded = profile.role === "traveler";
+ const isHost = profile.role === "host" || profile.license_status === "pending" || Boolean(profile.tra_number);
+ const isHostOnboarded = isHost && (profile.host_tier !== null || profile.license_status === "pending" || Boolean(profile.tra_number) || profile.onboarding_completed);
+ const isTravelerOnboarded = profile.role === "traveler" && (profile.onboarding_completed || profile.host_tier === null);
  const isAdminOnboarded = profile.role === "admin";
 
  if (isHostOnboarded || isTravelerOnboarded || isAdminOnboarded) {
  localStorage.setItem("user_id", user.id)
- localStorage.setItem("user_role", profile.role)
+ localStorage.setItem("user_role", isHost ? "host" : profile.role)
  if (profile.role === "admin") {
  navigate("/admin2", { replace: true })
- } else if (profile.role === "host") {
- navigate("/host/dashboard", { replace: true })
+ } else if (isHost) {
+ navigate("/host-dashboard", { replace: true })
  } else {
  navigate("/dashboard", { replace: true })
  }
+ return
  }
  }
  } else {
@@ -1328,9 +1344,26 @@ export default function OnboardingPage() {
  userId={userId}
  userEmail={userEmail}
  userName={completedName || "Guide"}
- onComplete={(tier) => {
+ onComplete={async (tier) => {
  setHostTierSelected(tier)
- setStep(5) // go directly to done
+ try {
+  if (userId) {
+   await supabase
+    .from("profiles")
+    .update({
+     onboarding_completed: true,
+     role: "host",
+     updated_at: new Date().toISOString()
+    } as any)
+    .eq("id", userId)
+  }
+  await supabase.auth.refreshSession()
+ } catch (e) {
+  console.error("Session refresh error:", e)
+ }
+ localStorage.setItem("user_id", userId)
+ localStorage.setItem("user_role", "host")
+ navigate("/host-dashboard", { replace: true })
  }}
  />
  )}
@@ -1348,8 +1381,47 @@ export default function OnboardingPage() {
  <div className="py-2">
  <OnboardingInterests
  userId={userId}
- onComplete={() => setStep(4)}
- onSkip={() => setStep(4)}
+ onComplete={async (selectedInterests) => {
+  try {
+   if (userId) {
+    await supabase
+     .from("profiles")
+     .update({
+      interests: selectedInterests,
+      onboarding_completed: true,
+      role: role || "traveler",
+      updated_at: new Date().toISOString()
+     } as any)
+     .eq("id", userId)
+   }
+   await supabase.auth.refreshSession()
+  } catch (e) {
+   console.error("Session refresh error:", e)
+  }
+  localStorage.setItem("user_id", userId)
+  localStorage.setItem("user_role", role || "traveler")
+  navigate("/dashboard", { replace: true })
+ }}
+ onSkip={async () => {
+  try {
+   if (userId) {
+    await supabase
+     .from("profiles")
+     .update({
+      onboarding_completed: true,
+      role: role || "traveler",
+      updated_at: new Date().toISOString()
+     } as any)
+     .eq("id", userId)
+   }
+   await supabase.auth.refreshSession()
+  } catch (e) {
+   console.error("Session refresh error:", e)
+  }
+  localStorage.setItem("user_id", userId)
+  localStorage.setItem("user_role", role || "traveler")
+  navigate("/dashboard", { replace: true })
+ }}
  />
  </div>
  )}
@@ -1365,11 +1437,11 @@ export default function OnboardingPage() {
  </div>
 
  {/* Footer */}
- <p className="text-center text-xs text-white/25 mt-5">
+ <p className="text-center text-xs text-white/50 mt-5">
  Already have an account?{" "}
  <button
- onClick={() => navigate("/auth")}
- className="text-[#0D6F73] hover:underline font-semibold"
+ onClick={() => navigate("/login")}
+ className="text-primary hover:underline font-semibold cursor-pointer"
  >
  Log in
  </button>

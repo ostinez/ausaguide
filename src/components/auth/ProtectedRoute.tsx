@@ -31,7 +31,7 @@ export function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) 
  // Fetch user role and banned status from profiles
  const { data: profile } = await supabase
  .from("profiles")
- .select("role, banned, host_tier")
+ .select("role, banned, host_tier, license_status, tra_number, verified_guide")
  .eq("id", session.user.id)
  .maybeSingle()
 
@@ -52,8 +52,15 @@ export function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) 
  let role = profile?.role ?? null
  if (session.user.email === ADMIN_EMAIL) {
  role = 'admin'
- } else if (role === "host" && profile?.host_tier === null) {
- role = "host"
+ } else if (
+  role === "host" ||
+  profile?.license_status === "pending" ||
+  Boolean(profile?.tra_number) ||
+  profile?.host_tier === "certified_guide" ||
+  profile?.host_tier === "local_host"
+ ) {
+  // If a user applies for guide verification, they must STILL be able to access host routes while waiting
+  role = "host"
  }
 
  if (active) {
@@ -96,7 +103,7 @@ export function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) 
  if (role === "admin") {
  return <Navigate to="/admin2" replace />
  } else if (role === "host") {
- return <Navigate to="/host/dashboard" replace />
+ return <Navigate to="/host-dashboard" replace />
  } else if (role === "traveler") {
  return <Navigate to="/dashboard" replace />
  } else {

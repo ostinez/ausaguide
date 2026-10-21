@@ -26,7 +26,12 @@ const Admin2Tours = lazy(() => import("@/pages/admin2/Admin2Tours"))
 const Admin2Bookings = lazy(() => import("@/pages/admin2/Admin2Bookings"))
 const Admin2Waitlist = lazy(() => import("@/pages/admin2/Admin2Waitlist"))
 const Admin2Verifications = lazy(() => import("@/pages/admin2/Admin2Verifications"))
+const Admin2Newsletter = lazy(() => import("@/pages/admin2/Admin2Newsletter"))
 const Admin2Settings = lazy(() => import("@/pages/admin2/Admin2Settings"))
+
+const HostDashboardPage = lazy(() => import("@/pages/HostDashboard"))
+const HowItWorksPage = lazy(() => import("@/pages/HowItWorks"))
+const SignupPage = lazy(() => import("@/pages/Signup"))
 
 const HostProfilePage = lazy(() => import("@/pages/host-profile"))
 const NewTourPage = lazy(() => import("@/pages/new-tour"))
@@ -111,6 +116,9 @@ export default function App() {
             <Route path="/payment-success" element={<PaymentSuccessPage />} />
             <Route path="/confirmation/:bookingId" element={<ConfirmationPage />} />
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/login" element={<Navigate to="/auth?tab=signin" replace />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/how-it-works" element={<HowItWorksPage />} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/onboarding" element={<OnboardingPage />} />
@@ -122,9 +130,10 @@ export default function App() {
 
             {/* Host routes */}
             <Route element={<ProtectedRoute allowedRoles={["host"]} />}>
-              <Route path="/host/dashboard" element={<DashboardPage />} />
-              <Route path="/host/bookings" element={<Navigate to="/host/dashboard?tab=bookings" replace />} />
-              <Route path="/host/tours" element={<Navigate to="/host/dashboard?tab=tours" replace />} />
+              <Route path="/host-dashboard" element={<HostDashboardPage />} />
+              <Route path="/host/dashboard" element={<HostDashboardPage />} />
+              <Route path="/host/bookings" element={<Navigate to="/host-dashboard?tab=bookings" replace />} />
+              <Route path="/host/tours" element={<Navigate to="/host-dashboard?tab=tours" replace />} />
               <Route path="/host/earnings" element={<Navigate to="/dashboard/earnings" replace />} />
               <Route path="/dashboard/earnings" element={<EarningsDashboard />} />
               <Route path="/host/tours/new" element={<NewTourPage />} />
@@ -181,6 +190,7 @@ export default function App() {
               <Route path="bookings" element={<Admin2Bookings />} />
               <Route path="waitlist" element={<Admin2Waitlist />} />
               <Route path="verifications" element={<Admin2Verifications />} />
+              <Route path="newsletter" element={<Admin2Newsletter />} />
               <Route path="settings" element={<Admin2Settings />} />
             </Route>
           </Route>

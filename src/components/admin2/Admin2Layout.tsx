@@ -8,6 +8,7 @@ import {
  List, 
  CheckSquare, 
  Settings,
+ Mail,
  LogOut,
  Menu,
  X,
@@ -22,6 +23,7 @@ const NAV_LINKS = [
  { name: "Tours", to: "/admin2/tours", icon: Map },
  { name: "Bookings", to: "/admin2/bookings", icon: Calendar },
  { name: "Waitlist", to: "/admin2/waitlist", icon: List },
+ { name: "Newsletter", to: "/admin2/newsletter", icon: Mail },
  { name: "Guide Verifications", to: "/admin2/verifications", icon: CheckSquare },
  { name: "Settings", to: "/admin2/settings", icon: Settings },
 ]

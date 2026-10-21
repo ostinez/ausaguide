@@ -24,6 +24,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { DEFAULT_INTERESTS, saveUserInterests, fetchUserInterests } from "@/lib/api/interests"
 import { toast } from "sonner"
+import { supabase } from "@/lib/supabase"
 
 interface OnboardingInterestsProps {
   userId?: string | null
@@ -89,6 +90,19 @@ export function OnboardingInterests({
     try {
       if (userId) {
         await saveUserInterests(userId, selected)
+        await supabase
+          .from("profiles")
+          .update({
+            interests: selected,
+            onboarding_completed: true,
+            updated_at: new Date().toISOString(),
+          } as any)
+          .eq("id", userId)
+      }
+      try {
+        await supabase.auth.refreshSession()
+      } catch (sessErr) {
+        console.warn("Session refresh notice:", sessErr)
       }
       toast.success("Traveler profile personalized!")
       onComplete(selected)

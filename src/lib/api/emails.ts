@@ -354,26 +354,27 @@ export async function sendGuideApprovedEmail(
  to: string,
  hostName: string
 ): Promise<boolean> {
- const subject = `Congratulations! You're a Verified Guide on Ausaguide`
+ const subject = `Welcome to Ausaguide Premium! Your guide license has been verified`
  const html = `
  <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #e2e8f0; border-radius: 24px; background-color: #16161A; color: #fffffe; line-height: 1.6;">
  <div style="text-align: center; margin-bottom: 32px;">
  <img src="https://ausaguide.com/logo-primary.png" alt="Ausaguide" style="height: 36px; width: auto; display: inline-block;" />
  </div>
  <div style="text-align: center; margin-bottom: 24px;">
- <p style="font-size: 22px; font-weight: 800; color: #fffffe; margin: 0;">You're a Verified Guide!</p>
+ <p style="font-size: 22px; font-weight: 800; color: #fffffe; margin: 0;">Welcome to Ausaguide Premium!</p>
+ <p style="font-size: 16px; font-weight: 600; color: #0D6F73; margin: 8px 0 0;">Your guide license has been verified.</p>
  </div>
- <p style="font-size: 16px; color: #a7a9be; margin-bottom: 20px;">Hi ${hostName}, great news! Our admin team has verified your tour guide license and you now hold the <strong style="color: #3b82f6;">Verified Guide</strong> badge on Ausaguide.</p>
+ <p style="font-size: 16px; color: #a7a9be; margin-bottom: 20px;">Hi ${hostName}, welcome to Ausaguide Premium! Your guide license has been verified by our admin team and you now hold the official <strong style="color: #3b82f6;">Verified Guide</strong> badge on Ausaguide.</p>
  <div style="background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.3); border-radius: 16px; padding: 20px; margin-bottom: 24px;">
- <p style="font-size: 15px; font-weight: 600; color: #3b82f6; margin: 0 0 6px;">What this means for you:</p>
+ <p style="font-size: 15px; font-weight: 600; color: #3b82f6; margin: 0 0 6px;">What this unlocks for you:</p>
  <ul style="color: #a7a9be; font-size: 14px; margin: 0; padding-left: 20px; line-height: 1.8;">
- <li>A Verified Guide badge appears on all your tours and your profile</li>
- <li>Increased trust and visibility with travelers</li>
- <li>Priority placement in guide search results</li>
+ <li>Verified Guide badge on all your tours, profile, and search cards</li>
+ <li>Certified guide status for premium cultural and safari bookings</li>
+ <li>Priority visibility in traveler search results and urgent request matching</li>
  </ul>
  </div>
  <div style="text-align: center; margin-bottom: 28px;">
- <a href="https://ausaguide.com/host/dashboard" style="background-color: #0D6F73; color: #ffffff; padding: 14px 32px; border-radius: 9999px; text-decoration: none; font-weight: bold; display: inline-block; font-size: 15px; box-shadow: 0 4px 14px rgba(13, 111, 115, 0.4);">Go to Your Dashboard →</a>
+ <a href="https://ausaguide.com/host-dashboard" style="background-color: #0D6F73; color: #ffffff; padding: 14px 32px; border-radius: 9999px; text-decoration: none; font-weight: bold; display: inline-block; font-size: 15px; box-shadow: 0 4px 14px rgba(13, 111, 115, 0.4);">Open Host Dashboard →</a>
  </div>
  <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 32px 0;" />
  <p style="font-size: 13px; color: #0D6F73; font-weight: 700; text-align: center; margin-bottom: 4px;">Ausaguide — Be a Local. Share Your World.</p>

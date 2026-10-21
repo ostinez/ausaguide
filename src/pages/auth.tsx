@@ -10,6 +10,7 @@ import { supabase } from "@/lib/supabase"
 import { identifyUser } from "@/lib/posthog"
 import { checkRateLimit, getLoginKey } from "@/lib/api/rate-limit"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 import { validateName, validateEmail, validatePassword, validateConfirmPassword, validateUsername } from "@/lib/validation"
 import {
  Card,
@@ -526,10 +527,12 @@ function SignInForm() {
  )
 }
 
-function SignUpForm() {
+export function SignUpForm() {
  const [name, setName] = useState("")
  const [email, setEmail] = useState("")
  const [username, setUsername] = useState("")
+ const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle")
+ const [usernameMessage, setUsernameMessage] = useState<string | null>(null)
  const [password, setPassword] = useState("")
  const [confirmPassword, setConfirmPassword] = useState("")
  const [showPassword, setShowPassword] = useState(false)
@@ -541,6 +544,45 @@ function SignUpForm() {
  const [resendLoading, setResendLoading] = useState(false)
  const [resendCountdown, setResendCountdown] = useState(0)
  const [showResendButton, setShowResendButton] = useState(false)
+
+ const handleUsernameBlur = async () => {
+  const trimmed = username.trim().toLowerCase()
+  if (!trimmed) {
+   setUsernameStatus("idle")
+   setUsernameMessage(null)
+   return
+  }
+  const valErr = validateUsername(trimmed)
+  if (valErr) {
+   setUsernameStatus("invalid")
+   setUsernameMessage(valErr)
+   return
+  }
+  setUsernameStatus("checking")
+  try {
+   const { data, error: queryErr } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("username", trimmed)
+    .maybeSingle()
+
+   if (queryErr && queryErr.code !== "PGRST116") {
+    throw queryErr
+   }
+
+   if (data) {
+    setUsernameStatus("taken")
+    setUsernameMessage("Username is already taken")
+   } else {
+    setUsernameStatus("available")
+    setUsernameMessage("Username is available")
+   }
+  } catch (err) {
+   console.error("Username check error:", err)
+   setUsernameStatus("idle")
+   setUsernameMessage(null)
+  }
+ }
 
  // Resend Countdown Timer Effect
  useEffect(() => {
@@ -654,6 +696,7 @@ function SignUpForm() {
  full_name: name.trim(),
  username: username.trim().toLowerCase(),
  role: null,
+ newsletter_opt_in: subscribeNewsletter,
  },
  },
  })
@@ -662,17 +705,14 @@ function SignUpForm() {
 
  if (signUpData.user) {
  // Update newsletter_opt_in on the profiles row (created by DB trigger)
- // We do this in a short loop since the trigger may not have run yet
- if (subscribeNewsletter) {
  let retries = 3
  while (retries-- > 0) {
- await new Promise((r) => setTimeout(r, 600))
  const { error: prefErr } = await supabase
  .from("profiles")
- .update({ newsletter_opt_in: true })
+ .update({ newsletter_opt_in: subscribeNewsletter })
  .eq("id", signUpData.user.id)
  if (!prefErr) break
- }
+ await new Promise((r) => setTimeout(r, 600))
  }
  clearTimeout(safetyTimeoutId)
  toast.success("Account created successfully! Please confirm your email.")
@@ -768,18 +808,52 @@ function SignUpForm() {
  id="signup-username"
  type="text"
  placeholder="username"
- className="pl-7 border-border/80 text-foreground placeholder:text-muted-foreground/50"
+ className={cn(
+  "pl-7 pr-10 border-border/80 text-foreground placeholder:text-muted-foreground/50",
+  usernameStatus === "available" && "border-emerald-500 focus-visible:ring-emerald-500/30",
+  (usernameStatus === "taken" || usernameStatus === "invalid") && "border-destructive focus-visible:ring-destructive/30"
+ )}
  value={username}
- onChange={(e) => setUsername(e.target.value.toLowerCase())}
+ onChange={(e) => {
+  setUsername(e.target.value.toLowerCase())
+  setUsernameStatus("idle")
+  setUsernameMessage(null)
+ }}
+ onBlur={handleUsernameBlur}
  autoComplete="off"
  required
  minLength={3}
  maxLength={20}
  />
+ <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
+  {usernameStatus === "checking" && (
+   <Spinner className="size-4 animate-spin text-muted-foreground" />
+  )}
+  {usernameStatus === "available" && (
+   <CheckCircle2 className="size-4 text-emerald-500" />
+  )}
+  {(usernameStatus === "taken" || usernameStatus === "invalid") && (
+   <AlertCircle className="size-4 text-destructive" />
+  )}
  </div>
- <p className="text-[10px] text-muted-foreground/60">
- Lowercase letters, numbers, and underscores only (e.g. john_doe)
- </p>
+ </div>
+ {usernameStatus === "available" && (
+  <p className="text-[11px] font-medium text-emerald-500 flex items-center gap-1 animate-in fade-in">
+   <CheckCircle2 className="size-3" />
+   {usernameMessage || "Username is available"}
+  </p>
+ )}
+ {(usernameStatus === "taken" || usernameStatus === "invalid") && (
+  <p className="text-[11px] font-medium text-destructive flex items-center gap-1 animate-in fade-in">
+   <AlertCircle className="size-3" />
+   {usernameMessage || "Username is already taken"}
+  </p>
+ )}
+ {usernameStatus === "idle" && (
+  <p className="text-[10px] text-muted-foreground/60">
+   Lowercase letters, numbers, and underscores only (e.g. john_doe)
+  </p>
+ )}
  </div>
 
  <div className="space-y-2">
@@ -854,10 +928,10 @@ function SignUpForm() {
  type="checkbox"
  checked={subscribeNewsletter}
  onChange={(e) => setSubscribeNewsletter(e.target.checked)}
- className="rounded border-border text-primary focus:ring-primary size-4 accent-[#0D6F73]"
+ className="rounded border-border text-primary focus:ring-primary size-4 accent-[#0D6F73] cursor-pointer"
  />
  <Label htmlFor="signup-newsletter" className="text-xs font-normal text-muted-foreground select-none cursor-pointer">
- I'd like to receive updates and news from Ausaguide
+ Newsletter updates — I'd like to receive updates, exclusive deals, and news from Ausaguide
  </Label>
  </div>
 

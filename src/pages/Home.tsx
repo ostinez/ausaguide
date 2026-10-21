@@ -5,7 +5,6 @@ import { HeroSection } from "@/components/landing/HeroSection"
 import { UrgentMatchModal } from "@/components/ui/UrgentMatchModal"
 import { ToursPreview } from "@/components/landing/tours-preview"
 import { DiscoverToursStack } from "@/components/landing/discover-tours-stack"
-import { HowItWorks } from "@/components/landing/how-it-works"
 import { ImpactPreview } from "@/components/landing/impact-preview"
 import { CTASection } from "@/components/landing/cta-section"
 import { TikTokWidget } from "@/components/home/TikTokWidget"
@@ -73,10 +72,29 @@ export default function Home() {
         <HeroSection />
       </div>
 
-      {/* Interactive How It Works Section */}
-      <div id="how-it-works" className="w-full">
-        <HowItWorks />
-      </div>
+      {/* See How It Works Banner */}
+      <section className="w-full py-12 px-6 border-b border-[#235E5D]/30 relative overflow-hidden bg-gradient-to-b from-transparent via-[#0D6F73]/5 to-transparent">
+        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6 p-6 sm:p-8 rounded-3xl border border-[#235E5D]/40 bg-card/40 backdrop-blur-md shadow-xl">
+          <div className="space-y-2 text-center sm:text-left">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-primary px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
+              Interactive Guide
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              Curious how Ausaguide works?
+            </h2>
+            <p className="text-sm text-muted-foreground max-w-lg">
+              Explore how travelers experience Kenya live before booking, and how vetted local guides share their world.
+            </p>
+          </div>
+          <Link
+            to="/how-it-works"
+            className="rounded-full px-8 py-3.5 bg-gradient-to-r from-[#0D6F73] to-teal-500 hover:from-[#095255] hover:to-teal-600 text-white font-bold text-sm shadow-lg shadow-[#0D6F73]/20 flex items-center gap-2 shrink-0 transition-all hover:scale-[1.02]"
+          >
+            <span>See How It Works</span>
+            <ArrowRight className="size-4" />
+          </Link>
+        </div>
+      </section>
 
       {/* Action Selector Section */}
       <section className="bg-transparent py-20 px-6 relative overflow-hidden flex flex-col items-center border-b border-[#235E5D]/40">

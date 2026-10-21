@@ -55,6 +55,7 @@ import { GlassmorphismSidebar } from "@/components/ui/GlassmorphismSidebar"
 import { BorderGlow } from "@/components/ui/BorderGlow"
 import { usePlatform } from "@/hooks/use-platform"
 import { EditBookingModal } from "@/components/dashboard/EditBookingModal"
+import { HostVerificationBanners } from "@/components/host/HostVerificationBanners"
 
 
 function statusColorClass(status: BookingStatus) {
@@ -1861,60 +1862,7 @@ export default function DashboardPage() {
  <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
  {/* Left Column: stats, notifications, bookings */}
  <div className="space-y-8 lg:col-span-2">
- <div className="space-y-4">
- {profile?.verified_guide === true && profile?.host_tier === 'certified_guide' && (
- <div className="rounded-xl border border-blue-500/30 bg-blue-500/5 p-4 flex items-start gap-3">
- <BadgeCheck className="size-5 text-blue-500 shrink-0 mt-0.5" />
- <div>
- <h4 className="font-semibold text-sm text-blue-400">Certified Guide</h4>
- <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
- Your guide credentials have been verified. You hold Certified Guide status.
- </p>
- </div>
- </div>
- )}
- 
- {profile?.license_status === 'pending' && (
- <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 flex items-start gap-3">
- <Clock className="size-5 text-amber-500 shrink-0 mt-0.5" />
- <div className="flex-1">
- <h4 className="font-semibold text-sm text-amber-400">Pending Review</h4>
- <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
- Your Certified Guide credentials are under review. You can still create and manage tours.
- </p>
- <button
- onClick={loadDashboard}
- className="mt-2.5 text-xs text-amber-400 hover:text-amber-300 font-semibold underline flex items-center gap-1 bg-transparent border-none p-0 cursor-pointer"
- >
- Refresh Status
- </button>
- </div>
- </div>
- )}
-
- {profile?.verified_guide === false && profile?.host_tier === 'local_host' && profile?.license_status !== 'pending' && (
- <div className="rounded-xl border border-white/10 bg-card shadow-modern p-4 flex items-start gap-3">
- <BadgeCheck className="size-5 text-gray-400 shrink-0 mt-0.5" />
- <div>
- <h4 className="font-semibold text-sm text-gray-300">Local Host</h4>
- <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
- You are currently a Local Host. You can submit your official license to become a Certified Guide.
- </p>
- {profile.verification_notes && (
- <div className="mt-2 text-xs border-l-2 border-red-500/50 pl-2 text-red-300 italic">
- Last rejection/revocation reason: "{profile.verification_notes}"
- </div>
- )}
- <button
- onClick={() => navigate("/onboarding?become-host=true")}
- className="mt-2.5 text-xs text-primary underline font-semibold hover:text-primary/80"
- >
- Apply for Certified Guide Status
- </button>
- </div>
- </div>
- )}
- </div>
+ <HostVerificationBanners profile={profile} onRefresh={loadDashboard} />
  <UrgentRequestsSection
  requests={urgentRequests}
  hostId={userId || ""}
