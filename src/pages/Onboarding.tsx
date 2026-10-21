@@ -1444,16 +1444,7 @@ export default function OnboardingPage() {
  </Stepper>
  </div>
 
- {/* Footer */}
- <p className="text-center text-xs text-white/50 mt-5">
- Already have an account?{" "}
- <button
- onClick={() => navigate("/login")}
- className="text-primary hover:underline font-semibold cursor-pointer"
- >
- Log in
- </button>
- </p>
+
  </div>
  </div>
  )

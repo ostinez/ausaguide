@@ -381,7 +381,7 @@ export function Layout() {
           className={`${!isAuthOrOnboarding ? "has-beta-banner" : ""} ${impersonatedName ? "has-impersonation-banner" : ""}`.trim()}
         />
       )}
-  <main className={isMessagesPage ? "flex-1 h-screen overflow-hidden pb-0" : isWaitlistPage ? "flex-1 pb-0" : "flex-1 pb-16 md:pb-0"}>
+  <main className={isMessagesPage ? "flex-1 h-screen overflow-hidden pb-0" : isWaitlistPage ? "flex-1 pb-0" : "flex-1 pb-20 md:pb-0"}>
   <Outlet />
   </main>
       {!userId && !isAuthOrOnboarding && <Footer />}
