@@ -10,7 +10,7 @@ export default function HowItWorksPage() {
   })
 
   return (
-    <div className="min-h-screen bg-background pt-20 pb-20 relative overflow-hidden">
+    <div className="min-h-screen bg-background pt-20 pb-24 md:pb-20 relative overflow-hidden">
       {/* Background ambient lighting */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] rounded-full bg-primary/10 blur-[150px]" />
@@ -35,7 +35,7 @@ export default function HowItWorksPage() {
             <Sparkles className="size-3.5" />
             Simple & Transparent
           </div>
-          <h1 className="text-3xl sm:text-5xl font-black text-foreground tracking-tight font-headline">
+          <h1 className="text-2xl sm:text-4xl font-black text-foreground tracking-tight font-headline">
             How Ausaguide Works
           </h1>
           <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">

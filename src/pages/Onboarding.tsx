@@ -88,14 +88,14 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
         transition={{ delay: 0.15, duration: 0.5 }}
         className="space-y-3"
       >
-        <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight flex items-center justify-center gap-2">
+        <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight flex items-center justify-center gap-2 flex-wrap">
           Welcome to Ausaguide!
-          <Sparkles className="size-6 text-primary shrink-0 animate-bounce" />
+          <Sparkles className="size-5 text-primary shrink-0 animate-bounce" />
         </h1>
-        <p className="text-base sm:text-lg text-primary font-bold tracking-wide">
+        <p className="text-sm sm:text-base text-primary font-bold tracking-wide">
           Be a Local. Share Your World.
         </p>
-        <p className="text-sm text-muted-foreground max-w-xs mx-auto leading-relaxed">
+        <p className="text-sm text-muted-foreground max-w-xs mx-auto leading-relaxed break-words">
           You're about to join a community of real local hosts and curious global travellers. Let's set you up.
         </p>
       </motion.div>
@@ -110,7 +110,7 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
           id="onboarding-welcome-next"
           size="lg"
           onClick={onNext}
-          className="rounded-full px-10 bg-primary hover:bg-primary/90 text-primary-foreground border-0 font-bold shadow-md transition-all duration-300 flex items-center gap-2"
+          className="rounded-full px-8 bg-primary hover:bg-primary/90 text-primary-foreground border-0 font-bold shadow-md transition-all duration-300 flex items-center gap-2 w-full sm:w-auto justify-center"
         >
           Let's get started
           <ArrowRight className="size-4" />
@@ -119,7 +119,7 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
           Already have an account?{" "}
           <button
             type="button"
-            onClick={() => navigate("/login")}
+            onClick={() => navigate("/auth")}
             className="text-primary font-bold hover:underline cursor-pointer"
           >
             Log in
@@ -1306,7 +1306,7 @@ export default function OnboardingPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-[#091413] flex flex-col items-center justify-center px-4 py-12 relative overflow-hidden">
+    <div className="min-h-screen bg-[#091413] flex flex-col items-center justify-center px-4 py-12 pb-28 md:pb-12 relative overflow-hidden">
       {/* Background glow blobs */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
         <div className="absolute top-1/4 left-1/4 w-[500px] h-[400px] rounded-full bg-[#0D6F73]/15 blur-[140px] animate-pulse" />

@@ -150,7 +150,7 @@ export function HowItWorks() {
   }
 
   return (
-    <section className="py-24 bg-[#081717] relative overflow-hidden text-white border-t border-b border-[#235E5D]/40">
+    <section className="py-12 sm:py-24 pb-10 bg-[#081717] relative overflow-hidden text-white border-t border-b border-[#235E5D]/40">
       {/* Background Ambient Glows */}
       <div className="absolute top-1/4 -left-32 w-96 h-96 bg-[#0A5F5F]/25 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-10 -right-32 w-96 h-96 bg-[#E87A3D]/15 rounded-full blur-[140px] pointer-events-none" />
@@ -163,7 +163,7 @@ export function HowItWorks() {
             <span>Interactive Guide</span>
           </div>
 
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
+          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
             How <span className="text-[#F5F1EA]">Ausaguide</span>{" "}
             <span className="text-[#E87A3D]">Works</span>
           </h2>
@@ -444,7 +444,7 @@ export function HowItWorks() {
         </div>
 
         {/* ── Trust Banner at Bottom ── */}
-        <div className="mt-20 pt-8 border-t border-[#235E5D]/40 grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
+        <div className="mt-16 sm:mt-20 pt-8 border-t border-[#235E5D]/40 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-center">
           <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-[#B7E6E5]">
             <CheckCircle2 className="size-4 text-[#10B981] shrink-0" />
             <span>Live video test before you pay</span>
