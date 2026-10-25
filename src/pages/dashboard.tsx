@@ -1289,7 +1289,13 @@ export function HostDashboard({
  </CardHeader>
  <CardContent className="space-y-3">
  {tours.length === 0 ? (
- <p className="py-6 text-center text-sm text-muted-foreground">No tours yet.</p>
+ <div className="py-6 text-center space-y-3">
+ <p className="text-sm text-muted-foreground">No tours yet.</p>
+ <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/host/tours/new")}>
+ <Plus className="mr-2 size-4" />
+ Add New Tour
+ </Button>
+ </div>
  ) : (
  tours.map((t) => <TourRow key={t.id} tour={t} />)
  )}
@@ -2196,7 +2202,13 @@ export default function DashboardPage() {
  </CardHeader>
  <CardContent className="space-y-3">
  {hostTours.length === 0 ? (
- <p className="py-6 text-center text-sm text-muted-foreground">No tours yet.</p>
+ <div className="py-6 text-center space-y-3">
+ <p className="text-sm text-muted-foreground">No tours yet.</p>
+ <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/host/tours/new")}>
+ <Plus className="mr-2 size-4" />
+ Add New Tour
+ </Button>
+ </div>
  ) : (
  hostTours.map((t) => <TourRow key={t.id} tour={t} bookings={hostBookings} onRefresh={refreshHostTours} />)
  )}

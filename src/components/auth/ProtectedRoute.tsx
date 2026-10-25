@@ -70,18 +70,10 @@ export function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) 
  )
 
  // Check if user has applied as a Host/Guide
- const hasAppliedAsHost = Boolean(
-  profile?.role === "host" ||
-  profile?.host_tier !== null ||
-  profile?.tra_number ||
-  profile?.license_status === "pending" ||
-  profile?.license_status === "unverified"
- )
-
  // Verified guide/host:
  // 1. Certified Guides who have verified_guide === true or license_status === 'approved'
  // 2. Local Hosts whose ID is confirmed (status === 'active', verification_status === 'verified', or is_verified)
- // 3. Host role with verified status and no pending license
+ // 3. Host role with active or verified credentials
  const isVerifiedHost = Boolean(
   !isAdmin &&
   (
@@ -100,29 +92,54 @@ export function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) 
   )
  )
 
+ // Check if user has host record in hosts table if role isn't explicitly host yet
+ let hasHostRecord = false
+ if (!isAdmin && profile?.role !== "host") {
+  try {
+   const { data: hostRec } = await supabase
+    .from("hosts")
+    .select("id")
+    .eq("user_id", session.user.id)
+    .maybeSingle()
+   if (hostRec) {
+    hasHostRecord = true
+   }
+  } catch {
+   // non-fatal
+  }
+ }
+
+ const isHost = Boolean(
+  !isAdmin &&
+  (
+   profile?.role === "host" ||
+   localStorage.getItem("user_role") === "host" ||
+   hasHostRecord ||
+   isLocalHost ||
+   isVerifiedHost
+  )
+ )
+
  // Pending Host/Guide: ONLY certified guides awaiting admin review of their license,
- // or accounts whose initial ID verification is still pending
+ // or accounts explicitly marked as pending_guide. Active/local hosts are NOT pending.
  const isPending = Boolean(
   !isAdmin &&
-  hasAppliedAsHost &&
   !isVerifiedHost &&
+  profile?.role !== "host" &&
+  !hasHostRecord &&
   (
-   (isCertifiedGuide && (profile?.license_status === "pending" || profile?.status === "pending" || !profile?.verified_guide)) ||
-   profile?.license_status === "pending" ||
-   profile?.license_status === "unverified" ||
-   profile?.verification_status === "pending" ||
-   profile?.verification_status === "unverified"
+   profile?.role === "pending_guide" ||
+   (isCertifiedGuide && (profile?.license_status === "pending" || profile?.status === "pending"))
   )
  )
 
  let role: "admin" | "host" | "traveler" = "traveler"
  if (isAdmin) {
-  role = 'admin'
- } else if (isVerifiedHost) {
-  role = 'host'
+  role = "admin"
+ } else if (isHost) {
+  role = "host"
  } else {
-  // Normal travelers AND pending hosts while awaiting verification retain the standard traveler role
-  role = 'traveler'
+  role = "traveler"
  }
 
  setCurrentUserId(session.user.id)

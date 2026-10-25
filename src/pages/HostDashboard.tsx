@@ -44,8 +44,9 @@ export default function HostDashboardPage() {
       )
 
       const isPending = Boolean(
-        (isCertifiedGuide && (profile?.license_status === "pending" || profile?.status === "pending" || !profile?.verified_guide)) ||
-        (!isVerified && (profile?.role === "host" || isCertifiedGuide))
+        !isVerified &&
+        (profile?.role === "pending_guide" ||
+        (isCertifiedGuide && (profile?.license_status === "pending" || profile?.status === "pending")))
       )
 
       if (isPending) {
