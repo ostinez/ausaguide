@@ -285,7 +285,7 @@ export function Layout() {
       { label: "Travel Journal", ariaLabel: "Your travel notes and memories", link: "/journal" },
       { label: "Tree Planting", ariaLabel: "Plant trees and offset carbon", link: "/tree-planting" },
       { label: "Mental Health", ariaLabel: "Sponsor mental health therapy", link: "/mental-health" },
-      { label: "Settings & Profile", ariaLabel: "Account settings", link: "/settings" },
+      { label: "Settings", ariaLabel: "Account settings", link: "/settings" },
       { label: "Logout", ariaLabel: "Logout from your account", onClick: handleSignOut },
     ]
   } else {
@@ -382,11 +382,11 @@ export function Layout() {
         />
       )}
   <main className={isMessagesPage ? "flex-1 h-screen overflow-hidden pb-0" : isWaitlistPage ? "flex-1 pb-0" : "flex-1 pb-20 md:pb-0"}>
-  <Outlet />
-  </main>
+        {!isAuthOrOnboarding && !isMessagesPage && <ProfileCompletionBanner />}
+        <Outlet />
+      </main>
       {!userId && !isAuthOrOnboarding && <Footer />}
       {!isWaitlistPage && <GlobalUrgentHostNotifier />}
-      {!isAuthOrOnboarding && <ProfileCompletionBanner />}
  {!isAuthOrOnboarding && <MobileNav />}
  {isOffline && (
  <div

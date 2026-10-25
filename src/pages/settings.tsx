@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useNavigate, Link } from "react-router-dom"
+import { useNavigate, Link, useSearchParams } from "react-router-dom"
 import { User, Bell, Lock, Tag, CheckCircle2, Settings, Shield, DollarSign, MapPin, ExternalLink, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -39,23 +39,28 @@ export default function SettingsPage() {
  const role = localStorage.getItem("user_role") ?? "traveler"
  const userId = localStorage.getItem("user_id")
  const navigate = useNavigate()
- 
- const tabs = [
- { id: "personal", label: "Personal Info", icon: User },
- { id: "interests", label: "Preferences", icon: Tag },
- { id: "notifications", label: "Notifications", icon: Bell },
- { id: "privacy", label: "Privacy & Data", icon: Lock },
- { id: "security", label: "Password & 2FA", icon: Shield },
- ]
+  const [searchParams] = useSearchParams()
+  const queryTab = searchParams.get("tab")
+  const defaultTab = queryTab && ["personal", "interests", "notifications", "privacy", "security", "payout", "tours"].includes(queryTab)
+    ? queryTab
+    : (queryTab === "profile" ? "personal" : "personal")
 
- if (role === "host") {
- tabs.push(
- { id: "payout", label: "Payout Settings", icon: DollarSign },
- { id: "tours", label: "Tour Management", icon: MapPin }
- )
+  const tabs = [
+    { id: "personal", label: "Profile", icon: User },
+    { id: "interests", label: "Preferences", icon: Tag },
+    { id: "notifications", label: "Notifications", icon: Bell },
+    { id: "privacy", label: "Privacy", icon: Lock },
+    { id: "security", label: "Security & 2FA", icon: Shield },
+  ]
+
+  if (role === "host") {
+    tabs.push(
+      { id: "payout", label: "Payouts", icon: DollarSign },
+      { id: "tours", label: "Tours", icon: MapPin }
+    )
   }
 
- const [activeTab, setActiveTab] = useState("personal")
+  const [activeTab, setActiveTab] = useState(defaultTab)
  const [saved, setSaved] = useState(false)
  const [loading, setLoading] = useState(true)
 
@@ -334,7 +339,7 @@ export default function SettingsPage() {
  if (savedPayout) parsedPayout = JSON.parse(savedPayout)
  } catch (e) { /* ignore */ }
  setPayoutMethod((p as any)?.payout_method || parsedPayout.method || "mpesa")
- setPayoutPhone((p as any)?.mpesa_phone || parsedPayout.phone || "")
+ setPayoutPhone((p as any)?.payout_phone || (p as any)?.mpesa_phone || parsedPayout.phone || p?.phone || "")
  setPayoutBankName(parsedPayout.bankName || "")
  setPayoutAccountNo(parsedPayout.accountNo || "")
  setPayoutAccountName(parsedPayout.accountName || "")
@@ -1068,20 +1073,36 @@ export default function SettingsPage() {
  </select>
  </div>
 
- {payoutMethod === "mpesa" ? (
- <div className="space-y-1.5">
- <Label htmlFor="payout-phone">M-Pesa Phone Number</Label>
- <Input
- id="payout-phone"
- type="tel"
- value={payoutPhone}
- onChange={(e) => setPayoutPhone(e.target.value)}
- placeholder="+254 700 000 000"
- required
- />
- <p className="text-[10px] text-muted-foreground">Payments will be sent directly to this Safaricom registered line.</p>
- </div>
- ) : (
+                 {/* Explanatory Banner */}
+                <div className="rounded-xl border border-teal-500/30 bg-teal-500/10 p-4 space-y-1">
+                  <p className="text-xs font-semibold text-teal-300">Ausaguide Host Payout Policy</p>
+                  <p className="text-xs text-white/90 leading-relaxed font-medium">
+                    This is the M-Pesa number where we will send your 80% earnings. Ensure it is registered to your name.
+                  </p>
+                </div>
+
+                {/* Login Phone reference */}
+                <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3 flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Account Login Phone:</span>
+                  <span className="font-semibold text-white">{phone || "Not set in Profile"}</span>
+                </div>
+
+                {payoutMethod === "mpesa" ? (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="payout-phone">Payout M-Pesa Phone Number (if different from login phone)</Label>
+                    <Input
+                      id="payout-phone"
+                      type="tel"
+                      value={payoutPhone}
+                      onChange={(e) => setPayoutPhone(e.target.value)}
+                      placeholder="+254 700 000 000"
+                      required
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      This is the M-Pesa number where we will send your 80% earnings. Ensure it is registered to your name. If left blank, your account phone will be used.
+                    </p>
+                  </div>
+                ) : (
  <div className="grid gap-4 sm:grid-cols-2">
  <div className="space-y-1.5 sm:col-span-2">
  <Label htmlFor="payout-bank">Bank Name</Label>

@@ -69,6 +69,8 @@ export default function ToursPage() {
  const [query, setQuery] = useState(searchParams.get("search") ?? "")
  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all")
  const [priceFilter, setPriceFilter] = useState<PriceFilter>("all")
+  const [selectedCategory, setSelectedCategory] = useState<string>("all")
+  const [selectedLocation, setSelectedLocation] = useState<string>("all")
  const [currentPage, setCurrentPage] = useState(1)
  const [viewMode, setViewMode] = useState<"grid" | "list">(() => {
  const saved = localStorage.getItem("tours_view_mode")
@@ -211,11 +213,13 @@ export default function ToursPage() {
       query.trim() === "" ||
       tour.title.toLowerCase().includes(query.toLowerCase()) ||
       tour.location_name.toLowerCase().includes(query.toLowerCase())
-    return matchesType && matchesPriceFilter && matchesQuery
+    const matchesCat = selectedCategory === "all" || tour.category === selectedCategory
+    const matchesLoc = selectedLocation === "all" || tour.location_name.toLowerCase().includes(selectedLocation.toLowerCase())
+    return matchesType && matchesPriceFilter && matchesQuery && matchesCat && matchesLoc
   })
 
 
- const ITEMS_PER_PAGE = 6
+ const ITEMS_PER_PAGE = 12
  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
  const displayedTours = filtered.slice(
  (currentPage - 1) * ITEMS_PER_PAGE,
@@ -253,48 +257,119 @@ export default function ToursPage() {
             Discover Kenya through the eyes of locals — virtual or in-person.
           </p>
 
- <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6">
- <div className="relative max-w-md w-full">
- <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
- <Input
- value={query}
- onChange={(e) => setQuery(e.target.value)}
- placeholder="Search tours or destinations..."
- className="h-11 rounded-full pl-9 pr-4 focus-visible:ring-primary"
- aria-label="Search tours or destinations"
- />
- </div>
-          <div className="flex items-center gap-2.5 shrink-0 flex-wrap sm:flex-nowrap">
-            <Button
-              variant="outline"
-              onClick={() => navigate("/map")}
-              className="h-11 px-4 rounded-full border-border/80 hover:border-[#317978]/50 text-xs font-bold gap-1.5 shrink-0 cursor-pointer"
-              title="Explore live interactive host map"
-            >
-              <Globe className="size-3.5 text-[#317978]" />
-              <span className="hidden sm:inline">Live Host Map</span>
-              <span className="sm:hidden">Map</span>
-            </Button>
+ <div className="flex flex-col gap-3.5 mt-6">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="relative max-w-md w-full">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search tours or destinations..."
+                  className="h-11 rounded-full pl-9 pr-4 focus-visible:ring-primary border-white/15 bg-[#121216]"
+                  aria-label="Search tours or destinations"
+                />
+              </div>
+              <div className="flex items-center gap-2.5 shrink-0 flex-wrap sm:flex-nowrap">
+                <Button
+                  variant="outline"
+                  onClick={() => navigate("/map")}
+                  className="h-11 px-4 rounded-full border-border/80 hover:border-[#317978]/50 text-xs font-bold gap-1.5 shrink-0 cursor-pointer"
+                  title="Explore live interactive host map"
+                >
+                  <Globe className="size-3.5 text-[#317978]" />
+                  <span className="hidden sm:inline">Live Host Map</span>
+                  <span className="sm:hidden">Map</span>
+                </Button>
 
-            <Button
-              variant="outline"
-              onClick={() => navigate("/onboarding/interests")}
-              className="h-11 px-4 rounded-full border-border/80 hover:border-primary/50 text-xs font-bold gap-1.5 shrink-0"
-              title="Personalize travel recommendations"
-            >
-              <Compass className="size-3.5 text-[#317978]" />
-              <span className="hidden sm:inline">Interests</span>
-              <span className="sm:hidden">Interests</span>
-            </Button>
-            <Button
-              onClick={() => setUrgentMatchOpen(true)}
-              className="h-11 px-6 rounded-full bg-gradient-to-r from-[#0B3037] to-[#0D6F73] hover:from-[#0B3037] hover:to-[#0D6F73] text-white font-bold shadow-lg hover:shadow-[0_4px_16px_rgba(13, 111, 115,0.3)] shrink-0 transition duration-300 cursor-pointer"
-            >
-              <Compass className="size-4 mr-2 animate-pulse" />
-              Find a Host Now
-            </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate("/onboarding/interests")}
+                  className="h-11 px-4 rounded-full border-border/80 hover:border-primary/50 text-xs font-bold gap-1.5 shrink-0"
+                  title="Personalize travel recommendations"
+                >
+                  <Compass className="size-3.5 text-[#317978]" />
+                  <span className="hidden sm:inline">Interests</span>
+                  <span className="sm:hidden">Interests</span>
+                </Button>
+                <Button
+                  onClick={() => setUrgentMatchOpen(true)}
+                  className="h-11 px-6 rounded-full bg-gradient-to-r from-[#0B3037] to-[#0D6F73] hover:from-[#0B3037] hover:to-[#0D6F73] text-white font-bold shadow-lg hover:shadow-[0_4px_16px_rgba(13,111,115,0.3)] shrink-0 transition duration-300 cursor-pointer"
+                >
+                  <Compass className="size-4 mr-2 animate-pulse" />
+                  Find a Host Now
+                </Button>
+              </div>
+            </div>
+
+            {/* Filter Dropdowns */}
+            <div className="flex flex-wrap items-center gap-2.5 pt-1">
+              <span className="text-xs font-semibold text-white/50 mr-1">Filter by:</span>
+
+              {/* Category Dropdown */}
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="h-9 px-3 rounded-full text-xs font-semibold bg-[#161622] border border-white/15 text-white focus:outline-none focus:border-teal-500 cursor-pointer"
+                aria-label="Filter by Category"
+              >
+                <option value="all">All Categories</option>
+                <option value="nature">Nature & Wildlife</option>
+                <option value="culture">Culture & History</option>
+                <option value="food">Food & Drink</option>
+                <option value="adventure">Adventure & Safari</option>
+                <option value="city">City Tours</option>
+                <option value="nightlife">Nightlife & Social</option>
+              </select>
+
+              {/* Location Dropdown */}
+              <select
+                value={selectedLocation}
+                onChange={(e) => setSelectedLocation(e.target.value)}
+                className="h-9 px-3 rounded-full text-xs font-semibold bg-[#161622] border border-white/15 text-white focus:outline-none focus:border-teal-500 cursor-pointer"
+                aria-label="Filter by Location"
+              >
+                <option value="all">All Locations</option>
+                <option value="Nairobi">Nairobi</option>
+                <option value="Mombasa">Mombasa</option>
+                <option value="Maasai Mara">Maasai Mara</option>
+                <option value="Diani">Diani Beach</option>
+                <option value="Nakuru">Nakuru</option>
+                <option value="Naivasha">Naivasha</option>
+                <option value="Kisumu">Kisumu</option>
+                <option value="Amboseli">Amboseli</option>
+                <option value="Lamu">Lamu</option>
+                <option value="Watamu">Watamu</option>
+              </select>
+
+              {/* Price Range Dropdown */}
+              <select
+                value={priceFilter}
+                onChange={(e) => setPriceFilter(e.target.value as PriceFilter)}
+                className="h-9 px-3 rounded-full text-xs font-semibold bg-[#161622] border border-white/15 text-white focus:outline-none focus:border-teal-500 cursor-pointer"
+                aria-label="Filter by Price Range"
+              >
+                <option value="all">All Prices</option>
+                <option value="under4000">Under KSh 4,000</option>
+                <option value="4000to8000">KSh 4,000 – 8,000</option>
+                <option value="8000plus">KSh 8,000+</option>
+              </select>
+
+              {(selectedCategory !== "all" || selectedLocation !== "all" || priceFilter !== "all" || query) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCategory("all")
+                    setSelectedLocation("all")
+                    setPriceFilter("all")
+                    setQuery("")
+                  }}
+                  className="h-9 px-3 text-xs text-teal-400 hover:text-teal-300 font-semibold underline underline-offset-2 transition-colors ml-auto sm:ml-0"
+                >
+                  Reset Filters
+                </button>
+              )}
+            </div>
           </div>
- </div>
  </div>
  </div>
 
@@ -360,7 +435,7 @@ export default function ToursPage() {
 
  {loading ? (
  <div className="mt-8 animate-in fade-in duration-300">
- <SkeletonTourGrid count={6} mobileCount={2} />
+ <SkeletonTourGrid count={12} mobileCount={4} />
  </div>
  ) : error ? (
  <div className="mt-16 flex flex-col items-center gap-3 text-center animate-in fade-in duration-300">

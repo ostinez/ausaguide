@@ -25,7 +25,7 @@ export default function Admin2Verifications() {
  const { data, error } = await supabase
  .from("profiles")
  .select("*")
- .eq("role", "host")
+ .or("role.in.(host,pending_guide),host_type.not.is.null,host_tier.not.is.null,requested_tier.not.is.null,license_status.eq.pending")
  .order("created_at", { ascending: false })
  
  if (!error && data) {
@@ -332,7 +332,7 @@ export default function Admin2Verifications() {
  activeTab === 'pending' ? "bg-amber-500/10 border-amber-500/20 text-amber-400" : "text-gray-400 hover:text-white"
  )}
  >
- Pending Applications ({profiles.filter(p => p.license_status === 'pending').length})
+ Pending Certified Guides ({profiles.filter(p => p.role === 'pending_guide' || p.license_status === 'pending' || (!p.verified_guide && (p.requested_tier === 'certified_guide' || p.host_tier === 'certified_guide'))).length})
  </button>
  <button
  onClick={() => setActiveTab('approved')}

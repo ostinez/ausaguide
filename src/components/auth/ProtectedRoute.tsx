@@ -5,7 +5,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { TermsGateModal } from "@/components/auth/TermsGateModal"
 
 interface ProtectedRouteProps {
- allowedRoles?: ("admin" | "host" | "traveler")[]
+ allowedRoles?: ("admin" | "host" | "traveler" | "pending_guide")[]
  children?: React.ReactNode
 }
 

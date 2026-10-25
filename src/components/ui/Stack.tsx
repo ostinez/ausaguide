@@ -48,7 +48,8 @@ const CardInner = React.memo(({ card, isTop }: { card: StackCardData; isTop: boo
  alt={card.title}
  className="h-full w-full object-cover pointer-events-none"
  loading="lazy"
- />
+        decoding="async"
+      />
  <div className="stack-card-overlay" />
  
  {/* Tour details inside card overlay */}

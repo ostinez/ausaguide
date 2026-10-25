@@ -14,6 +14,7 @@ import {
  getHostInitials,
  formatViews,
  getTourImage,
+  optimizeImageUrl,
 } from "@/lib/tour-utils"
 import { incrementTourViews } from "@/lib/api/tours"
 
@@ -34,7 +35,8 @@ export const TourCard = memo(function TourCard({ tour, isWishlisted, onToggleWis
  : "bg-teal/20 text-teal border-teal/30"
  const hostName = tour.host?.full_name ?? "Local Host"
  const hostInitials = getHostInitials(hostName)
- const tourImage = getTourImage(tour)
+ const tourImage = optimizeImageUrl(getTourImage(tour), 600, 80)
+  const hostAvatar = optimizeImageUrl(tour.host?.avatar_url ?? "", 96, 80)
 
   const prefetchTour = () => {
     // Prefetch tour detail chunk & assets on hover/touch
@@ -136,7 +138,7 @@ export const TourCard = memo(function TourCard({ tour, isWishlisted, onToggleWis
  {isList && (
  <div className="absolute z-10 bottom-3 left-4">
  <Avatar className="size-10 border-2 border-card shadow-md">
- <AvatarImage src={tour.host?.avatar_url ?? ""} alt={hostName} className="object-cover" />
+ <AvatarImage src={hostAvatar} alt={hostName} className="object-cover" />
  <AvatarFallback className="bg-primary text-xs font-bold text-primary-foreground">
  {hostInitials}
  </AvatarFallback>
@@ -150,7 +152,7 @@ export const TourCard = memo(function TourCard({ tour, isWishlisted, onToggleWis
  {!isList && (
  <div className="absolute -top-7 left-4 z-20">
  <Avatar className="size-12 border-2 border-card shadow-md hover:scale-105 transition-transform duration-200">
- <AvatarImage src={tour.host?.avatar_url ?? ""} alt={hostName} className="object-cover" />
+ <AvatarImage src={hostAvatar} alt={hostName} className="object-cover" />
  <AvatarFallback className="bg-primary text-xs font-bold text-primary-foreground">
  {hostInitials}
  </AvatarFallback>

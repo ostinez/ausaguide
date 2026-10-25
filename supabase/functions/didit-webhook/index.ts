@@ -149,24 +149,31 @@ serve(async (req) => {
     }
 
     if (isApproved) {
-      // Check if user is a local host vs certified guide
+      // Check if user is a local host vs certified guide vs security
       const { data: existingProfile } = await supabaseClient
         .from("profiles")
-        .select("role, host_tier, host_type, license_status, tra_number")
+        .select("role, host_tier, host_type, requested_tier, license_status, tra_number")
         .eq("id", userId)
         .maybeSingle()
 
       const isCertifiedGuide =
+        existingProfile?.requested_tier === "certified_guide" ||
         existingProfile?.host_tier === "certified_guide" ||
         existingProfile?.host_type === "certified_guide" ||
         existingProfile?.host_type === "guide" ||
         existingProfile?.license_status === "pending" ||
         Boolean(existingProfile?.tra_number)
 
-      if (isCertifiedGuide) {
-        // Certified Guide: uploaded license requires manual admin review
+      const isSecurity =
+        existingProfile?.requested_tier === "security" ||
+        existingProfile?.host_type === "security"
+
+      if (isCertifiedGuide || isSecurity) {
+        // Certified Guide / Security: uploaded license/credentials require manual admin review
         profileUpdate.status = "pending"
+        profileUpdate.verification_status = "verified"
         profileUpdate.is_verified = true
+        profileUpdate.role = "pending_guide"
       } else {
         // Local Host: automatically approved upon Didit ID verification
         profileUpdate.status = "active"

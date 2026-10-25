@@ -1,5 +1,5 @@
-export type UserRole = "traveler" | "host" | "admin"
-export type HostType = "local_host" | "certified_guide"
+export type UserRole = "traveler" | "host" | "admin" | "pending_guide"
+export type HostType = "local_host" | "certified_guide" | "security" | "local" | "guide"
 export type TourCategory = "culture" | "food" | "adventure" | "nature" | "city" | "nightlife"
 export type TourType = "virtual" | "in_person"
 export type BookingStatus = "pending" | "awaiting_confirmation" | "confirmed" | "cancelled" | "completed" | "checked_in" | "declined"

@@ -131,7 +131,7 @@ export default function App() {
             <Route path="/notifications" element={<NotificationsPage />} />
 
             {/* Host routes */}
-            <Route element={<ProtectedRoute allowedRoles={["host"]} />}>
+            <Route element={<ProtectedRoute allowedRoles={["host", "admin"]} />}>
               <Route path="/host-dashboard" element={<HostDashboardPage />} />
               <Route path="/host/dashboard" element={<HostDashboardPage />} />
               <Route path="/host/bookings" element={<Navigate to="/host-dashboard?tab=bookings" replace />} />

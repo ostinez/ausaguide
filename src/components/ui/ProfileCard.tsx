@@ -1,3 +1,4 @@
+import { optimizeImageUrl } from "@/lib/tour-utils"
 import React, { useRef, useState, useEffect } from "react"
 import { motion, useMotionValue, useSpring } from "framer-motion"
 import { Mail, ShieldCheck } from "lucide-react"
@@ -143,9 +144,11 @@ export default function ProfileCard({
  style={{ transform: "translateZ(50px)" }}
  >
  <img
- src={avatarUrl}
- alt={name}
- className="w-full h-full object-cover rounded-full bg-card"
+            src={optimizeImageUrl(avatarUrl, 256, 80)}
+            alt={name}
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-cover rounded-full bg-card"
  onError={(e) => {
  // Gracefully handle avatar loading error with a default profile illustration
  ;(e.target as HTMLImageElement).src =

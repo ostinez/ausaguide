@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { ChevronLeft, ChevronRight, Image as ImageIcon } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
+import { optimizeImageUrl } from "@/lib/tour-utils"
 
 interface HostCardCarouselProps {
  hostId?: string
@@ -176,11 +177,13 @@ export function HostCardCarousel({
  {carouselImages.map((src, idx) => (
  <div key={idx} className="h-full w-full shrink-0">
  <img
- src={src}
- alt={`Host Tour Photo ${idx + 1}`}
- className="h-full w-full object-cover select-none"
- draggable={false}
- />
+                src={optimizeImageUrl(src, 500, 80)}
+                alt={`Host Tour Photo ${idx + 1}`}
+                className="h-full w-full object-cover select-none"
+                draggable={false}
+                loading="lazy"
+                decoding="async"
+              />
  </div>
  ))}
  </div>

@@ -144,3 +144,38 @@ export function formatViews(views: number): string {
  }
  return `${views} view${views !== 1 ? "s" : ""}`
 }
+
+/**
+ * Optimizes an image URL for cards & thumbnails.
+ * For Supabase storage URLs, appends ?width=&quality=.
+ * For Unsplash images, replaces/adds w= & q=.
+ */
+export function optimizeImageUrl(url: string | null | undefined, width = 400, quality = 80): string {
+  if (!url || typeof url !== "string") return ""
+  const trimmed = url.trim()
+  if (!trimmed) return ""
+
+  if (trimmed.startsWith("/") || trimmed.startsWith("data:") || trimmed.endsWith(".svg")) {
+    return trimmed
+  }
+
+  try {
+    const parsed = new URL(trimmed)
+    if (parsed.hostname.includes("supabase.co") && parsed.pathname.includes("/storage/v1/")) {
+      parsed.searchParams.set("width", String(width))
+      parsed.searchParams.set("quality", String(quality))
+      return parsed.toString()
+    }
+    if (parsed.hostname.includes("images.unsplash.com")) {
+      parsed.searchParams.set("w", String(width))
+      parsed.searchParams.set("q", String(quality))
+      parsed.searchParams.set("auto", "format")
+      parsed.searchParams.set("fit", "crop")
+      return parsed.toString()
+    }
+    return trimmed
+  } catch {
+    return trimmed
+  }
+}
+

@@ -490,7 +490,7 @@ export function StepVerifyID({
   onComplete,
 }: {
   userId: string
-  hostTier?: "certified_guide" | "local_host" | null
+  hostTier?: "certified_guide" | "local_host" | "security" | "local" | null
   onComplete: (isApprovedLocalHost: boolean) => void
 }) {
   const [loading, setLoading] = useState(false)
@@ -529,7 +529,29 @@ export function StepVerifyID({
       console.warn("Could not query profile tier:", e)
     }
 
-    if (isGuide) {
+    let isSecurity = currentTier === "security"
+    try {
+      const { data: p } = await supabase
+        .from("profiles")
+        .select("host_tier, host_type, requested_tier, license_status, tra_number")
+        .eq("id", userId)
+        .maybeSingle()
+      if (p) {
+        if (p.requested_tier === "certified_guide" || p.host_tier === "certified_guide" || p.host_type === "certified_guide" || p.host_type === "guide" || p.license_status === "pending" || Boolean(p.tra_number)) {
+          isGuide = true
+        } else if (p.requested_tier === "security" || p.host_type === "security") {
+          isSecurity = true
+        } else if (p.requested_tier === "local" || p.host_tier === "local_host" || p.host_type === "local_host" || p.host_type === "local") {
+          isGuide = false
+          isSecurity = false
+        }
+      }
+    } catch (e) {
+      console.warn("Could not query profile tier:", e)
+    }
+
+    if (isGuide || isSecurity) {
+      const chosenTier = isSecurity ? "security" : "certified_guide"
       await supabase
         .from("profiles")
         .update({
@@ -538,9 +560,10 @@ export function StepVerifyID({
           status: "pending",
           license_status: "pending",
           is_verified: true,
-          role: "host",
-          host_tier: "certified_guide",
-          host_type: "certified_guide",
+          role: "pending_guide",
+          host_tier: chosenTier === "security" ? "security" : "certified_guide",
+          host_type: chosenTier,
+          requested_tier: chosenTier,
           onboarding_completed: true,
           verification_date: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -548,7 +571,7 @@ export function StepVerifyID({
         .eq("id", userId)
 
       localStorage.setItem("user_id", userId)
-      localStorage.setItem("user_role", "traveler")
+      localStorage.setItem("user_role", "pending_guide")
       onComplete(false)
     } else {
       // Local Host: automatically approved upon Didit ID verification
@@ -561,7 +584,8 @@ export function StepVerifyID({
           is_verified: true,
           role: "host",
           host_tier: "local_host",
-          host_type: "local_host",
+          host_type: "local",
+          requested_tier: "local",
           onboarding_completed: true,
           verification_date: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -1023,9 +1047,9 @@ function StepHostTier({
  userId: string
  userEmail: string
  userName: string
- onComplete: (tier: "certified_guide" | "local_host") => void
+ onComplete: (tier: "certified_guide" | "local_host" | "security") => void
 }) {
- const [tier, setTier] = useState<"certified_guide" | "local_host" | null>(null)
+ const [tier, setTier] = useState<"certified_guide" | "local_host" | "security" | null>(null)
  const [traNumber, setTraNumber] = useState("")
  const [kpsga, setKpsga] = useState("")
  const [licenseExpiry, setLicenseExpiry] = useState("")
@@ -1063,7 +1087,9 @@ function StepHostTier({
  verified_guide: false,
  rejected_as_guide: false,
  license_status: "pending",
- host_tier: "local_host", // Save as local_host (temporarily)
+ host_tier: "certified_guide",
+          host_type: "certified_guide",
+          requested_tier: "certified_guide",
  }
  if (licenseExpiry) updateData.license_expiry = licenseExpiry
 
@@ -1143,11 +1169,12 @@ function StepHostTier({
  <p className="text-sm text-white/60">This helps travelers find the right experience for them.</p>
  </div>
 
- <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
- {([
- { value: "certified_guide" as const, label: "Certified Guide", desc: "I hold a government-issued tour guide license or certification.", color: "border-[#0D6F73]", icon: <Award className="size-8 text-[#0D6F73] mb-2" /> },
- { value: "local_host" as const, label: "Local Host", desc: "I'm a passionate local sharing my knowledge and hidden gems.", color: "border-[#0D6F73]", icon: <Home className="size-8 text-[#0D6F73] mb-2" /> },
- ]).map(({ value, label, desc, color, icon }) => (
+   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+  {([
+  { value: "local_host" as const, label: "Local Host", desc: "Passionate local sharing culture, hidden gems, and stories. Instant approval after Didit ID.", color: "border-teal-500", icon: <Home className="size-8 text-teal-400 mb-2" /> },
+  { value: "certified_guide" as const, label: "Certified Guide", desc: "Licensed guide holding a government TRA/KPSGA license. Requires admin review.", color: "border-[#0D6F73]", icon: <Award className="size-8 text-[#0D6F73] mb-2" /> },
+  { value: "security" as const, label: "Security Escort", desc: "Certified security & VIP protection personnel. Requires verified credentials.", color: "border-amber-500", icon: <Shield className="size-8 text-amber-400 mb-2" /> },
+  ]).map(({ value, label, desc, color, icon }) => (
  <button
  key={value}
  type="button"
@@ -1353,7 +1380,7 @@ export default function OnboardingPage() {
           if (isVerifiedLocal || isApprovedGuide) {
             localStorage.setItem("user_role", "host")
             navigate("/host-dashboard", { replace: true })
-          } else if (profile.host_tier === "certified_guide" || profile.license_status === "pending") {
+          } else if (profile.host_tier === "certified_guide" || profile.host_type === "security" || profile.role === "pending_guide" || profile.license_status === "pending") {
             localStorage.setItem("user_role", "traveler")
             navigate("/pending-verification", { replace: true })
           }
@@ -1379,7 +1406,7 @@ export default function OnboardingPage() {
  }, [navigate])
 
 
- const [hostTierSelected, setHostTierSelected] = useState<"certified_guide" | "local_host" | null>(null)
+ const [hostTierSelected, setHostTierSelected] = useState<"certified_guide" | "local_host" | "security" | null>(null)
   const [showVerifiedModal, setShowVerifiedModal] = useState(false)
  const [userEmail, setUserEmail] = useState("")
 

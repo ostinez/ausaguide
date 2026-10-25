@@ -1,3 +1,4 @@
+import { TOUR_CARD_SELECT } from "@/lib/api/tours"
 import { supabase } from "./supabase"
 import type { Tour } from "./types"
 import { fetchUserInterests } from "./api/interests"
@@ -38,7 +39,7 @@ export async function getRecommendedTours(userId?: string): Promise<Tour[]> {
     // 2. Fetch published tours with host profile
     const { data: tours, error } = await supabase
       .from("tours")
-      .select("*, host:profiles(*)")
+      .select(TOUR_CARD_SELECT)
       .eq("is_published", true)
 
     if (error || !tours || tours.length === 0) {
@@ -47,13 +48,13 @@ export async function getRecommendedTours(userId?: string): Promise<Tour[]> {
 
     if (userInterests.length === 0) {
       // If user has no interests, return sorted by rating & views
-      return (tours as Tour[])
+      return (tours as unknown as Tour[])
         .sort((a, b) => (b.rating || 0) * 10 + (b.review_count || 0) - ((a.rating || 0) * 10 + (a.review_count || 0)))
         .slice(0, 12)
     }
 
     // 3. Score and rank tours based on user interests
-    const scoredTours = (tours as Tour[]).map((tour) => {
+    const scoredTours = (tours as unknown as Tour[]).map((tour) => {
       let score = (tour.rating || 4.5) * 2
 
       if (tour.host?.host_tier === "certified_guide") {
@@ -107,12 +108,12 @@ export async function getPopularTours(): Promise<Tour[]> {
   try {
     const { data: tours } = await supabase
       .from("tours")
-      .select("*, host:profiles(*)")
+      .select(TOUR_CARD_SELECT)
       .eq("is_published", true)
       .order("rating", { ascending: false })
       .limit(12)
 
-    return (tours as Tour[]) || []
+    return ((tours as unknown as Tour[]) || [])
   } catch {
     return []
   }

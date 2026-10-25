@@ -10,7 +10,6 @@ import {
  Settings,
  Heart,
  BookOpen,
- User,
  LogOut,
  ChevronRight,
  TrendingUp,
@@ -78,7 +77,6 @@ function getNavItems(
  { id: "messages", label: "Messages", icon: MessageSquare, href: "/messages", badge: unreadMessages > 0 ? unreadMessages : undefined },
  { id: "wishlist", label: "Wishlist", icon: Heart, href: "/wishlist" },
  { id: "journal", label: "Journal", icon: BookOpen, href: "/journal" },
- { id: "profile", label: "Profile", icon: User, href: "/profile/edit" },
  { id: "reviews", label: "Reviews", icon: Star },
  { id: "explore", label: "Explore Tours", icon: TrendingUp, href: "/tours" },
  { id: "exit", label: "Exit Dashboard", icon: Home, href: "/" },
@@ -320,7 +318,7 @@ export function GlassmorphismSidebar({
  <div 
  onClick={() => {
  onClose();
- navigate("/profile/edit");
+ navigate("/settings");
  }}
  className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/5 border border-white/8 cursor-pointer hover:bg-white/10 hover:border-white/15 transition-all duration-200"
  >
@@ -348,7 +346,7 @@ export function GlassmorphismSidebar({
 
 
  <Link
- to="/profile/edit"
+ to="/settings"
  onClick={onClose}
  className="flex w-full items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-white/50 hover:text-white hover:bg-white/10 transition-all duration-200"
  >

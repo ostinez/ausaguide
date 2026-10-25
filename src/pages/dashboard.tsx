@@ -23,6 +23,7 @@ import {
  BadgeCheck,
  Loader2,
  CheckCircle2,
+  ChevronRight,
 } from "lucide-react"
 import NotificationBell from "@/components/ui/NotificationBell"
 import { Button } from "@/components/ui/button"
@@ -1066,6 +1067,141 @@ function HostSettingsPanel({ hostId, pendingCount }: { hostId: string, pendingCo
  )
 }
 
+
+export function HostGuidanceChecklist({
+  profile,
+  tours = [],
+}: {
+  profile?: Profile | null
+  tours?: Tour[]
+}) {
+  const navigate = useNavigate()
+
+  // Step 1: Complete Profile (bio + avatar_url + location)
+  const isProfileComplete = Boolean(profile?.bio && profile?.avatar_url && profile?.location)
+
+  // Step 2: Add Payout Details (phone or payout_phone or mpesa_phone)
+  const isPayoutComplete = Boolean(
+    profile?.phone ||
+    (profile as any)?.payout_phone ||
+    (profile as any)?.mpesa_phone
+  )
+
+  // Step 3: Create your first tour
+  const isTourCreated = tours.length > 0
+
+  // Step 4: Publish Tour
+  const isTourPublished = tours.some((t) => t.is_published === true || (t as any).is_active === true)
+
+  const steps = [
+    {
+      id: "profile",
+      title: "1. Complete Profile",
+      desc: "Add your bio, avatar, and location.",
+      completed: isProfileComplete,
+      actionLabel: "Edit Profile",
+      onClick: () => navigate("/settings"),
+    },
+    {
+      id: "payout",
+      title: "2. Add Payout Details",
+      desc: "Link your M-Pesa line for 80% earnings.",
+      completed: isPayoutComplete,
+      actionLabel: "Payout Settings",
+      onClick: () => navigate("/settings?tab=payout"),
+    },
+    {
+      id: "create_tour",
+      title: "3. Create your first tour",
+      desc: "List your experience, itinerary, & price.",
+      completed: isTourCreated,
+      actionLabel: "Create Tour",
+      onClick: () => navigate("/host/tours/new"),
+    },
+    {
+      id: "publish_tour",
+      title: "4. Publish Tour",
+      desc: "Make your tour live to global travelers.",
+      completed: isTourPublished,
+      actionLabel: isTourCreated ? "Manage Tours" : "Create Tour",
+      onClick: () => isTourCreated ? navigate("/host-dashboard?tab=tours") : navigate("/host/tours/new"),
+    },
+  ]
+
+  const completedCount = steps.filter((s) => s.completed).length
+  const progressPct = Math.round((completedCount / steps.length) * 100)
+
+  return (
+    <Card className="border-teal-500/30 bg-gradient-to-br from-teal-950/40 via-card to-background shadow-modern overflow-hidden">
+      <CardHeader className="pb-3 border-b border-white/5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="flex size-6 items-center justify-center rounded-full bg-teal-500/20 text-teal-400 text-xs font-bold">
+                ✓
+              </span>
+              <CardTitle className="text-base font-bold text-white tracking-tight">
+                Getting Started with Ausaguide
+              </CardTitle>
+            </div>
+            <CardDescription className="text-xs text-white/60">
+              Follow this host checklist to launch your experiences and start earning.
+            </CardDescription>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="text-right">
+              <span className="text-xs font-semibold text-teal-400">{completedCount} of 4 Completed ({progressPct}%)</span>
+              <div className="w-28 h-2 rounded-full bg-black/40 overflow-hidden mt-1 border border-white/10">
+                <div
+                  className="h-full bg-gradient-to-r from-teal-500 to-emerald-400 transition-all duration-700"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {steps.map((step) => (
+          <div
+            key={step.id}
+            onClick={step.onClick}
+            className={cn(
+              "p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between group",
+              step.completed
+                ? "bg-teal-500/5 border-teal-500/20 hover:border-teal-500/40"
+                : "bg-white/[0.02] border-white/10 hover:border-teal-500/30 hover:bg-white/[0.04]"
+            )}
+          >
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider">Step</span>
+                {step.completed ? (
+                  <span className="size-5 rounded-full bg-teal-500/20 text-teal-400 flex items-center justify-center text-xs font-bold">✓</span>
+                ) : (
+                  <span className="size-5 rounded-full border border-white/20 text-white/30 flex items-center justify-center text-xs group-hover:border-teal-400 group-hover:text-teal-400">○</span>
+                )}
+              </div>
+              <h4 className={cn("text-xs font-bold leading-tight", step.completed ? "text-teal-300" : "text-white")}>
+                {step.title}
+              </h4>
+              <p className="text-[11px] text-white/50 mt-1 leading-relaxed">
+                {step.desc}
+              </p>
+            </div>
+            <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between text-[11px]">
+              <span className={cn("font-medium group-hover:underline", step.completed ? "text-teal-400/80" : "text-primary")}>
+                {step.actionLabel}
+              </span>
+              <ChevronRight className="size-3 text-white/40 group-hover:translate-x-0.5 transition-transform" />
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  )
+}
+
 export function HostDashboard({
  tours,
  bookings,
@@ -1145,11 +1281,11 @@ export function HostDashboard({
  Manage your listed experiences
  </CardDescription>
  <CardAction>
- <Button size="sm" className="rounded-full">
- <Plus className="size-4" />
- Add Tour
- </Button>
- </CardAction>
+                <Button size="sm" className="rounded-full" onClick={() => navigate("/host/tours/new")}>
+                  <Plus className="size-4" />
+                  Add Tour
+                </Button>
+              </CardAction>
  </CardHeader>
  <CardContent className="space-y-3">
  {tours.length === 0 ? (
