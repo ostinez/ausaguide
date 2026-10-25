@@ -56,6 +56,7 @@ import { BorderGlow } from "@/components/ui/BorderGlow"
 import { usePlatform } from "@/hooks/use-platform"
 import { EditBookingModal } from "@/components/dashboard/EditBookingModal"
 import { HostVerificationBanners } from "@/components/host/HostVerificationBanners"
+import { TermsGateModal } from "@/components/auth/TermsGateModal"
 
 
 function statusColorClass(status: BookingStatus) {
@@ -1462,6 +1463,11 @@ export default function DashboardPage() {
  const [userRoleState, setUserRoleState] = useState<string>(() => localStorage.getItem("user_role") || "traveler");
  const userId = localStorage.getItem("user_id");
  const [sidebarOpen, setSidebarOpen] = useState(false)
+ const [termsAgreed, setTermsAgreed] = useState(() => {
+  const local = localStorage.getItem("terms_agreed") === "true" || localStorage.getItem("terms_accepted") === "true"
+  const userSpecific = userId ? localStorage.getItem(`terms_agreed_${userId}`) === "true" : false
+  return local || userSpecific
+ })
 
  const [view, setView] = useState<string>(() => {
  if (userRoleState === "host") {
@@ -1765,9 +1771,9 @@ export default function DashboardPage() {
  }
  }
 
-
-
-
+ if (!termsAgreed) {
+  return <TermsGateModal userId={userId || ""} onAgreed={() => setTermsAgreed(true)} />
+ }
 
  return (
  <div

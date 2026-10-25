@@ -5,7 +5,7 @@ import { SpeedInsights } from "@vercel/speed-insights/react"
 import { Layout } from "@/components/layout/layout"
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute"
 import { trackEvent } from "@/lib/posthog"
-import { CookieConsent } from "@/components/ui/CookieConsent"
+import { CookieBanner } from "@/components/layout/CookieBanner"
 
 // Eager load Home for maximum initial LCP speed
 import Home from "@/pages/Home"
@@ -33,6 +33,7 @@ const HostDashboardPage = lazy(() => import("@/pages/HostDashboard"))
 const HowItWorksPage = lazy(() => import("@/pages/HowItWorks"))
 const SignupPage = lazy(() => import("@/pages/Signup"))
 const PendingVerificationPage = lazy(() => import("@/pages/PendingVerification"))
+const AccountVerifiedPage = lazy(() => import("@/pages/AccountVerified"))
 
 const HostProfilePage = lazy(() => import("@/pages/host-profile"))
 const NewTourPage = lazy(() => import("@/pages/new-tour"))
@@ -175,6 +176,8 @@ export default function App() {
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/pending-verification" element={<PendingVerificationPage />} />
+            <Route path="/account-verified" element={<AccountVerifiedPage />} />
+            <Route path="/host-verified" element={<Navigate to="/account-verified" replace />} />
             <Route path="/tree-planting" element={<TreePlantingPage />} />
             <Route path="/tree-planted" element={<TreePlantedPage />} />
             <Route path="/mental-health" element={<MentalHealthPage />} />
@@ -199,7 +202,7 @@ export default function App() {
           </Route>
         </Routes>
       </Suspense>
-      <CookieConsent />
+      <CookieBanner />
       <Analytics />
       <SpeedInsights />
     </>

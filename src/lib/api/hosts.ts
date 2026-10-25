@@ -145,6 +145,85 @@ export async function submitHostApplication(
  })
 
  if (error) throw error
+
+ // ── Notify admin of new host application (fire-and-forget) ────────────────────
+ // Not awaited — a transient email failure must never block the applicant.
+ void (async () => {
+  try {
+   const hostName  = application.full_name ?? 'Unknown'
+   const hostEmail = application.email ?? ''
+   const hostCity  = application.city ?? ''
+   const hostType  = application.host_type ?? ''
+
+   const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>New Host Application</title>
+  <style>
+    body { margin:0;padding:0;font-family:'Helvetica Neue',Arial,sans-serif;background:#f4f4f5; }
+    .wrapper { max-width:600px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08); }
+    .header { background:linear-gradient(135deg,#f59e0b 0%,#ef4444 100%);padding:36px 32px;text-align:center; }
+    .header h1 { margin:0;color:#fff;font-size:24px;font-weight:700; }
+    .header p  { margin:8px 0 0;color:rgba(255,255,255,.85);font-size:14px; }
+    .body { padding:32px;color:#374151; }
+    .body p { margin:0 0 16px;font-size:15px;line-height:1.6; }
+    .details-table { width:100%;border-collapse:collapse;margin:20px 0; }
+    .details-table td { padding:12px 16px;font-size:14px;border-bottom:1px solid #f3f4f6; }
+    .details-table td:first-child { color:#6b7280;font-weight:500;width:35%; }
+    .details-table td:last-child  { color:#111827;font-weight:600; }
+    .cta { text-align:center;margin:28px 0 8px; }
+    .cta a { display:inline-block;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:700;font-size:15px; }
+    .footer { padding:20px 32px;text-align:center;font-size:12px;color:#9ca3af;background:#f9fafb; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <h1>&#127968; New Host Application</h1>
+      <p>Action required &#8212; review in the admin panel</p>
+    </div>
+    <div class="body">
+      <p>A new host has applied to join Ausaguide and is awaiting verification.</p>
+      <table class="details-table">
+        <tr><td>Name</td><td>${hostName}</td></tr>
+        <tr><td>Email</td><td>${hostEmail}</td></tr>
+        <tr><td>City</td><td>${hostCity}</td></tr>
+        <tr><td>Host Type</td><td>${hostType}</td></tr>
+      </table>
+      <div class="cta">
+        <a href="https://ausaguide.com/admin2/verifications">Review Application</a>
+      </div>
+    </div>
+    <div class="footer">
+      Ausaguide Admin Notifications &mdash; &copy; ${new Date().getFullYear()} Ausaguide
+    </div>
+  </div>
+</body>
+</html>`
+
+   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ?? ''
+   const anonKey     = import.meta.env.VITE_SUPABASE_ANON_KEY ?? ''
+
+   await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+    method: 'POST',
+    headers: {
+     'Content-Type':  'application/json',
+     'apikey':        anonKey,
+     'Authorization': `Bearer ${anonKey}`,
+    },
+    body: JSON.stringify({
+     to:           'welcome@ausaguide.com',
+     to_name:      'Ausaguide Admin',
+     subject:      `New Host Application: ${hostName}`,
+     html_content: htmlContent,
+    }),
+   })
+  } catch (emailErr) {
+   console.warn('[submitHostApplication] Admin notification email failed:', emailErr)
+  }
+ })()
 }
 
 export async function fetchProfileByRole(

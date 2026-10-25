@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom"
 import { motion } from "motion/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,10 +12,12 @@ import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { sendGuideApplicationNotification } from "@/lib/api/emails"
 import { OnboardingInterests } from "@/components/auth/OnboardingInterests"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { 
  Loader2, 
  Sparkles, 
  Shield, 
+ ShieldCheck,
  UserCheck, 
  RefreshCw, 
  Search, 
@@ -482,296 +484,410 @@ function StepProfile({
 }
 
 // ── Step 3.5: Identity Verification (Hosts Only) ──────────────
-function StepVerifyID({
- userId,
- onComplete,
+export function StepVerifyID({
+  userId,
+  hostTier,
+  onComplete,
 }: {
- userId: string
- onComplete: () => void
+  userId: string
+  hostTier?: "certified_guide" | "local_host" | null
+  onComplete: (isApprovedLocalHost: boolean) => void
 }) {
- const [loading, setLoading] = useState(false)
- const [polling, setPolling] = useState(false)
- const [error, setError] = useState<string | null>(null)
- const [dots, setDots] = useState("")
- const [verificationUrl, setVerificationUrl] = useState<string | null>(null)
- const pollingStarted = useRef(false)
+  const [loading, setLoading] = useState(false)
+  const [polling, setPolling] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [dots, setDots] = useState("")
+  const [verificationUrl, setVerificationUrl] = useState<string | null>(null)
+  const pollingStarted = useRef(false)
 
- useEffect(() => {
- if (!polling) return
- const interval = setInterval(() => {
- setDots((d) => (d.length >= 3 ? "" : d + "."))
- }, 600)
- return () => clearInterval(interval)
- }, [polling])
+  useEffect(() => {
+    if (!polling) return
+    const interval = setInterval(() => {
+      setDots((d) => (d.length >= 3 ? "" : d + "."))
+    }, 600)
+    return () => clearInterval(interval)
+  }, [polling])
 
- useEffect(() => {
- const params = new URLSearchParams(window.location.search)
- const isDoneRedirect = params.get("didit_done") === "true"
- // Auto-start polling when we return from Didit redirect.
- // Guard with pollingStarted ref so re-renders don't fire it twice.
- if (isDoneRedirect && userId && !pollingStarted.current) {
- pollingStarted.current = true
- startPolling()
- }
- // eslint-disable-next-line react-hooks/exhaustive-deps
- }, [userId])
+  async function handleVerificationSuccess(_existingProf?: any) {
+    let currentTier = hostTier
+    let isGuide = currentTier === "certified_guide"
 
- // Check if user is already verified on mount/load
- useEffect(() => {
- let active = true
- async function checkVerification() {
- if (!userId) return
- try {
- const { data, error: err } = await supabase
- .from("profiles")
- .select("id_verified, verification_status")
- .eq("id", userId)
- .single()
- if (err) throw err
- if (active && (data?.id_verified || data?.verification_status === "approved")) {
- toast.success("Identity already verified!")
- onComplete()
- }
- } catch (e) {
- console.error("Error during initial verification check:", e)
- }
- }
- checkVerification()
- return () => {
- active = false
- }
- }, [userId, onComplete])
+    try {
+      const { data: p } = await supabase
+        .from("profiles")
+        .select("host_tier, host_type, license_status, tra_number")
+        .eq("id", userId)
+        .maybeSingle()
+      if (p) {
+        if (p.host_tier === "certified_guide" || p.host_type === "certified_guide" || p.host_type === "guide" || p.license_status === "pending" || Boolean(p.tra_number)) {
+          isGuide = true
+        } else if (p.host_tier === "local_host" || p.host_type === "local_host") {
+          isGuide = false
+        }
+      }
+    } catch (e) {
+      console.warn("Could not query profile tier:", e)
+    }
 
- async function startVerification() {
- setLoading(true)
- setError(null)
- try {
- const redirectUrl = `${window.location.origin}/onboarding?didit_done=true&role=host&user_id=${userId}`
- 
- const { data, error: functionErr } = await supabase.functions.invoke("verify-identity", {
- body: { userId, redirectUrl }
- })
+    if (isGuide) {
+      await supabase
+        .from("profiles")
+        .update({
+          id_verified: true,
+          verification_status: "verified",
+          status: "pending",
+          license_status: "pending",
+          is_verified: true,
+          role: "host",
+          host_tier: "certified_guide",
+          host_type: "certified_guide",
+          onboarding_completed: true,
+          verification_date: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        } as any)
+        .eq("id", userId)
 
- if (functionErr) throw functionErr
- if (!data?.url) throw new Error("Verification URL was not returned.")
+      localStorage.setItem("user_id", userId)
+      localStorage.setItem("user_role", "traveler")
+      onComplete(false)
+    } else {
+      // Local Host: automatically approved upon Didit ID verification
+      await supabase
+        .from("profiles")
+        .update({
+          id_verified: true,
+          verification_status: "verified",
+          status: "active",
+          is_verified: true,
+          role: "host",
+          host_tier: "local_host",
+          host_type: "local_host",
+          onboarding_completed: true,
+          verification_date: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        } as any)
+        .eq("id", userId)
 
- setVerificationUrl(data.url)
- 
- // Open in a new tab to avoid iframe blocking and support standard browser camera access
- const newWindow = window.open(data.url, "_blank")
- if (!newWindow || newWindow.closed || typeof newWindow.closed === "undefined") {
- console.warn("Popup blocked, showing direct link button...")
- }
+      await supabase
+        .from("hosts")
+        .upsert({
+          user_id: userId,
+          host_type: "local_host",
+          status: "approved",
+        }, { onConflict: "user_id" })
 
- setLoading(false)
- startPolling()
- } catch (err: any) {
- setError(err?.message || "Failed to start identity verification. Please try again.")
- setLoading(false)
- }
- }
+      localStorage.setItem("user_id", userId)
+      localStorage.setItem("user_role", "host")
+      onComplete(true)
+    }
+  }
 
- async function checkStatus() {
- setLoading(true)
- setError(null)
- try {
- const { data, error: functionErr } = await supabase.functions.invoke("verify-identity", {
- body: { userId, action: "check-status" }
- })
- if (functionErr) throw functionErr
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const isDoneRedirect = params.get("didit_done") === "true"
+    // Auto-start polling when we return from Didit redirect.
+    if (isDoneRedirect && userId && !pollingStarted.current) {
+      pollingStarted.current = true
+      startPolling()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId])
 
- if (data?.verified || data?.status === "approved") {
- toast.success("Identity verified successfully!")
- onComplete()
- } else if (data?.status === "declined") {
- setError("Verification was declined. Please re-check your document and try again.")
- } else if (data?.status === "failed") {
- setError("Something went wrong during verification. Please contact support.")
- } else {
- toast.info("Verification status: " + (data?.status || "started"))
- pollingStarted.current = false
- startPolling()
- }
- } catch (err: any) {
- console.error("Manual status check error:", err)
- setError(err?.message || "Failed to check status. Please try again.")
- } finally {
- setLoading(false)
- }
- }
+  // Check if user is already verified on mount/load
+  useEffect(() => {
+    let active = true
+    async function checkVerification() {
+      if (!userId) return
+      try {
+        const { data, error: err } = await supabase
+          .from("profiles")
+          .select("id_verified, verification_status, status, host_tier, host_type, license_status, tra_number")
+          .eq("id", userId)
+          .single()
+        if (err) throw err
+        if (active && (data?.id_verified || data?.verification_status === "approved" || data?.verification_status === "verified" || data?.status === "active")) {
+          toast.success("Identity verified!")
+          await handleVerificationSuccess(data)
+        }
+      } catch (e) {
+        console.error("Error during initial verification check:", e)
+      }
+    }
+    checkVerification()
+    return () => {
+      active = false
+    }
+  }, [userId])
 
- async function startPolling() {
- setPolling(true)
- setError(null)
- let attempts = 0
- const maxAttempts = 120 // 120 * 3s = 360s = 6 minutes
+  async function startVerification() {
+    setLoading(true)
+    setError(null)
+    try {
+      const redirectUrl = `${window.location.origin}/onboarding?didit_done=true&role=host&user_id=${userId}`
 
- const interval = setInterval(async () => {
- attempts++
- try {
- const { data, error: queryErr } = await supabase
- .from("profiles")
- .select("id_verified, verification_status")
- .eq("id", userId)
- .single()
+      const { data, error: functionErr } = await supabase.functions.invoke("verify-identity", {
+        body: { userId, redirectUrl }
+      })
 
- if (queryErr) throw queryErr
+      if (functionErr) throw functionErr
+      if (!data?.url) throw new Error("Verification URL was not returned.")
 
- if (data?.id_verified || data?.verification_status === "approved") {
- clearInterval(interval)
- setPolling(false)
- toast.success("Identity verified successfully!")
- onComplete()
- return
- }
+      setVerificationUrl(data.url)
 
- if (data?.verification_status === "declined") {
- clearInterval(interval)
- setPolling(false)
- setError("Verification was declined. Please re-check your document and try again.")
- return
- }
+      const newWindow = window.open(data.url, "_blank")
+      if (!newWindow || newWindow.closed || typeof newWindow.closed === "undefined") {
+        console.warn("Popup blocked, showing direct link button...")
+      }
 
- if (data?.verification_status === "failed") {
- clearInterval(interval)
- setPolling(false)
- setError("Something went wrong during verification. Please contact support.")
- return
- }
- } catch (err) {
- console.error("Polling error:", err)
- }
+      setLoading(false)
+      startPolling()
+    } catch (err: any) {
+      setError(err?.message || "Failed to start identity verification. Please try again.")
+      setLoading(false)
+    }
+  }
 
- if (attempts >= maxAttempts) {
- clearInterval(interval)
- setPolling(false)
- setError("timed_out")
- }
- }, 3000)
- }
+  async function checkStatus() {
+    setLoading(true)
+    setError(null)
+    try {
+      const { data, error: functionErr } = await supabase.functions.invoke("verify-identity", {
+        body: { userId, action: "check-status" }
+      })
+      if (functionErr) throw functionErr
 
- return (
- <div className="flex flex-col items-center text-center gap-6 py-4 px-2 w-full">
- <motion.div
- initial={{ scale: 0.8, opacity: 0 }}
- animate={{ scale: 1, opacity: 1 }}
- transition={{ type: "spring", stiffness: 200, damping: 14 }}
- className="flex size-20 items-center justify-center rounded-full bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon/10 border border-[#0D6F73]/30 shadow-lg shadow-[#0D6F73]/10 text-white"
- >
- <Shield className="size-10 text-[#0D6F73]" />
- </motion.div>
+      if (data?.verified || data?.status === "approved" || data?.status === "verified") {
+        toast.success("Identity verified successfully!")
+        await handleVerificationSuccess()
+      } else if (data?.status === "declined") {
+        setError("Verification was declined. Please re-check your document and try again.")
+      } else if (data?.status === "failed") {
+        setError("Something went wrong during verification. Please contact support.")
+      } else {
+        toast.info("Verification status: " + (data?.status || "started"))
+        pollingStarted.current = false
+        startPolling()
+      }
+    } catch (err: any) {
+      console.error("Manual status check error:", err)
+      setError(err?.message || "Failed to check status. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
 
- <div className="space-y-2">
- <h2 className="text-2xl sm:text-3xl font-black text-white">Verify Your Identity</h2>
- <p className="text-sm text-white/60 max-w-sm mx-auto">
- To build trust and keep the community safe, we partner with Didit to verify your identity. This takes less than a minute.
- </p>
- </div>
+  async function startPolling() {
+    setPolling(true)
+    setError(null)
+    let attempts = 0
+    const maxAttempts = 120 // 120 * 3s = 360s = 6 minutes
 
- {/* Error state */}
- {error && !polling && (
- <div className="flex flex-col items-center gap-3 w-full max-w-sm">
- {error === "timed_out" ? (
- <>
- <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs font-semibold text-amber-400 w-full text-center">
- Verification is processing — this may take a few seconds. Click below to check again.
- </div>
- <Button
- id="onboarding-verify-check-status"
- size="lg"
- disabled={loading}
- onClick={checkStatus}
- className="rounded-full bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon hover:bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon/90 text-white border-0 font-bold shadow-lg shadow-[#0D6F73]/30 w-full animate-bounce flex items-center justify-center gap-2"
- >
- {loading ? <Spinner className="size-4" /> : <Check className="size-4" />}
- Check My Status
- </Button>
- <Button
- id="onboarding-verify-retry"
- size="lg"
- variant="ghost"
- onClick={startVerification}
- className="rounded-full text-white/60 hover:text-white hover:bg-card shadow-modern font-semibold w-full flex items-center justify-center gap-2"
- >
- Restart Verification <RefreshCw className="size-4" />
- </Button>
- </>
- ) : (
- <>
- <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs font-semibold text-red-400 w-full text-center">
- {error}
- </div>
- <Button
- id="onboarding-verify-retry"
- size="lg"
- onClick={startVerification}
- className="rounded-full bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon hover:bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon/90 text-white border-0 font-bold shadow-lg shadow-[#0D6F73]/30 w-full flex items-center justify-center gap-2"
- >
- Retry Verification <RefreshCw className="size-4" />
- </Button>
- </>
- )}
- </div>
- )}
+    const interval = setInterval(async () => {
+      attempts++
+      try {
+        const { data, error: queryErr } = await supabase
+          .from("profiles")
+          .select("id_verified, verification_status, status, host_tier, host_type, license_status, tra_number")
+          .eq("id", userId)
+          .single()
 
- <div className="flex flex-col gap-3 w-full max-w-xs">
- {polling ? (
- <div className="flex flex-col items-center gap-3 w-full">
- <Spinner className="size-6 text-[#0D6F73]" />
- <p className="text-sm font-semibold text-[#0D6F73] animate-pulse">
- Verifying your details{dots}
- </p>
- <p className="text-xs text-white/40 max-w-xs mx-auto">
- Please complete verification in the opened window. This page will update automatically when done.
- </p>
- {verificationUrl && (
- <a
- href={verificationUrl}
- target="_blank"
- rel="noopener noreferrer"
- className="text-xs text-[#a78bfa] hover:text-[#0D6F73] underline font-semibold transition-colors mt-1"
- >
- Verification page did not open? Click here ↗
- </a>
- )}
- <Button
- id="onboarding-verify-force-check"
- size="sm"
- variant="outline"
- disabled={loading}
- onClick={checkStatus}
- className="mt-2 rounded-full border-white/20 text-white hover:bg-card shadow-modern font-semibold text-xs py-1 flex items-center justify-center gap-1.5"
- >
- {loading ? "Checking..." : "Force Check Status"} <Search className="size-3.5" />
- </Button>
- </div>
- ) : (
- !error && (
- <Button
- id="onboarding-verify-start"
- size="lg"
- disabled={loading}
- onClick={startVerification}
- className="rounded-full bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon hover:bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon/90 text-white border-0 font-bold shadow-lg shadow-[#0D6F73]/30 flex items-center justify-center gap-2"
- >
- {loading ? <Spinner className="size-4" /> : "Verify with Didit"} <UserCheck className="size-4" />
- </Button>
- )
- )}
+        if (queryErr) throw queryErr
 
- {import.meta.env.DEV && (
- <button
- onClick={onComplete}
- className="text-xs text-white/30 hover:text-white/60 underline font-semibold transition-colors mt-2"
- >
- Skip Verification (Dev Mode)
- </button>
- )}
- </div>
- </div>
- )
+        if (data?.id_verified || data?.verification_status === "approved" || data?.verification_status === "verified" || data?.status === "active") {
+          clearInterval(interval)
+          setPolling(false)
+          toast.success("Identity verified successfully!")
+          await handleVerificationSuccess(data)
+          return
+        }
+
+        if (data?.verification_status === "declined") {
+          clearInterval(interval)
+          setPolling(false)
+          setError("Verification was declined. Please re-check your document and try again.")
+          return
+        }
+
+        if (data?.verification_status === "failed") {
+          clearInterval(interval)
+          setPolling(false)
+          setError("Something went wrong during verification. Please contact support.")
+          return
+        }
+      } catch (err) {
+        console.error("Polling error:", err)
+      }
+
+      if (attempts >= maxAttempts) {
+        clearInterval(interval)
+        setPolling(false)
+        setError("timed_out")
+      }
+    }, 3000)
+  }
+
+  return (
+    <div className="flex flex-col items-center text-center gap-6 py-4 px-2 w-full">
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 200, damping: 14 }}
+        className="flex size-20 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#0D6F73]/25 via-emerald-500/20 to-[#10b981]/25 border border-emerald-500/30 shadow-xl shadow-emerald-500/10 text-white"
+      >
+        <ShieldCheck className="size-10 text-emerald-400" />
+      </motion.div>
+
+      <div className="space-y-3">
+        <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+          Let's make sure you're you. (No, we don't want your firstborn).
+        </h2>
+        <p className="text-sm sm:text-base text-gray-300 max-w-lg mx-auto leading-relaxed">
+          We know scanning your ID feels a bit invasive. But in a world of catfish and scammers, this is how we keep Ausaguide safe. We partner with Didit to handle this securely.
+        </p>
+      </div>
+
+      {/* Trust Bullets to reduce anxiety */}
+      <div className="w-full max-w-md mx-auto rounded-2xl bg-[#142928]/80 border border-[#235E5D]/40 p-4 text-left shadow-lg space-y-2.5">
+        <div className="flex items-center gap-3">
+          <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
+            <Check className="size-3.5" />
+          </div>
+          <span className="text-xs sm:text-sm font-medium text-gray-200">
+            We don't sell your data. Ever.
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
+            <Check className="size-3.5" />
+          </div>
+          <span className="text-xs sm:text-sm font-medium text-gray-200">
+            Bank-level encryption.
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
+            <Check className="size-3.5" />
+          </div>
+          <span className="text-xs sm:text-sm font-medium text-gray-200">
+            We don't store your selfies after verification.
+          </span>
+        </div>
+      </div>
+
+      <div className="text-center -mt-1">
+        <Link
+          to="/privacy"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-[#38b2ac] hover:text-[#0D6F73] underline underline-offset-4 font-semibold transition-colors cursor-pointer"
+        >
+          Read how we protect your data
+        </Link>
+      </div>
+
+      {/* Error state */}
+      {error && !polling && (
+        <div className="flex flex-col items-center gap-3 w-full max-w-sm">
+          {error === "timed_out" ? (
+            <>
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs font-semibold text-amber-400 w-full text-center">
+                Verification is processing — this may take a few seconds. Click below to check again.
+              </div>
+              <Button
+                id="onboarding-verify-check-status"
+                size="lg"
+                disabled={loading}
+                onClick={checkStatus}
+                className="rounded-full bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon hover:bg-carbon-dark text-white border-0 font-bold shadow-lg shadow-[#0D6F73]/30 w-full animate-bounce flex items-center justify-center gap-2"
+              >
+                {loading ? <Spinner className="size-4" /> : <Check className="size-4" />}
+                Check My Status
+              </Button>
+              <Button
+                id="onboarding-verify-retry"
+                size="lg"
+                variant="ghost"
+                onClick={startVerification}
+                className="rounded-full text-white/60 hover:text-white hover:bg-card shadow-modern font-semibold w-full flex items-center justify-center gap-2"
+              >
+                Restart Verification <RefreshCw className="size-4" />
+              </Button>
+            </>
+          ) : (
+            <>
+              <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs font-semibold text-red-400 w-full text-center">
+                {error}
+              </div>
+              <Button
+                id="onboarding-verify-retry"
+                size="lg"
+                onClick={startVerification}
+                className="rounded-full bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon hover:bg-carbon-dark text-white border-0 font-bold shadow-lg shadow-[#0D6F73]/30 w-full flex items-center justify-center gap-2"
+              >
+                Retry Verification <RefreshCw className="size-4" />
+              </Button>
+            </>
+          )}
+        </div>
+      )}
+
+      <div className="flex flex-col gap-3 w-full max-w-xs">
+        {polling ? (
+          <div className="flex flex-col items-center gap-3 w-full">
+            <Spinner className="size-6 text-[#0D6F73]" />
+            <p className="text-sm font-semibold text-[#0D6F73] animate-pulse">
+              Verifying your details{dots}
+            </p>
+            <p className="text-xs text-white/40 max-w-xs mx-auto">
+              Please complete verification in the opened window. This page will update automatically when done.
+            </p>
+            {verificationUrl && (
+              <a
+                href={verificationUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-[#a78bfa] hover:text-[#0D6F73] underline font-semibold transition-colors mt-1"
+              >
+                Verification page did not open? Click here ↗
+              </a>
+            )}
+            <Button
+              id="onboarding-verify-force-check"
+              size="sm"
+              variant="outline"
+              disabled={loading}
+              onClick={checkStatus}
+              className="mt-2 rounded-full border-white/20 text-white hover:bg-card shadow-modern font-semibold text-xs py-1 flex items-center justify-center gap-1.5"
+            >
+              {loading ? "Checking..." : "Force Check Status"} <Search className="size-3.5" />
+            </Button>
+          </div>
+        ) : (
+          !error && (
+            <Button
+              id="onboarding-verify-start"
+              size="lg"
+              disabled={loading}
+              onClick={startVerification}
+              className="rounded-full bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon hover:bg-carbon-dark text-white border-0 font-bold shadow-lg shadow-[#0D6F73]/30 flex items-center justify-center gap-2"
+            >
+              {loading ? <Spinner className="size-4" /> : "Verify with Didit"} <UserCheck className="size-4" />
+            </Button>
+          )
+        )}
+
+        {import.meta.env.DEV && (
+          <button
+            onClick={() => handleVerificationSuccess()}
+            className="text-xs text-white/30 hover:text-white/60 underline font-semibold transition-colors mt-2"
+          >
+            Skip Verification (Dev Mode)
+          </button>
+        )}
+      </div>
+    </div>
+  )
 }
-
 function StepDone({ name, role, hostTier }: { name: string; role: Role; hostTier?: string | null }) {
  const navigate = useNavigate()
  const particles = useConfetti(true)
@@ -1207,38 +1323,50 @@ export default function OnboardingPage() {
  }
 
  const { data: profile } = await supabase
- .from("profiles")
- .select("role, host_tier, license_status, tra_number, verified_guide, verification_status, onboarding_completed")
- .eq("id", user.id)
- .maybeSingle()
+        .from("profiles")
+        .select("role, host_tier, host_type, status, is_verified, license_status, tra_number, verified_guide, verification_status, onboarding_completed")
+        .eq("id", user.id)
+        .maybeSingle()
 
- if (profile) {
- const isHost = profile.role === "host" || profile.license_status === "pending" || Boolean(profile.tra_number);
- const isHostOnboarded = isHost && (profile.host_tier !== null || profile.license_status === "pending" || Boolean(profile.tra_number) || profile.onboarding_completed);
- const isTravelerOnboarded = profile.role === "traveler" && (profile.onboarding_completed || profile.host_tier === null);
- const isAdminOnboarded = profile.role === "admin";
+      if (profile) {
+        const isHost = profile.role === "host" || profile.license_status === "pending" || Boolean(profile.tra_number);
+        const isHostOnboarded = isHost && (profile.host_tier !== null || profile.license_status === "pending" || Boolean(profile.tra_number) || profile.onboarding_completed);
+        const isTravelerOnboarded = profile.role === "traveler" && (profile.onboarding_completed || profile.host_tier === null);
+        const isAdminOnboarded = profile.role === "admin";
 
- if (isHostOnboarded || isTravelerOnboarded || isAdminOnboarded) {
- localStorage.setItem("user_id", user.id)
- if (profile.role === "admin") {
- localStorage.setItem("user_role", "admin")
- navigate("/admin2", { replace: true })
- } else if (isHost) {
- const isVerified = Boolean(profile.verified_guide || profile.license_status === "approved" || profile.verification_status === "approved");
- if (isVerified) {
-  localStorage.setItem("user_role", "host")
-  navigate("/host-dashboard", { replace: true })
- } else {
-  localStorage.setItem("user_role", "traveler")
-  navigate("/pending-verification", { replace: true })
- }
- } else {
- localStorage.setItem("user_role", "traveler")
- navigate("/dashboard", { replace: true })
- }
- return
- }
- }
+        const params = new URLSearchParams(window.location.search)
+        const isDoneRedirect = params.get("didit_done") === "true"
+
+        if (isAdminOnboarded) {
+          localStorage.setItem("user_id", user.id)
+          localStorage.setItem("user_role", "admin")
+          navigate("/admin2", { replace: true })
+          return
+        }
+
+        if (isHostOnboarded && !isDoneRedirect) {
+          localStorage.setItem("user_id", user.id)
+          const isLocalHost = profile.host_tier === "local_host" || profile.host_type === "local_host" || profile.host_type === "local" || (!profile.tra_number && profile.license_status !== "pending");
+          const isVerifiedLocal = isLocalHost && (profile.status === "active" || profile.verification_status === "verified" || profile.verification_status === "approved" || profile.is_verified);
+          const isApprovedGuide = Boolean(profile.verified_guide || profile.license_status === "approved");
+
+          if (isVerifiedLocal || isApprovedGuide) {
+            localStorage.setItem("user_role", "host")
+            navigate("/host-dashboard", { replace: true })
+          } else if (profile.host_tier === "certified_guide" || profile.license_status === "pending") {
+            localStorage.setItem("user_role", "traveler")
+            navigate("/pending-verification", { replace: true })
+          }
+          return
+        }
+
+        if (isTravelerOnboarded && !isHost) {
+          localStorage.setItem("user_id", user.id)
+          localStorage.setItem("user_role", "traveler")
+          navigate("/dashboard", { replace: true })
+          return
+        }
+      }
  } else {
  localStorage.removeItem("user_id")
  localStorage.removeItem("user_role")
@@ -1252,6 +1380,7 @@ export default function OnboardingPage() {
 
 
  const [hostTierSelected, setHostTierSelected] = useState<"certified_guide" | "local_host" | null>(null)
+  const [showVerifiedModal, setShowVerifiedModal] = useState(false)
  const [userEmail, setUserEmail] = useState("")
 
  // Load email for guide notification
@@ -1281,14 +1410,14 @@ export default function OnboardingPage() {
     ...(role === "host"
       ? [
           {
-            label: "Verify ID",
-            title: "Identity Verification",
-            tip: "Government ID verification unlocks the trusted Host badge.",
-          },
-          {
             label: "Host Type",
             title: "Guide Credentials",
             tip: "Certified guides earn up to 40% higher booking revenue.",
+          },
+          {
+            label: "Verify ID",
+            title: "Identity Verification",
+            tip: "Government ID verification unlocks the trusted Host badge.",
           },
         ]
       : [
@@ -1342,36 +1471,27 @@ export default function OnboardingPage() {
  {role === "host" ? (
  <>
  {step === 3 && (
- <StepVerifyID
- userId={userId}
- onComplete={() => setStep(4)}
- />
- )}
- {step === 4 && (
  <StepHostTier
  userId={userId}
  userEmail={userEmail}
  userName={completedName || "Guide"}
- onComplete={async (tier) => {
- setHostTierSelected(tier)
- try {
-  if (userId) {
-   await supabase
-    .from("profiles")
-    .update({
-     onboarding_completed: true,
-     role: "host",
-     updated_at: new Date().toISOString()
-    } as any)
-    .eq("id", userId)
+ onComplete={(tier) => {
+  setHostTierSelected(tier)
+  setStep(4)
+ }}
+ />
+ )}
+ {step === 4 && (
+ <StepVerifyID
+ userId={userId}
+ hostTier={hostTierSelected}
+ onComplete={(isApprovedLocalHost) => {
+  if (isApprovedLocalHost) {
+  setShowVerifiedModal(true)
+  setStep(5)
+  } else {
+  navigate("/pending-verification", { replace: true })
   }
-  await supabase.auth.refreshSession()
- } catch (e) {
-  console.error("Session refresh error:", e)
- }
- localStorage.setItem("user_id", userId)
- localStorage.setItem("user_role", "traveler")
- navigate("/pending-verification", { replace: true })
  }}
  />
  )}
@@ -1443,9 +1563,37 @@ export default function OnboardingPage() {
  )}
  </Stepper>
  </div>
-
-
  </div>
+
+ {/* Account Verified Modal for Local Hosts */}
+ <Dialog open={showVerifiedModal} onOpenChange={setShowVerifiedModal}>
+ <DialogContent className="max-w-md bg-[#0c1a19] border border-[#235E5D]/50 text-white rounded-3xl p-6 sm:p-8 text-center shadow-2xl">
+ <DialogHeader className="items-center text-center">
+ <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl bg-[#0D6F73]/20 border border-[#0D6F73]/40 shadow-lg shadow-[#0D6F73]/20">
+ <Shield className="size-8 text-[#0D6F73]" />
+ </div>
+ <DialogTitle className="text-2xl font-black tracking-tight text-white text-center">
+ Your account is verified! Welcome to Ausaguide.
+ </DialogTitle>
+ <DialogDescription className="text-sm text-gray-300 mt-2 text-center leading-relaxed">
+ Your identity has been verified and your host account is now active. You're ready to share your world.
+ </DialogDescription>
+ </DialogHeader>
+ <div className="mt-6">
+ <Button
+ id="verified-modal-go-dashboard"
+ size="lg"
+ onClick={() => {
+  setShowVerifiedModal(false)
+  navigate("/host-dashboard", { replace: true })
+ }}
+ className="w-full rounded-xl bg-gradient-to-r from-[#0D6F73] to-[#10b981] hover:from-[#0a585b] hover:to-[#059669] text-white font-bold py-3 shadow-lg shadow-[#0D6F73]/30 cursor-pointer flex items-center justify-center gap-2"
+ >
+ Go to Dashboard <ArrowRight className="size-4" />
+ </Button>
+ </div>
+ </DialogContent>
+ </Dialog>
  </div>
  )
 }

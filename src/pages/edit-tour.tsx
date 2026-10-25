@@ -551,7 +551,7 @@ export default function EditTourPage() {
  <span className="ml-auto text-[10px] text-muted-foreground">Required · shown on tour card</span>
  </div>
  <CoverImageUploader
- bucket="avatars"
+ bucket="tour-images"
  maxSizeMB={20}
  value={coverImage}
  onChange={setCoverImage}
@@ -574,7 +574,7 @@ export default function EditTourPage() {
  </div>
  <p className="text-xs text-muted-foreground">Add photos of each stop on your tour — markets, viewpoints, restaurants, etc.</p>
  <Dropzone
- bucket="avatars"
+ bucket="tour-images"
  multiple={true}
  maxSizeMB={20}
  value={galleryImages}

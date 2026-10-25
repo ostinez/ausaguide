@@ -42,7 +42,15 @@ export function Navbar() {
         const p = await fetchProfileById(userId!)
         setProfile(p)
         if (p) {
-          const isVerifiedHost = p.role === "host" && Boolean(p.verified_guide || p.license_status === "approved" || p.verification_status === "approved")
+          const isLocal = p.host_tier === "local_host" || p.host_type === "local_host" || (p.host_type as string) === "local"
+          const isVerifiedHost = p.role === "host" && Boolean(
+            p.verified_guide || 
+            p.license_status === "approved" || 
+            p.verification_status === "approved" || 
+            p.verification_status === "verified" || 
+            p.is_verified || 
+            (isLocal && p.license_status !== "pending" && (p.status === "active" || p.verification_status === "verified"))
+          )
           const effectiveRole = p.role === "admin" ? "admin" : (isVerifiedHost ? "host" : "traveler")
           localStorage.setItem("user_role", effectiveRole)
         }
@@ -84,7 +92,15 @@ export function Navbar() {
     }
   }, [userId])
 
-  const isVerifiedHost = profile?.role === "host" && Boolean(profile?.verified_guide || profile?.license_status === "approved" || profile?.verification_status === "approved")
+  const isLocal = profile?.host_tier === "local_host" || profile?.host_type === "local_host" || (profile?.host_type as string) === "local"
+  const isVerifiedHost = profile?.role === "host" && Boolean(
+    profile?.verified_guide || 
+    profile?.license_status === "approved" || 
+    profile?.verification_status === "approved" || 
+    profile?.verification_status === "verified" || 
+    profile?.is_verified || 
+    (isLocal && profile?.license_status !== "pending" && (profile?.status === "active" || profile?.verification_status === "verified"))
+  )
   const userRole = profile?.role === "admin" ? "admin" : (isVerifiedHost ? "host" : "traveler")
   const userInitials = profile?.full_name ? getHostInitials(profile.full_name) : "U"
 

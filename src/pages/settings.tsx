@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
-import { User, Bell, Lock, Tag, CheckCircle2, Settings, Shield, DollarSign, MapPin, Check, ExternalLink, ArrowLeft } from "lucide-react"
+import { User, Bell, Lock, Tag, CheckCircle2, Settings, Shield, DollarSign, MapPin, ExternalLink, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -33,7 +33,7 @@ const INTEREST_OPTIONS = [
  * Renders the main user dashboard profile control panels.
  * Supports updating personal information (name, bio, languages, phone), social profile links (Instagram, TikTok, etc.),
  * managing notification preferences, enabling/disabling 2-Factor Authentication (2FA via TOTP),
- * host verification uploads, payout configuration settings, and GDPR Privacy & Data tools (Export My Data & Delete My Data).
+ * payout configuration settings, and GDPR Privacy & Data tools (Export My Data & Delete My Data).
  */
 export default function SettingsPage() {
  const role = localStorage.getItem("user_role") ?? "traveler"
@@ -50,15 +50,10 @@ export default function SettingsPage() {
 
  if (role === "host") {
  tabs.push(
- { id: "verification", label: "Identity Verification", icon: CheckCircle2 },
  { id: "payout", label: "Payout Settings", icon: DollarSign },
  { id: "tours", label: "Tour Management", icon: MapPin }
  )
- } else if (role === "admin") {
- tabs.push(
- { id: "verification", label: "Identity Verification", icon: CheckCircle2 }
- )
- }
+  }
 
  const [activeTab, setActiveTab] = useState("personal")
  const [saved, setSaved] = useState(false)
@@ -101,9 +96,6 @@ export default function SettingsPage() {
 
  // Verification
  const [isVerified, setIsVerified] = useState(false)
- const [verificationDocType, setVerificationDocType] = useState("national_id")
- const [verificationDocUrl, setVerificationDocUrl] = useState("")
- const [uploadingVerificationDoc, setUploadingVerificationDoc] = useState(false)
 
  // Payout Settings
  const [payoutMethod, setPayoutMethod] = useState("mpesa")
@@ -313,7 +305,7 @@ export default function SettingsPage() {
  setTwoFactorEnabled(!!p.two_factor_enabled)
  setTwoFactorBackupCodes(p.two_factor_backup_codes ?? [])
  setAvatarUrl(p.avatar_url || null)
- setIsVerified(!!p.is_verified)
+				setIsVerified(!!p.is_verified || ["verified", "approved"].includes((p as any).verification_status))
  setTiktok((p as any).tiktok || "")
  setInstagram((p as any).instagram || "")
  setFacebook((p as any).facebook || "")
@@ -453,7 +445,7 @@ export default function SettingsPage() {
  setLanguages((p.languages || []).join(", "))
  setHostType(p.host_type || "")
  setAvatarUrl(p.avatar_url || null)
- setIsVerified(!!p.is_verified)
+				setIsVerified(!!p.is_verified || ["verified", "approved"].includes((p as any).verification_status))
 
  const fields = role === "host" ? ["avatar_url", "bio", "location", "phone", "languages"] : ["avatar_url", "bio", "location"]
  const missing = fields.filter((key) => {
@@ -542,7 +534,17 @@ export default function SettingsPage() {
  <form onSubmit={handleSave} className="rounded-2xl border border-border bg-card shadow-modern p-6">
  {activeTab === "personal" && (
  <div className="space-y-5">
- <h2 className="text-lg font-bold text-foreground">Personal Information</h2>
+ <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-lg font-bold text-foreground">Personal Information</h2>
+              {isVerified && (
+                <span
+                  id="settings-identity-verified-badge"
+                  className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400"
+                >
+                  Identity Verified ✓
+                </span>
+              )}
+            </div>
  
  <div className="flex flex-col sm:flex-row items-center gap-6 pb-4 border-b border-border/40">
  <div className="relative size-20 shrink-0">
@@ -1041,65 +1043,6 @@ export default function SettingsPage() {
  </div>
  )}
 
- {activeTab === "verification" && (
- <div className="space-y-6">
- <div className="flex items-center gap-3 border-b border-border/40 pb-4">
- <CheckCircle2 className="size-5 text-primary" />
- <div>
- <h2 className="text-lg font-bold text-foreground">Identity Verification</h2>
- <p className="text-xs text-muted-foreground">Verify your identity to manage tours and receive payouts.</p>
- </div>
- </div>
-
- {isVerified ? (
- <div className="rounded-xl border border-teal-500/20 bg-teal-500/5 p-6 flex flex-col items-center text-center space-y-3">
- <div className="flex size-14 items-center justify-center rounded-full bg-teal-500/10">
- <Check className="size-7 text-teal" />
- </div>
- <div>
- <h3 className="text-base font-bold text-foreground">Identity Verified</h3>
- <p className="text-xs text-muted-foreground mt-1 max-w-md">
- Your government-issued ID has been successfully verified. Your account is in good standing and you are authorized to list experiences.
- </p>
- </div>
- </div>
- ) : (
- <div className="space-y-4">
- <div className="space-y-1.5">
- <Label htmlFor="verification-type">Document Type</Label>
- <select
- id="verification-type"
- value={verificationDocType}
- onChange={(e) => setVerificationDocType(e.target.value)}
- className="flex h-10 w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
- >
- <option value="national_id">National ID</option>
- <option value="passport">Passport</option>
- <option value="drivers_license">Driver's License</option>
- </select>
- </div>
-
- <div className="space-y-1.5">
- <Label className="flex items-center gap-2">
- <span>Upload government-issued document (Front & Back)</span>
- {uploadingVerificationDoc && <Spinner className="size-3 text-primary animate-spin" />}
- </Label>
- <Dropzone
- bucket="verification"
- multiple={false}
- value={verificationDocUrl ? [verificationDocUrl] : []}
- onChange={(urls) => {
- setVerificationDocUrl(urls[0] || "")
- toast.success("Document uploaded successfully! Under review.")
- }}
- onUploadingChange={setUploadingVerificationDoc}
- aspectRatio="video"
- />
- </div>
- </div>
- )}
- </div>
- )}
 
  {activeTab === "payout" && (
  <div className="space-y-6">

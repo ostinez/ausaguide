@@ -90,16 +90,57 @@ serve(async (req) => {
       console.log(`Didit decision result: status=${status}`, JSON.stringify(decisionData))
 
       const isApproved = status === "Approved"
-      const finalStatus = status ? status.toLowerCase() : "unknown"
+      const finalStatus = isApproved ? "verified" : (status ? status.toLowerCase() : "unknown")
+
+      let profileUpdate: Record<string, unknown> = {
+        id_verified: isApproved,
+        verification_status: finalStatus,
+        verification_date: new Date().toISOString(),
+      }
+
+      let isApprovedLocalHost = false
+
+      if (isApproved) {
+        const { data: existingProfile } = await supabaseClient
+          .from("profiles")
+          .select("role, host_tier, host_type, license_status, tra_number")
+          .eq("id", userId)
+          .maybeSingle()
+
+        const isCertifiedGuide =
+          existingProfile?.host_tier === "certified_guide" ||
+          existingProfile?.host_type === "certified_guide" ||
+          existingProfile?.host_type === "guide" ||
+          existingProfile?.license_status === "pending" ||
+          Boolean(existingProfile?.tra_number)
+
+        if (isCertifiedGuide) {
+          // Certified Guide: uploaded license requires manual admin review
+          profileUpdate.status = "pending"
+          profileUpdate.is_verified = true
+          isApprovedLocalHost = false
+        } else {
+          // Local Host: automatically approved upon Didit ID verification
+          profileUpdate.status = "active"
+          profileUpdate.verification_status = "verified"
+          profileUpdate.is_verified = true
+          profileUpdate.role = "host"
+          isApprovedLocalHost = true
+
+          await supabaseClient
+            .from("hosts")
+            .upsert({
+              user_id: userId,
+              host_type: existingProfile?.host_type || "local_host",
+              status: "approved",
+            }, { onConflict: "user_id" })
+        }
+      }
 
       // 3. Update database profiles & users
       const { error: profilesError } = await supabaseClient
         .from("profiles")
-        .update({
-          id_verified: isApproved,
-          verification_status: finalStatus,
-          verification_date: new Date().toISOString(),
-        })
+        .update(profileUpdate)
         .eq("id", userId)
 
       if (profilesError) {
@@ -120,7 +161,7 @@ serve(async (req) => {
         console.warn("Users table update error in manual status check (non-fatal):", usersError)
       }
 
-      return new Response(JSON.stringify({ verified: isApproved, status: finalStatus }), {
+      return new Response(JSON.stringify({ verified: isApproved, status: finalStatus, isApprovedLocalHost }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       })

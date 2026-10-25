@@ -7,9 +7,15 @@ const corsHeaders = {
 };
 
 interface EmailPayload {
+  /** Recipient email address */
   to: string;
+  /** Recipient display name (used in the Brevo "to" object) */
+  to_name?: string;
   subject: string;
-  html: string;
+  /** Full HTML body — preferred field name */
+  html_content?: string;
+  /** @deprecated Use html_content instead */
+  html?: string;
   subscribeNewsletter?: boolean;
   name?: string;
 }
@@ -22,10 +28,13 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { to, subject, html, subscribeNewsletter, name } = body as EmailPayload;
+    const { to, to_name, subject, html_content, html, subscribeNewsletter, name } = body as EmailPayload;
 
-    if (!to || !subject || !html) {
-      throw new Error("Missing required fields: to, subject, html");
+    // Support both html_content (new standard) and html (legacy)
+    const htmlBody = html_content ?? html ?? "";
+
+    if (!to || !subject || !htmlBody) {
+      throw new Error("Missing required fields: to, subject, html_content");
     }
 
     const resendKey = Deno.env.get("RESEND_API_KEY");
@@ -89,7 +98,7 @@ serve(async (req) => {
           from: "Ausaguide <welcome@ausaguide.com>",
           to: [to],
           subject: subject,
-          html: html,
+          html: htmlBody,
         }),
       });
 
@@ -118,9 +127,9 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           sender: { name: "Ausaguide", email: "welcome@ausaguide.com" },
-          to: [{ email: to }],
+          to: [{ email: to, ...(to_name ? { name: to_name } : {}) }],
           subject: subject,
-          htmlContent: html,
+          htmlContent: htmlBody,
         }),
       });
 
@@ -142,7 +151,8 @@ serve(async (req) => {
       );
     } else {
       // Sandbox / Console logging mode when keys are not available
-      console.log(`[Sandbox Email] To: ${to}, Subject: ${subject}`);
+      console.log(`[Sandbox Email] To: ${to_name ? `"${to_name}" <${to}>` : to} | Subject: ${subject}`);
+      console.log(`[Sandbox Email] HTML preview (first 200 chars): ${htmlBody.slice(0, 200)}`);
       return new Response(
         JSON.stringify({
           success: true,

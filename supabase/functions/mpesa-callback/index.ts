@@ -169,6 +169,122 @@ serve(async (req) => {
             `[M-Pesa Callback] ✅ Booking "${bookingId}" marked as PAID.` +
             ` Receipt: ${mpesaReceiptNumber} | Amount: KES ${amount}`
           )
+
+          // ── Send host notification email ──────────────────────────────────
+          try {
+            // Fetch booking + host profile + tour details in one query
+            const { data: bookingDetails } = await supabase
+              .from("bookings")
+              .select(`
+                id,
+                guest_name,
+                booking_date,
+                booking_time,
+                guest_count,
+                total_price,
+                tour:tours ( title ),
+                host:profiles!bookings_host_id_fkey ( full_name, email )
+              `)
+              .eq("id", bookingId)
+              .maybeSingle()
+
+            if (bookingDetails?.host?.email) {
+              const hostEmail    = bookingDetails.host.email as string
+              const hostName     = bookingDetails.host.full_name ?? "Host"
+              const guestName    = bookingDetails.guest_name ?? "A traveler"
+              const tourTitle    = (bookingDetails.tour as any)?.title ?? "your tour"
+              const bookingDate  = bookingDetails.booking_date ?? ""
+              const bookingTime  = bookingDetails.booking_time
+                ? String(bookingDetails.booking_time).slice(0, 5)
+                : "—"
+              const guestCount   = bookingDetails.guest_count ?? 1
+              const totalKES     = Number(bookingDetails.total_price ?? 0)
+              const payoutKES    = (totalKES * 0.80).toFixed(2)
+
+              const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>New Booking Confirmed</title>
+  <style>
+    body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background: #f4f4f5; }
+    .wrapper { max-width: 600px; margin: 32px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+    .header { background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); padding: 40px 32px; text-align: center; }
+    .header h1 { margin: 0; color: #ffffff; font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+    .header p  { margin: 8px 0 0; color: rgba(255,255,255,0.85); font-size: 15px; }
+    .body { padding: 32px; color: #374151; }
+    .body p { margin: 0 0 16px; font-size: 15px; line-height: 1.6; }
+    .details-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    .details-table td { padding: 12px 16px; font-size: 14px; border-bottom: 1px solid #f3f4f6; }
+    .details-table td:first-child { color: #6b7280; font-weight: 500; width: 40%; }
+    .details-table td:last-child  { color: #111827; font-weight: 600; }
+    .payout-row td { background: #f0fdf4; }
+    .payout-row td:last-child { color: #16a34a !important; font-size: 16px; }
+    .cta { text-align: center; margin: 28px 0 8px; }
+    .cta a { display: inline-block; background: linear-gradient(135deg, #0ea5e9, #6366f1); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; }
+    .footer { padding: 20px 32px; text-align: center; font-size: 12px; color: #9ca3af; background: #f9fafb; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <h1>🎉 New Booking Confirmed!</h1>
+      <p>${tourTitle}</p>
+    </div>
+    <div class="body">
+      <p>Hi <strong>${hostName}</strong>,</p>
+      <p>Great news! <strong>${guestName}</strong> has just booked and paid for <strong>${tourTitle}</strong>. Here are the details:</p>
+      <table class="details-table">
+        <tr><td>Tour</td><td>${tourTitle}</td></tr>
+        <tr><td>Guest</td><td>${guestName}</td></tr>
+        <tr><td>Date</td><td>${bookingDate}</td></tr>
+        <tr><td>Time</td><td>${bookingTime}</td></tr>
+        <tr><td>Guests</td><td>${guestCount} ${guestCount === 1 ? "person" : "people"}</td></tr>
+        <tr class="payout-row"><td>Your Payout (80%)</td><td>KES ${payoutKES}</td></tr>
+      </table>
+      <div class="cta">
+        <a href="https://ausaguide.com/host-dashboard">View Booking in Dashboard</a>
+      </div>
+    </div>
+    <div class="footer">
+      You're receiving this because you're a host on Ausaguide.<br/>
+      &copy; ${new Date().getFullYear()} Ausaguide. All rights reserved.
+    </div>
+  </div>
+</body>
+</html>`
+
+              const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? ""
+              const emailFnUrl  = `${supabaseUrl}/functions/v1/send-email`
+
+              const emailRes = await fetch(emailFnUrl, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""}`,
+                },
+                body: JSON.stringify({
+                  to: hostEmail,
+                  to_name: hostName,
+                  subject: `New Booking Confirmed! 🎉 - ${tourTitle}`,
+                  html_content: htmlContent,
+                }),
+              })
+
+              if (emailRes.ok) {
+                console.log(`[M-Pesa Callback] ✉️  Host notification email sent to ${hostEmail}`)
+              } else {
+                const errText = await emailRes.text()
+                console.error(`[M-Pesa Callback] Host email failed: ${errText}`)
+              }
+            } else {
+              console.warn(`[M-Pesa Callback] No host email found for booking "${bookingId}" — skipping notification`)
+            }
+          } catch (emailErr: any) {
+            // Never let email failure break the Safaricom acknowledgment
+            console.error("[M-Pesa Callback] Email notification error (non-fatal):", emailErr?.message)
+          }
         }
       } else {
         console.error(

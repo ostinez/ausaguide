@@ -138,18 +138,57 @@ serve(async (req) => {
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey)
 
     const isApproved = status === "Approved"
-    const finalStatus = status ? status.toLowerCase() : "unknown"
+    const finalStatus = isApproved ? "verified" : (status ? status.toLowerCase() : "unknown")
 
     console.log(`Processing Didit Webhook: user_id=${userId}, status=${status}, isApproved=${isApproved}`)
+
+    let profileUpdate: Record<string, unknown> = {
+      id_verified: isApproved,
+      verification_status: finalStatus,
+      verification_date: new Date().toISOString(),
+    }
+
+    if (isApproved) {
+      // Check if user is a local host vs certified guide
+      const { data: existingProfile } = await supabaseClient
+        .from("profiles")
+        .select("role, host_tier, host_type, license_status, tra_number")
+        .eq("id", userId)
+        .maybeSingle()
+
+      const isCertifiedGuide =
+        existingProfile?.host_tier === "certified_guide" ||
+        existingProfile?.host_type === "certified_guide" ||
+        existingProfile?.host_type === "guide" ||
+        existingProfile?.license_status === "pending" ||
+        Boolean(existingProfile?.tra_number)
+
+      if (isCertifiedGuide) {
+        // Certified Guide: uploaded license requires manual admin review
+        profileUpdate.status = "pending"
+        profileUpdate.is_verified = true
+      } else {
+        // Local Host: automatically approved upon Didit ID verification
+        profileUpdate.status = "active"
+        profileUpdate.verification_status = "verified"
+        profileUpdate.is_verified = true
+        profileUpdate.role = "host"
+
+        // Also ensure hosts table record is marked approved
+        await supabaseClient
+          .from("hosts")
+          .upsert({
+            user_id: userId,
+            host_type: existingProfile?.host_type || "local_host",
+            status: "approved",
+          }, { onConflict: "user_id" })
+      }
+    }
 
     // 4a. Update the profiles table (what the frontend polls during onboarding)
     const { error: profilesError } = await supabaseClient
       .from("profiles")
-      .update({
-        id_verified: isApproved,
-        verification_status: finalStatus,
-        verification_date: new Date().toISOString(),
-      })
+      .update(profileUpdate)
       .eq("id", userId)
 
     if (profilesError) {

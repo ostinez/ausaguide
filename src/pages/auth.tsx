@@ -538,6 +538,7 @@ export function SignUpForm() {
  const [showPassword, setShowPassword] = useState(false)
  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
  const [subscribeNewsletter, setSubscribeNewsletter] = useState(false)
+ const [agreedToTerms, setAgreedToTerms] = useState(false)
  const [error, setError] = useState<string | null>(null)
  const [infoMessage, setInfoMessage] = useState<string | null>(null)
  const [loading, setLoading] = useState(false)
@@ -651,6 +652,11 @@ export function SignUpForm() {
  const confirmErr = validateConfirmPassword(password, confirmPassword)
  if (confirmErr) { setError(confirmErr); return }
 
+ if (!agreedToTerms) {
+   setError("You must agree to the Terms of Service and Privacy Policy to continue.")
+   return
+ }
+
  setLoading(true)
 
  // Safety Timeout: re-enable button after 20 seconds to prevent getting stuck
@@ -697,6 +703,9 @@ export function SignUpForm() {
  username: username.trim().toLowerCase(),
  role: null,
  newsletter_opt_in: subscribeNewsletter,
+ terms_agreed: true,
+ terms_accepted: true,
+ terms_agreed_at: new Date().toISOString(),
  },
  },
  })
@@ -704,6 +713,9 @@ export function SignUpForm() {
  if (authError) throw authError
 
  if (signUpData.user) {
+ localStorage.setItem("terms_agreed", "true")
+ localStorage.setItem("terms_accepted", "true")
+ localStorage.setItem(`terms_agreed_${signUpData.user.id}`, "true")
  // Update newsletter_opt_in on the profiles row (created by DB trigger)
  let retries = 3
  while (retries-- > 0) {
@@ -935,7 +947,39 @@ export function SignUpForm() {
  </Label>
  </div>
 
- <Button type="submit" className="w-full rounded-full py-5 text-sm font-semibold gap-2" disabled={loading}>
+ <div className="flex items-start gap-2.5 py-1">
+ <input
+ id="signup-terms"
+ type="checkbox"
+ required
+ checked={agreedToTerms}
+ onChange={(e) => setAgreedToTerms(e.target.checked)}
+ className="rounded border-border text-primary focus:ring-primary size-4 mt-0.5 accent-[#0D6F73] cursor-pointer"
+ />
+ <Label htmlFor="signup-terms" className="text-xs font-normal text-muted-foreground select-none cursor-pointer leading-relaxed">
+ I agree to the{" "}
+ <Link
+ to="/terms"
+ target="_blank"
+ rel="noopener noreferrer"
+ className="text-primary hover:text-primary/80 underline underline-offset-2 font-medium"
+ >
+ Terms of Service
+ </Link>{" "}
+ and{" "}
+ <Link
+ to="/privacy"
+ target="_blank"
+ rel="noopener noreferrer"
+ className="text-primary hover:text-primary/80 underline underline-offset-2 font-medium"
+ >
+ Privacy Policy
+ </Link>
+ .
+ </Label>
+ </div>
+
+ <Button type="submit" className="w-full rounded-full py-5 text-sm font-semibold gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled={loading || !agreedToTerms}>
  {loading ? (
  <span className="flex items-center gap-2">
  <Spinner className="size-4 text-white animate-spin" />
@@ -948,19 +992,6 @@ export function SignUpForm() {
  </>
  )}
  </Button>
-
-
- <p className="text-center text-xs text-muted-foreground">
- By signing up, you agree to our{" "}
- <Link to="/terms" className="text-primary hover:text-primary/80 underline underline-offset-2">
- Terms of Service
- </Link>{" "}
- and{" "}
- <Link to="/privacy" className="text-primary hover:text-primary/80 underline underline-offset-2">
- Privacy Policy
- </Link>
- .
- </p>
  </form>
  )
 }

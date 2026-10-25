@@ -1,9 +1,10 @@
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { Clock, ArrowLeft, Compass, ShieldCheck, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useSEO } from "@/hooks/useSEO"
 
 export default function PendingVerificationPage() {
+  const navigate = useNavigate()
   useSEO({
     title: "Verification Pending | Ausaguide",
     description: "Your guide/host application is currently under review by the Ausaguide team.",
@@ -58,25 +59,23 @@ export default function PendingVerificationPage() {
           <div className="flex flex-col sm:flex-row gap-3 items-center justify-center">
             {/* Primary Required Button */}
             <Button
-              asChild
-              className="w-full sm:w-auto min-w-[180px] bg-gradient-to-r from-[#0D6F73] to-[#10b981] hover:from-[#0a585b] hover:to-[#059669] text-white font-medium py-2.5 px-6 rounded-xl shadow-lg shadow-[#0D6F73]/25 transition-all"
+              type="button"
+              onClick={() => navigate("/")}
+              className="w-full sm:w-auto min-w-[180px] bg-gradient-to-r from-[#0D6F73] to-[#10b981] hover:from-[#0a585b] hover:to-[#059669] text-white font-medium py-2.5 px-6 rounded-xl shadow-lg shadow-[#0D6F73]/25 transition-all cursor-pointer"
             >
-              <Link to="/">
-                <ArrowLeft className="mr-2 size-4" />
-                Return to Home
-              </Link>
+              <ArrowLeft className="mr-2 size-4" />
+              Return to Home
             </Button>
 
             {/* Traveler exploration option */}
             <Button
-              asChild
+              type="button"
               variant="outline"
-              className="w-full sm:w-auto border-[#235E5D] bg-[#142928]/60 text-gray-200 hover:text-white hover:bg-[#1f3f3e] py-2.5 px-5 rounded-xl"
+              onClick={() => navigate("/tours")}
+              className="w-full sm:w-auto border-[#235E5D] bg-[#142928]/60 text-gray-200 hover:text-white hover:bg-[#1f3f3e] py-2.5 px-5 rounded-xl cursor-pointer"
             >
-              <Link to="/tours">
-                <Compass className="mr-2 size-4 text-primary" />
-                Explore Tours
-              </Link>
+              <Compass className="mr-2 size-4 text-primary" />
+              Explore Tours
             </Button>
           </div>
         </div>

@@ -3,6 +3,8 @@ import { SignUpForm } from "@/pages/auth"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { useSEO } from "@/hooks/useSEO"
 
+export { SignUpForm }
+
 export default function SignupPage() {
   useSEO({
     title: "Create an Account | Ausaguide",

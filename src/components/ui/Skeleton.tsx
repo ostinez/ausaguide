@@ -350,3 +350,61 @@ export function SkeletonProfile() {
  </div>
  )
 }
+
+// ── Public aliases (match the names requested in the task brief) ─────────────
+
+/** Alias for SkeletonCard — placeholder for a single tour card */
+export function TourCardSkeleton({ className }: { className?: string }) {
+ return <SkeletonCard className={className} />
+}
+
+/** Alias for SkeletonTable — placeholder for any list or table */
+export function ListSkeleton({ rows = 5, cols = 4 }: { rows?: number; cols?: number }) {
+ return <SkeletonTable rows={rows} cols={cols} />
+}
+
+/** Alias for SkeletonProfile — placeholder for user / host profile section */
+export { SkeletonProfile as ProfileSkeleton }
+
+// ── Network Error State ───────────────────────────────────────────────────────
+
+/**
+ * NetworkError — shown when a Supabase fetch fails due to timeout or
+ * connectivity issues. Replaces an infinite skeleton with a friendly prompt.
+ */
+export function NetworkError({
+ message = "Network error. Please check your connection and try again.",
+ onRetry,
+}: {
+ message?: string
+ onRetry?: () => void
+}) {
+ return (
+ <div
+ role="alert"
+ className="flex flex-col items-center justify-center gap-4 py-16 px-6 text-center animate-in fade-in duration-300"
+ >
+ <div className="size-14 rounded-full bg-destructive/10 border border-destructive/20 flex items-center justify-center text-destructive">
+ <svg xmlns="http://www.w3.org/2000/svg" className="size-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+ <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+ </svg>
+ </div>
+ <div className="space-y-1.5 max-w-xs">
+ <p className="text-base font-semibold text-foreground">Connection Problem</p>
+ <p className="text-sm text-muted-foreground leading-relaxed">{message}</p>
+ </div>
+ {onRetry && (
+ <button
+ type="button"
+ onClick={onRetry}
+ className="mt-2 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-md"
+ >
+ <svg xmlns="http://www.w3.org/2000/svg" className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+ <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+ </svg>
+ Try Again
+ </button>
+ )}
+ </div>
+ )
+}

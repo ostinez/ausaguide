@@ -1,7 +1,8 @@
 import React, { useState, useRef } from "react"
-import { X, ImageIcon, Loader2, RefreshCw, AlertTriangle } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { X, ImageIcon, Loader2, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
+import { ErrorState } from "@/components/ui/ErrorState"
+import { uploadImage, STORAGE_BUCKETS } from "@/lib/storage"
 import { cn } from "@/lib/utils"
 
 interface CoverImageUploaderProps {
@@ -14,7 +15,7 @@ interface CoverImageUploaderProps {
 export default function CoverImageUploader({
  value,
  onChange,
- bucket = "tours",
+ bucket = STORAGE_BUCKETS.tourImages,
  maxSizeMB = 20,
 }: CoverImageUploaderProps) {
  const [uploading, setUploading] = useState(false)
@@ -62,28 +63,7 @@ export default function CoverImageUploader({
  setUploading(true)
 
  try {
- const fileExt = file.name.split(".").pop() ?? "jpg"
- const fileName = `cover_${Math.random().toString(36).substring(2, 12)}_${Date.now()}.${fileExt}`
-
- // Ensure bucket exists
- const { error: uploadErr } = await supabase.storage
- .from(bucket)
- .upload(fileName, file, { cacheControl: "3600", upsert: false })
-
- if (uploadErr) {
- // If bucket missing, create it and retry
- if (uploadErr.message.toLowerCase().includes("bucket not found")) {
- await supabase.storage.createBucket(bucket, { public: true })
- const { error: retryErr } = await supabase.storage
- .from(bucket)
- .upload(fileName, file, { cacheControl: "3600", upsert: false })
- if (retryErr) throw retryErr
- } else {
- throw uploadErr
- }
- }
-
- const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(fileName)
+ const publicUrl = await uploadImage(bucket, file, "cover")
 
  // Only now update the real value
  onChange(publicUrl)
@@ -194,18 +174,14 @@ export default function CoverImageUploader({
 
  {/* Error message */}
  {error && (
- <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-xs text-destructive">
- <AlertTriangle className="size-3.5 shrink-0 mt-0.5" />
- <span>{error}</span>
- <button
- type="button"
- onClick={() => setError(null)}
- className="ml-auto shrink-0 text-destructive/60 hover:text-destructive"
- >
- <X className="size-3.5" />
- </button>
- </div>
- )}
+        <ErrorState
+          compact
+          title="Upload failed"
+          message={error}
+          showSupportButton={false}
+          onRetry={() => { setError(null); fileInputRef.current?.click() }}
+        />
+      )}
  </div>
  )
 }

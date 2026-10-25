@@ -2,9 +2,10 @@ import React, { useState, useRef } from "react"
 import { Upload, Trash2, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { ErrorState } from "@/components/ui/ErrorState"
+import { uploadImage, STORAGE_BUCKETS } from "@/lib/storage"
 
 interface UploadingFile {
  id: string
@@ -23,7 +24,7 @@ interface DropzoneProps {
 }
 
 export default function Dropzone({
- bucket = "tours",
+ bucket = STORAGE_BUCKETS.tourImages,
  multiple = true,
  maxSizeMB = 5,
  value = [],
@@ -34,6 +35,8 @@ export default function Dropzone({
  const [dragActive, setDragActive] = useState(false)
  const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([])
  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const lastFilesRef = useRef<File[]>([])
 
  const handleDrag = (e: React.DragEvent) => {
  e.preventDefault()
@@ -65,8 +68,8 @@ export default function Dropzone({
  fileInputRef.current?.click()
  }
 
- const handleUpload = async (fileList: FileList) => {
- const filesToUpload = Array.from(fileList).filter((file) => {
+ const handleUpload = async (fileList: FileList | File[]) => {
+    const filesToUpload = Array.from(fileList).filter((file) => {
  if (!file.type.startsWith("image/")) {
  toast.error(`"${file.name}" is not an image. Only image files are supported.`)
  return false
@@ -79,6 +82,9 @@ export default function Dropzone({
  })
 
  if (filesToUpload.length === 0) return
+
+    setUploadError(null)
+    lastFilesRef.current = filesToUpload
 
  onUploadingChange?.(true)
 
@@ -107,38 +113,7 @@ export default function Dropzone({
  }, 150)
 
  try {
- const fileExt = file.name.split(".").pop()
- const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`
- const filePath = `${fileName}`
-
- // Upload to Supabase
- const { error: uploadError } = await supabase.storage
- .from(bucket)
- .upload(filePath, file, {
- cacheControl: "3600",
- upsert: false,
- })
-
- if (uploadError) {
- if (uploadError.message.includes("Bucket not found")) {
- await supabase.storage.createBucket(bucket, {
- public: true,
- })
- const { error: retryError } = await supabase.storage
- .from(bucket)
- .upload(filePath, file, {
- cacheControl: "3600",
- upsert: false,
- })
- if (retryError) throw retryError
- } else {
- throw uploadError
- }
- }
-
- const { data: { publicUrl } } = supabase.storage
- .from(bucket)
- .getPublicUrl(filePath)
+        const publicUrl = await uploadImage(bucket, file, "photo")
 
  clearInterval(interval)
  setUploadingFiles((prev) =>
@@ -149,7 +124,9 @@ export default function Dropzone({
  } catch (err) {
  clearInterval(interval)
  console.error(err)
- toast.error(`Failed to upload file: ${file.name}`)
+        const msg = err instanceof Error ? err.message : "Upload failed. Please try again."
+        setUploadError(msg)
+        toast.error(`Failed to upload ${file.name}`)
  setUploadingFiles((prev) => prev.filter((uf) => uf.id !== currentUpload.id))
  return null
  }
@@ -228,7 +205,17 @@ export default function Dropzone({
  </p>
  </div>
 
- {/* Progress Bars List */}
+ {uploadError && (
+        <ErrorState
+          compact
+          title="Upload failed"
+          message={uploadError}
+          showSupportButton={false}
+          onRetry={() => { if (lastFilesRef.current.length) handleUpload(lastFilesRef.current) }}
+        />
+      )}
+
+      {/* Progress Bars List */}
  {uploadingFiles.length > 0 && (
  <div className="space-y-2.5">
  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Uploading files...</p>

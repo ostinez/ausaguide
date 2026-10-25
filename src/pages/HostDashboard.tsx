@@ -17,17 +17,35 @@ export default function HostDashboardPage() {
       if (!session) return
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role, license_status, verification_status, verified_guide")
+        .select("role, license_status, verification_status, verified_guide, host_tier, host_type, status, is_verified, tra_number")
         .eq("id", session.user.id)
         .maybeSingle()
 
-      const isVerified = Boolean(profile?.verified_guide || profile?.license_status === "approved")
-      const isPending = Boolean(
+      const isLocalHost = Boolean(
+        profile?.host_tier === "local_host" ||
+        profile?.host_type === "local_host" ||
+        profile?.host_type === "local"
+      )
+
+      const isCertifiedGuide = Boolean(
+        profile?.host_tier === "certified_guide" ||
+        profile?.host_type === "certified_guide" ||
+        profile?.host_type === "guide" ||
+        Boolean(profile?.tra_number) ||
         profile?.license_status === "pending" ||
-        profile?.license_status === "unverified" ||
-        profile?.verification_status === "pending" ||
-        profile?.verification_status === "unverified" ||
-        (!isVerified && profile?.role === "host")
+        profile?.license_status === "approved"
+      )
+
+      const isVerified = Boolean(
+        profile?.verified_guide ||
+        profile?.license_status === "approved" ||
+        (isLocalHost && profile?.license_status !== "pending" && (profile?.verification_status === "verified" || profile?.verification_status === "approved" || profile?.status === "active" || profile?.is_verified)) ||
+        (profile?.role === "host" && profile?.license_status !== "pending" && (profile?.is_verified || profile?.verification_status === "verified" || profile?.verification_status === "approved" || profile?.status === "active"))
+      )
+
+      const isPending = Boolean(
+        (isCertifiedGuide && (profile?.license_status === "pending" || profile?.status === "pending" || !profile?.verified_guide)) ||
+        (!isVerified && (profile?.role === "host" || isCertifiedGuide))
       )
 
       if (isPending) {
