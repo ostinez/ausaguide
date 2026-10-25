@@ -94,16 +94,17 @@ export default function NewTourPage() {
             setTourType("virtual")
           }
 
-          // TASK 1: If verification_status is "verified" (e.g. from Didit), user is fully verified
+          // TASK 1: If local host and verification_status is "verified" (e.g. from Didit), allow publishing
           const isVerified = Boolean(
             isAdmin ||
+            prof.role === "host" ||
             prof.verification_status === "verified" ||
             prof.verification_status === "approved" ||
             prof.is_verified === true ||
             prof.status === "active" ||
             prof.verified_guide === true ||
             prof.license_status === "approved" ||
-            (isLocal && (prof.status === "active" || prof.verification_status === "verified"))
+            (isLocal && (prof.verification_status === "verified" || prof.is_verified === true || prof.status === "active" || prof.role === "host"))
           )
           setIsVerifiedHost(isVerified)
         }
@@ -234,7 +235,45 @@ export default function NewTourPage() {
       return
     }
 
-    if (!isVerifiedHost && targetStatus === "published") {
+    // Fresh verification validation from database to prevent false publish blocks
+    let isAuthorizedToPublish = isVerifiedHost
+    if (targetStatus === "published" && !isAuthorizedToPublish && hostId) {
+      try {
+        const { data: freshProf } = await supabase
+          .from("profiles")
+          .select("id, role, status, verification_status, is_verified, verified_guide, license_status, host_type, host_tier, requested_tier")
+          .eq("id", hostId)
+          .maybeSingle()
+
+        if (freshProf) {
+          const isFreshLocal = Boolean(
+            freshProf.host_type === "local" ||
+            freshProf.host_type === "local_host" ||
+            freshProf.host_tier === "local_host" ||
+            freshProf.requested_tier === "local" ||
+            isLocalHostUser
+          )
+          if (
+            freshProf.role === "admin" ||
+            freshProf.role === "host" ||
+            freshProf.verification_status === "verified" ||
+            freshProf.verification_status === "approved" ||
+            freshProf.is_verified === true ||
+            freshProf.status === "active" ||
+            freshProf.verified_guide === true ||
+            freshProf.license_status === "approved" ||
+            (isFreshLocal && (freshProf.verification_status === "verified" || freshProf.is_verified === true || freshProf.status === "active" || freshProf.role === "host"))
+          ) {
+            isAuthorizedToPublish = true
+            setIsVerifiedHost(true)
+          }
+        }
+      } catch (err) {
+        console.warn("Fresh verification check error:", err)
+      }
+    }
+
+    if (!isAuthorizedToPublish && targetStatus === "published") {
       toast.error("You must be a verified host to publish tours. Please complete identity verification first.")
       return
     }
@@ -668,37 +707,51 @@ export default function NewTourPage() {
  </CardHeader>
  <CardContent className="space-y-6">
 
- {/* Competitor Benchmarks */}
- <div className="rounded-xl border border-[#0D6F73]/30 bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon/5 p-4 space-y-3">
- <h3 className="font-semibold text-sm flex items-center gap-2 text-foreground">
- <TrendingUp className="size-4 text-[#0D6F73]" />
- Market Pricing Benchmarks — Kenya Tours
- </h3>
- <p className="text-xs text-muted-foreground">See what similar experiences charge. Use this to price competitively without undervaluing your time.</p>
- <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
- {[
- { platform: "Global Travel Platforms", type: "City walks / culture", low: "KSh 3,125", high: "KSh 7,500", avg: "KSh 5,000", color: "#FF5A5F" },
- { platform: "Sightseeing Marketplaces", type: "Safari / nature day trips", low: "KSh 6,250", high: "KSh 22,500", avg: "KSh 11,875", color: "#FF8000" },
- { platform: "Local Tour Aggregates", type: "Food & cooking tours", low: "KSh 3,750", high: "KSh 10,625", avg: "KSh 6,500", color: "#0B6EFD" },
- ].map((b) => (
- <div key={b.platform} className="rounded-lg border border-border/50 bg-card shadow-modern p-3 space-y-1.5">
- <div className="flex items-center gap-1.5">
- <span className="size-2 rounded-full shrink-0" style={{ background: b.color }} />
- <span className="text-[11px] font-bold text-foreground">{b.platform}</span>
- </div>
- <p className="text-[10px] text-muted-foreground">{b.type}</p>
- <div className="pt-1 border-t border-border/30">
- <p className="text-xs font-semibold text-foreground">{b.avg} <span className="font-normal text-muted-foreground">avg/person</span></p>
- <p className="text-[10px] text-muted-foreground">{b.low} – {b.high} range</p>
- </div>
- </div>
- ))}
- </div>
- <div className="flex items-start gap-2 text-[11px] text-muted-foreground bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon/5 border border-[#0D6F73]/20 rounded-lg p-2.5">
- <Info className="size-3.5 text-[#0D6F73] shrink-0 mt-0.5" />
- <span><strong className="text-foreground">Ausaguide advantage:</strong> No platform fees means you keep 100% — so you can price 10–20% below competitors and still earn more.</span>
- </div>
- </div>
+          {/* Competitor Benchmarks (Dynamic per host type) */}
+          <div className="rounded-xl border border-[#0D6F73]/30 bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon/5 p-4 space-y-3">
+            <h3 className="font-semibold text-sm flex items-center gap-2 text-foreground">
+              <TrendingUp className="size-4 text-[#0D6F73]" />
+              {isLocalHostUser
+                ? "Market Pricing Benchmarks — Virtual Experiences (Kenya)"
+                : "Market Pricing Benchmarks — In-Person Tours (Kenya)"}
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              {isLocalHostUser
+                ? "See what hosts charge for virtual and live video experiences. Price competitively to attract global travelers."
+                : "See what licensed guides charge for in-person tours and safaris. Price competitively without undervaluing your time."}
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {(isLocalHostUser
+                ? [
+                    { platform: "Virtual City Walks", type: "Live streaming & Q&A", low: "KSh 1,000", high: "KSh 2,500", avg: "KSh 1,750", color: "#FF5A5F" },
+                    { platform: "Cultural Masterclasses", type: "Cooking, craft & storytelling", low: "KSh 1,500", high: "KSh 3,500", avg: "KSh 2,500", color: "#FF8000" },
+                    { platform: "Virtual Hidden Gems", type: "Neighborhood walkthroughs", low: "KSh 1,000", high: "KSh 3,000", avg: "KSh 2,000", color: "#0B6EFD" },
+                  ]
+                : [
+                    { platform: "Certified City Walks", type: "In-person walking & cultural history", low: "KSh 3,500", high: "KSh 5,500", avg: "KSh 4,500", color: "#FF5A5F" },
+                    { platform: "Full-Day Safaris & Day Trips", type: "National parks & wildlife trips", low: "KSh 4,500", high: "KSh 7,500", avg: "KSh 6,000", color: "#FF8000" },
+                    { platform: "Specialized Field Tours", type: "Culinary & architectural safaris", low: "KSh 3,500", high: "KSh 7,000", avg: "KSh 5,000", color: "#0B6EFD" },
+                  ]
+              ).map((b) => (
+                <div key={b.platform} className="rounded-lg border border-border/50 bg-card shadow-modern p-3 space-y-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="size-2 rounded-full shrink-0" style={{ background: b.color }} />
+                    <span className="text-[11px] font-bold text-foreground">{b.platform}</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">{b.type}</p>
+                  <div className="pt-1 border-t border-border/30">
+                    <p className="text-xs font-semibold text-foreground">{b.avg} <span className="font-normal text-muted-foreground">avg/person</span></p>
+                    <p className="text-[10px] text-muted-foreground">{b.low} – {b.high} range</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* TASK 3: 80% payout / 20% commission note */}
+            <div className="flex items-start gap-2 text-[11px] text-muted-foreground bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon/5 border border-[#0D6F73]/20 rounded-lg p-2.5">
+              <Info className="size-3.5 text-[#0D6F73] shrink-0 mt-0.5" />
+              <span><strong className="text-foreground">Ausaguide advantage:</strong> We only take a 20% commission. You keep 80% of every booking, paid instantly to your M-Pesa.</span>
+            </div>
+          </div>
 
  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
  <div className="space-y-2">
