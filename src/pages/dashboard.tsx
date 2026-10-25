@@ -1768,10 +1768,50 @@ export default function DashboardPage() {
 
  if (profile.role === "host") {
  setHostProfile(profile)
- const hostRec = await fetchHostByUserId(profile.id)
- console.log("[loadDashboard] Fetched host profile:", profile)
- console.log("[loadDashboard] Fetched host record:", hostRec)
- setHostRecord(hostRec)
+ let hostRec = await fetchHostByUserId(profile.id)
+      console.log("[loadDashboard] Fetched host profile:", profile)
+      console.log("[loadDashboard] Fetched host record:", hostRec)
+
+      if (!hostRec) {
+        try {
+          const { data: createdHost } = await supabase
+            .from("hosts")
+            .upsert({
+              user_id: profile.id,
+              full_name: profile.full_name || "Ausaguide Host",
+              email: profile.email || "",
+              city: profile.location || "Nairobi",
+              host_type: (profile.host_type || profile.host_tier || "local_host") as any,
+              bio: profile.bio || "Local host on Ausaguide.",
+              status: "approved",
+            }, { onConflict: "user_id" })
+            .select()
+            .maybeSingle()
+
+          if (createdHost) {
+            hostRec = createdHost as HostRecord
+          }
+        } catch (e) {
+          console.warn("[loadDashboard] Auto-create host record non-fatal:", e)
+        }
+      }
+
+      const effectiveHostRecord: HostRecord = hostRec || {
+        id: profile.id,
+        user_id: profile.id,
+        full_name: profile.full_name || "Ausaguide Host",
+        email: profile.email || "",
+        city: profile.location || "Nairobi",
+        host_type: (profile.host_type || profile.host_tier || "local_host") as any,
+        bio: profile.bio || "",
+        id_upload_url: null,
+        license_upload_url: null,
+        rejection_reason: null,
+        status: "approved",
+        created_at: profile.created_at || new Date().toISOString(),
+        reviewed_at: new Date().toISOString(),
+      }
+      setHostRecord(effectiveHostRecord)
  
  const [tours, bookings] = await Promise.all([
  fetchToursByHostId(profile.id),
@@ -1837,7 +1877,7 @@ export default function DashboardPage() {
  try {
  const { data, error } = await supabase
  .from("profiles")
- .select("verified_guide, host_tier, license_status")
+ .select("verified_guide, host_tier, license_status, verification_status, is_verified, status, role")
  .eq("id", userId)
  .single()
  
@@ -2230,7 +2270,7 @@ export default function DashboardPage() {
  )}
 
  {view === "reviews" && (
- <ReviewList hostId={hostRecord?.id} />
+ <ReviewList hostId={hostRecord?.id || hostProfile?.id || profile?.id} />
  )}
 
  {view === "settings" && (
@@ -2239,7 +2279,7 @@ export default function DashboardPage() {
  </div>
  ) : view === "reviews" ? (
  userRoleState === "host" ? (
- <ReviewList hostId={hostRecord?.id} />
+ <ReviewList hostId={hostRecord?.id || hostProfile?.id || profile?.id} />
  ) : (
  <div className="space-y-6">
  <Card className="border-border/60 bg-gradient-to-b from-card to-card/60 shadow-lg">

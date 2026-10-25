@@ -224,36 +224,56 @@ export async function fetchToursByHostId(hostId: string): Promise<Tour[]> {
 }
 
 export async function createTour(tourData: Partial<Tour>): Promise<Tour> {
-  const { data, error } = await supabase
+  const insertPayload = {
+    host_id: tourData.host_id,
+    title: tourData.title,
+    description: tourData.description,
+    short_description: tourData.short_description || tourData.description?.substring(0, 150) || "",
+    price: tourData.price,
+    currency: tourData.currency || "KES",
+    duration_hours: tourData.duration_hours,
+    max_guests: tourData.max_guests || 10,
+    location_name: tourData.location_name,
+    latitude: tourData.latitude || -1.2921,
+    longitude: tourData.longitude || 36.8219,
+    category: tourData.category,
+    tour_type: tourData.tour_type || "in_person",
+    images: tourData.images || [],
+    highlights: tourData.highlights || [],
+    is_published: true,
+    status: "published",
+    availability: tourData.availability || {},
+    tags: tourData.tags || [],
+    physical_price: tourData.physical_price,
+    virtual_price: tourData.virtual_price,
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("tours")
+      .insert(insertPayload)
+      .select(TOUR_DETAIL_SELECT)
+      .single()
+
+    if (!error && data) {
+      return mapTour(data as any)
+    }
+    if (error) {
+      console.warn("createTour detailed select returned error, falling back to simple select:", error.message)
+    }
+  } catch (err) {
+    console.warn("createTour detailed select threw exception, trying fallback:", err)
+  }
+
+  // Resilient fallback select: insert or re-fetch with simple select
+  const { data: fallbackData, error: fallbackErr } = await supabase
     .from("tours")
-    .insert({
-      host_id: tourData.host_id,
-      title: tourData.title,
-      description: tourData.description,
-      short_description: tourData.short_description || tourData.description?.substring(0, 150) || "",
-      price: tourData.price,
-      currency: tourData.currency || "KES",
-      duration_hours: tourData.duration_hours,
-      max_guests: tourData.max_guests || 10,
-      location_name: tourData.location_name,
-      latitude: tourData.latitude || -1.2921,
-      longitude: tourData.longitude || 36.8219,
-      category: tourData.category,
-      tour_type: tourData.tour_type || "in_person",
-      images: tourData.images || [],
-      highlights: tourData.highlights || [],
-      is_published: true,
-      status: "published",
-      availability: tourData.availability || {},
-      tags: tourData.tags || [],
-      physical_price: tourData.physical_price,
-      virtual_price: tourData.virtual_price,
-    })
-    .select(TOUR_DETAIL_SELECT)
+    .insert(insertPayload)
+    .select("*")
     .single()
 
-  if (error) throw error
-  return mapTour(data as any)
+  if (fallbackErr) throw fallbackErr
+  return mapTour(fallbackData as any)
 }
 
 export async function updateTour(id: string, tourData: Partial<Tour>): Promise<Tour> {

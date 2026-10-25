@@ -592,10 +592,21 @@ export function StepVerifyID({
         } as any)
         .eq("id", userId)
 
+      // Fetch user profile to populate all host details
+      const { data: userProf } = await supabase
+        .from("profiles")
+        .select("full_name, email, bio, location")
+        .eq("id", userId)
+        .maybeSingle()
+
       await supabase
         .from("hosts")
         .upsert({
           user_id: userId,
+          full_name: userProf?.full_name || "Ausaguide Host",
+          email: userProf?.email || "",
+          city: userProf?.location || "Nairobi",
+          bio: userProf?.bio || "Local host on Ausaguide.",
           host_type: "local_host",
           status: "approved",
         }, { onConflict: "user_id" })

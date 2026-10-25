@@ -152,7 +152,7 @@ serve(async (req) => {
       // Check if user is a local host vs certified guide vs security
       const { data: existingProfile } = await supabaseClient
         .from("profiles")
-        .select("role, host_tier, host_type, requested_tier, license_status, tra_number")
+        .select("role, host_tier, host_type, requested_tier, license_status, tra_number, full_name, email, bio, location")
         .eq("id", userId)
         .maybeSingle()
 
@@ -186,7 +186,11 @@ serve(async (req) => {
           .from("hosts")
           .upsert({
             user_id: userId,
-            host_type: existingProfile?.host_type || "local_host",
+            full_name: existingProfile?.full_name || "Ausaguide Host",
+            email: existingProfile?.email || "",
+            city: existingProfile?.location || "Nairobi",
+            bio: existingProfile?.bio || "Local host on Ausaguide.",
+            host_type: existingProfile?.host_type || existingProfile?.host_tier || "local_host",
             status: "approved",
           }, { onConflict: "user_id" })
       }

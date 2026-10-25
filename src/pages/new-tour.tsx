@@ -1,4 +1,4 @@
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 import {
@@ -20,6 +20,8 @@ import {
  Clock,
  MapPin,
  TrendingUp,
+  ShieldAlert,
+  ShieldCheck,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -31,6 +33,7 @@ import { createTour } from "@/lib/api/tours"
 import type { TourCategory, TourType } from "@/lib/types"
 import Dropzone from "@/components/ui/Dropzone"
 import CoverImageUploader from "@/components/ui/CoverImageUploader"
+import { supabase } from "@/lib/supabase"
 
 const STEPS = [
  { id: "basic", label: "Basic Info" },
@@ -55,6 +58,60 @@ export default function NewTourPage() {
  const navigate = useNavigate()
  const [currentStep, setCurrentStep] = useState(0)
  const [submitting, setSubmitting] = useState(false)
+  const [checkingHostStatus, setCheckingHostStatus] = useState(true)
+  const [isVerifiedHost, setIsVerifiedHost] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function checkHostVerification() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        const uid = session?.user?.id || localStorage.getItem("user_id")
+        if (!uid) {
+          navigate("/auth")
+          return
+        }
+        setCurrentUserId(uid)
+
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("id, role, status, verification_status, is_verified, license_status, verified_guide, host_tier, host_type, tra_number")
+          .eq("id", uid)
+          .maybeSingle()
+
+        if (prof) {
+          const isAdmin = prof.role === "admin"
+          const isLocalHost = Boolean(
+            prof.host_tier === "local_host" ||
+            prof.host_type === "local_host" ||
+            prof.host_type === "local" ||
+            (!prof.tra_number && prof.license_status !== "pending")
+          )
+          const isVerified = Boolean(
+            isAdmin ||
+            prof.verified_guide === true ||
+            prof.license_status === "approved" ||
+            (
+              isLocalHost &&
+              prof.license_status !== "pending" &&
+              (prof.verification_status === "verified" || prof.verification_status === "approved" || prof.status === "active" || prof.is_verified)
+            ) ||
+            (
+              prof.role === "host" &&
+              prof.license_status !== "pending" &&
+              (prof.verification_status === "verified" || prof.verification_status === "approved" || prof.status === "active" || prof.is_verified)
+            )
+          )
+          setIsVerifiedHost(isVerified)
+        }
+      } catch (err) {
+        console.error("Error checking host verification in new-tour:", err)
+      } finally {
+        setCheckingHostStatus(false)
+      }
+    }
+    checkHostVerification()
+  }, [navigate])
 
  // Form State
  const [title, setTitle] = useState("")
@@ -162,12 +219,17 @@ export default function NewTourPage() {
  // Submit Handler
  const handleSave = async (visibilityStatus?: "draft" | "published") => {
  const targetStatus = visibilityStatus || status
- const hostId = localStorage.getItem("user_id")
+ const hostId = currentUserId || localStorage.getItem("user_id")
 
- if (!hostId) {
- toast.error("You must be logged in to create a tour.")
- return
- }
+    if (!hostId) {
+      toast.error("You must be logged in to create a tour.")
+      return
+    }
+
+    if (!isVerifiedHost && targetStatus === "published") {
+      toast.error("You must be a verified host to publish tours. Please complete identity verification first.")
+      return
+    }
 
  if (!title.trim()) {
  toast.error("Please enter a tour title.")
@@ -279,8 +341,28 @@ export default function NewTourPage() {
  </div>
  </div>
 
- {/* Stepper progress */}
- <div className="mb-10 rounded-xl border border-border/40 bg-card shadow-modern p-4 ">
+ {/* Verification status alerts */}
+      {!checkingHostStatus && !isVerifiedHost && (
+        <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-amber-200">
+          <ShieldAlert className="size-5 shrink-0 text-amber-400 mt-0.5" />
+          <div className="text-sm">
+            <p className="font-semibold text-amber-300">Identity Verification Required to Publish</p>
+            <p className="mt-0.5 text-xs text-amber-200/80">
+              Your host profile is currently pending verification. You can draft and configure your tour details now, but publishing requires an active verified host profile.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {!checkingHostStatus && isVerifiedHost && (
+        <div className="mb-6 flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-xs text-emerald-300">
+          <ShieldCheck className="size-4 text-emerald-400" />
+          <span>Verified Host &bull; You are authorized to publish tours on Ausaguide</span>
+        </div>
+      )}
+
+      {/* Stepper progress */}
+      <div className="mb-10 rounded-xl border border-border/40 bg-card shadow-modern p-4 ">
  <div className="flex justify-between">
  {STEPS.map((s, idx) => (
  <button
