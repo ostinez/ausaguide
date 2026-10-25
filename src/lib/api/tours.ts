@@ -224,6 +224,27 @@ export async function fetchToursByHostId(hostId: string): Promise<Tour[]> {
 }
 
 export async function createTour(tourData: Partial<Tour>): Promise<Tour> {
+  // Enforce Virtual-only for Local Hosts at API level
+  if (tourData.host_id) {
+    const { data: hostProfile } = await supabase
+      .from("profiles")
+      .select("host_type, host_tier, requested_tier, verified_guide")
+      .eq("id", tourData.host_id)
+      .maybeSingle()
+
+    const isLocal = Boolean(
+      hostProfile?.host_type === "local" ||
+      hostProfile?.host_type === "local_host" ||
+      hostProfile?.host_tier === "local_host" ||
+      hostProfile?.requested_tier === "local" ||
+      (!hostProfile?.verified_guide && hostProfile?.requested_tier !== "certified_guide")
+    )
+
+    if (isLocal && tourData.tour_type !== "virtual") {
+      throw new Error("Local hosts are restricted to Virtual Experiences only. Physical tours require a Certified Guide license.")
+    }
+  }
+
   const insertPayload = {
     host_id: tourData.host_id,
     title: tourData.title,

@@ -60,6 +60,7 @@ export default function NewTourPage() {
  const [submitting, setSubmitting] = useState(false)
   const [checkingHostStatus, setCheckingHostStatus] = useState(true)
   const [isVerifiedHost, setIsVerifiedHost] = useState(false)
+  const [isLocalHostUser, setIsLocalHostUser] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -75,32 +76,34 @@ export default function NewTourPage() {
 
         const { data: prof } = await supabase
           .from("profiles")
-          .select("id, role, status, verification_status, is_verified, license_status, verified_guide, host_tier, host_type, tra_number")
+          .select("id, role, status, verification_status, is_verified, license_status, verified_guide, host_tier, host_type, requested_tier, tra_number")
           .eq("id", uid)
           .maybeSingle()
 
         if (prof) {
           const isAdmin = prof.role === "admin"
-          const isLocalHost = Boolean(
-            prof.host_tier === "local_host" ||
-            prof.host_type === "local_host" ||
+          const isLocal = Boolean(
             prof.host_type === "local" ||
-            (!prof.tra_number && prof.license_status !== "pending")
+            prof.host_type === "local_host" ||
+            prof.host_tier === "local_host" ||
+            prof.requested_tier === "local" ||
+            (!prof.verified_guide && prof.role !== "pending_guide" && prof.requested_tier !== "certified_guide" && !prof.tra_number)
           )
+          setIsLocalHostUser(isLocal)
+          if (isLocal) {
+            setTourType("virtual")
+          }
+
+          // TASK 1: If verification_status is "verified" (e.g. from Didit), user is fully verified
           const isVerified = Boolean(
             isAdmin ||
+            prof.verification_status === "verified" ||
+            prof.verification_status === "approved" ||
+            prof.is_verified === true ||
+            prof.status === "active" ||
             prof.verified_guide === true ||
             prof.license_status === "approved" ||
-            (
-              isLocalHost &&
-              prof.license_status !== "pending" &&
-              (prof.verification_status === "verified" || prof.verification_status === "approved" || prof.status === "active" || prof.is_verified)
-            ) ||
-            (
-              prof.role === "host" &&
-              prof.license_status !== "pending" &&
-              (prof.verification_status === "verified" || prof.verification_status === "approved" || prof.status === "active" || prof.is_verified)
-            )
+            (isLocal && (prof.status === "active" || prof.verification_status === "verified"))
           )
           setIsVerifiedHost(isVerified)
         }
@@ -226,6 +229,11 @@ export default function NewTourPage() {
       return
     }
 
+    if (isLocalHostUser && tourType !== "virtual") {
+      toast.error("Local hosts are restricted to Virtual Experiences only. Physical tours require Certified Guide status.")
+      return
+    }
+
     if (!isVerifiedHost && targetStatus === "published") {
       toast.error("You must be a verified host to publish tours. Please complete identity verification first.")
       return
@@ -276,7 +284,7 @@ export default function NewTourPage() {
  host_id: hostId,
  title: title.trim(),
  description: description.trim(),
- price: Number(physicalPrice) || 0,
+      price: isLocalHostUser || tourType === "virtual" ? (Number(virtualPrice) || 0) : (Number(physicalPrice) || 0),
  physical_price: Number(physicalPrice) || 0,
  virtual_price: Number(virtualPrice) || 0,
  currency,
@@ -455,10 +463,17 @@ export default function NewTourPage() {
  <SelectValue placeholder="Select Type" />
  </SelectTrigger>
  <SelectContent>
- <SelectItem value="in_person">In-Person Experience</SelectItem>
- <SelectItem value="virtual">Virtual Experience</SelectItem>
+                  {!isLocalHostUser && (
+                    <SelectItem value="in_person">Physical / In-Person Experience</SelectItem>
+                  )}
+                  <SelectItem value="virtual">Virtual / Live Video</SelectItem>
  </SelectContent>
  </Select>
+              {isLocalHostUser && (
+                <p className="text-[11px] text-teal-400/90 mt-1">
+                  Local hosts are authorized for Virtual / Live Video experiences only.
+                </p>
+              )}
  </div>
 
  <div className="space-y-2">
@@ -698,6 +713,7 @@ export default function NewTourPage() {
  </Select>
  </div>
 
+{!isLocalHostUser && (
  <div className="space-y-2">
  <Label htmlFor="tour-physical-price">Physical Price (In-Person)</Label>
  <div className="relative">
@@ -715,6 +731,7 @@ export default function NewTourPage() {
  />
  </div>
  </div>
+)}
 
  <div className="space-y-2">
  <Label htmlFor="tour-virtual-price">Virtual Price (Virtual Live)</Label>
@@ -725,7 +742,12 @@ export default function NewTourPage() {
  type="number"
  min="0"
  value={virtualPrice}
- onChange={(e) => setVirtualPrice(e.target.value)}
+                  onChange={(e) => {
+                    setVirtualPrice(e.target.value)
+                    if (isLocalHostUser || tourType === "virtual") {
+                      setPrice(e.target.value)
+                    }
+                  }}
  className="pl-9"
  />
  </div>

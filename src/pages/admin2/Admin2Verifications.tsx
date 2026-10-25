@@ -186,7 +186,12 @@ export default function Admin2Verifications() {
  .from("profiles")
  .update({
  host_tier: "certified_guide",
+ host_type: "certified_guide",
+ role: "host",
+ status: "active",
  verified_guide: true,
+ is_verified: true,
+ verification_status: "verified",
  verification_date: new Date().toISOString(),
  rejected_as_guide: false,
  license_status: "approved",
@@ -308,11 +313,27 @@ export default function Admin2Verifications() {
  }
  }
 
- const filteredProfiles = profiles.filter(p => {
- if (activeTab === 'pending') return p.license_status === 'pending'
- if (activeTab === 'approved') return p.verified_guide === true && p.host_tier === 'certified_guide'
- return true
- })
+  const isLocalHost = (p: any) => Boolean(
+    p.host_type === "local" ||
+    p.host_type === "local_host" ||
+    p.requested_tier === "local" ||
+    (p.host_tier === "local_host" && !p.tra_number && p.requested_tier !== "certified_guide" && p.role !== "pending_guide")
+  )
+
+  const isPendingCertifiedGuide = (p: any) => {
+    if (isLocalHost(p)) return false
+    return Boolean(
+      (p.role === "pending_guide" || p.license_status === "pending" || p.requested_tier === "certified_guide" || p.host_tier === "certified_guide" || p.host_type === "guide") &&
+      !p.verified_guide &&
+      p.license_status !== "rejected"
+    )
+  }
+
+  const filteredProfiles = profiles.filter(p => {
+    if (activeTab === "pending") return isPendingCertifiedGuide(p)
+    if (activeTab === "approved") return p.verified_guide === true || p.license_status === "approved"
+    return true
+  })
 
  return (
  <div className="space-y-6 flex flex-col h-[calc(100vh-8rem)] relative">
@@ -332,7 +353,7 @@ export default function Admin2Verifications() {
  activeTab === 'pending' ? "bg-amber-500/10 border-amber-500/20 text-amber-400" : "text-gray-400 hover:text-white"
  )}
  >
- Pending Certified Guides ({profiles.filter(p => p.role === 'pending_guide' || p.license_status === 'pending' || (!p.verified_guide && (p.requested_tier === 'certified_guide' || p.host_tier === 'certified_guide'))).length})
+            Pending Certified Guides ({profiles.filter(isPendingCertifiedGuide).length})
  </button>
  <button
  onClick={() => setActiveTab('approved')}
