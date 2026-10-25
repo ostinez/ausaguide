@@ -223,13 +223,13 @@ function CreatePostCard({ currentUserId, onCreated }: { currentUserId: string; o
  return (
  <div className="rounded-2xl border border-border/60 bg-card shadow-modern p-4 space-y-3">
  <textarea
- id="new-post-input"
- placeholder="Share a travel moment, tip, or story…"
- value={content}
- onChange={e => setContent(e.target.value)}
- rows={3}
- className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/60 resize-none focus:outline-none"
- />
+        id="new-post-input"
+        placeholder="Share a travel moment, tip, or story…"
+        value={content}
+        onChange={e => setContent(e.target.value)}
+        rows={6}
+        className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none min-h-[180px] overflow-y-auto resize-y leading-relaxed"
+      />
  {imagePreviews.length > 0 && (
  <div className="grid grid-cols-2 gap-2 w-full max-w-md">
  {imagePreviews.map((preview, index) => (
@@ -421,21 +421,24 @@ function ImageCarousel({ urls, onImageClick }: { urls: string[]; onImageClick: (
  )}
 
  {/* Indicators */}
- {urls.length > 1 && (
- <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex gap-1.5 px-2.5 py-1 rounded-full bg-black/40 ">
- {urls.map((_, idx) => (
- <button
- key={idx}
- type="button"
- onClick={(e) => { e.stopPropagation(); emblaApi?.scrollTo(idx); }}
- className={cn(
- "size-1.5 rounded-full transition-all duration-300",
- idx === selectedIndex ? "w-3 bg-primary" : "bg-card shadow-modern hover:bg-card shadow-modern"
- )}
- />
- ))}
- </div>
- )}
+      {urls.length > 1 && (
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-sm pointer-events-auto">
+          {urls.map((_, idx) => (
+            <button
+              key={idx}
+              type="button"
+              aria-label={`Go to photo ${idx + 1}`}
+              onClick={(e) => { e.stopPropagation(); emblaApi?.scrollTo(idx); }}
+              className={cn(
+                "w-2.5 h-2.5 rounded-full shadow-sm transition-all duration-200 p-0 border-0 shrink-0 cursor-pointer",
+                idx === selectedIndex
+                  ? "bg-white opacity-100 scale-110 shadow-sm"
+                  : "bg-white/50 hover:bg-white/75 opacity-60 hover:opacity-80 shadow-sm"
+              )}
+            />
+          ))}
+        </div>
+      )}
  </div>
  )
 }
@@ -718,11 +721,11 @@ const PostCard = memo(function PostCard({
  {editing ? (
  <div className="space-y-3">
  <textarea
- value={editContent}
- onChange={e => setEditContent(e.target.value)}
- rows={3}
- className="w-full text-sm bg-muted/40 rounded-xl px-3 py-2 text-foreground resize-none focus:outline-none border border-border/60"
- />
+            value={editContent}
+            onChange={e => setEditContent(e.target.value)}
+            rows={5}
+            className="w-full text-sm bg-muted/40 rounded-xl px-3 py-2 text-foreground focus:outline-none border border-border/60 min-h-[150px] overflow-y-auto resize-y leading-relaxed"
+          />
 
  {/* Edit social links */}
  <div className="space-y-2 border-t border-border/20 pt-2">
