@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
-import { Link, useLocation, useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import {
  LayoutDashboard,
  Map,
@@ -67,7 +67,7 @@ function getNavItems(
  { id: "earnings", label: "Earnings", icon: DollarSign, href: "/dashboard/earnings" },
  { id: "journal", label: "Journal", icon: BookOpen, href: "/journal" },
  { id: "reviews", label: "Reviews", icon: Star },
- { id: "settings", label: "Settings", icon: Settings },
+ { id: "settings", label: "Settings", icon: Settings, href: "/settings" },
  { id: "exit", label: "Exit Dashboard", icon: Home, href: "/" },
  ]
  }
@@ -79,6 +79,7 @@ function getNavItems(
  { id: "journal", label: "Journal", icon: BookOpen, href: "/journal" },
  { id: "reviews", label: "Reviews", icon: Star },
  { id: "explore", label: "Explore Tours", icon: TrendingUp, href: "/tours" },
+    { id: "settings", label: "Settings", icon: Settings, href: "/settings" },
  { id: "exit", label: "Exit Dashboard", icon: Home, href: "/" },
  ]
 }
@@ -343,16 +344,6 @@ export function GlassmorphismSidebar({
  </div>
  </div>
  )}
-
-
- <Link
- to="/settings"
- onClick={onClose}
- className="flex w-full items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-white/50 hover:text-white hover:bg-white/10 transition-all duration-200"
- >
- <Settings className="size-4 text-[#0D6F73]" />
- Settings
- </Link>
  <button
  onClick={handleSignOut}
  className="flex w-full items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-red-400/80 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200"

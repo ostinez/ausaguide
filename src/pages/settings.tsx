@@ -1160,7 +1160,7 @@ export default function SettingsPage() {
  </div>
  <Button 
  type="button" 
- onClick={() => navigate("/dashboard?tab=tours")} 
+ onClick={() => navigate("/host/tours")} 
  className="text-xs w-full flex items-center justify-center gap-1.5"
  >
  <span>Manage Listings</span>
@@ -1178,7 +1178,7 @@ export default function SettingsPage() {
  <Button 
  type="button" 
  onClick={() => navigate("/host/tours/new")} 
- className="text-xs w-full flex items-center justify-center gap-1.5 bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon hover:bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon/95 text-white"
+ className="text-xs w-full flex items-center justify-center gap-1.5 bg-[#0D6F73] hover:bg-[#095457] text-white font-medium"
  >
  <span>Add New Tour</span>
  <ExternalLink className="size-3" />
