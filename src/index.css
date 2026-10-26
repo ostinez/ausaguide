@@ -274,12 +274,12 @@ html, body, button, a, [role="button"], input, select {
 .font-body {
   font-family: 'Inter', sans-serif;
 }
-/* Serif editorial — premium travel-magazine headings */
+/* Serif editorial ï¿½ premium travel-magazine headings */
 .font-playfair {
   font-family: 'Playfair Display', Georgia, serif;
 }
 
-/* Handwritten — warmth and personality A/B test variant */
+/* Handwritten ï¿½ warmth and personality A/B test variant */
 .font-caveat {
   font-family: 'Caveat', cursive;
 }
@@ -480,6 +480,17 @@ button.icon-btn {
   min-height: unset;
   min-width: unset;
   padding: 10px;
+}
+
+/* Override for carousel pagination dots so they are never forced to 44px HIG touch targets */
+button.carousel-dot,
+.carousel-dot {
+  min-height: 0 !important;
+  min-width: 0 !important;
+  width: 8px !important;
+  height: 8px !important;
+  padding: 0 !important;
+  box-shadow: none !important;
 }
 
 html,

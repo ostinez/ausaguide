@@ -401,28 +401,30 @@ function ImageCarousel({ urls, onImageClick }: { urls: string[]; onImageClick: (
 
  {/* Navigation Buttons */}
  {prevBtnEnabled && (
- <button
- type="button"
- onClick={(e) => { e.stopPropagation(); scrollPrev(); }}
- className="absolute left-3 top-1/2 -translate-y-1/2 z-20 flex size-8 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/85 hover:scale-105 active:scale-95"
- >
- <ChevronLeft className="size-4" />
- </button>
- )}
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); scrollPrev(); }}
+          className="absolute left-3 top-1/2 -translate-y-1/2 z-20 flex size-8 !min-w-0 !min-h-0 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/85 hover:scale-105 active:scale-95"
+          style={{ width: "32px", height: "32px", minWidth: "32px", minHeight: "32px" }}
+        >
+          <ChevronLeft className="size-4" />
+        </button>
+      )}
 
- {nextBtnEnabled && (
- <button
- type="button"
- onClick={(e) => { e.stopPropagation(); scrollNext(); }}
- className="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex size-8 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/85 hover:scale-105 active:scale-95"
- >
- <ChevronRight className="size-4" />
- </button>
- )}
+      {nextBtnEnabled && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); scrollNext(); }}
+          className="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex size-8 !min-w-0 !min-h-0 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/85 hover:scale-105 active:scale-95"
+          style={{ width: "32px", height: "32px", minWidth: "32px", minHeight: "32px" }}
+        >
+          <ChevronRight className="size-4" />
+        </button>
+      )}
 
  {/* Indicators */}
       {urls.length > 1 && (
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-sm pointer-events-auto">
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex items-center justify-center gap-1.5 px-2 py-1 rounded-full bg-black/40 backdrop-blur-sm pointer-events-auto">
           {urls.map((_, idx) => (
             <button
               key={idx}
@@ -430,11 +432,10 @@ function ImageCarousel({ urls, onImageClick }: { urls: string[]; onImageClick: (
               aria-label={`Go to photo ${idx + 1}`}
               onClick={(e) => { e.stopPropagation(); emblaApi?.scrollTo(idx); }}
               className={cn(
-                "w-2.5 h-2.5 rounded-full shadow-sm transition-all duration-200 p-0 border-0 shrink-0 cursor-pointer",
-                idx === selectedIndex
-                  ? "bg-white opacity-100 scale-110 shadow-sm"
-                  : "bg-white/50 hover:bg-white/75 opacity-60 hover:opacity-80 shadow-sm"
+                "carousel-dot !w-2 !h-2 !min-w-0 !min-h-0 !p-0 rounded-full transition-all duration-200 cursor-pointer border-0 shrink-0",
+                idx === selectedIndex ? "bg-white" : "bg-white/40 hover:bg-white/60"
               )}
+              style={{ width: "8px", height: "8px", minWidth: "8px", minHeight: "8px", padding: 0 }}
             />
           ))}
         </div>
