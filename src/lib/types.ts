@@ -19,6 +19,7 @@ export interface Profile {
  is_verified: boolean
  created_at: string
  updated_at: string
+ is_private?: boolean
  two_factor_enabled?: boolean
  two_factor_secret?: string | null
  two_factor_backup_codes?: string[]
@@ -44,6 +45,7 @@ export interface Profile {
  instagram?: string | null
  facebook?: string | null
  reddit?: string | null
+ trust_score?: number
 }
 
 export interface Tour {
@@ -110,6 +112,18 @@ export interface Booking {
  payment_amount?: number | null
  payment_currency?: string
  host_paid?: boolean
+ is_custom?: boolean
+ custom_details?: any
+ offer_expires_at?: string | null
+ dispute_status?: "none" | "pending_refund" | "rescheduled" | "completed" | string | null
+}
+
+export interface Strike {
+ id: string
+ host_id: string
+ booking_id?: string | null
+ reason: string
+ created_at: string
 }
 
 export interface Review {
@@ -214,5 +228,32 @@ export interface Refund {
  host_id: string
  reason: string
  status: "pending" | "approved" | "rejected" | "refund_requested"
+ created_at: string
+}
+
+export interface Comment {
+ id: string
+ post_id: string
+ user_id: string
+ content: string
+ created_at: string
+ likes_count?: number
+ liked_by_me?: boolean
+ author?: Profile
+}
+
+export interface CommentLike {
+ id: string
+ comment_id: string
+ user_id: string
+ created_at: string
+}
+
+export interface Conversation {
+ id: string
+ participant_a: string
+ participant_b: string
+ context_type?: "general" | "tour" | "post" | string
+ context_id?: string | null
  created_at: string
 }

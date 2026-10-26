@@ -50,7 +50,6 @@ import { createOrGetDailyRoom } from "@/lib/api/daily"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import { HostCardCarousel } from "@/components/ui/HostCardCarousel"
 import { LocationToggle } from "@/components/host/LocationToggle"
 import { GlassmorphismSidebar } from "@/components/ui/GlassmorphismSidebar"
 import { BorderGlow } from "@/components/ui/BorderGlow"
@@ -58,6 +57,8 @@ import { usePlatform } from "@/hooks/use-platform"
 import { EditBookingModal } from "@/components/dashboard/EditBookingModal"
 import { HostVerificationBanners } from "@/components/host/HostVerificationBanners"
 import { TermsGateModal } from "@/components/auth/TermsGateModal"
+import { TravelerMapDashboard } from "@/components/dashboard/TravelerMapDashboard"
+import { HostBusinessDashboard } from "@/components/dashboard/HostBusinessDashboard"
 
 
 function statusColorClass(status: BookingStatus) {
@@ -1516,7 +1517,7 @@ function UrgentRequestCardItem({
  )
 }
 
-function TravelerDashboard({
+export function TravelerDashboard({
   bookings = [],
   onChat,
   onRefresh,
@@ -1726,7 +1727,6 @@ export default function DashboardPage() {
  const [error, setError] = useState<string | null>(null);
  const handleChatClick = (b: Booking) => navigate(`/messages?bookingId=${b.id}`);
  const [unreadNotifications, setUnreadNotifications] = useState<number>(0);
- const [notifications, setNotifications] = useState<any[]>([]);
 
  useEffect(() => {
  if (userRoleState === "host") {
@@ -1768,7 +1768,6 @@ export default function DashboardPage() {
  .order("created_at", { ascending: false })
  
  if (notifData) {
- setNotifications(notifData)
  setUnreadNotifications(notifData.filter(n => !n.read).length)
  }
 
@@ -2047,9 +2046,7 @@ export default function DashboardPage() {
  ) : userRoleState === "host" ? (
  <div className="space-y-8 animate-in fade-in duration-300">
  {view === "dashboard" && (
- <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
- {/* Left Column: stats, notifications, bookings */}
- <div className="space-y-8 lg:col-span-2">
+ <div className="space-y-8">
  <HostVerificationBanners profile={profile} onRefresh={loadDashboard} />
  <UrgentRequestsSection
  requests={urgentRequests}
@@ -2059,132 +2056,15 @@ export default function DashboardPage() {
  navigate(`/messages?userId=${travelerId}`)
  }}
  />
- <HostGamificationTips />
- <div className="grid grid-cols-2 gap-4">
- <StatCard icon={MapPin} label="Total Tours" value={hostTours.length.toString()} />
- <StatCard icon={Calendar} label="Total Bookings" value={hostBookings.length.toString()} />
- <StatCard
- icon={DollarSign}
- label="Total Earnings"
- value={`$${hostBookings.filter((b) => b.status === "completed" || b.status === "confirmed").reduce((sum, b) => sum + b.total_price, 0).toLocaleString()}`}
- accent
- />
- <StatCard
- icon={ShieldCheck}
- label="Avg Rating"
- value={(hostTours.length > 0 ? hostTours.reduce((sum, t) => sum + t.rating, 0) / hostTours.length : 0).toFixed(1)}
- accent
- />
- </div>
-
- {notifications.length > 0 && (
- <Card className="border-border bg-card">
- <CardHeader className="flex flex-row items-center justify-between pb-2">
- <div className="space-y-1">
- <CardTitle className="text-base flex items-center gap-2">
- <Bell className="size-4 text-primary" />
- <span>Notifications</span>
- {unreadNotifications > 0 && (
- <Badge className="bg-destructive text-destructive-foreground text-[10px] px-1.5 py-0.5 rounded-full font-bold">
- {unreadNotifications} New
- </Badge>
- )}
- </CardTitle>
- <CardDescription>Real-time booking and platform alerts</CardDescription>
- </div>
- {unreadNotifications > 0 && (
- <Button 
- type="button"
- variant="ghost" 
- size="sm" 
- className="text-xs text-primary hover:underline h-7"
- onClick={async () => {
- if (hostProfile) {
- await supabase.from("notifications").update({ read: true }).eq("user_id", hostProfile.id)
- setUnreadNotifications(0)
- setNotifications(prev => prev.map(n => ({ ...n, read: true })))
- }
- }}
- >
- Mark all as read
- </Button>
- )}
- </CardHeader>
- <CardContent className="space-y-3 max-h-60 overflow-y-auto">
- {notifications.map((notif) => (
- <div 
- key={notif.id} 
- className={cn(
- "p-3 rounded-xl border text-xs flex justify-between items-center transition-colors",
- notif.read ? "border-border/60 bg-muted/5 text-muted-foreground" : "border-primary/20 bg-primary/5 text-foreground font-medium"
- )}
- >
- <span>{notif.message}</span>
- <span className="text-[10px] text-muted-foreground shrink-0 ml-2">
- {format(new Date(notif.created_at), "MMM d, h:mm a")}
- </span>
- </div>
- ))}
- </CardContent>
- </Card>
- )}
-
- <Card>
- <CardHeader>
- <CardTitle>Pending Bookings</CardTitle>
- <CardDescription>Booking requests requiring your confirmation</CardDescription>
- </CardHeader>
- <CardContent className="space-y-3">
- {hostBookings.filter((b) => b.status === "pending").length === 0 ? (
- <p className="py-6 text-center text-sm text-muted-foreground">No pending booking requests.</p>
- ) : (
- hostBookings.filter((b) => b.status === "pending").map((b) => (
- <PendingBookingRow
- key={b.id}
- booking={b}
- onUpdateStatus={handleUpdateBookingStatus}
- onChat={handleChatClick}
- />
- ))
- )}
- </CardContent>
- </Card>
- </div>
-
- {/* Right Column: Public Profile Card Preview */}
- <div className="space-y-6 lg:col-span-1">
  {hostProfile && (
  <LocationToggle userId={hostProfile.id} className="animate-in slide-in-from-right duration-500" />
  )}
- <Card className="border-border bg-card">
- <CardHeader>
- <CardTitle className="text-base">Public Card Preview</CardTitle>
- <CardDescription>How travelers view your profile. Hover to auto-play images.</CardDescription>
- </CardHeader>
- <CardContent className="space-y-4">
- <HostCardCarousel 
- hostId={hostProfile?.id} 
- aspectRatio="video"
- className="border-2 border-primary/20 shadow-md"
+ <HostBusinessDashboard
+ hostProfile={hostProfile || profile}
+ bookings={hostBookings}
+ onChat={handleChatClick}
+ onRefresh={loadDashboard}
  />
- <div className="space-y-2 mt-2">
- <div className="flex items-center justify-between">
- <h4 className="font-bold text-foreground">{hostProfile?.full_name}</h4>
- <Badge variant="outline" className="border-teal/30 bg-teal/10 text-teal capitalize">
- {hostProfile?.host_type?.replace("_", " ")}
- </Badge>
- </div>
- <p className="text-xs text-muted-foreground line-clamp-3">
- {hostProfile?.bio || "No biography provided yet."}
- </p>
- <div className="flex items-center gap-2 pt-2 border-t border-border/40 text-xs">
- <MapPin className="size-3.5 text-muted-foreground" />
- <span>{hostProfile?.location || "Nairobi, Kenya"}</span>
- </div>
- </div>
- </CardContent>
- </Card>
- </div>
  </div>
  )}
 
@@ -2320,7 +2200,7 @@ export default function DashboardPage() {
  )
  ) : (
  <div className="animate-in fade-in duration-300">
- <TravelerDashboard bookings={travelerBookings} onChat={handleChatClick} onRefresh={loadDashboard} />
+ <TravelerMapDashboard bookings={travelerBookings} onChat={handleChatClick} onRefresh={loadDashboard} />
  </div>
  )}
  </div>

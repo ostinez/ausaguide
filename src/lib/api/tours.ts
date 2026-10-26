@@ -32,7 +32,8 @@ export const TOUR_CARD_SELECT = `
     avatar_url,
     is_verified,
     verified_guide,
-    host_tier
+    host_tier,
+    trust_score
   )
 `
 
@@ -56,6 +57,7 @@ export const TOUR_DETAIL_SELECT = `
     rejected_as_guide,
     license_url,
     license_status,
+    trust_score,
     created_at,
     updated_at
   )
@@ -80,6 +82,7 @@ function mapProfile(row: Partial<ProfileRow>): Profile {
     rejected_as_guide: (row as any).rejected_as_guide ?? false,
     license_url: (row as any).license_url ?? null,
     license_status: (row as any).license_status ?? null,
+    trust_score: Number((row as any).trust_score ?? 5.0),
     created_at: row.created_at ?? now,
     updated_at: row.updated_at ?? now,
   }
@@ -180,7 +183,8 @@ export async function fetchTours(options?: TourFilterOptions): Promise<Tour[]> {
   const { data, error } = await query
 
   if (error) throw error
-  return (data ?? []).map((row) => mapTour(row as any))
+  const mapped = (data ?? []).map((row) => mapTour(row as any))
+  return mapped.sort((a, b) => Number(b.host?.trust_score ?? 5.0) - Number(a.host?.trust_score ?? 5.0))
 }
 
 /**

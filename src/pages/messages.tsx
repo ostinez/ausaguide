@@ -126,6 +126,7 @@ interface ChatHeaderProps {
   name: string
   avatarUrl: string | null
   hostTier?: string | null
+  otherRole?: string | null
   isOnline: boolean
   isTyping: boolean
   isHostUser?: boolean
@@ -145,9 +146,10 @@ function ChatHeader({
   name,
   avatarUrl,
   hostTier,
+  otherRole,
   isOnline,
   isTyping,
-  isHostUser,
+  isHostUser: _isHostUser,
   tourName,
   bookingDate,
   priorityNumber,
@@ -207,24 +209,24 @@ function ChatHeader({
                 </span>
               )}
 
-              {isHostUser ? (
-                <span className="shrink-0 text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold">
-                  {tourName ? "Guest" : "Traveler"}
+              {/* Role badge */}
+              {hostTier === "certified_guide" ? (
+                <span className="shrink-0 text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-semibold flex items-center gap-0.5">
+                  <Award className="size-2.5" />
+                  <span>Certified Guide</span>
+                </span>
+              ) : hostTier === "local_host" || otherRole === "host" ? (
+                <span className="shrink-0 text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold">
+                  Local Host
+                </span>
+              ) : otherRole === "admin" ? (
+                <span className="shrink-0 text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500/10 text-purple-600 border border-purple-500/20 font-semibold">
+                  Admin
                 </span>
               ) : (
-                <>
-                  {hostTier === "certified_guide" && (
-                    <span className="shrink-0 text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold flex items-center gap-0.5">
-                      <Award className="size-2.5" />
-                      <span>Guide</span>
-                    </span>
-                  )}
-                  {hostTier === "local_host" && (
-                    <span className="shrink-0 text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold">
-                      Host
-                    </span>
-                  )}
-                </>
+                <span className="shrink-0 text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-semibold">
+                  Traveler
+                </span>
               )}
             </div>
 
@@ -1537,6 +1539,7 @@ export default function MessagesPage() {
               name={activeConv.other.full_name}
               avatarUrl={activeConv.other.avatar_url}
               hostTier={activeConv.other.host_tier}
+              otherRole={activeConv.other.role}
               isOnline={isUserOnline(activeConv.other.id)}
               isTyping={otherTyping}
               isHostUser={authUser.role === "host"}
@@ -1561,6 +1564,8 @@ export default function MessagesPage() {
                     currentUserName={authUser.full_name || "User"}
                     tourName={activeConv.tourName}
                     bookingId={activeConv.bookingId}
+                    contextType={activeConv.context_type}
+                    contextId={activeConv.context_id}
                     otherUser={{
                       id: otherUserId,
                       full_name: activeConv.other.full_name,

@@ -23,6 +23,24 @@ export interface Post {
  reddit?: string | null
  likes?: PostLiker[]
  saves?: { user_id: string }[]
+ comments_count?: number
+}
+
+export interface Comment {
+ id: string
+ post_id: string
+ user_id: string
+ content: string
+ created_at: string
+ likes_count?: number
+ liked_by_me?: boolean
+ author?: {
+   id?: string
+   full_name: string
+   avatar_url: string | null
+   role?: string
+   host_tier?: string | null
+ }
 }
 
 export interface Journal {
@@ -45,7 +63,7 @@ export interface Journal {
 export async function fetchPosts(): Promise<Post[]> {
  const { data, error } = await supabase
  .from("posts")
- .select("*, author:profiles(full_name, avatar_url, role, host_tier), likes(user_id, created_at, profile:profiles(full_name, avatar_url)), saves(user_id)")
+ .select("*, author:profiles(full_name, avatar_url, role, host_tier), likes(user_id, created_at, profile:profiles(full_name, avatar_url)), saves(user_id), comments(id)")
  .order("created_at", { ascending: false })
  if (error) throw error
  return (data ?? []).map((row: any) => ({
@@ -57,6 +75,7 @@ export async function fetchPosts(): Promise<Post[]> {
  profile: Array.isArray(l.profile) ? l.profile[0] : l.profile,
  })),
  saves: row.saves || [],
+ comments_count: (row.comments || []).length,
  view_count: row.view_count ?? 0,
  }))
 }
@@ -308,4 +327,90 @@ export async function trackView(targetType: "tour" | "post" | "journal" | "host"
  console.error("View tracking error:", err)
  return false
  }
+}
+
+// ─── Comments API ──────────────────────────────────────────────────────────
+
+export async function fetchPostComments(postId: string, currentUserId?: string | null): Promise<Comment[]> {
+  const { data, error } = await supabase
+    .from("comments")
+    .select(`
+      id,
+      post_id,
+      user_id,
+      content,
+      created_at,
+      author:profiles(id, full_name, avatar_url, role, host_tier),
+      comment_likes(user_id)
+    `)
+    .eq("post_id", postId)
+    .order("created_at", { ascending: true })
+
+  if (error) throw error
+
+  return (data ?? []).map((row: any) => {
+    const likes = row.comment_likes || []
+    return {
+      id: row.id,
+      post_id: row.post_id,
+      user_id: row.user_id,
+      content: row.content,
+      created_at: row.created_at,
+      author: Array.isArray(row.author) ? row.author[0] : row.author,
+      likes_count: likes.length,
+      liked_by_me: currentUserId ? likes.some((l: any) => l.user_id === currentUserId) : false,
+    }
+  })
+}
+
+export async function addComment(postId: string, userId: string, content: string): Promise<Comment> {
+  const { data, error } = await supabase
+    .from("comments")
+    .insert({
+      post_id: postId,
+      user_id: userId,
+      content: content.trim(),
+    })
+    .select(`
+      id,
+      post_id,
+      user_id,
+      content,
+      created_at,
+      author:profiles(id, full_name, avatar_url, role, host_tier)
+    `)
+    .single()
+
+  if (error) throw error
+
+  return {
+    ...(data as any),
+    author: Array.isArray((data as any).author) ? (data as any).author[0] : (data as any).author,
+    likes_count: 0,
+    liked_by_me: false,
+  }
+}
+
+export async function toggleCommentLike(commentId: string, userId: string, liked: boolean): Promise<void> {
+  if (liked) {
+    const { error } = await supabase
+      .from("comment_likes")
+      .insert({ comment_id: commentId, user_id: userId })
+    if (error && error.code !== "23505") throw error
+  } else {
+    const { error } = await supabase
+      .from("comment_likes")
+      .delete()
+      .eq("comment_id", commentId)
+      .eq("user_id", userId)
+    if (error) throw error
+  }
+}
+
+export async function deleteComment(commentId: string): Promise<void> {
+  const { error } = await supabase
+    .from("comments")
+    .delete()
+    .eq("id", commentId)
+  if (error) throw error
 }

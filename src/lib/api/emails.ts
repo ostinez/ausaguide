@@ -604,4 +604,81 @@ export async function sendTourReminderEmail(
   return dispatchEmail({ to, subject, html, name: guestName })
 }
 
+export async function sendHostCancellationAdminAlert(
+  bookingId: string,
+  tourTitle: string,
+  hostName: string,
+  hostId: string,
+  travelerName: string,
+  travelerEmail: string,
+  reason: string,
+  strikeCount: number
+): Promise<boolean> {
+  const adminEmail = "support@ausaguide.com"
+  const subject = `⚠️ URGENT: Host Cancelled Booking (Strike #${strikeCount}) — Tour: ${tourTitle}`
+  const html = `
+  <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #ef4444; border-radius: 20px; background-color: #16161A; color: #fffffe; line-height: 1.6;">
+    <div style="text-align: center; margin-bottom: 24px;">
+      <h2 style="color: #ef4444; margin: 0; font-size: 20px;">🚨 Host Cancellation Alert</h2>
+      <p style="color: #94a3b8; font-size: 13px; margin-top: 4px;">Host strikes incurred: ${strikeCount} / 10 limit</p>
+    </div>
+
+    <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+      <p style="margin: 0 0 8px 0; font-weight: bold; color: #f87171;">Reason Provided by Host:</p>
+      <p style="margin: 0; font-style: italic; color: #f1f5f9;">"${reason}"</p>
+    </div>
+
+    <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 24px;">
+      <tr><td style="padding: 6px 0; color: #94a3b8;">Booking ID:</td><td style="padding: 6px 0; color: #f1f5f9; font-mono: monospace;">${bookingId}</td></tr>
+      <tr><td style="padding: 6px 0; color: #94a3b8;">Tour:</td><td style="padding: 6px 0; color: #f1f5f9; font-weight: 600;">${tourTitle}</td></tr>
+      <tr><td style="padding: 6px 0; color: #94a3b8;">Host:</td><td style="padding: 6px 0; color: #f1f5f9;">${hostName} (${hostId})</td></tr>
+      <tr><td style="padding: 6px 0; color: #94a3b8;">Traveler:</td><td style="padding: 6px 0; color: #f1f5f9;">${travelerName} (${travelerEmail})</td></tr>
+      <tr><td style="padding: 6px 0; color: #94a3b8;">Review Status:</td><td style="padding: 6px 0; color: ${strikeCount >= 10 ? '#ef4444' : '#eab308'}; font-weight: bold;">${strikeCount >= 10 ? '🚨 ACCOUNT REVIEW REQUIRED (>=10 Strikes)' : 'Standard Monitoring'}</td></tr>
+    </table>
+
+    <div style="text-align: center; margin-top: 24px;">
+      <a href="https://ausaguide.com/admin" style="background-color: #ef4444; color: #ffffff; padding: 12px 28px; border-radius: 9999px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block;">
+        Open Admin Console →
+      </a>
+    </div>
+  </div>
+  `
+  return dispatchEmail({ to: adminEmail, subject, html, name: "Ausaguide Admin" })
+}
+
+export async function sendRefundRequestAdminAlert(
+  bookingId: string,
+  tourTitle: string,
+  travelerName: string,
+  travelerEmail: string,
+  refundAmount: number,
+  currency: string = "KES"
+): Promise<boolean> {
+  const adminEmail = "support@ausaguide.com"
+  const subject = `💸 Traveler Refund Request — Booking #${bookingId.slice(0, 8)} (${currency} ${refundAmount.toLocaleString()})`
+  const html = `
+  <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px; border: 1px solid #3b82f6; border-radius: 20px; background-color: #16161A; color: #fffffe; line-height: 1.6;">
+    <div style="text-align: center; margin-bottom: 24px;">
+      <h2 style="color: #60a5fa; margin: 0; font-size: 20px;">💸 Refund Request Submitted</h2>
+      <p style="color: #94a3b8; font-size: 13px; margin-top: 4px;">Dispute status set to pending_refund</p>
+    </div>
+
+    <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 24px;">
+      <tr><td style="padding: 6px 0; color: #94a3b8;">Booking ID:</td><td style="padding: 6px 0; color: #f1f5f9;">${bookingId}</td></tr>
+      <tr><td style="padding: 6px 0; color: #94a3b8;">Tour:</td><td style="padding: 6px 0; color: #f1f5f9; font-weight: 600;">${tourTitle}</td></tr>
+      <tr><td style="padding: 6px 0; color: #94a3b8;">Traveler:</td><td style="padding: 6px 0; color: #f1f5f9;">${travelerName} (${travelerEmail})</td></tr>
+      <tr><td style="padding: 6px 0; color: #94a3b8;">Refund Amount:</td><td style="padding: 6px 0; color: #4ade80; font-weight: bold; font-size: 16px;">${currency} ${refundAmount.toLocaleString()}</td></tr>
+    </table>
+
+    <div style="text-align: center; margin-top: 24px;">
+      <a href="https://ausaguide.com/admin" style="background-color: #3b82f6; color: #ffffff; padding: 12px 28px; border-radius: 9999px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block;">
+        Review in Admin Console →
+      </a>
+    </div>
+  </div>
+  `
+  return dispatchEmail({ to: adminEmail, subject, html, name: "Ausaguide Admin" })
+}
+
+
 

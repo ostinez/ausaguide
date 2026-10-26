@@ -119,7 +119,8 @@ export function Navbar() {
 
   if (!userId) {
     navLinks = [
-      { href: "/tours", label: "Explore Tours" },
+      { href: "/explore", label: "Explore" },
+      { href: "/tours", label: "Tours" },
       { href: "/waitlist", label: "Waitlist" },
       { href: "/tree-planting", label: "Tree Planting" },
       { href: "/mental-health", label: "Mental Health" },
@@ -145,10 +146,11 @@ export function Navbar() {
   } else {
     // Traveler
     navLinks = [
+      { href: "/explore", label: "Explore" },
+      { href: "/feed", label: "Feed" },
       { href: "/tours", label: "Tours" },
       { href: "/wishlist", label: "Wishlist" },
       { href: "/journal", label: "Journal" },
-      { href: "/feed", label: "Feed" },
       { href: "/dashboard", label: "Dashboard" },
     ]
   }

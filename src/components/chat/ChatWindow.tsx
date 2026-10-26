@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { Send, Image as ImageIcon, ArrowLeft, Check, CheckCheck, Loader2, Video, Star, Trash2, X, Lock, Clock } from "lucide-react"
+import { Send, Image as ImageIcon, ArrowLeft, Check, CheckCheck, Loader2, Video, Star, Trash2, X, Lock, Clock, FilePlus } from "lucide-react"
 import { format, isToday, isYesterday } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,6 +10,9 @@ import BookingConfirmedCard from "./BookingConfirmedCard"
 import BookingDeclinedCard from "./BookingDeclinedCard"
 import DailyRoomSharedCard from "./DailyRoomSharedCard"
 import ServiceCompletedReceiptCard from "./ServiceCompletedReceiptCard"
+import CustomOfferCard from "./CustomOfferCard"
+import CreateCustomOfferModal from "./CreateCustomOfferModal"
+import PinnedChatContext from "./PinnedChatContext"
 import MessageContent from "./MessageContent"
 import EmojiPickerPopover from "./EmojiPickerPopover"
 import { type TourBookingInfo } from "./HostTourBookingDetails"
@@ -36,6 +39,8 @@ export interface ChatWindowProps {
   tourName?: string | null
   bookingId?: string | null
   bookingInfo?: TourBookingInfo | null
+  contextType?: string | null
+  contextId?: string | null
   onBack?: () => void
   onStartVideoCall?: () => void
   onClearChat?: () => void
@@ -174,12 +179,15 @@ export function ChatWindow({
   tourName,
   bookingId,
   bookingInfo,
+  contextType,
+  contextId,
   onBack,
   onStartVideoCall,
   onClearChat,
   showHeader = false,
   className,
 }: ChatWindowProps) {
+  const [showCustomOfferModal, setShowCustomOfferModal] = useState(false)
   const {
     messages,
     loading,
@@ -460,6 +468,15 @@ export function ChatWindow({
         </div>
       )}
 
+      {/* ─── Pinned Context Banner (Tour / Post) ─── */}
+      <PinnedChatContext
+        contextType={contextType}
+        contextId={contextId}
+        tourName={tourName}
+        bookingPrice={activeBooking?.total_price || bookingInfo?.total_price}
+        currency={activeBooking?.currency || bookingInfo?.currency}
+      />
+
       {/* ─── Message Bubbles Container ─── */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 custom-scrollbar bg-background/50">
         {loading && messages.length === 0 ? (
@@ -585,6 +602,20 @@ export function ChatWindow({
                             decline_reason: msg.metadata?.decline_reason,
                             message: msg.message || msg.metadata?.message,
                           }}
+                        />
+                      )
+                    }
+
+                    if (notifType === "custom_offer" || msg.metadata?.type === "custom_offer") {
+                      return (
+                        <CustomOfferCard
+                          key={msg.id || index}
+                          messageId={msg.id}
+                          conversationId={conversationId}
+                          details={msg.metadata as any}
+                          currentUserId={currentUserId}
+                          currentUserRole={currentUserRole}
+                          onStatusChange={refreshMessages}
                         />
                       )
                     }
@@ -822,6 +853,21 @@ export function ChatWindow({
                   )}
                 </Button>
 
+                {/* Create Custom Offer Button (Host Only) */}
+                {currentUserRole === "host" && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowCustomOfferModal(true)}
+                    disabled={sending || uploadingImage}
+                    className="size-10 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 shrink-0 touch-target cursor-pointer"
+                    title="Create Custom Tour Offer"
+                  >
+                    <FilePlus className="size-5 text-primary" />
+                  </Button>
+                )}
+
                 {/* Emoji Picker Popover */}
                 <EmojiPickerPopover
                   onSelectEmoji={handleSelectEmoji}
@@ -886,6 +932,21 @@ export function ChatWindow({
               )}
             </Button>
 
+            {/* Create Custom Offer Button (Host Only) */}
+            {currentUserRole === "host" && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowCustomOfferModal(true)}
+                disabled={sending || uploadingImage}
+                className="size-10 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 shrink-0 touch-target cursor-pointer"
+                title="Create Custom Tour Offer"
+              >
+                <FilePlus className="size-5 text-primary" />
+              </Button>
+            )}
+
             {/* Emoji Picker Popover */}
             <EmojiPickerPopover
               onSelectEmoji={handleSelectEmoji}
@@ -918,6 +979,18 @@ export function ChatWindow({
           </form>
         </div>
       )}
+
+      {/* ─── Create Custom Offer Modal (Host Only) ─── */}
+      <CreateCustomOfferModal
+        isOpen={showCustomOfferModal}
+        onClose={() => setShowCustomOfferModal(false)}
+        conversationId={conversationId}
+        hostId={currentUserId}
+        travelerId={otherUser.id}
+        hostName={currentUserName}
+        travelerName={otherUser.full_name}
+        onOfferCreated={refreshMessages}
+      />
     </div>
   )
 }

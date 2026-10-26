@@ -29,6 +29,8 @@ export interface ConversationItem {
   unreadCount: number
   // Direct / Booking context
   isDirect: boolean
+  context_type?: string | null
+  context_id?: string | null
   bookingId?: string | null
   bookingStatus?: string | null
   tourName?: string | null
@@ -65,7 +67,9 @@ export function useConversations(currentUserId: string | null) {
           id,
           participant_a,
           participant_b,
-          created_at
+          created_at,
+          context_type,
+          context_id
         `)
         .or(`participant_a.eq.${currentUserId},participant_b.eq.${currentUserId}`)
         .order("created_at", { ascending: false })
@@ -206,6 +210,8 @@ export function useConversations(currentUserId: string | null) {
             last_message_at: lastMessageTime,
             created_at: row.created_at,
             isDirect: !bookingInfo,
+            context_type: (row as any).context_type ?? (bookingInfo ? "tour" : "general"),
+            context_id: (row as any).context_id ?? bookingInfo?.id ?? null,
             bookingId: bookingInfo?.id ?? null,
             bookingStatus: bookingInfo?.status ?? null,
             tourName: bookingInfo?.tourName ?? null,

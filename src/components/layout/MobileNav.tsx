@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import {
   Home,
@@ -14,6 +15,7 @@ import {
   Settings,
 } from "lucide-react"
 import { useUser } from "@/hooks/useUser"
+import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
 
 export function MobileNav() {
@@ -21,6 +23,34 @@ export function MobileNav() {
   const navigate = useNavigate()
   const path = location.pathname
   const { role, user } = useUser()
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  useEffect(() => {
+    if (!user?.id) {
+      setUnreadCount(0)
+      return
+    }
+
+    async function fetchUnreadCount() {
+      try {
+        const { count, error } = await supabase
+          .from("messages")
+          .select("*", { count: "exact", head: true })
+          .eq("receiver_id", user?.id)
+          .eq("read", false)
+
+        if (!error) {
+          setUnreadCount(count || 0)
+        }
+      } catch (err) {
+        console.error("Failed to fetch unread count:", err)
+      }
+    }
+
+    fetchUnreadCount()
+    const interval = setInterval(fetchUnreadCount, 30000)
+    return () => clearInterval(interval)
+  }, [user?.id])
 
   // Exclude from full-screen flows (auth, onboarding, call)
   const isExcluded =
@@ -54,7 +84,7 @@ export function MobileNav() {
   const profilePath = user ? "/settings" : "/auth"
   const travelerNavItems = [
     { icon: Home, label: "Home", path: "/" },
-    { icon: Compass, label: "Explore", path: "/tours" },
+    { icon: Compass, label: "Explore", path: "/explore" },
     { icon: Calendar, label: "Bookings", path: "/dashboard" },
     { icon: MessageSquare, label: "Messages", path: "/messages" },
     { icon: User, label: "Profile", path: profilePath },
@@ -97,8 +127,13 @@ export function MobileNav() {
               {isActive && (
                 <span className="absolute top-1.5 size-1 rounded-full bg-primary animate-in fade-in zoom-in" />
               )}
-              <div className={cn("p-1 rounded-full transition-transform", isActive && "scale-110")}>
+              <div className={cn("p-1 rounded-full transition-transform relative", isActive && "scale-110")}>
                 <Icon className={cn("size-5 stroke-[2.2]", isActive ? "text-primary" : "text-muted-foreground")} />
+                {item.label === "Messages" && unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-black text-white shadow-xs animate-pulse">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
               </div>
               <span className="text-[10px] tracking-tight leading-tight mt-0.5">{item.label}</span>
             </button>

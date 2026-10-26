@@ -83,8 +83,8 @@ export default function ReviewForm({
  triggerSize,
  onSuccess,
 }: ReviewFormProps) {
- // ── Guard: only show for completed bookings ─────────────────────────────────────
- if (bookingStatus && bookingStatus !== 'completed') return null;
+ // ── Guard: show for completed or cancelled bookings ─────────────────────────────
+ if (bookingStatus && bookingStatus !== 'completed' && bookingStatus !== 'cancelled') return null;
 
  const [open, setOpen] = useState(false);
  // Booking is only fetched if tourId/hostId were NOT passed as props

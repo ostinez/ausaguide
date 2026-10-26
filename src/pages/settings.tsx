@@ -754,14 +754,17 @@ export default function SettingsPage() {
  <div className="flex items-start justify-between rounded-xl border border-border/50 bg-card shadow-modern px-5 py-4">
  <div>
  <p className="text-sm font-semibold text-foreground">
- {publicProfile ? "Public Account" : "Private Account"}
+ {role === "host" ? "Public Host Profile" : publicProfile ? "Public Account" : "Private Account"}
  </p>
  <p className="text-xs text-muted-foreground mt-0.5">
- {publicProfile
- ? "Anyone can follow you instantly and view your public profile."
- : "Followers must send a request and be approved before connecting."}
+ {role === "host"
+ ? "Host accounts are always public so travelers can discover and book your tours."
+ : publicProfile
+ ? "Anyone can follow you and view your posts and journals."
+ : "Only approved followers can see your posts and travel journals."}
  </p>
  </div>
+ {role !== "host" ? (
  <button
  type="button"
  onClick={async () => {
@@ -772,8 +775,8 @@ export default function SettingsPage() {
  await supabase.from("profiles").update({ is_private: !nextPublic }).eq("id", userId)
  toast.success(
  nextPublic
- ? "Account is now Public. Follows will be accepted automatically."
- : "Account is now Private. Follows will require your approval."
+ ? "Account is now Public. Posts and journals are visible to all travelers."
+ : "Account is now Private. Posts and journals are only visible to approved followers."
  )
  } catch (err) {
  console.error("Failed to update privacy:", err)
@@ -792,6 +795,11 @@ export default function SettingsPage() {
  )}
  />
  </button>
+ ) : (
+ <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+ Always Public
+ </span>
+ )}
  </div>
 
  {/* Direct Messaging Permissions */}

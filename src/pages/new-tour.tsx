@@ -122,8 +122,38 @@ export default function NewTourPage() {
  const [category, setCategory] = useState<TourCategory>("culture")
  const [duration, setDuration] = useState("3")
  const [locationName, setLocationName] = useState("")
+ const [latitude, setLatitude] = useState<number>(-1.2921)
+ const [longitude, setLongitude] = useState<number>(36.8219)
+ const [isGeocoding, setIsGeocoding] = useState(false)
+ const [geocodedAddress, setGeocodedAddress] = useState<string | null>(null)
  const [tourType, setTourType] = useState<TourType>("in_person")
  const [maxGuests, setMaxGuests] = useState("10")
+
+ const handleGeocode = async (query: string) => {
+ if (!query || query.trim().length < 3) return
+ setIsGeocoding(true)
+ try {
+ const res = await fetch(
+ `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query.trim())}&limit=1`,
+ {
+ headers: { "Accept-Language": "en" }
+ }
+ )
+ const data = await res.json()
+ if (Array.isArray(data) && data.length > 0) {
+ const lat = parseFloat(data[0].lat)
+ const lon = parseFloat(data[0].lon)
+ setLatitude(lat)
+ setLongitude(lon)
+ setGeocodedAddress(data[0].display_name)
+ toast.success(`Coordinates found: ${lat.toFixed(4)}, ${lon.toFixed(4)}`)
+ }
+ } catch (e) {
+ console.warn("Geocoding failed:", e)
+ } finally {
+ setIsGeocoding(false)
+ }
+ }
  
  // Description & Rich Text Editor
  const [description, setDescription] = useState("")
@@ -337,8 +367,8 @@ export default function NewTourPage() {
  status: targetStatus,
  availability: availabilityJSON,
  tags: tags,
- latitude: -1.2921,
- longitude: 36.8219,
+ latitude: Number(latitude) || -1.2921,
+ longitude: Number(longitude) || 36.8219,
  })
 
  toast.success(targetStatus === "published" ? "Tour published successfully!" : "Tour draft saved!", { id: toastId })
@@ -528,13 +558,43 @@ export default function NewTourPage() {
  </div>
 
  <div className="space-y-2">
+ <div className="flex items-center justify-between">
  <Label htmlFor="tour-location">Location Name</Label>
+ {latitude !== -1.2921 && (
+ <span className="text-[11px] text-emerald-400 flex items-center gap-1 font-mono">
+ <MapPin className="size-3" /> GPS: {latitude.toFixed(4)}, {longitude.toFixed(4)}
+ </span>
+ )}
+ </div>
+ <div className="flex gap-2">
  <Input
  id="tour-location"
- placeholder="e.g. Mombasa Old Town, Kenya"
+ placeholder="e.g. Mombasa Old Town, Kenya or Diani Beach"
  value={locationName}
  onChange={(e) => setLocationName(e.target.value)}
+ onBlur={() => handleGeocode(locationName)}
  />
+ <Button
+ type="button"
+ variant="outline"
+ size="sm"
+ onClick={() => handleGeocode(locationName)}
+ disabled={isGeocoding || !locationName.trim()}
+ className="shrink-0 text-xs"
+ >
+ {isGeocoding ? (
+ <Loader2 className="size-3.5 animate-spin" />
+ ) : (
+ <MapPin className="size-3.5 mr-1" />
+ )}
+ {isGeocoding ? "Locating..." : "Locate"}
+ </Button>
+ </div>
+ {geocodedAddress && (
+ <p className="text-[11px] text-muted-foreground truncate">
+ Found: <span className="text-foreground">{geocodedAddress}</span>
+ </p>
+ )}
  </div>
 
  <div className="space-y-3">
