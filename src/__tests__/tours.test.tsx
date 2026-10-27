@@ -36,8 +36,13 @@ const mockTours: Tour[] = [
 ]
 
 vi.mock("@/lib/api/tours", () => ({
- fetchTours: vi.fn(async () => mockTours),
- incrementTourViews: vi.fn(),
+  fetchTours: vi.fn(async () => mockTours),
+  incrementTourViews: vi.fn(),
+  TOUR_CARD_SELECT: "id, host_id, title",
+  TOUR_CARD_SELECT_SAFE: "id, host_id, title",
+  isMissingColumnError: vi.fn(() => false),
+  mapTour: vi.fn((row) => row),
+  mapProfile: vi.fn((row) => row),
 }))
 
 vi.mock("@/lib/api/wishlist", () => ({

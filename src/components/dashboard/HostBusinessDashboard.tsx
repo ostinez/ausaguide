@@ -75,7 +75,8 @@ export function HostBusinessDashboard({
   }, [bookings, today])
 
   // 3. Metric: Trust Score & Tier
-  const trustScore = Number(hostProfile?.trust_score ?? 5.0)
+  const rawScore = Number(hostProfile?.trust_score ?? 100)
+  const trustScore = rawScore > 5 ? (rawScore / 100) * 5 : rawScore
   const trustTier = getTrustScoreTier(trustScore)
 
   // 4. "Needs Action" Widget: Tours that passed but not marked completed

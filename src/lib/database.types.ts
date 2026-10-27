@@ -23,7 +23,7 @@ export interface Database {
           host_type: HostType | null
           is_verified: boolean
           is_private: boolean
-          trust_score: number
+          trust_score?: number | null
           created_at: string
           updated_at: string
         }
@@ -40,7 +40,7 @@ export interface Database {
           host_type?: HostType | null
           is_verified?: boolean
           is_private?: boolean
-          trust_score?: number
+          trust_score?: number | null
           created_at?: string
           updated_at?: string
         }

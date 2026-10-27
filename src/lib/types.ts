@@ -45,7 +45,7 @@ export interface Profile {
  instagram?: string | null
  facebook?: string | null
  reddit?: string | null
- trust_score?: number
+ trust_score?: number | null
 }
 
 export interface Tour {

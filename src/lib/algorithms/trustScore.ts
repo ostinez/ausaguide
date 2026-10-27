@@ -60,7 +60,10 @@ export function getTrustScoreTier(score: number): {
   bgClass: string
   borderClass: string
 } {
-  if (score >= 4.6) {
+  // Support both 0-5 benchmark scale and 0-100 percentage scale gracefully
+  const normalizedScore = score > 5 ? (score / 100) * 5 : score
+
+  if (normalizedScore >= 4.6) {
     return {
       tier: "Super Host",
       colorClass: "text-emerald-400",

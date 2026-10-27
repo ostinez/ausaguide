@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { Search, LayoutGrid, List, Heart, MapPin, Compass, Globe, ShieldCheck, TreePine, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -11,6 +11,8 @@ import { cn } from "@/lib/utils"
 import { fetchTours, incrementTourViews } from "@/lib/api/tours"
 import { getRecommendedTours } from "@/lib/recommendations"
 import { TourCard } from "@/components/ui/TourCard"
+import { ErrorState } from "@/components/ui/ErrorState"
+import { logErrorToDatabase } from "@/lib/errorLogger"
 import type { Tour } from "@/lib/types"
 
 import {
@@ -151,19 +153,33 @@ export default function ToursPage() {
  .catch(console.error)
  }
  }, [userId, role])
+  const loadTours = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const [allData, recData] = await Promise.all([
+        fetchTours(),
+        getRecommendedTours(userId || undefined),
+      ])
+      setTours(allData)
+      setRecommendedTours(recData)
+    } catch (err: any) {
+      logErrorToDatabase("tours_page_fetch", err, {
+        userId,
+        selectedCategory,
+        selectedLocation,
+        priceFilter,
+        query,
+      })
+      setError("We couldn't load the tours right now. Please check your connection or try again later.")
+    } finally {
+      setLoading(false)
+    }
+  }, [userId, selectedCategory, selectedLocation, priceFilter, query])
 
- useEffect(() => {
- Promise.all([
- fetchTours(),
- getRecommendedTours(userId || undefined),
- ])
- .then(([allData, recData]) => {
- setTours(allData)
- setRecommendedTours(recData)
- })
- .catch((err: Error) => setError(err.message))
- .finally(() => setLoading(false))
- }, [userId])
+  useEffect(() => {
+    loadTours()
+  }, [loadTours])
 
  const handleToggleWishlist = async (tourId: string, isWishlisted: boolean) => {
  if (!userId) {
@@ -438,11 +454,15 @@ export default function ToursPage() {
  <SkeletonTourGrid count={12} mobileCount={4} />
  </div>
  ) : error ? (
- <div className="mt-16 flex flex-col items-center gap-3 text-center animate-in fade-in duration-300">
- <p className="text-lg font-semibold text-foreground">Could not load tours</p>
- <p className="text-sm text-muted-foreground">{error}</p>
- </div>
- ) : (
+  <div className="mt-12 animate-in fade-in duration-300">
+    <ErrorState
+      title="Could not load tours"
+      message={error}
+      onRetry={loadTours}
+      showSupportButton={true}
+    />
+  </div>
+  ) : (
  <>
 
  <p className="mt-6 text-sm text-muted-foreground">

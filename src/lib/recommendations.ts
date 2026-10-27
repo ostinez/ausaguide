@@ -1,4 +1,4 @@
-import { TOUR_CARD_SELECT } from "@/lib/api/tours"
+import { TOUR_CARD_SELECT, TOUR_CARD_SELECT_SAFE, isMissingColumnError, mapTour } from "@/lib/api/tours"
 import { supabase } from "./supabase"
 import type { Tour } from "./types"
 import { fetchUserInterests } from "./api/interests"
@@ -37,24 +37,42 @@ export async function getRecommendedTours(userId?: string): Promise<Tour[]> {
     const userInterests = uid ? await fetchUserInterests(uid) : []
 
     // 2. Fetch published tours with host profile
-    const { data: tours, error } = await supabase
+    let tours: any = null
+    let error: any = null
+
+    const initialRes = await supabase
       .from("tours")
       .select(TOUR_CARD_SELECT)
       .eq("is_published", true)
+
+    tours = initialRes.data
+    error = initialRes.error
+
+    if (error && isMissingColumnError(error)) {
+      console.warn("getRecommendedTours: column missing from schema, retrying with safe select:", error.message)
+      const fallback = await supabase
+        .from("tours")
+        .select(TOUR_CARD_SELECT_SAFE)
+        .eq("is_published", true)
+      tours = fallback.data
+      error = fallback.error
+    }
 
     if (error || !tours || tours.length === 0) {
       return getPopularTours()
     }
 
+    const mappedTours: Tour[] = (tours ?? []).map((t: any) => mapTour(t))
+
     if (userInterests.length === 0) {
       // If user has no interests, return sorted by rating & views
-      return (tours as unknown as Tour[])
-        .sort((a, b) => (b.rating || 0) * 10 + (b.review_count || 0) - ((a.rating || 0) * 10 + (a.review_count || 0)))
+      return mappedTours
+        .sort((a: Tour, b: Tour) => (b.rating || 0) * 10 + (b.review_count || 0) - ((a.rating || 0) * 10 + (a.review_count || 0)))
         .slice(0, 12)
     }
 
     // 3. Score and rank tours based on user interests
-    const scoredTours = (tours as unknown as Tour[]).map((tour) => {
+    const scoredTours = mappedTours.map((tour: Tour) => {
       let score = (tour.rating || 4.5) * 2
 
       if (tour.host?.host_tier === "certified_guide") {
@@ -72,7 +90,7 @@ export async function getRecommendedTours(userId?: string): Promise<Tour[]> {
 
         // Tags match
         if (tour.tags && Array.isArray(tour.tags)) {
-          tour.tags.forEach((tag) => {
+          tour.tags.forEach((tag: string) => {
             if (keywords.some((kw) => tag.toLowerCase().includes(kw))) {
               score += 10
             }
@@ -92,9 +110,9 @@ export async function getRecommendedTours(userId?: string): Promise<Tour[]> {
     })
 
     // Sort descending by calculated score
-    scoredTours.sort((a, b) => b.score - a.score)
+    scoredTours.sort((a: { tour: Tour; score: number }, b: { tour: Tour; score: number }) => b.score - a.score)
 
-    return scoredTours.map((item) => item.tour).slice(0, 12)
+    return scoredTours.map((item: { tour: Tour; score: number }) => item.tour).slice(0, 12)
   } catch (err) {
     console.error("getRecommendedTours error:", err)
     return getPopularTours()
@@ -106,14 +124,30 @@ export async function getRecommendedTours(userId?: string): Promise<Tour[]> {
  */
 export async function getPopularTours(): Promise<Tour[]> {
   try {
-    const { data: tours } = await supabase
+    let tours: any = null
+    let error: any = null
+
+    const initialRes = await supabase
       .from("tours")
       .select(TOUR_CARD_SELECT)
       .eq("is_published", true)
       .order("rating", { ascending: false })
       .limit(12)
 
-    return ((tours as unknown as Tour[]) || [])
+    tours = initialRes.data
+    error = initialRes.error
+
+    if (error && isMissingColumnError(error)) {
+      const fallback = await supabase
+        .from("tours")
+        .select(TOUR_CARD_SELECT_SAFE)
+        .eq("is_published", true)
+        .order("rating", { ascending: false })
+        .limit(12)
+      tours = fallback.data
+    }
+
+    return (tours ?? []).map((t: any) => mapTour(t))
   } catch {
     return []
   }

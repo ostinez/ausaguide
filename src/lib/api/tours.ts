@@ -37,6 +37,40 @@ export const TOUR_CARD_SELECT = `
   )
 `
 
+// Safe fallback for tour cards if newly added joined columns (e.g., trust_score)
+// are missing in the current database schema
+export const TOUR_CARD_SELECT_SAFE = `
+  id,
+  host_id,
+  title,
+  short_description,
+  price,
+  currency,
+  duration_hours,
+  max_guests,
+  location_name,
+  latitude,
+  longitude,
+  category,
+  tour_type,
+  images,
+  is_published,
+  rating,
+  review_count,
+  views,
+  physical_price,
+  virtual_price,
+  created_at,
+  host:profiles (
+    id,
+    full_name,
+    avatar_url,
+    is_verified,
+    verified_guide,
+    host_tier
+  )
+`
+
 // Full select for detail views and administrative editing
 export const TOUR_DETAIL_SELECT = `
   *,
@@ -63,28 +97,66 @@ export const TOUR_DETAIL_SELECT = `
   )
 `
 
-function mapProfile(row: Partial<ProfileRow>): Profile {
+// Safe fallback for tour detail if optional joined columns do not exist
+export const TOUR_DETAIL_SELECT_SAFE = `
+  *,
+  host:profiles (
+    id,
+    email,
+    full_name,
+    avatar_url,
+    role,
+    bio,
+    location,
+    phone,
+    languages,
+    host_type,
+    is_verified,
+    host_tier,
+    verified_guide,
+    rejected_as_guide,
+    license_url,
+    license_status,
+    created_at,
+    updated_at
+  )
+`
+
+/**
+ * Checks if a Supabase PostgREST error is caused by a missing database column
+ * (PostgreSQL error code 42703 or explicit message).
+ */
+export function isMissingColumnError(error: any): boolean {
+  if (!error) return false
+  const msg = String(error.message || "").toLowerCase()
+  const code = String(error.code || "")
+  return code === "42703" || msg.includes("does not exist") || msg.includes("trust_score")
+}
+
+export function mapProfile(row?: Partial<ProfileRow> | null): Profile {
+  const r = row ?? {}
   const now = new Date().toISOString()
   return {
-    id: row.id || "",
-    email: row.email || "",
-    full_name: row.full_name || "Local Host",
-    avatar_url: row.avatar_url || null,
-    role: row.role || "host",
-    bio: row.bio || "",
-    location: row.location || "",
-    phone: row.phone || "",
-    languages: row.languages ?? [],
-    host_type: row.host_type ?? null,
-    is_verified: row.is_verified ?? false,
-    host_tier: (row as any).host_tier ?? null,
-    verified_guide: (row as any).verified_guide ?? false,
-    rejected_as_guide: (row as any).rejected_as_guide ?? false,
-    license_url: (row as any).license_url ?? null,
-    license_status: (row as any).license_status ?? null,
-    trust_score: Number((row as any).trust_score ?? 5.0),
-    created_at: row.created_at ?? now,
-    updated_at: row.updated_at ?? now,
+    id: r.id || "",
+    email: r.email || "",
+    full_name: r.full_name || "Local Host",
+    avatar_url: r.avatar_url || null,
+    role: r.role || "host",
+    bio: r.bio || "",
+    location: r.location || "",
+    phone: r.phone || "",
+    languages: r.languages ?? [],
+    host_type: r.host_type ?? null,
+    is_verified: r.is_verified ?? false,
+    host_tier: (r as any).host_tier ?? null,
+    verified_guide: (r as any).verified_guide ?? false,
+    rejected_as_guide: (r as any).rejected_as_guide ?? false,
+    license_url: (r as any).license_url ?? null,
+    license_status: (r as any).license_status ?? null,
+    // Graceful fallback: default to 100 if trust_score is missing or null
+    trust_score: Number((r as any).trust_score ?? 100),
+    created_at: r.created_at ?? now,
+    updated_at: r.updated_at ?? now,
   }
 }
 
@@ -92,7 +164,7 @@ function normalizeTourType(type?: string): TourType {
   return type === "virtual" ? "virtual" : "in_person"
 }
 
-function mapTour(
+export function mapTour(
   row: Partial<TourRow> & {
     host?: Partial<ProfileRow> | null
   }
@@ -147,51 +219,71 @@ export interface TourFilterOptions {
 }
 
 export async function fetchTours(options?: TourFilterOptions): Promise<Tour[]> {
-  let query = supabase
-    .from("tours")
-    .select(TOUR_CARD_SELECT)
-    .eq("is_published", true)
-    .order("created_at", { ascending: false })
+  const buildQuery = (selectClause: string) => {
+    let query = supabase
+      .from("tours")
+      .select(selectClause)
+      .eq("is_published", true)
+      .order("created_at", { ascending: false })
 
-  if (options?.search && options.search.trim()) {
-    const s = `%${options.search.trim()}%`
-    query = query.or(`title.ilike.${s},location_name.ilike.${s},short_description.ilike.${s}`)
+    if (options?.search && options.search.trim()) {
+      const s = `%${options.search.trim()}%`
+      query = query.or(`title.ilike.${s},location_name.ilike.${s},short_description.ilike.${s}`)
+    }
+
+    if (options?.category && options.category !== "all") {
+      query = query.eq("category", options.category)
+    }
+
+    if (options?.location && options.location !== "all") {
+      query = query.ilike("location_name", `%${options.location}%`)
+    }
+
+    if (options?.minPrice !== undefined) {
+      query = query.gte("price", options.minPrice)
+    }
+
+    if (options?.maxPrice !== undefined) {
+      query = query.lte("price", options.maxPrice)
+    }
+
+    if (options?.limit) {
+      const from = options.offset || 0
+      const to = from + options.limit - 1
+      query = query.range(from, to)
+    }
+
+    return query
   }
 
-  if (options?.category && options.category !== "all") {
-    query = query.eq("category", options.category)
-  }
+  let data: any = null
+  let error: any = null
 
-  if (options?.location && options.location !== "all") {
-    query = query.ilike("location_name", `%${options.location}%`)
-  }
+  const initialRes = await buildQuery(TOUR_CARD_SELECT)
+  data = initialRes.data
+  error = initialRes.error
 
-  if (options?.minPrice !== undefined) {
-    query = query.gte("price", options.minPrice)
+  // If a joined column like trust_score is missing in the database schema, gracefully fall back to safe select
+  if (error && isMissingColumnError(error)) {
+    console.warn("fetchTours: joined column missing from database schema, falling back to safe select:", error.message)
+    const fallbackRes = await buildQuery(TOUR_CARD_SELECT_SAFE)
+    data = fallbackRes.data
+    error = fallbackRes.error
   }
-
-  if (options?.maxPrice !== undefined) {
-    query = query.lte("price", options.maxPrice)
-  }
-
-  if (options?.limit) {
-    const from = options.offset || 0
-    const to = from + options.limit - 1
-    query = query.range(from, to)
-  }
-
-  const { data, error } = await query
 
   if (error) throw error
-  const mapped = (data ?? []).map((row) => mapTour(row as any))
-  return mapped.sort((a, b) => Number(b.host?.trust_score ?? 5.0) - Number(a.host?.trust_score ?? 5.0))
+  const mapped: Tour[] = (data ?? []).map((row: any) => mapTour(row))
+  return mapped.sort((a: Tour, b: Tour) => Number(b.host?.trust_score ?? 100) - Number(a.host?.trust_score ?? 100))
 }
 
 /**
  * Fetch featured tours for the landing page with targeted columns and single join.
  */
 export async function fetchFeaturedTours(limit = 6): Promise<Tour[]> {
-  const { data, error } = await supabase
+  let data: any = null
+  let error: any = null
+
+  const initialRes = await supabase
     .from("tours")
     .select(TOUR_CARD_SELECT)
     .eq("is_published", true)
@@ -200,16 +292,50 @@ export async function fetchFeaturedTours(limit = 6): Promise<Tour[]> {
     .order("created_at", { ascending: false })
     .limit(limit)
 
+  data = initialRes.data
+  error = initialRes.error
+
+  if (error && isMissingColumnError(error)) {
+    console.warn("fetchFeaturedTours: column missing from schema, retrying with safe select:", error.message)
+    const fallbackRes = await supabase
+      .from("tours")
+      .select(TOUR_CARD_SELECT_SAFE)
+      .eq("is_published", true)
+      .order("rating", { ascending: false })
+      .order("review_count", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(limit)
+    data = fallbackRes.data
+    error = fallbackRes.error
+  }
+
   if (error) throw error
-  return (data ?? []).map((row) => mapTour(row as any))
+  return (data ?? []).map((row: any) => mapTour(row))
 }
 
 export async function fetchTourById(id: string): Promise<Tour | null> {
-  const { data, error } = await supabase
+  let data: any = null
+  let error: any = null
+
+  const initialRes = await supabase
     .from("tours")
     .select(TOUR_DETAIL_SELECT)
     .eq("id", id)
     .maybeSingle()
+
+  data = initialRes.data
+  error = initialRes.error
+
+  if (error && isMissingColumnError(error)) {
+    console.warn("fetchTourById: column missing from schema, retrying with safe select:", error.message)
+    const fallbackRes = await supabase
+      .from("tours")
+      .select(TOUR_DETAIL_SELECT_SAFE)
+      .eq("id", id)
+      .maybeSingle()
+    data = fallbackRes.data
+    error = fallbackRes.error
+  }
 
   if (error) throw error
   if (!data) return null
@@ -217,14 +343,31 @@ export async function fetchTourById(id: string): Promise<Tour | null> {
 }
 
 export async function fetchToursByHostId(hostId: string): Promise<Tour[]> {
-  const { data, error } = await supabase
+  let data: any = null
+  let error: any = null
+
+  const initialRes = await supabase
     .from("tours")
     .select(TOUR_CARD_SELECT)
     .eq("host_id", hostId)
     .order("created_at", { ascending: false })
 
+  data = initialRes.data
+  error = initialRes.error
+
+  if (error && isMissingColumnError(error)) {
+    console.warn("fetchToursByHostId: column missing from schema, retrying with safe select:", error.message)
+    const fallbackRes = await supabase
+      .from("tours")
+      .select(TOUR_CARD_SELECT_SAFE)
+      .eq("host_id", hostId)
+      .order("created_at", { ascending: false })
+    data = fallbackRes.data
+    error = fallbackRes.error
+  }
+
   if (error) throw error
-  return (data ?? []).map((row) => mapTour(row as any))
+  return (data ?? []).map((row: any) => mapTour(row))
 }
 
 export async function createTour(tourData: Partial<Tour>): Promise<Tour> {
@@ -328,12 +471,30 @@ export async function updateTour(id: string, tourData: Partial<Tour>): Promise<T
     if (updatePayload[key] === undefined) delete updatePayload[key]
   })
 
-  const { data, error } = await supabase
+  let data: any = null
+  let error: any = null
+
+  const initialRes = await supabase
     .from("tours")
     .update(updatePayload)
     .eq("id", id)
     .select(TOUR_DETAIL_SELECT)
     .single()
+
+  data = initialRes.data
+  error = initialRes.error
+
+  if (error && isMissingColumnError(error)) {
+    console.warn("updateTour: detailed select failed with missing column, falling back to safe select:", error.message)
+    const fallbackRes = await supabase
+      .from("tours")
+      .update(updatePayload)
+      .eq("id", id)
+      .select(TOUR_DETAIL_SELECT_SAFE)
+      .single()
+    data = fallbackRes.data
+    error = fallbackRes.error
+  }
 
   if (error) throw error
   return mapTour(data as any)

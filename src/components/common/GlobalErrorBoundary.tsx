@@ -1,5 +1,6 @@
 import React from "react"
 import { AlertTriangle, RefreshCw, Home, Trash2 } from "lucide-react"
+import { logErrorToDatabase } from "@/lib/errorLogger"
 
 interface ErrorBoundaryProps {
   children?: React.ReactNode
@@ -26,6 +27,9 @@ export class GlobalErrorBoundary extends React.Component<
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error("[GlobalErrorBoundary] Uncaught application error:", error, errorInfo)
+    logErrorToDatabase("global_error_boundary", error, {
+      componentStack: errorInfo.componentStack,
+    })
 
     // Check if error is due to a stale chunk from a previous deployment
     const isChunkError =
@@ -93,7 +97,7 @@ export class GlobalErrorBoundary extends React.Component<
               </p>
             </div>
 
-            {this.state.error && (
+            {import.meta.env.DEV && this.state.error && (
               <div className="text-left bg-black/40 border border-white/10 rounded-xl p-3.5 text-[11px] font-mono text-red-300 max-h-32 overflow-y-auto leading-relaxed">
                 {this.state.error.message || String(this.state.error)}
               </div>

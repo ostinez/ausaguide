@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState, useMemo, useCallback } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import {
   Search,
@@ -22,6 +22,8 @@ import { fetchWishlist, addToWishlist, removeFromWishlist } from "@/lib/api/wish
 import { useSEO } from "@/hooks/useSEO"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { ErrorState } from "@/components/ui/ErrorState"
+import { logErrorToDatabase } from "@/lib/errorLogger"
 
 interface HostProfile {
   id: string
@@ -67,6 +69,7 @@ export default function ExplorePage() {
   const [places, setPlaces] = useState<PlaceItem[]>([])
   const [wishlistIds, setWishlistIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set())
 
   const currentUserId = typeof window !== "undefined" ? localStorage.getItem("user_id") : null
@@ -94,10 +97,10 @@ export default function ExplorePage() {
   }
 
   // Load initial dataset: Tours, Hosts, Places, Following
-  useEffect(() => {
-    async function loadData() {
-      setLoading(true)
-      try {
+  const loadData = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
         // 1. Fetch current user's accepted following IDs for privacy gate
         if (currentUserId) {
           const { data: followsData } = await supabase
@@ -184,15 +187,21 @@ export default function ExplorePage() {
         })
 
         setHosts(filteredHosts)
-      } catch (err) {
-        console.error("Error loading explore data:", err)
+      } catch (err: any) {
+        logErrorToDatabase("explore_page_fetch", err, {
+          currentUserId,
+          activeTab,
+          searchQuery,
+        })
+        setError("We couldn't load the tours right now. Please check your connection or try again later.")
       } finally {
         setLoading(false)
       }
-    }
-
-    loadData()
   }, [currentUserId])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   // Toggle wishlist
   const handleToggleWishlist = async (tourId: string, currentStatus: boolean) => {
@@ -509,6 +518,15 @@ export default function ExplorePage() {
 
             {loading ? (
               <SkeletonTourGrid count={6} />
+            ) : error ? (
+              <div className="py-12 max-w-lg mx-auto">
+                <ErrorState
+                  title="Could not load tours"
+                  message={error}
+                  onRetry={loadData}
+                  showSupportButton={true}
+                />
+              </div>
             ) : filteredTours.length === 0 ? (
               <div className="text-center py-16 px-4 bg-card/60 rounded-2xl border border-border/60 max-w-lg mx-auto space-y-3">
                 <Compass className="size-12 mx-auto text-muted-foreground/50 animate-pulse" />
