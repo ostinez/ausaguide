@@ -1,15 +1,15 @@
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { Link } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import {
-  ChevronLeft,
-  ChevronRight,
   ArrowRight,
   Sparkles,
   Compass,
   CheckCircle2,
   Shield,
   Smartphone,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
 import {
   TravelerSearchIllustration,
@@ -34,48 +34,60 @@ interface StepData {
   description: string
   tag: string
   illustration: React.ReactNode
+  bgImage?: string
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   STEP DEFINITIONS
+───────────────────────────────────────────────────────────────────────────── */
 
 const TRAVELER_STEPS: StepData[] = [
   {
     number: 1,
     title: "Search real experiences",
-    description: "Browse live tours hosted by verified locals across Kenya.",
+    description:
+      "Browse live tours hosted by verified locals across Kenya — street food walks, rooftop art scenes, hidden waterfalls. Every host is identity-verified.",
     tag: "Explore Kenya",
     illustration: <TravelerSearchIllustration />,
+    bgImage: "/nairobi_skyline.jpg",
   },
   {
     number: 2,
     title: "See the exact price in KSh",
-    description: "No hidden fees. What you see is what you pay.",
+    description:
+      "No hidden fees. No surprise surcharges. What you see is exactly what you pay — broken down so you know where every shilling goes.",
     tag: "Transparent Pricing",
     illustration: <TravelerPriceIllustration />,
   },
   {
     number: 3,
     title: "Book in seconds",
-    description: "Enter your phone number. No account needed.",
+    description:
+      "Enter your phone number. No account, no password, no friction. Your booking is confirmed instantly via SMS.",
     tag: "Instant Checkout",
     illustration: <TravelerBookIllustration />,
   },
   {
     number: 4,
     title: "Pay securely with M-PESA",
-    description: "You get an STK push on your phone. Enter your PIN. Done.",
-    tag: "STK Push",
+    description:
+      "You get an STK push on your phone. Enter your PIN. Done. No card details stored — just the fastest checkout in Africa.",
+    tag: "STK Push Payment",
     illustration: <TravelerMpesaIllustration />,
   },
   {
     number: 5,
     title: "Meet your host live",
-    description: "Join a real-time video call. See the streets, food, and culture before you go.",
+    description:
+      "Join a real-time video call. See the streets, taste the air, ask questions before you ever buy a plane ticket. Your host is live, right now.",
     tag: "Live Video Tour",
     illustration: <TravelerVideoIllustration />,
   },
   {
     number: 6,
     title: "Rate and rebook",
-    description: "Leave an honest review. Rebook the same host anytime.",
+    description:
+      "Leave an honest review. Rebook the same host anytime. Your trust builds the host's reputation — the best rise to the top.",
     tag: "Verified Reviews",
     illustration: <TravelerReviewIllustration />,
   },
@@ -85,378 +97,716 @@ const HOST_STEPS: StepData[] = [
   {
     number: 1,
     title: "Sign up as a local host",
-    description: "Students, artists, foodies, and certified guides welcome.",
+    description:
+      "Students, artists, foodies, certified safari guides — anyone with a story is welcome. Apply in minutes, get approved within 24 hours.",
     tag: "Join Free",
     illustration: <HostSignupIllustration />,
   },
   {
     number: 2,
     title: "Create your tour",
-    description: "Describe what you'll show. Add photos. Set your price.",
+    description:
+      "Describe what you'll show. Add photos. Set your own price. Our Tour Studio guides you every step — no tech skills required.",
     tag: "Tour Studio",
     illustration: <HostCreateIllustration />,
   },
   {
     number: 3,
     title: "Get discovered",
-    description: "Travelers find you through search and the marketplace.",
-    tag: "Marketplace Reach",
+    description:
+      "Travelers from 50+ countries find you through search, featured stories, and live listings. Your profile does the marketing.",
+    tag: "Global Marketplace",
     illustration: <HostDiscoverIllustration />,
   },
   {
     number: 4,
     title: "Get paid to your M-PESA",
-    description: "Keep 80% of every booking. Payout within 24 hours.",
+    description:
+      "Keep 80% of every booking. Payout lands directly in your M-PESA wallet within 24 hours — no delays, no paperwork.",
     tag: "Direct M-PESA Payout",
     illustration: <HostPayoutIllustration />,
   },
   {
     number: 5,
     title: "Host live video tours",
-    description: "Show your world in real time. Answer questions live.",
+    description:
+      "Stream from your phone. Answer live questions. Show the world your Kenya in real time — no studio, no crew.",
     tag: "Interactive Streaming",
     illustration: <HostLiveIllustration />,
   },
   {
     number: 6,
     title: "Build your reputation",
-    description: "Earn reviews. Grow your income. Become a top host.",
+    description:
+      "Earn reviews. Grow your income. The best hosts unlock Superhost status — higher placement, more bookings, exclusive partnerships.",
     tag: "Superhost Status",
     illustration: <HostReputationIllustration />,
   },
 ]
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   PHONE MOCKUP
+───────────────────────────────────────────────────────────────────────────── */
+
+function PhoneMockup({ step, stepKey }: { step: StepData; stepKey: string }) {
+  return (
+    <div className="relative w-full max-w-[290px] sm:max-w-[310px] mx-auto select-none">
+      {/* Ambient glow */}
+      <div
+        className="absolute -inset-8 rounded-full pointer-events-none"
+        style={{ background: "radial-gradient(circle, rgba(10,95,95,0.2) 0%, transparent 70%)" }}
+      />
+
+      {/* Phone chassis */}
+      <div
+        className="relative"
+        style={{
+          borderRadius: "42px",
+          padding: "3px",
+          background: "linear-gradient(160deg, #2e4e4e 0%, #162828 50%, #2e4e4e 100%)",
+          boxShadow: [
+            "0 50px 100px rgba(0,0,0,0.75)",
+            "0 0 0 1px rgba(255,255,255,0.05)",
+            "inset 0 1px 0 rgba(255,255,255,0.08)",
+          ].join(", "),
+        }}
+      >
+        {/* Physical side buttons */}
+        <div className="absolute -right-[3px] top-[88px] w-[3px] h-9 bg-[#1a2e2e] rounded-l-sm" />
+        <div className="absolute -right-[3px] top-[138px] w-[3px] h-9 bg-[#1a2e2e] rounded-l-sm" />
+        <div className="absolute -left-[3px] top-[108px] w-[3px] h-14 bg-[#1a2e2e] rounded-r-sm" />
+        <div className="absolute -left-[3px] top-[175px] w-[3px] h-9 bg-[#1a2e2e] rounded-r-sm" />
+
+        {/* Inner black bezel */}
+        <div style={{ borderRadius: "40px", overflow: "hidden", background: "#050e0e" }}>
+          {/* Dynamic Island */}
+          <div
+            className="flex justify-center items-center"
+            style={{ height: "44px", background: "#050e0e" }}
+          >
+            <div
+              style={{
+                width: "90px",
+                height: "24px",
+                borderRadius: "999px",
+                background: "#000",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+              }}
+            >
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#111f1f" }} />
+              <div style={{ width: 12, height: 12, borderRadius: "50%", background: "#0d1f1f", border: "1px solid #1a3a3a" }} />
+            </div>
+          </div>
+
+          {/* Screen */}
+          <div
+            style={{
+              position: "relative",
+              aspectRatio: "9/17",
+              background: "#0c1f1f",
+              overflow: "hidden",
+            }}
+          >
+            {/* Nairobi skyline bg for step 1 */}
+            {step.bgImage && (
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  backgroundImage: `url(${step.bgImage})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  opacity: 0.22,
+                  zIndex: 0,
+                }}
+              />
+            )}
+
+            {/* Screen glare */}
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: "linear-gradient(140deg, rgba(255,255,255,0.045) 0%, transparent 55%)",
+                pointerEvents: "none",
+                zIndex: 30,
+              }}
+            />
+
+            {/* Illustration with fade transition */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={stepKey}
+                initial={{ opacity: 0, scale: 0.97, y: 12 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.97, y: -12 }}
+                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", zIndex: 1 }}
+              >
+                {step.illustration}
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Home indicator */}
+            <div
+              style={{
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: "22px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 40,
+                background: "linear-gradient(to top, rgba(8,15,15,0.85) 0%, transparent 100%)",
+                pointerEvents: "none",
+              }}
+            >
+              <div style={{ width: 80, height: 3, borderRadius: 999, background: "rgba(255,255,255,0.22)" }} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Drop shadow ellipse */}
+      <div
+        style={{
+          width: "60%",
+          height: "16px",
+          margin: "4px auto 0",
+          borderRadius: "50%",
+          background: "rgba(10,95,95,0.25)",
+          filter: "blur(12px)",
+        }}
+      />
+    </div>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   VERTICAL STEPPER (editorial left column)
+───────────────────────────────────────────────────────────────────────────── */
+
+function VerticalStepper({
+  steps,
+  activeIndex,
+  onSelect,
+}: {
+  steps: StepData[]
+  activeIndex: number
+  onSelect: (i: number) => void
+}) {
+  return (
+    <div style={{ position: "relative" }}>
+      {/* Connector line */}
+      <div
+        style={{
+          position: "absolute",
+          left: 19,
+          top: 22,
+          bottom: 22,
+          width: 1,
+          background: "rgba(35,94,93,0.35)",
+        }}
+      >
+        <motion.div
+          style={{ width: "100%", background: "#E87A3D" }}
+          animate={{ height: `${(activeIndex / (steps.length - 1)) * 100}%` }}
+          transition={{ duration: 0.4, ease: "easeInOut" }}
+        />
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+        {steps.map((step, idx) => {
+          const isActive = idx === activeIndex
+          const isPast = idx < activeIndex
+
+          return (
+            <motion.button
+              key={step.number}
+              type="button"
+              onClick={() => onSelect(idx)}
+              whileTap={{ scale: 0.99 }}
+              className="w-full text-left cursor-pointer"
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 16,
+                padding: "10px 12px 10px 0",
+                background: "none",
+                border: "none",
+              }}
+            >
+              {/* Number circle */}
+              <div style={{ flexShrink: 0, marginTop: 2, position: "relative", zIndex: 1 }}>
+                <div
+                  style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: 900,
+                    fontSize: 14,
+                    transition: "all 0.3s ease",
+                    background: isActive
+                      ? "#E87A3D"
+                      : isPast
+                      ? "#0d5e5e"
+                      : "rgba(17,59,58,0.5)",
+                    color: isActive ? "#fff" : isPast ? "#B7E6E5" : "rgba(183,230,229,0.4)",
+                    border: isActive
+                      ? "2px solid rgba(232,122,61,0.4)"
+                      : isPast
+                      ? "2px solid rgba(10,95,95,0.5)"
+                      : "1px solid rgba(35,94,93,0.35)",
+                    boxShadow: isActive ? "0 0 20px rgba(232,122,61,0.35)" : "none",
+                  }}
+                >
+                  {isPast && !isActive ? (
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  ) : step.number}
+                </div>
+              </div>
+
+              {/* Text block */}
+              <div
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  paddingBottom: idx < steps.length - 1 ? 10 : 0,
+                  borderBottom: idx < steps.length - 1 ? "1px solid rgba(35,94,93,0.18)" : "none",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <span
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 700,
+                      letterSpacing: "-0.01em",
+                      color: isActive ? "#fff" : "rgba(245,241,234,0.5)",
+                      transition: "color 0.2s ease",
+                    }}
+                  >
+                    {step.title}
+                  </span>
+                  {isActive && (
+                    <motion.span
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 800,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        padding: "2px 8px",
+                        borderRadius: 999,
+                        background: "rgba(232,122,61,0.14)",
+                        color: "#E87A3D",
+                        border: "1px solid rgba(232,122,61,0.3)",
+                        flexShrink: 0,
+                      }}
+                    >
+                      Active
+                    </motion.span>
+                  )}
+                </div>
+
+                {/* Expanded description — active step only */}
+                <AnimatePresence initial={false}>
+                  {isActive && (
+                    <motion.p
+                      key="desc"
+                      initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                      animate={{ opacity: 1, height: "auto", marginTop: 0 }}
+                      exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
+                      style={{
+                        fontSize: 13,
+                        lineHeight: 1.6,
+                        color: "rgba(183,230,229,0.8)",
+                        overflow: "hidden",
+                      }}
+                    >
+                      {step.description}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   MAIN EXPORT
+───────────────────────────────────────────────────────────────────────────── */
+
 export function HowItWorks() {
   const [activeTab, setActiveTab] = useState<TabType>("travelers")
   const [activeStepIndex, setActiveStepIndex] = useState(0)
 
-  // Switch steps smoothly when switching tabs
-  function handleTabChange(tab: TabType) {
-    if (tab !== activeTab) {
-      setActiveTab(tab)
-      setActiveStepIndex(0)
-    }
-  }
+  const handleTabChange = useCallback(
+    (tab: TabType) => {
+      if (tab !== activeTab) {
+        setActiveTab(tab)
+        setActiveStepIndex(0)
+      }
+    },
+    [activeTab]
+  )
 
   const currentSteps = activeTab === "travelers" ? TRAVELER_STEPS : HOST_STEPS
   const currentStep = currentSteps[activeStepIndex] || currentSteps[0]
+  const stepKey = `${activeTab}-${activeStepIndex}`
 
-  function nextStep() {
-    setActiveStepIndex((prev) => (prev + 1) % currentSteps.length)
-  }
-
-  function prevStep() {
-    setActiveStepIndex((prev) => (prev - 1 + currentSteps.length) % currentSteps.length)
-  }
+  const nextStep = useCallback(
+    () => setActiveStepIndex((p) => (p + 1) % currentSteps.length),
+    [currentSteps.length]
+  )
+  const prevStep = useCallback(
+    () => setActiveStepIndex((p) => (p - 1 + currentSteps.length) % currentSteps.length),
+    [currentSteps.length]
+  )
 
   return (
-    <section className="py-12 sm:py-24 pb-10 bg-[#081717] relative overflow-hidden text-white border-t border-b border-[#235E5D]/40">
-      {/* Background Ambient Glows */}
-      <div className="absolute top-1/4 -left-32 w-96 h-96 bg-[#0A5F5F]/25 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-10 -right-32 w-96 h-96 bg-[#E87A3D]/15 rounded-full blur-[140px] pointer-events-none" />
+    <section
+      className="relative overflow-hidden text-white"
+      style={{
+        background: "linear-gradient(180deg,#071212 0%,#081717 50%,#071212 100%)",
+        borderTop: "1px solid rgba(35,94,93,0.3)",
+        borderBottom: "1px solid rgba(35,94,93,0.3)",
+      }}
+    >
+      {/* Ambient glows */}
+      <div
+        className="absolute top-0 left-0 pointer-events-none"
+        style={{
+          width: 700,
+          height: 700,
+          background: "radial-gradient(circle,rgba(10,95,95,0.16) 0%,transparent 70%)",
+          transform: "translate(-35%,-35%)",
+        }}
+      />
+      <div
+        className="absolute bottom-0 right-0 pointer-events-none"
+        style={{
+          width: 600,
+          height: 600,
+          background: "radial-gradient(circle,rgba(232,122,61,0.09) 0%,transparent 70%)",
+          transform: "translate(35%,35%)",
+        }}
+      />
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
-        {/* ── Section Header ── */}
-        <div className="text-center max-w-3xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#235E5D] bg-[#113B3A]/80 text-xs font-bold uppercase tracking-wider text-[#B7E6E5] shadow-sm backdrop-blur-sm">
-            <Sparkles className="size-3.5 text-[#E87A3D]" />
-            <span>Interactive Guide</span>
+      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 sm:py-24 lg:py-28">
+
+        {/* ── SECTION HEADER (editorial, left-aligned) ── */}
+        <div className="max-w-xl mb-14 sm:mb-18">
+          {/* Eyebrow */}
+          <div
+            className="inline-flex items-center gap-2 mb-5 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider"
+            style={{
+              background: "rgba(17,59,58,0.65)",
+              border: "1px solid rgba(35,94,93,0.5)",
+              color: "#B7E6E5",
+              backdropFilter: "blur(8px)",
+            }}
+          >
+            <Sparkles className="size-3.5 flex-shrink-0" style={{ color: "#E87A3D" }} />
+            <span>Simple by Design</span>
           </div>
 
-          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
-            How <span className="text-[#F5F1EA]">Ausaguide</span>{" "}
-            <span className="text-[#E87A3D]">Works</span>
+          {/* Headline */}
+          <h2
+            className="text-3xl sm:text-4xl lg:text-[3.2rem] font-black tracking-tight leading-[1.08] mb-4"
+            style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}
+          >
+            How{" "}
+            <span style={{ color: "#E87A3D" }}>Ausaguide</span>
+            <br />
+            <span style={{ color: "rgba(245,241,234,0.88)" }}>Works</span>
           </h2>
 
-          <p className="text-base sm:text-lg text-[#B7E6E5] font-medium leading-relaxed">
+          <p
+            className="text-base sm:text-lg leading-relaxed mb-6"
+            style={{ color: "rgba(183,230,229,0.65)" }}
+          >
             Real places. Real people. Live before you pay.
           </p>
 
-          {/* ── Two Tabs at Top ── */}
-          <div className="pt-4 flex justify-center">
-            <div className="inline-flex p-1.5 bg-[#113B3A] border-2 border-[#235E5D] rounded-full shadow-lg relative">
-              <button
-                type="button"
-                onClick={() => handleTabChange("travelers")}
-                className={`relative px-6 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 flex items-center gap-2 ${
-                  activeTab === "travelers"
-                    ? "text-white shadow-md"
-                    : "text-[#B7E6E5]/70 hover:text-white"
-                }`}
-              >
-                {activeTab === "travelers" && (
-                  <motion.div
-                    layoutId="activeTabPill"
-                    className="absolute inset-0 bg-[#0A5F5F] border border-[#B7E6E5]/30 rounded-full shadow-inner"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
-                  />
-                )}
-                <span className="relative z-10 flex items-center gap-1.5">
-                  <Compass className="size-4 text-[#E87A3D]" />
-                  For Travelers
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleTabChange("hosts")}
-                className={`relative px-6 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 flex items-center gap-2 ${
-                  activeTab === "hosts"
-                    ? "text-white shadow-md"
-                    : "text-[#B7E6E5]/70 hover:text-white"
-                }`}
-              >
-                {activeTab === "hosts" && (
-                  <motion.div
-                    layoutId="activeTabPill"
-                    className="absolute inset-0 bg-[#E87A3D] rounded-full shadow-inner"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
-                  />
-                )}
-                <span className="relative z-10 flex items-center gap-1.5">
-                  <Smartphone className="size-4 text-white" />
-                  For Hosts
-                </span>
-              </button>
-            </div>
+          {/* Tab switcher */}
+          <div
+            className="inline-flex p-1 gap-0"
+            style={{
+              background: "rgba(17,59,58,0.55)",
+              border: "1px solid rgba(35,94,93,0.5)",
+              borderRadius: 999,
+            }}
+          >
+            {(["travelers", "hosts"] as TabType[]).map((tab) => {
+              const isActive = activeTab === tab
+              return (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => handleTabChange(tab)}
+                  className="relative flex items-center gap-2 px-5 py-2 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 cursor-pointer"
+                  style={{ color: isActive ? "#fff" : "rgba(183,230,229,0.5)" }}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="tabPill"
+                      className="absolute inset-0 rounded-full"
+                      style={{
+                        background:
+                          tab === "travelers"
+                            ? "linear-gradient(135deg,#0A5F5F,#0d7a7a)"
+                            : "linear-gradient(135deg,#E87A3D,#d46628)",
+                      }}
+                      transition={{ type: "spring", bounce: 0.18, duration: 0.45 }}
+                    />
+                  )}
+                  <span className="relative z-10 flex items-center gap-1.5">
+                    {tab === "travelers" ? (
+                      <><Compass className="size-3.5" />For Travelers</>
+                    ) : (
+                      <><Smartphone className="size-3.5" />For Hosts</>
+                    )}
+                  </span>
+                </button>
+              )
+            })}
           </div>
         </div>
 
-        {/* ── Main Interactive Split: 6 Steps Left + Phone Mockup Right ── */}
-        <div className="mt-16 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
-          {/* LEFT COLUMN: 6 Interactive Step Tabs with Progress Line */}
-          <div className="lg:col-span-6 relative">
-            {/* Vertical connector line behind step circles (desktop only) */}
-            <div className="hidden lg:block absolute left-6 top-8 bottom-8 w-0.5 bg-[#235E5D]/60 -translate-x-1/2">
+        {/* ── MAIN GRID: Left stepper  |  Right phone ── */}
+        {/* 
+          Mobile: phone first (order-1), then stepper (order-2)
+          Desktop: stepper left (col-span-5), phone right (col-span-4 sticky)
+        */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
+
+          {/* LEFT — vertical stepper */}
+          <div className="order-2 lg:order-1 lg:col-span-7">
+            <AnimatePresence mode="wait">
               <motion.div
-                className="w-full bg-[#E87A3D]"
-                initial={false}
-                animate={{
-                  height: `${(activeStepIndex / (currentSteps.length - 1)) * 100}%`,
-                }}
-                transition={{ duration: 0.35, ease: "easeInOut" }}
-              />
-            </div>
+                key={activeTab}
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -12 }}
+                transition={{ duration: 0.22 }}
+              >
+                <VerticalStepper
+                  steps={currentSteps}
+                  activeIndex={activeStepIndex}
+                  onSelect={setActiveStepIndex}
+                />
+              </motion.div>
+            </AnimatePresence>
 
-            {/* List of 6 Steps */}
-            <div className="space-y-3.5">
-              {currentSteps.map((step, idx) => {
-                const isActive = idx === activeStepIndex
-                return (
-                  <motion.button
-                    key={`${activeTab}-${step.number}`}
-                    type="button"
-                    onClick={() => setActiveStepIndex(idx)}
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
-                    className={`w-full text-left p-4 rounded-2xl border transition-all duration-300 flex items-start gap-4 relative group cursor-pointer ${
-                      isActive
-                        ? "bg-[#184948] border-[#E87A3D] shadow-xl shadow-[#0A5F5F]/20"
-                        : "bg-[#113B3A]/60 border-[#235E5D]/60 hover:bg-[#113B3A] hover:border-[#317978]/60"
-                    }`}
-                  >
-                    {/* Active highlight glow strip */}
-                    {isActive && (
-                      <div className="absolute left-0 top-3 bottom-3 w-1 bg-[#E87A3D] rounded-r" />
-                    )}
-
-                    {/* Step Number Circle */}
-                    <div
-                      className={`relative z-10 size-9 rounded-full flex items-center justify-center font-black text-sm shrink-0 transition-all duration-300 ${
-                        isActive
-                          ? "bg-[#E87A3D] text-white shadow-md shadow-[#E87A3D]/40 ring-4 ring-[#E87A3D]/20 scale-105"
-                          : "bg-[#0A5F5F]/80 text-[#B7E6E5] border border-[#235E5D] group-hover:border-[#E87A3D]/50"
-                      }`}
-                    >
-                      {step.number}
-                    </div>
-
-                    {/* Step Info */}
-                    <div className="flex-1 min-w-0 pr-2">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span
-                          className={`text-sm sm:text-base font-bold transition-colors ${
-                            isActive ? "text-white" : "text-[#F5F1EA]/85 group-hover:text-white"
-                          }`}
-                        >
-                          {step.title}
-                        </span>
-                        {isActive && (
-                          <span className="text-[10px] font-bold uppercase tracking-wider bg-[#E87A3D]/20 text-[#E87A3D] border border-[#E87A3D]/40 px-2 py-0.5 rounded-full">
-                            Active
-                          </span>
-                        )}
-                      </div>
-                      <p
-                        className={`text-xs sm:text-sm leading-relaxed transition-colors ${
-                          isActive ? "text-[#B7E6E5]" : "text-[#599D9C] line-clamp-2"
-                        }`}
-                      >
-                        {step.description}
-                      </p>
-                    </div>
-
-                    {/* Small arrow indicator */}
-                    <div className="self-center shrink-0">
-                      <ChevronRight
-                        className={`size-4 transition-transform duration-300 ${
-                          isActive
-                            ? "text-[#E87A3D] translate-x-1"
-                            : "text-[#235E5D] group-hover:text-[#B7E6E5]"
-                        }`}
-                      />
-                    </div>
-                  </motion.button>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* RIGHT COLUMN: Realistic Phone Mockup with Active Illustration */}
-          <div className="lg:col-span-6 flex flex-col items-center">
-            {/* Phone Mockup Frame */}
-            <div className="relative w-full max-w-[340px] sm:max-w-[370px]">
-              {/* Outer Phone Hardware Bezel */}
-              <div className="relative bg-[#0c1f1f] rounded-[48px] p-3 shadow-2xl border-4 border-[#235E5D] ring-1 ring-white/10">
-                {/* Speaker Ear Notch / Dynamic Island */}
-                <div className="absolute top-5 left-1/2 -translate-x-1/2 w-28 h-5 bg-[#000000] rounded-full z-30 flex items-center justify-center">
-                  <div className="size-2 rounded-full bg-[#184948] mr-2" />
-                  <div className="w-8 h-1.5 rounded-full bg-[#113B3A]" />
-                </div>
-
-                {/* Inner Screen Display Area */}
-                <div className="relative w-full aspect-[9/16] bg-[#0c1f1f] rounded-[38px] overflow-hidden border border-[#235E5D]/60 shadow-inner flex flex-col">
-                  {/* Subtle Screen Reflection Glare */}
-                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.03] to-transparent pointer-events-none z-20" />
-
-                  {/* Dynamic Step Illustration with Smooth Fade-in */}
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={`${activeTab}-${activeStepIndex}`}
-                      initial={{ opacity: 0, scale: 0.98, y: 8 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.98, y: -8 }}
-                      transition={{ duration: 0.28, ease: "easeInOut" }}
-                      className="w-full h-full flex-1 flex flex-col"
-                    >
-                      {currentStep.illustration}
-                    </motion.div>
-                  </AnimatePresence>
-
-                  {/* Phone Bottom Home Indicator Bar */}
-                  <div className="h-4 bg-[#0c1f1f] flex items-center justify-center shrink-0 z-20">
-                    <div className="w-32 h-1 bg-white/30 rounded-full" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Decorative Subtle Shadow Beneath Phone */}
-              <div className="w-3/4 h-6 bg-[#0A5F5F]/40 blur-xl rounded-full mx-auto -mt-2" />
-            </div>
-
-            {/* ── Active Step Highlight Card Below Phone ── */}
-            <div className="w-full max-w-[420px] mt-6 text-center space-y-3">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={`${activeTab}-${activeStepIndex}-details`}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.22 }}
-                  className="bg-[#113B3A]/90 border border-[#235E5D] rounded-2xl p-4 shadow-lg"
-                >
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#E87A3D]/20 border border-[#E87A3D]/40 text-[#E87A3D] text-[11px] font-bold mb-1.5">
-                    <span>Step {currentStep.number} of 6</span>
-                    <span>•</span>
-                    <span>{currentStep.tag}</span>
-                  </div>
-
-                  <h3 className="text-base sm:text-lg font-black text-white">
-                    {currentStep.title}
-                  </h3>
-
-                  <p className="text-xs sm:text-sm text-[#B7E6E5] mt-1 leading-relaxed">
-                    {currentStep.description}
-                  </p>
-                </motion.div>
-              </AnimatePresence>
-
-              {/* Step Navigation Controls & CTA */}
-              <div className="flex items-center justify-between gap-3 pt-1">
+            {/* Controls row */}
+            <div className="mt-8 flex flex-col gap-4">
+              <div className="flex items-center gap-3">
+                {/* Prev */}
                 <button
                   type="button"
                   onClick={prevStep}
-                  className="px-3.5 py-2 rounded-xl bg-[#113B3A] border border-[#235E5D] hover:border-[#E87A3D] text-[#B7E6E5] hover:text-white text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer"
+                  style={{
+                    background: "rgba(17,59,58,0.55)",
+                    border: "1px solid rgba(35,94,93,0.5)",
+                    color: "rgba(183,230,229,0.75)",
+                  }}
+                  onMouseEnter={e => {
+                    const el = e.currentTarget
+                    el.style.borderColor = "rgba(232,122,61,0.5)"
+                    el.style.color = "#fff"
+                  }}
+                  onMouseLeave={e => {
+                    const el = e.currentTarget
+                    el.style.borderColor = "rgba(35,94,93,0.5)"
+                    el.style.color = "rgba(183,230,229,0.75)"
+                  }}
                 >
                   <ChevronLeft className="size-4" />
-                  <span>Prev</span>
+                  Prev
                 </button>
 
-                {/* Dots indicator */}
-                <div className="flex items-center gap-1.5">
+                {/* Dots */}
+                <div className="flex items-center gap-1.5 flex-1 justify-center">
                   {currentSteps.map((_, dotIdx) => (
                     <button
                       key={dotIdx}
                       type="button"
                       onClick={() => setActiveStepIndex(dotIdx)}
-                      className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
-                        dotIdx === activeStepIndex
-                          ? "w-6 bg-[#E87A3D]"
-                          : "w-2 bg-[#235E5D] hover:bg-[#B7E6E5]/60"
-                      }`}
+                      className="rounded-full transition-all duration-300 cursor-pointer"
+                      style={{
+                        height: 6,
+                        width: dotIdx === activeStepIndex ? 22 : 6,
+                        background:
+                          dotIdx === activeStepIndex
+                            ? "#E87A3D"
+                            : "rgba(35,94,93,0.65)",
+                      }}
                       aria-label={`Go to step ${dotIdx + 1}`}
                     />
                   ))}
                 </div>
 
+                {/* Next */}
                 <button
                   type="button"
                   onClick={nextStep}
-                  className="px-3.5 py-2 rounded-xl bg-[#113B3A] border border-[#235E5D] hover:border-[#E87A3D] text-[#B7E6E5] hover:text-white text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer"
+                  style={{
+                    background: "rgba(17,59,58,0.55)",
+                    border: "1px solid rgba(35,94,93,0.5)",
+                    color: "rgba(183,230,229,0.75)",
+                  }}
+                  onMouseEnter={e => {
+                    const el = e.currentTarget
+                    el.style.borderColor = "rgba(232,122,61,0.5)"
+                    el.style.color = "#fff"
+                  }}
+                  onMouseLeave={e => {
+                    const el = e.currentTarget
+                    el.style.borderColor = "rgba(35,94,93,0.5)"
+                    el.style.color = "rgba(183,230,229,0.75)"
+                  }}
                 >
-                  <span>Next</span>
+                  Next
                   <ChevronRight className="size-4" />
                 </button>
               </div>
 
-              {/* Action Button */}
-              <div className="pt-2">
-                {activeTab === "travelers" ? (
-                  <Link
-                    to="/tours"
-                    className="w-full inline-flex items-center justify-center gap-2 bg-[#E87A3D] hover:bg-[#E87A3D]/90 text-white font-extrabold text-sm py-3 px-6 rounded-xl shadow-lg shadow-[#E87A3D]/25 transition-all duration-300 group cursor-pointer"
-                  >
-                    <span>Browse Real Kenya Tours</span>
-                    <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
-                  </Link>
-                ) : (
-                  <Link
-                    to="/auth?tab=signup&role=host"
-                    className="w-full inline-flex items-center justify-center gap-2 bg-[#0A5F5F] hover:bg-[#0A5F5F]/90 text-white font-extrabold text-sm py-3 px-6 rounded-xl border border-[#B7E6E5]/40 shadow-lg transition-all duration-300 group cursor-pointer"
-                  >
-                    <span>Apply to Become a Local Host</span>
-                    <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
-                  </Link>
-                )}
-              </div>
+              {/* Primary CTA */}
+              {activeTab === "travelers" ? (
+                <Link
+                  to="/tours"
+                  className="group inline-flex items-center justify-center gap-2.5 text-sm font-bold py-3.5 px-6 rounded-2xl transition-all duration-300"
+                  style={{
+                    background: "linear-gradient(135deg,#E87A3D 0%,#d46628 100%)",
+                    color: "#fff",
+                    boxShadow: "0 8px 28px rgba(232,122,61,0.3)",
+                  }}
+                  onMouseEnter={e => {
+                    const el = e.currentTarget as HTMLElement
+                    el.style.boxShadow = "0 14px 36px rgba(232,122,61,0.45)"
+                    el.style.transform = "translateY(-2px)"
+                  }}
+                  onMouseLeave={e => {
+                    const el = e.currentTarget as HTMLElement
+                    el.style.boxShadow = "0 8px 28px rgba(232,122,61,0.3)"
+                    el.style.transform = "translateY(0)"
+                  }}
+                >
+                  Browse Real Kenya Tours
+                  <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+                </Link>
+              ) : (
+                <Link
+                  to="/auth?tab=signup&role=host"
+                  className="group inline-flex items-center justify-center gap-2.5 text-sm font-bold py-3.5 px-6 rounded-2xl transition-all duration-300"
+                  style={{
+                    background: "rgba(10,95,95,0.45)",
+                    color: "#fff",
+                    border: "1px solid rgba(183,230,229,0.3)",
+                    boxShadow: "0 4px 16px rgba(10,95,95,0.2)",
+                  }}
+                  onMouseEnter={e => {
+                    const el = e.currentTarget as HTMLElement
+                    el.style.background = "rgba(10,95,95,0.7)"
+                    el.style.transform = "translateY(-2px)"
+                  }}
+                  onMouseLeave={e => {
+                    const el = e.currentTarget as HTMLElement
+                    el.style.background = "rgba(10,95,95,0.45)"
+                    el.style.transform = "translateY(0)"
+                  }}
+                >
+                  Apply to Become a Local Host
+                  <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+                </Link>
+              )}
             </div>
+          </div>
+
+          {/* RIGHT — phone mockup (sticky on desktop) */}
+          <div className="order-1 lg:order-2 lg:col-span-5 flex flex-col items-center lg:sticky lg:top-24">
+            <PhoneMockup step={currentStep} stepKey={stepKey} />
+
+            {/* Animated step label beneath phone */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={stepKey + "-label"}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.22, delay: 0.06 }}
+                className="mt-6 text-center"
+                style={{ maxWidth: 260 }}
+              >
+                <div
+                  className="inline-flex items-center gap-1.5 mb-2 px-3 py-1 rounded-full text-[11px] font-bold"
+                  style={{
+                    background: "rgba(232,122,61,0.11)",
+                    border: "1px solid rgba(232,122,61,0.28)",
+                    color: "#E87A3D",
+                  }}
+                >
+                  <span>Step {currentStep.number}</span>
+                  <span style={{ opacity: 0.4 }}>·</span>
+                  <span>{currentStep.tag}</span>
+                </div>
+                <h3
+                  className="text-base font-black text-white"
+                  style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}
+                >
+                  {currentStep.title}
+                </h3>
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
 
-        {/* ── Trust Banner at Bottom ── */}
-        <div className="mt-16 sm:mt-20 pt-8 border-t border-[#235E5D]/40 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-center">
-          <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-[#B7E6E5]">
-            <CheckCircle2 className="size-4 text-[#10B981] shrink-0" />
-            <span>Live video test before you pay</span>
-          </div>
-          <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-[#B7E6E5]">
-            <Shield className="size-4 text-[#E87A3D] shrink-0" />
-            <span>Direct M-PESA STK Push (No stored PINs)</span>
-          </div>
-          <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-[#B7E6E5]">
-            <Sparkles className="size-4 text-[#B7E6E5] shrink-0" />
-            <span>80% host payout within 24 hours</span>
-          </div>
+        {/* ── TRUST FOOTER ── */}
+        <div
+          className="mt-16 sm:mt-20 pt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center"
+          style={{ borderTop: "1px solid rgba(35,94,93,0.28)" }}
+        >
+          {[
+            {
+              icon: <CheckCircle2 className="size-4 shrink-0" style={{ color: "#10B981" }} />,
+              text: "Live video test before you pay",
+            },
+            {
+              icon: <Shield className="size-4 shrink-0" style={{ color: "#E87A3D" }} />,
+              text: "Direct M-PESA STK Push — no stored PINs",
+            },
+            {
+              icon: <Sparkles className="size-4 shrink-0" style={{ color: "#B7E6E5" }} />,
+              text: "80% host payout within 24 hours",
+            },
+          ].map(({ icon, text }) => (
+            <div
+              key={text}
+              className="flex items-center justify-center gap-2 text-xs sm:text-sm"
+              style={{ color: "rgba(183,230,229,0.65)" }}
+            >
+              {icon}
+              <span>{text}</span>
+            </div>
+          ))}
         </div>
       </div>
     </section>

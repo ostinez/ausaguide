@@ -139,12 +139,18 @@ export function GlassmorphismSidebar({
  }
 
  function handleItemClick(item: NavItem) {
- if (item.href) {
- navigate(item.href)
- } else {
- onViewChange(item.id)
- }
- onClose()
+   // Close sidebar first so the mobile drawer animates away
+   onClose()
+   // Exit Dashboard — navigate explicitly to homepage
+   if (item.id === "exit") {
+     navigate("/")
+     return
+   }
+   if (item.href) {
+     navigate(item.href)
+   } else {
+     onViewChange(item.id)
+   }
  }
 
  const isItemActive = (item: NavItem) => {
