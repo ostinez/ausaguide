@@ -184,7 +184,7 @@ export interface JournalEntry {
 
 export interface Message {
  id: string
- booking_id: string
+ booking_id?: string | null
  sender_id: string
  receiver_id: string
  message: string
