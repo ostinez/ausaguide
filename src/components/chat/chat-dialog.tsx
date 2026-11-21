@@ -15,6 +15,7 @@ import { fetchMessages, sendMessage, markMessagesRead, type Message as ApiMessag
 import { cn } from "@/lib/utils"
 import { supabase } from "@/lib/supabase"
 import { sanitizeText } from "@/lib/validation"
+import { toast } from "sonner"
 
 interface ChatDialogProps {
  bookingId: string
@@ -359,6 +360,13 @@ export function ChatDialog({
  const content = sanitizeText(inputValue)
  const activeThread = threads.find((t) => t.id === selectedThreadId)
  if (!content || !activeThread || sending) return
+
+ const digitsOnly = inputValue.replace(/\D/g, "")
+ const hasPhoneNumber = digitsOnly.length >= 10 || /(?:(?:\+?254|0)[17]\d{8})/.test(inputValue.replace(/[\s\-_.]/g, ""))
+ if (hasPhoneNumber) {
+ toast.error("For your security, phone numbers cannot be shared in chat.")
+ return
+ }
 
  setSending(true)
  try {

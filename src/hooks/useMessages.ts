@@ -256,6 +256,22 @@ export function useMessages(
       if (!content.trim() && !imageUrl) return false
 
       setSending(true)
+      const tempId = `temp-${Date.now()}`
+      const optimisticMsg: DirectMessage = {
+        id: tempId,
+        conversation_id: conversationId,
+        sender_id: currentUserId,
+        receiver_id: otherUserId,
+        message: content.trim(),
+        image_url: imageUrl || null,
+        created_at: new Date().toISOString(),
+        read: false,
+        sender_type: senderType,
+        notification_type: notificationType,
+        metadata: metadata || null,
+      }
+      setMessages((prev) => [...prev, optimisticMsg])
+
       try {
         const payload: Record<string, any> = {
           conversation_id: conversationId,
@@ -271,15 +287,23 @@ export function useMessages(
         if (metadata) payload.metadata = metadata
         if (bookingId) payload.booking_id = bookingId
 
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from("messages")
           .insert(payload)
+          .select()
+          .maybeSingle()
 
         if (error) {
+          setMessages((prev) => prev.filter((m) => m.id !== tempId))
           if (error.message?.includes("booking_id") && error.message?.includes("not-null")) {
             console.error("[useMessages] DB constraint error: booking_id is NOT NULL on messages table.")
+            toast.error("Database constraint: please run the SQL migration to make booking_id optional.")
           }
           throw error
+        }
+
+        if (data) {
+          setMessages((prev) => prev.map((m) => (m.id === tempId ? (data as DirectMessage) : m)))
         }
 
         // Insert notification record for the recipient
@@ -301,7 +325,9 @@ export function useMessages(
         return true
       } catch (err: any) {
         console.error("[useMessages] Error sending message:", err)
-        toast.error(err.message || "Failed to send message.")
+        if (!err.message?.includes("booking_id")) {
+          toast.error(err.message || "Failed to send message.")
+        }
         return false
       } finally {
         setSending(false)

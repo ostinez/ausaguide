@@ -45,6 +45,12 @@ export interface Profile {
  instagram?: string | null
  facebook?: string | null
  reddit?: string | null
+ qualifications_experience?: string | null
+ qualifications_highlights?: string | null
+ qualifications_education?: string | null
+ rating?: number
+ tours_completed?: number | string
+ hourly_rate?: number
  trust_score?: number | null
 }
 
@@ -71,6 +77,9 @@ export interface Tour {
  availability?: any
  status?: "draft" | "published"
  tags?: string[]
+ meeting_point?: string | null
+ guest_requirements?: string | null
+ what_to_bring?: string | null
  views?: number
  view_count?: number
  physical_price?: number

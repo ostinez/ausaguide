@@ -17,6 +17,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { getHostInitials } from "@/lib/tour-utils"
 import Dropzone from "@/components/ui/Dropzone"
 import OtpInput from "@/components/ui/OtpInput"
+import { Switch } from "@/components/ui/switch"
+import { LocationPermissionModal } from "@/components/host/LocationPermissionModal"
 
 const INTEREST_OPTIONS = [
  { value: "food", label: "Food & Drink" },
@@ -98,6 +100,7 @@ export default function SettingsPage() {
  const [publicProfile, setPublicProfile] = useState(true)
  const [dmPrivacy, setDmPrivacy] = useState<"everyone" | "followers" | "bookings">("everyone")
  const [readReceipts, setReadReceipts] = useState(true)
+ const [showLocationModal, setShowLocationModal] = useState(false)
 
  // Verification
  const [isVerified, setIsVerified] = useState(false)
@@ -765,10 +768,9 @@ export default function SettingsPage() {
  </p>
  </div>
  {role !== "host" ? (
- <button
- type="button"
- onClick={async () => {
- const nextPublic = !publicProfile
+ <Switch
+ checked={publicProfile}
+ onCheckedChange={async (nextPublic) => {
  setPublicProfile(nextPublic)
  if (userId) {
  try {
@@ -783,24 +785,38 @@ export default function SettingsPage() {
  }
  }
  }}
- className={cn(
- "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200",
- publicProfile ? "bg-primary" : "bg-muted"
- )}
- >
- <span
- className={cn(
- "pointer-events-none inline-block size-5 rounded-full bg-white shadow-lg transition-transform duration-200",
- publicProfile ? "translate-x-5" : "translate-x-0"
- )}
  />
- </button>
  ) : (
  <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
  Always Public
  </span>
  )}
  </div>
+
+ {/* Host Live Location Sharing (Settings -> Privacy) */}
+ {role === "host" && (
+ <div className="flex items-start justify-between rounded-xl border border-border/50 bg-card shadow-modern px-5 py-4">
+ <div>
+ <div className="flex items-center gap-2">
+ <MapPin className="size-4 text-primary" />
+ <p className="text-sm font-semibold text-foreground">Host Live Location Sharing</p>
+ </div>
+ <p className="text-xs text-muted-foreground mt-1 max-w-md">
+ Share your live coordinates so travelers exploring nearby can see your profile on the map and book local experiences with you.
+ </p>
+ </div>
+ <Button
+ type="button"
+ variant="outline"
+ size="sm"
+ onClick={() => setShowLocationModal(true)}
+ className="rounded-xl border-primary/40 text-primary hover:bg-primary/10 text-xs font-semibold shrink-0 gap-1.5"
+ >
+ <MapPin className="size-3.5" />
+ <span>Update Location</span>
+ </Button>
+ </div>
+ )}
 
  {/* Direct Messaging Permissions */}
  <div className="rounded-xl border border-border/50 bg-card shadow-modern p-5 space-y-3">
@@ -1208,6 +1224,15 @@ export default function SettingsPage() {
  </div>
  )}
  </form>
+
+ <LocationPermissionModal
+   isOpen={showLocationModal}
+   onClose={() => setShowLocationModal(false)}
+   userId={userId || ""}
+   onSuccess={() => {
+     setShowLocationModal(false)
+   }}
+ />
  </div>
  </div>
  </div>

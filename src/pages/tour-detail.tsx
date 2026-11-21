@@ -13,6 +13,7 @@ import {
  Minus,
  Plus,
  CalendarDays,
+ Backpack,
  Shield,
  Lock,
  X,
@@ -474,6 +475,65 @@ export default function TourDetailPage() {
  <p className="mt-4 leading-7 text-muted-foreground">{tour.description}</p>
  </section>
 
+ {/* Things to know Section (Airbnb-style) */}
+ {(tour.meeting_point || tour.guest_requirements || tour.what_to_bring) && (
+ <>
+ <Separator />
+ <section className="space-y-4">
+ <h2 className="scroll-m-20 text-2xl font-semibold tracking-tight text-foreground">
+ Things to know
+ </h2>
+ <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+ {tour.meeting_point && (
+ <div className="space-y-2">
+ <div className="flex items-center gap-2 text-foreground font-semibold text-sm">
+ <MapPin className="size-5 text-primary shrink-0" />
+ <span>Meeting Point</span>
+ </div>
+ <p className="text-sm text-muted-foreground leading-relaxed pl-7">
+ {tour.meeting_point}
+ </p>
+ </div>
+ )}
+
+ {tour.guest_requirements && (
+ <div className="space-y-2">
+ <div className="flex items-center gap-2 text-foreground font-semibold text-sm">
+ <Users className="size-5 text-primary shrink-0" />
+ <span>Guest Requirements</span>
+ </div>
+ <p className="text-sm text-muted-foreground leading-relaxed pl-7">
+ {tour.guest_requirements}
+ </p>
+ </div>
+ )}
+
+ {tour.what_to_bring && (
+ <div className="space-y-2">
+ <div className="flex items-center gap-2 text-foreground font-semibold text-sm">
+ <Backpack className="size-5 text-primary shrink-0" />
+ <span>What to Bring</span>
+ </div>
+ <p className="text-sm text-muted-foreground leading-relaxed pl-7">
+ {tour.what_to_bring}
+ </p>
+ </div>
+ )}
+ </div>
+
+ <div className="mt-4 flex items-start gap-3 rounded-xl border border-border/60 bg-muted/20 p-4">
+ <CalendarDays className="mt-0.5 size-5 shrink-0 text-primary" />
+ <div>
+ <p className="text-sm font-medium text-foreground">Cancellation Policy</p>
+ <p className="mt-0.5 text-xs text-muted-foreground">
+ Free cancellation up to 24 hours before the experience starts for a full refund.
+ </p>
+ </div>
+ </div>
+ </section>
+ </>
+ )}
+
  <Separator />
 
  {/* Gallery / Checkpoints Section */}
@@ -722,7 +782,7 @@ export default function TourDetailPage() {
  mode="single"
  selected={selectedDate}
  onSelect={setSelectedDate}
- disabled={(date) => {
+ disabled={(date: Date) => {
  if (tour.availability?.date) {
  // Compare local year/month/day dates
  const localYear = date.getFullYear()
@@ -734,7 +794,7 @@ export default function TourDetailPage() {
  return date < addDays(new Date(), 0) || getDayStatus(date) === "unavailable"
  }}
  modifiers={{
- booked: (date) => getDayStatus(date) === "fully_booked"
+ booked: (date: Date) => getDayStatus(date) === "fully_booked"
  }}
  modifiersStyles={{
  booked: { textDecoration: "line-through", opacity: 0.5 }

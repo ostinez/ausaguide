@@ -346,6 +346,15 @@ export function ChatWindow({
     if ((!inputVal.trim() && !selectedImage) || sending) return
 
     const text = inputVal.trim()
+
+    // ── Disintermediation / Phone number filter ──
+    const digitsOnly = text.replace(/\D/g, "")
+    const hasPhoneNumber = digitsOnly.length >= 10 || /(?:(?:\+?254|0)[17]\d{8})/.test(text.replace(/[\s\-_.]/g, ""))
+    if (hasPhoneNumber) {
+      toast.error("For your security, phone numbers cannot be shared in chat.")
+      return
+    }
+
     const imageToSend = selectedImage
     setInputVal("")
     setSelectedImage(null)
@@ -467,6 +476,12 @@ export function ChatWindow({
           </div>
         </div>
       )}
+
+      {/* ─── Disintermediation & Payment Protection Banner ─── */}
+      <div className="px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 text-amber-900 dark:text-amber-200 text-xs font-medium flex items-center justify-center gap-2 text-center shrink-0">
+        <span className="shrink-0 text-sm">🛡️</span>
+        <span className="font-semibold">Keep your booking on Ausaguide to guarantee refunds and secure M-Pesa payments.</span>
+      </div>
 
       {/* ─── Pinned Context Banner (Tour / Post) ─── */}
       <PinnedChatContext

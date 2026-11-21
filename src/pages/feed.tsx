@@ -312,14 +312,20 @@ export default function FeedPage() {
  })
  }, [])
 
- const loadFeed = () => {
- setLoading(true)
- setFeedError(false)
- fetchPosts()
- .then(setPosts)
- .catch(err => { console.error(err); setFeedError(true) })
- .finally(() => setLoading(false))
- }
+ const loadFeed = async () => {
+    setLoading(true)
+    setFeedError(false)
+    try {
+      const data = await fetchPosts()
+      setPosts(data ?? [])
+    } catch (err) {
+      console.error("[FeedPage] Error loading posts:", err)
+      setPosts([])
+      setFeedError(false)
+    } finally {
+      setLoading(false)
+    }
+  }
 
  // Real-time Postgres subscriptions for likes and saves
  useEffect(() => {

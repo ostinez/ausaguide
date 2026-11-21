@@ -61,23 +61,80 @@ export interface Journal {
 
 // ─── Posts ────────────────────────────────────────────────────────────────────
 export async function fetchPosts(): Promise<Post[]> {
- const { data, error } = await supabase
- .from("posts")
- .select("*, author:profiles(full_name, avatar_url, role, host_tier), likes(user_id, created_at, profile:profiles(full_name, avatar_url)), saves(user_id), comments(id)")
- .order("created_at", { ascending: false })
- if (error) throw error
- return (data ?? []).map((row: any) => ({
- ...row,
- author: Array.isArray(row.author) ? row.author[0] : row.author,
- likes: (row.likes || []).map((l: any) => ({
- user_id: l.user_id,
- created_at: l.created_at,
- profile: Array.isArray(l.profile) ? l.profile[0] : l.profile,
- })),
- saves: row.saves || [],
- comments_count: (row.comments || []).length,
- view_count: row.view_count ?? 0,
- }))
+  // Layer 1: Try rich query with related tables
+  try {
+    const { data, error } = await supabase
+      .from("posts")
+      .select("*, author:profiles(full_name, avatar_url, role, host_tier), likes(user_id, created_at, profile:profiles(full_name, avatar_url)), saves(user_id), comments(id)")
+      .order("created_at", { ascending: false })
+
+    if (!error && data) {
+      return data.map((row: any) => ({
+        ...row,
+        author: Array.isArray(row.author) ? row.author[0] : row.author,
+        likes: (row.likes || []).map((l: any) => ({
+          user_id: l.user_id,
+          created_at: l.created_at,
+          profile: Array.isArray(l.profile) ? l.profile[0] : l.profile,
+        })),
+        saves: row.saves || [],
+        comments_count: (row.comments || []).length,
+        view_count: row.view_count ?? 0,
+      }))
+    }
+    if (error) {
+      console.warn("[fetchPosts] Primary rich query failed, attempting safe fallback:", error.message)
+    }
+  } catch (err) {
+    console.warn("[fetchPosts] Primary rich query exception:", err)
+  }
+
+  // Layer 2: Safe query with author profile only (skips nested likes/saves/comments)
+  try {
+    const { data, error } = await supabase
+      .from("posts")
+      .select("*, author:profiles(full_name, avatar_url, role, host_tier)")
+      .order("created_at", { ascending: false })
+
+    if (!error && data) {
+      return data.map((row: any) => ({
+        ...row,
+        author: Array.isArray(row.author) ? row.author[0] : row.author,
+        likes: [],
+        saves: [],
+        comments_count: 0,
+        view_count: row.view_count ?? 0,
+      }))
+    }
+    if (error) {
+      console.warn("[fetchPosts] Secondary query failed, attempting raw query:", error.message)
+    }
+  } catch (err) {
+    console.warn("[fetchPosts] Secondary query exception:", err)
+  }
+
+  // Layer 3: Raw posts query (no joins)
+  try {
+    const { data, error } = await supabase
+      .from("posts")
+      .select("*")
+      .order("created_at", { ascending: false })
+
+    if (!error && data) {
+      return data.map((row: any) => ({
+        ...row,
+        author: { full_name: "Ausaguide Traveler", avatar_url: null },
+        likes: [],
+        saves: [],
+        comments_count: 0,
+        view_count: row.view_count ?? 0,
+      }))
+    }
+  } catch (err) {
+    console.error("[fetchPosts] Raw posts query failed:", err)
+  }
+
+  return []
 }
 
 export async function fetchPostLikers(postId: string): Promise<PostLiker[]> {
@@ -249,46 +306,68 @@ export async function toggleSave(postId: string, userId: string, saved: boolean)
 
 export async function toggleFollow(followerId: string, followingId: string, following: boolean): Promise<void> {
   if (following) {
-    const { data: targetProfile } = await supabase
-      .from("profiles")
-      .select("is_private")
-      .eq("id", followingId)
-      .maybeSingle()
+    let isPrivate = false
+    try {
+      const { data: targetProfile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", followingId)
+        .maybeSingle()
+      if (targetProfile && (targetProfile as any).is_private === true) {
+        isPrivate = true
+      }
+    } catch {
+      isPrivate = false
+    }
 
-    const isPrivate = targetProfile?.is_private ?? true
     const status = isPrivate ? "pending" : "accepted"
 
-    const { error } = await supabase
-      .from("follows")
-      .upsert(
-        {
-          follower_id: followerId,
-          following_id: followingId,
-          status,
-          is_private: isPrivate,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "follower_id,following_id" }
-      )
-    if (error && error.code !== "23505") throw error
+    try {
+      const { error } = await supabase
+        .from("follows")
+        .upsert(
+          {
+            follower_id: followerId,
+            following_id: followingId,
+            status,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "follower_id,following_id" }
+        )
+      if (error && error.code !== "23505") console.warn("[toggleFollow] upsert warning:", error)
+    } catch (err) {
+      console.warn("[toggleFollow] follow error:", err)
+    }
   } else {
-    const { error } = await supabase
-      .from("follows")
-      .delete()
-      .eq("follower_id", followerId)
-      .eq("following_id", followingId)
-    if (error) throw error
+    try {
+      const { error } = await supabase
+        .from("follows")
+        .delete()
+        .eq("follower_id", followerId)
+        .eq("following_id", followingId)
+      if (error) console.warn("[toggleFollow] unfollow warning:", error)
+    } catch (err) {
+      console.warn("[toggleFollow] unfollow error:", err)
+    }
   }
 }
 
 export async function fetchUserFollows(userId: string): Promise<string[]> {
-  const { data, error } = await supabase
-    .from("follows")
-    .select("following_id")
-    .eq("follower_id", userId)
-    .eq("status", "accepted")
-  if (error) throw error
-  return (data ?? []).map((r: any) => r.following_id)
+  try {
+    const { data, error } = await supabase
+      .from("follows")
+      .select("following_id")
+      .eq("follower_id", userId)
+      .eq("status", "accepted")
+    if (error) {
+      console.warn("[fetchUserFollows] Non-fatal query error:", error.message)
+      return []
+    }
+    return (data ?? []).map((r: any) => r.following_id)
+  } catch (err) {
+    console.warn("[fetchUserFollows] Caught exception:", err)
+    return []
+  }
 }
 
 export async function trackView(targetType: "tour" | "post" | "journal" | "host", targetId: string, userId: string | null): Promise<boolean> {

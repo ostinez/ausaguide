@@ -23,8 +23,13 @@ import {
  BadgeCheck,
  Loader2,
  CheckCircle2,
-  ChevronRight,
+ ChevronRight,
+ ChevronDown,
+ ChevronUp,
+ CreditCard,
+ Wallet,
 } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
 import NotificationBell from "@/components/ui/NotificationBell"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -58,7 +63,6 @@ import { EditBookingModal } from "@/components/dashboard/EditBookingModal"
 import { HostVerificationBanners } from "@/components/host/HostVerificationBanners"
 import { TermsGateModal } from "@/components/auth/TermsGateModal"
 import { TravelerMapDashboard } from "@/components/dashboard/TravelerMapDashboard"
-import { HostBusinessDashboard } from "@/components/dashboard/HostBusinessDashboard"
 
 
 function statusColorClass(status: BookingStatus) {
@@ -909,18 +913,16 @@ function HostSettingsPanel({ hostId, pendingCount }: { hostId: string, pendingCo
  </div>
  <div className="flex items-center gap-2">
  <span className="text-xs font-medium">{isBusy ? "Busy" : "Available"}</span>
- <button 
- onClick={() => {
- if (!isBusy && pendingCount > 0) {
+ <Switch
+ checked={isBusy}
+ onCheckedChange={(checked) => {
+ if (checked && pendingCount > 0) {
  alert("You have pending bookings! Please communicate with travelers before going busy.")
  return
  }
- setIsBusy(!isBusy)
+ setIsBusy(checked)
  }}
- className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isBusy ? "bg-destructive" : "bg-muted"}`}
- >
- <span className={`inline-block size-4 transform rounded-full bg-white transition-transform ${isBusy ? "translate-x-6" : "translate-x-1"}`} />
- </button>
+ />
  </div>
  </div>
  {isBusy && (
@@ -1728,11 +1730,22 @@ export default function DashboardPage() {
  const handleChatClick = (b: Booking) => navigate(`/messages?bookingId=${b.id}`);
  const [unreadNotifications, setUnreadNotifications] = useState<number>(0);
 
+ // Collapsible states for unified mobile host dashboard
+ const [recentTransactionsOpen, setRecentTransactionsOpen] = useState(true);
+ const [myToursOpen, setMyToursOpen] = useState(true);
+ const [bookingsOpen, setBookingsOpen] = useState(true);
+ const [profileSettingsOpen, setProfileSettingsOpen] = useState(true);
+ const [reviewsOpen, setReviewsOpen] = useState(false);
+
  useEffect(() => {
  if (userRoleState === "host") {
  const tab = searchParams.get("tab")
- if (tab && ["dashboard", "tours", "bookings", "reviews", "settings"].includes(tab)) {
+ if (tab) {
  setView(tab)
+ if (tab === "tours") setMyToursOpen(true)
+ if (tab === "bookings") setBookingsOpen(true)
+ if (tab === "settings") setProfileSettingsOpen(true)
+ if (tab === "reviews") setReviewsOpen(true)
  }
  }
  }, [searchParams, userRoleState])
@@ -2044,10 +2057,26 @@ export default function DashboardPage() {
  <p className="mt-2 text-sm text-muted-foreground">{error}</p>
  </div>
  ) : userRoleState === "host" ? (
- <div className="space-y-8 animate-in fade-in duration-300">
- {view === "dashboard" && (
- <div className="space-y-8">
+ <div className="space-y-6 animate-in fade-in duration-300">
+ {/* Host Header Greeting */}
+ <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-1">
+ <div>
+ <h2 className="text-2xl font-black tracking-tight text-foreground">
+ {(() => {
+ const hour = new Date().getHours()
+ if (hour < 12) return "Good Morning"
+ if (hour < 18) return "Good Afternoon"
+ return "Good Evening"
+ })()}, {profile?.full_name ? profile.full_name.split(" ")[0] : "Host"}
+ </h2>
+ <p className="text-xs text-muted-foreground mt-0.5">
+ Here is your daily hosting overview and performance activity.
+ </p>
+ </div>
+ </div>
+
  <HostVerificationBanners profile={profile} onRefresh={loadDashboard} />
+
  <UrgentRequestsSection
  requests={urgentRequests}
  hostId={userId || ""}
@@ -2056,34 +2085,156 @@ export default function DashboardPage() {
  navigate(`/messages?userId=${travelerId}`)
  }}
  />
+
  {hostProfile && (
  <LocationToggle userId={hostProfile.id} className="animate-in slide-in-from-right duration-500" />
  )}
- <HostBusinessDashboard
- hostProfile={hostProfile || profile}
- bookings={hostBookings}
- onChat={handleChatClick}
- onRefresh={loadDashboard}
- />
+
+ {/* Top Card: Total Balance (Host Earnings) */}
+ <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-teal-900 via-teal-950 to-zinc-950 p-6 sm:p-8 text-white shadow-xl border border-teal-500/30">
+ <div className="flex items-center justify-between">
+ <div>
+ <span className="text-xs font-semibold uppercase tracking-wider text-teal-300/80">Total Balance</span>
+ <h3 className="text-3xl sm:text-4xl font-black tracking-tight text-white mt-1">
+ KES {hostBookings
+ .filter((b) => b.status === "completed")
+ .reduce((sum, b) => sum + (b.payment_amount || b.total_price || 0), 0)
+ .toLocaleString()}
+ </h3>
+ </div>
+ <div className="size-12 rounded-2xl bg-teal-500/20 border border-teal-400/20 flex items-center justify-center text-teal-300 shadow-inner">
+ <Wallet className="size-6" />
+ </div>
+ </div>
+ <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-teal-200/80 pt-4 border-t border-teal-800/40">
+ <div className="flex items-center gap-1.5">
+ <CheckCircle2 className="size-3.5 text-teal-400" />
+ <span>{hostBookings.filter((b) => b.status === "completed").length} completed tours</span>
+ </div>
+ {hostBookings.filter((b) => b.status === "pending").length > 0 && (
+ <div className="flex items-center gap-1.5 text-amber-300">
+ <Clock className="size-3.5 text-amber-400" />
+ <span>{hostBookings.filter((b) => b.status === "pending").length} pending confirmation</span>
  </div>
  )}
+ </div>
+ </div>
 
- {view === "tours" && (
- <Card>
- <CardHeader>
- <CardTitle>Your Tours</CardTitle>
- <CardDescription>Manage your listed experiences</CardDescription>
- <CardAction>
- <Button size="sm" className="rounded-full" onClick={() => navigate("/host/tours/new")}>
+ {/* Quick Action Buttons */}
+ <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+ <Button
+ onClick={() => navigate("/host/tours/new")}
+ className="h-12 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98]"
+ >
  <Plus className="size-4" />
- Add Tour
+ <span>Create Tour</span>
  </Button>
- </CardAction>
+
+ <Button
+ onClick={() => {
+ setBookingsOpen(true)
+ const el = document.getElementById("host-bookings-card")
+ if (el) el.scrollIntoView({ behavior: "smooth" })
+ }}
+ variant="outline"
+ className="h-12 rounded-2xl border-border/80 bg-card hover:bg-accent font-bold text-sm shadow-sm flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98]"
+ >
+ <Calendar className="size-4 text-primary" />
+ <span>View Bookings</span>
+ {hostBookings.filter((b) => b.status === "pending").length > 0 && (
+ <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-500 text-white">
+ {hostBookings.filter((b) => b.status === "pending").length}
+ </span>
+ )}
+ </Button>
+
+ <Button
+ onClick={() => navigate(profile?.id ? `/host/${profile.id}` : "/tours")}
+ variant="outline"
+ className="h-12 rounded-2xl border-border/80 bg-card hover:bg-accent font-bold text-sm shadow-sm col-span-2 sm:col-span-1 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98]"
+ >
+ <Eye className="size-4 text-primary" />
+ <span>Public Profile</span>
+ </Button>
+ </div>
+
+ {/* Card 1: Collapsible Recent Transactions */}
+ <Card className="rounded-3xl border border-border/70 shadow-modern overflow-hidden">
+ <CardHeader
+ className="cursor-pointer hover:bg-muted/30 transition-colors py-4 px-6 flex flex-row items-center justify-between space-y-0"
+ onClick={() => setRecentTransactionsOpen(!recentTransactionsOpen)}
+ >
+ <div className="flex items-center gap-2.5">
+ <div className="p-2 rounded-xl bg-primary/10 text-primary">
+ <CreditCard className="size-4" />
+ </div>
+ <div>
+ <CardTitle className="text-base font-bold">Recent Transactions</CardTitle>
+ <CardDescription className="text-xs">Latest booking revenues and activity</CardDescription>
+ </div>
+ </div>
+ <Button variant="ghost" size="icon" className="size-8 rounded-full">
+ {recentTransactionsOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+ </Button>
  </CardHeader>
- <CardContent className="space-y-3">
+ {recentTransactionsOpen && (
+ <CardContent className="px-6 pb-6 pt-2 divide-y divide-border/40">
+ {hostBookings.length === 0 ? (
+ <p className="py-6 text-center text-sm text-muted-foreground">No transaction history yet.</p>
+ ) : (
+ [...hostBookings]
+ .sort((a, b) => new Date(b.created_at || b.booking_date).getTime() - new Date(a.created_at || a.booking_date).getTime())
+ .slice(0, 5)
+ .map((b) => (
+ <div key={b.id} className="py-3 flex items-center justify-between text-sm">
+ <div className="space-y-0.5">
+ <div className="font-semibold text-foreground">{b.tour?.title || "Experience Booking"}</div>
+ <div className="text-xs text-muted-foreground">Guest: {b.guest_name} · {format(new Date(b.booking_date), "MMM d, yyyy")}</div>
+ </div>
+ <div className="text-right">
+ <div className="font-bold text-foreground">
+ {b.currency || "KES"} {(b.payment_amount || b.total_price || 0).toLocaleString()}
+ </div>
+ <Badge variant={b.status === "completed" ? "default" : b.status === "confirmed" ? "secondary" : "outline"} className="text-[10px] capitalize">
+ {b.status}
+ </Badge>
+ </div>
+ </div>
+ ))
+ )}
+ </CardContent>
+ )}
+ </Card>
+
+ {/* Card 2: Collapsible My Tours */}
+ <Card className="rounded-3xl border border-border/70 shadow-modern overflow-hidden">
+ <CardHeader
+ className="cursor-pointer hover:bg-muted/30 transition-colors py-4 px-6 flex flex-row items-center justify-between space-y-0"
+ onClick={() => setMyToursOpen(!myToursOpen)}
+ >
+ <div className="flex items-center gap-2.5">
+ <div className="p-2 rounded-xl bg-primary/10 text-primary">
+ <MapPin className="size-4" />
+ </div>
+ <div>
+ <CardTitle className="text-base font-bold">My Tours</CardTitle>
+ <CardDescription className="text-xs">Manage your {hostTours.length} listed experiences</CardDescription>
+ </div>
+ </div>
+ <div className="flex items-center gap-2">
+ <Button size="sm" className="rounded-full h-8 text-xs font-semibold" onClick={(e) => { e.stopPropagation(); navigate("/host/tours/new") }}>
+ <Plus className="size-3.5 mr-1" /> Add
+ </Button>
+ <Button variant="ghost" size="icon" className="size-8 rounded-full">
+ {myToursOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+ </Button>
+ </div>
+ </CardHeader>
+ {myToursOpen && (
+ <CardContent className="px-6 pb-6 pt-2 space-y-3">
  {hostTours.length === 0 ? (
  <div className="py-6 text-center space-y-3">
- <p className="text-sm text-muted-foreground">No tours yet.</p>
+ <p className="text-sm text-muted-foreground">No tours listed yet.</p>
  <Button size="sm" variant="outline" className="rounded-full" onClick={() => navigate("/host/tours/new")}>
  <Plus className="mr-2 size-4" />
  Add New Tour
@@ -2093,81 +2244,133 @@ export default function DashboardPage() {
  hostTours.map((t) => <TourRow key={t.id} tour={t} bookings={hostBookings} onRefresh={refreshHostTours} />)
  )}
  </CardContent>
- </Card>
  )}
+ </Card>
 
- {view === "bookings" && (
- <>
- {/* Pending Bookings */}
- <Card>
- <CardHeader>
- <CardTitle className="flex items-center gap-2">
- Pending Bookings
+ {/* Card 3: Collapsible My Bookings */}
+ <div id="host-bookings-card">
+ <Card className="rounded-3xl border border-border/70 shadow-modern overflow-hidden">
+ <CardHeader
+ className="cursor-pointer hover:bg-muted/30 transition-colors py-4 px-6 flex flex-row items-center justify-between space-y-0"
+ onClick={() => setBookingsOpen(!bookingsOpen)}
+ >
+ <div className="flex items-center gap-2.5">
+ <div className="p-2 rounded-xl bg-primary/10 text-primary">
+ <Calendar className="size-4" />
+ </div>
+ <div>
+ <CardTitle className="text-base font-bold flex items-center gap-2">
+ My Bookings
  {hostBookings.filter((b) => b.status === "pending").length > 0 && (
- <span className="px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-amber-500 text-white leading-none animate-pulse">
- {hostBookings.filter((b) => b.status === "pending").length}
+ <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-500 text-white animate-pulse">
+ {hostBookings.filter((b) => b.status === "pending").length} pending
  </span>
  )}
  </CardTitle>
- <CardDescription>Booking requests requiring your confirmation</CardDescription>
+ <CardDescription className="text-xs">Guest reservations requiring confirmation & upcoming tours</CardDescription>
+ </div>
+ </div>
+ <Button variant="ghost" size="icon" className="size-8 rounded-full">
+ {bookingsOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+ </Button>
  </CardHeader>
- <CardContent className="space-y-3">
- {hostBookings.filter((b) => b.status === "pending").length === 0 ? (
- <p className="py-6 text-center text-sm text-muted-foreground">No pending booking requests.</p>
- ) : (
- hostBookings.filter((b) => b.status === "pending").map((b) => (
+ {bookingsOpen && (
+ <CardContent className="px-6 pb-6 pt-2 space-y-6">
+ {hostBookings.filter((b) => b.status === "pending").length > 0 && (
+ <div className="space-y-3">
+ <h4 className="text-xs font-semibold uppercase tracking-wider text-amber-500 flex items-center gap-1.5">
+ <Clock className="size-3.5" /> Pending Confirmation
+ </h4>
+ {hostBookings.filter((b) => b.status === "pending").map((b) => (
  <PendingBookingRow
  key={b.id}
  booking={b}
  onUpdateStatus={handleUpdateBookingStatus}
  onChat={handleChatClick}
  />
- ))
+ ))}
+ </div>
  )}
- </CardContent>
- </Card>
 
- {/* Upcoming Tours (confirmed) */}
- <Card>
- <CardHeader>
- <CardTitle>Upcoming Tours</CardTitle>
- <CardDescription>Confirmed bookings — guests who are coming</CardDescription>
- </CardHeader>
- <CardContent className="space-y-3">
+ <div className="space-y-3">
+ <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+ <Calendar className="size-3.5" /> Confirmed & Upcoming
+ </h4>
  {hostBookings.filter((b) => b.status === "confirmed").length === 0 ? (
- <p className="py-6 text-center text-sm text-muted-foreground">No upcoming bookings yet.</p>
+ <p className="py-4 text-center text-xs text-muted-foreground">No upcoming confirmed tours.</p>
  ) : (
  hostBookings.filter((b) => b.status === "confirmed").map((b) => (
  <BookingRow key={b.id} booking={b} onChat={handleChatClick} />
  ))
  )}
- </CardContent>
- </Card>
+ </div>
 
- {/* Past Tours (completed or declined) */}
  {hostBookings.filter((b) => b.status === "completed" || b.status === "declined").length > 0 && (
- <Card>
- <CardHeader>
- <CardTitle>Past Tours</CardTitle>
- <CardDescription>Completed and declined bookings</CardDescription>
- </CardHeader>
- <CardContent className="space-y-3">
+ <div className="space-y-3 pt-2 border-t border-border/40">
+ <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+ <CheckCircle2 className="size-3.5" /> Past Tours
+ </h4>
  {hostBookings.filter((b) => b.status === "completed" || b.status === "declined").map((b) => (
  <BookingRow key={b.id} booking={b} onChat={handleChatClick} />
  ))}
+ </div>
+ )}
  </CardContent>
+ )}
  </Card>
- )}
- </>
- )}
+ </div>
 
- {view === "reviews" && (
- <ReviewList hostId={hostRecord?.id || hostProfile?.id || profile?.id} />
- )}
-
- {view === "settings" && (
+ {/* Card 4: Collapsible Profile Settings */}
+ <Card className="rounded-3xl border border-border/70 shadow-modern overflow-hidden">
+ <CardHeader
+ className="cursor-pointer hover:bg-muted/30 transition-colors py-4 px-6 flex flex-row items-center justify-between space-y-0"
+ onClick={() => setProfileSettingsOpen(!profileSettingsOpen)}
+ >
+ <div className="flex items-center gap-2.5">
+ <div className="p-2 rounded-xl bg-primary/10 text-primary">
+ <Settings className="size-4" />
+ </div>
+ <div>
+ <CardTitle className="text-base font-bold">Profile & Hosting Settings</CardTitle>
+ <CardDescription className="text-xs">Busy mode, public profile preview, and hosting controls</CardDescription>
+ </div>
+ </div>
+ <Button variant="ghost" size="icon" className="size-8 rounded-full">
+ {profileSettingsOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+ </Button>
+ </CardHeader>
+ {profileSettingsOpen && (
+ <CardContent className="px-6 pb-6 pt-2">
  <HostSettingsPanel hostId={hostProfile?.id || ""} pendingCount={hostBookings.filter((b) => b.status === "pending").length} />
+ </CardContent>
  )}
+ </Card>
+
+ {/* Card 5: Collapsible Reviews */}
+ <Card className="rounded-3xl border border-border/70 shadow-modern overflow-hidden">
+ <CardHeader
+ className="cursor-pointer hover:bg-muted/30 transition-colors py-4 px-6 flex flex-row items-center justify-between space-y-0"
+ onClick={() => setReviewsOpen(!reviewsOpen)}
+ >
+ <div className="flex items-center gap-2.5">
+ <div className="p-2 rounded-xl bg-primary/10 text-primary">
+ <ShieldCheck className="size-4" />
+ </div>
+ <div>
+ <CardTitle className="text-base font-bold">Guest Reviews</CardTitle>
+ <CardDescription className="text-xs">Ratings and feedback from travelers</CardDescription>
+ </div>
+ </div>
+ <Button variant="ghost" size="icon" className="size-8 rounded-full">
+ {reviewsOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+ </Button>
+ </CardHeader>
+ {reviewsOpen && (
+ <CardContent className="px-6 pb-6 pt-2">
+ <ReviewList hostId={hostRecord?.id || hostProfile?.id || profile?.id} />
+ </CardContent>
+ )}
+ </Card>
  </div>
  ) : view === "reviews" ? (
  userRoleState === "host" ? (

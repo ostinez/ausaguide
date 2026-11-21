@@ -12,6 +12,7 @@ import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { sendGuideApplicationNotification } from "@/lib/api/emails"
 import { OnboardingInterests } from "@/components/auth/OnboardingInterests"
+import { LocationPermissionModal } from "@/components/host/LocationPermissionModal"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { 
  Loader2, 
@@ -1419,6 +1420,7 @@ export default function OnboardingPage() {
 
  const [hostTierSelected, setHostTierSelected] = useState<"certified_guide" | "local_host" | "security" | null>(null)
   const [showVerifiedModal, setShowVerifiedModal] = useState(false)
+  const [showLocationModal, setShowLocationModal] = useState(false)
  const [userEmail, setUserEmail] = useState("")
 
  // Load email for guide notification
@@ -1623,15 +1625,28 @@ export default function OnboardingPage() {
  size="lg"
  onClick={() => {
   setShowVerifiedModal(false)
-  navigate("/host-dashboard", { replace: true })
+  setShowLocationModal(true)
  }}
  className="w-full rounded-xl bg-gradient-to-r from-[#0D6F73] to-[#10b981] hover:from-[#0a585b] hover:to-[#059669] text-white font-bold py-3 shadow-lg shadow-[#0D6F73]/30 cursor-pointer flex items-center justify-center gap-2"
  >
- Go to Dashboard <ArrowRight className="size-4" />
+ Continue to Location Setup <ArrowRight className="size-4" />
  </Button>
  </div>
  </DialogContent>
  </Dialog>
+
+ <LocationPermissionModal
+   isOpen={showLocationModal}
+   onClose={() => {
+     setShowLocationModal(false)
+     navigate("/host-dashboard", { replace: true })
+   }}
+   userId={userId}
+   onSuccess={() => {
+     setShowLocationModal(false)
+     navigate("/host-dashboard", { replace: true })
+   }}
+ />
  </div>
  )
 }

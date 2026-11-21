@@ -55,9 +55,13 @@ export async function sendMessage(
  throw new RateLimitError()
  }
 
+ const sortedIds = [senderId, receiverId].sort()
+ const convId = `${sortedIds[0]}_${sortedIds[1]}`
+
  const { data, error } = await supabase
  .from("messages")
  .insert({
+ conversation_id: convId,
  sender_id: senderId,
  receiver_id: receiverId,
  message: content,

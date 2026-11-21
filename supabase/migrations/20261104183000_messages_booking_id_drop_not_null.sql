@@ -98,3 +98,4 @@ END $$;
 
 -- 7. Grant access to authenticated and service_role
 GRANT SELECT, INSERT, UPDATE ON public.messages TO authenticated, service_role;
+

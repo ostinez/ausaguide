@@ -92,3 +92,4 @@ END $$;
 
 -- 7. Permissions
 GRANT SELECT, INSERT, UPDATE ON public.messages TO authenticated, service_role;
+

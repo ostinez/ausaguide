@@ -16,6 +16,7 @@ import {
  Tag,
  Eye,
  Info,
+ ClipboardList,
  DollarSign,
  Clock,
  MapPin,
@@ -122,42 +123,19 @@ export default function NewTourPage() {
  const [category, setCategory] = useState<TourCategory>("culture")
  const [duration, setDuration] = useState("3")
  const [locationName, setLocationName] = useState("")
- const [latitude, setLatitude] = useState<number>(-1.2921)
- const [longitude, setLongitude] = useState<number>(36.8219)
- const [isGeocoding, setIsGeocoding] = useState(false)
- const [geocodedAddress, setGeocodedAddress] = useState<string | null>(null)
+ const [latitude] = useState<number>(-1.2921)
+ const [longitude] = useState<number>(36.8219)
  const [tourType, setTourType] = useState<TourType>("in_person")
  const [maxGuests, setMaxGuests] = useState("10")
-
- const handleGeocode = async (query: string) => {
- if (!query || query.trim().length < 3) return
- setIsGeocoding(true)
- try {
- const res = await fetch(
- `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query.trim())}&limit=1`,
- {
- headers: { "Accept-Language": "en" }
- }
- )
- const data = await res.json()
- if (Array.isArray(data) && data.length > 0) {
- const lat = parseFloat(data[0].lat)
- const lon = parseFloat(data[0].lon)
- setLatitude(lat)
- setLongitude(lon)
- setGeocodedAddress(data[0].display_name)
- toast.success(`Coordinates found: ${lat.toFixed(4)}, ${lon.toFixed(4)}`)
- }
- } catch (e) {
- console.warn("Geocoding failed:", e)
- } finally {
- setIsGeocoding(false)
- }
- }
  
  // Description & Rich Text Editor
  const [description, setDescription] = useState("")
  const descTextareaRef = useRef<HTMLTextAreaElement>(null)
+
+ // Things to Know State
+ const [meetingPoint, setMeetingPoint] = useState("")
+ const [guestRequirements, setGuestRequirements] = useState("")
+ const [whatToBring, setWhatToBring] = useState("")
 
  // Images state — cover is always images[0], gallery is images[1..n]
  const [coverImage, setCoverImage] = useState<string | null>(null)
@@ -367,6 +345,9 @@ export default function NewTourPage() {
  status: targetStatus,
  availability: availabilityJSON,
  tags: tags,
+ meeting_point: meetingPoint.trim() || null,
+ guest_requirements: guestRequirements.trim() || null,
+ what_to_bring: whatToBring.trim() || null,
  latitude: Number(latitude) || -1.2921,
  longitude: Number(longitude) || 36.8219,
  })
@@ -558,43 +539,14 @@ export default function NewTourPage() {
  </div>
 
  <div className="space-y-2">
- <div className="flex items-center justify-between">
- <Label htmlFor="tour-location">Location Name</Label>
- {latitude !== -1.2921 && (
- <span className="text-[11px] text-emerald-400 flex items-center gap-1 font-mono">
- <MapPin className="size-3" /> GPS: {latitude.toFixed(4)}, {longitude.toFixed(4)}
- </span>
- )}
- </div>
- <div className="flex gap-2">
+ <Label htmlFor="tour-location">Location / Area</Label>
  <Input
  id="tour-location"
- placeholder="e.g. Mombasa Old Town, Kenya or Diani Beach"
+ placeholder="e.g. Nairobi, Kenya or Diani Beach"
  value={locationName}
  onChange={(e) => setLocationName(e.target.value)}
- onBlur={() => handleGeocode(locationName)}
  />
- <Button
- type="button"
- variant="outline"
- size="sm"
- onClick={() => handleGeocode(locationName)}
- disabled={isGeocoding || !locationName.trim()}
- className="shrink-0 text-xs"
- >
- {isGeocoding ? (
- <Loader2 className="size-3.5 animate-spin" />
- ) : (
- <MapPin className="size-3.5 mr-1" />
- )}
- {isGeocoding ? "Locating..." : "Locate"}
- </Button>
- </div>
- {geocodedAddress && (
- <p className="text-[11px] text-muted-foreground truncate">
- Found: <span className="text-foreground">{geocodedAddress}</span>
- </p>
- )}
+ <p className="text-xs text-muted-foreground">City or general neighborhood (exact meeting spot is entered under "Things to Know").</p>
  </div>
 
  <div className="space-y-3">
@@ -637,6 +589,7 @@ export default function NewTourPage() {
 
  {/* Step 2: Description */}
  {currentStep === 1 && (
+ <div className="space-y-6">
  <Card className="border-border/40 bg-card shadow-modern">
  <CardHeader>
  <CardTitle className="text-xl">Describe your Experience</CardTitle>
@@ -704,6 +657,60 @@ export default function NewTourPage() {
  </div>
  </CardContent>
  </Card>
+
+ {/* Things to Know Section */}
+ <Card className="border-border/40 bg-card shadow-modern mt-6">
+ <CardHeader>
+ <CardTitle className="text-xl flex items-center gap-2">
+ <ClipboardList className="size-5 text-primary" />
+ Things to Know
+ </CardTitle>
+ <CardDescription>Help guests prepare for this experience by setting clear expectations.</CardDescription>
+ </CardHeader>
+ <CardContent className="space-y-5">
+ <div className="space-y-2">
+ <Label htmlFor="meeting-point" className="text-sm font-semibold flex items-center gap-1.5">
+ <MapPin className="size-4 text-primary" /> Meeting Point
+ </Label>
+ <Input
+ id="meeting-point"
+ placeholder="e.g. We'll meet at the KICC Tower entrance near the fountain"
+ value={meetingPoint}
+ onChange={(e) => setMeetingPoint(e.target.value)}
+ />
+ <p className="text-xs text-muted-foreground">Describe the landmark or exact spot where you will gather.</p>
+ </div>
+
+ <div className="space-y-2">
+ <Label htmlFor="guest-requirements" className="text-sm font-semibold flex items-center gap-1.5">
+ <Info className="size-4 text-primary" /> Guest Requirements
+ </Label>
+ <textarea
+ id="guest-requirements"
+ rows={3}
+ placeholder="e.g. Guests must be 18+. Moderate physical fitness required for walking tours."
+ className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-y"
+ value={guestRequirements}
+ onChange={(e) => setGuestRequirements(e.target.value)}
+ />
+ </div>
+
+ <div className="space-y-2">
+ <Label htmlFor="what-to-bring" className="text-sm font-semibold flex items-center gap-1.5">
+ <ClipboardList className="size-4 text-primary" /> What to Bring
+ </Label>
+ <textarea
+ id="what-to-bring"
+ rows={3}
+ placeholder="e.g. Comfortable walking shoes, sunscreen, water bottle, camera, sunglasses."
+ className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-y"
+ value={whatToBring}
+ onChange={(e) => setWhatToBring(e.target.value)}
+ />
+ </div>
+ </CardContent>
+ </Card>
+ </div>
  )}
 
  {/* Step 3: Images */}
