@@ -2,7 +2,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.8"
 
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -15,27 +14,52 @@ serve(async (req) => {
   }
 
   try {
-    const body = await req.json()
-    const { userId, redirectUrl, action } = body
+    let body: any = {}
+    try {
+      body = await req.json()
+    } catch {
+      body = {}
+    }
+    const { redirectUrl, action } = body
 
     // Initialize Supabase Client
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || ""
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey)
 
+    // Allow user identification via body or Authorization bearer token
+    let userId = body.userId
+    if (!userId) {
+      const authHeader = req.headers.get("Authorization")
+      if (authHeader) {
+        try {
+          const token = authHeader.replace("Bearer ", "")
+          const { data: { user } } = await supabaseClient.auth.getUser(token)
+          if (user?.id) userId = user.id
+        } catch (e) {
+          console.warn("Could not extract user from token:", e)
+        }
+      }
+    }
+
     const diditApiKey = Deno.env.get("DIDIT_API_KEY")
+    const diditWorkflowId = Deno.env.get("DIDIT_WORKFLOW_ID") || "8857b669-bf52-4189-a61a-6da932ed20a0"
+
     if (!diditApiKey) {
       console.error("DIDIT_API_KEY is not configured in Supabase Edge Function secrets")
-      return new Response(JSON.stringify({ error: "Server configuration error" }), {
-        status: 500,
+      return new Response(JSON.stringify({
+        error: "Didit API Key is not configured in Supabase secrets. Please set DIDIT_API_KEY in the Supabase Dashboard, or continue with manual review.",
+        code: "DIDIT_NOT_CONFIGURED"
+      }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       })
     }
 
     if (action === "check-status") {
       if (!userId) {
-        return new Response(JSON.stringify({ error: "userId is required" }), {
-          status: 400,
+        return new Response(JSON.stringify({ error: "userId is required to check verification status." }), {
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         })
       }
@@ -50,7 +74,7 @@ serve(async (req) => {
       if (profileErr) {
         console.error("Database query error:", profileErr)
         return new Response(JSON.stringify({ error: `Database check failed: ${profileErr.message}` }), {
-          status: 500,
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         })
       }
@@ -76,10 +100,17 @@ serve(async (req) => {
       if (!response.ok) {
         const errorText = await response.text()
         console.error("Didit Decision API error:", errorText)
+        let parsedMessage = errorText
+        try {
+          const parsed = JSON.parse(errorText)
+          parsedMessage = parsed.detail || parsed.message || parsed.error || errorText
+        } catch {
+          parsedMessage = errorText
+        }
         return new Response(
-          JSON.stringify({ error: `Didit decision query failed: ${response.statusText} (${errorText})` }),
+          JSON.stringify({ error: `Didit decision query failed: ${parsedMessage}` }),
           {
-            status: 502,
+            status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           }
         )
@@ -168,13 +199,13 @@ serve(async (req) => {
     }
 
     if (!userId) {
-      return new Response(JSON.stringify({ error: "userId is required" }), {
-        status: 400,
+      return new Response(JSON.stringify({ error: "User session required. Please sign in to verify your identity." }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       })
     }
 
-    // Call Didit API to create verification session using the Free KYC workflow_id
+    // Call Didit API to create verification session
     const response = await fetch("https://verification.didit.me/v3/session/", {
       method: "POST",
       headers: {
@@ -182,7 +213,7 @@ serve(async (req) => {
         "x-api-key": diditApiKey,
       },
       body: JSON.stringify({
-        workflow_id: "8857b669-bf52-4189-a61a-6da932ed20a0",
+        workflow_id: diditWorkflowId,
         vendor_data: userId,
         callback: redirectUrl || "https://www.ausaguide.com/onboarding?didit_done=true",
       }),
@@ -191,10 +222,21 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text()
       console.error("Didit API error:", errorText)
+      let parsedMessage = errorText
+      try {
+        const parsed = JSON.parse(errorText)
+        parsedMessage = parsed.detail || parsed.message || parsed.error || errorText
+      } catch {
+        parsedMessage = errorText
+      }
       return new Response(
-        JSON.stringify({ error: `Didit session creation failed: ${response.statusText} (${errorText})` }),
+        JSON.stringify({
+          error: `Didit API error: ${parsedMessage}`,
+          detail: errorText,
+          code: "DIDIT_API_ERROR"
+        }),
         {
-          status: 502,
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       )
@@ -204,8 +246,8 @@ serve(async (req) => {
     const { session_id, url } = data
 
     if (!session_id || !url) {
-      return new Response(JSON.stringify({ error: "Invalid response from Didit" }), {
-        status: 502,
+      return new Response(JSON.stringify({ error: "Invalid response from Didit identity service." }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       })
     }
@@ -222,7 +264,7 @@ serve(async (req) => {
     if (dbError) {
       console.error("Database update error:", dbError)
       return new Response(JSON.stringify({ error: `Database update failed: ${dbError.message || JSON.stringify(dbError)}` }), {
-        status: 500,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       })
     }
@@ -233,8 +275,8 @@ serve(async (req) => {
     })
   } catch (error: any) {
     console.error("Unhandled error:", error)
-    return new Response(JSON.stringify({ error: `Unhandled server error: ${error.message || String(error)}` }), {
-      status: 500,
+    return new Response(JSON.stringify({ error: `Verification service error: ${error.message || String(error)}` }), {
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     })
   }

@@ -64,7 +64,7 @@ function getNavItems(
  { id: "messages", label: "Messages", icon: MessageSquare, href: "/messages", badge: unreadMessages > 0 ? unreadMessages : undefined },
  { id: "tours", label: "My Tours", icon: Map },
  { id: "bookings", label: "Bookings", icon: Calendar, badge: pendingCount > 0 ? pendingCount : undefined },
- { id: "earnings", label: "Earnings", icon: DollarSign, href: "/dashboard/earnings" },
+ { id: "earnings", label: "Earnings", icon: DollarSign, href: "/host/earnings" },
  { id: "journal", label: "Journal", icon: BookOpen, href: "/journal" },
  { id: "reviews", label: "Reviews", icon: Star },
  { id: "settings", label: "Settings", icon: Settings, href: "/settings" },

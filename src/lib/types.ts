@@ -121,6 +121,9 @@ export interface Booking {
  payment_amount?: number | null
  payment_currency?: string
  host_paid?: boolean
+ host_payout_amount?: number | null
+ host_payout_id?: string | null
+ host_payout_at?: string | null
  is_custom?: boolean
  custom_details?: any
  offer_expires_at?: string | null

@@ -485,6 +485,37 @@ function StepProfile({
 }
 
 // ── Step 3.5: Identity Verification (Hosts Only) ──────────────
+async function extractErrorMessage(err: any): Promise<string> {
+  if (!err) return "An unexpected error occurred."
+  if (err?.context) {
+    try {
+      const cloned = typeof err.context.clone === "function" ? err.context.clone() : err.context
+      const body = await cloned.json()
+      if (body?.error) return body.error
+      if (body?.message) return body.message
+      if (body?.detail) return body.detail
+    } catch {
+      try {
+        const text = await err.context.text()
+        if (text) {
+          try {
+            const parsed = JSON.parse(text)
+            if (parsed.error) return parsed.error
+            if (parsed.message) return parsed.message
+            if (parsed.detail) return parsed.detail
+          } catch {
+            return text
+          }
+        }
+      } catch {}
+    }
+  }
+  if (err?.message && err.message !== "Edge Function returned a non-2xx status code") {
+    return err.message
+  }
+  return "Could not connect to identity verification service. Please try again or submit for manual review."
+}
+
 export function StepVerifyID({
   userId,
   hostTier,
@@ -655,6 +686,34 @@ export function StepVerifyID({
     }
   }, [userId])
 
+  async function handleManualReviewFallback() {
+    setLoading(true)
+    try {
+      const { error: updErr } = await supabase
+        .from("profiles")
+        .update({
+          verification_status: "pending_review",
+          status: "pending",
+          onboarding_completed: true,
+          updated_at: new Date().toISOString(),
+        } as any)
+        .eq("id", userId)
+
+      if (updErr) {
+        console.error("Error submitting for manual review:", updErr)
+      }
+
+      toast.info("Your application has been submitted for manual admin review.")
+      localStorage.setItem("user_id", userId)
+      localStorage.setItem("user_role", "traveler")
+      onComplete(false)
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to submit for manual review.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   async function startVerification() {
     setLoading(true)
     setError(null)
@@ -665,8 +724,16 @@ export function StepVerifyID({
         body: { userId, redirectUrl }
       })
 
-      if (functionErr) throw functionErr
-      if (!data?.url) throw new Error("Verification URL was not returned.")
+      if (functionErr) {
+        const msg = await extractErrorMessage(functionErr)
+        throw new Error(msg)
+      }
+      if (data?.error) {
+        throw new Error(data.error)
+      }
+      if (!data?.url) {
+        throw new Error("Verification URL was not returned.")
+      }
 
       setVerificationUrl(data.url)
 
@@ -678,7 +745,8 @@ export function StepVerifyID({
       setLoading(false)
       startPolling()
     } catch (err: any) {
-      setError(err?.message || "Failed to start identity verification. Please try again.")
+      const msg = await extractErrorMessage(err)
+      setError(msg)
       setLoading(false)
     }
   }
@@ -690,7 +758,13 @@ export function StepVerifyID({
       const { data, error: functionErr } = await supabase.functions.invoke("verify-identity", {
         body: { userId, action: "check-status" }
       })
-      if (functionErr) throw functionErr
+      if (functionErr) {
+        const msg = await extractErrorMessage(functionErr)
+        throw new Error(msg)
+      }
+      if (data?.error) {
+        throw new Error(data.error)
+      }
 
       if (data?.verified || data?.status === "approved" || data?.status === "verified") {
         toast.success("Identity verified successfully!")
@@ -706,7 +780,8 @@ export function StepVerifyID({
       }
     } catch (err: any) {
       console.error("Manual status check error:", err)
-      setError(err?.message || "Failed to check status. Please try again.")
+      const msg = await extractErrorMessage(err)
+      setError(msg)
     } finally {
       setLoading(false)
     }
@@ -851,17 +926,45 @@ export function StepVerifyID({
             </>
           ) : (
             <>
-              <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs font-semibold text-red-400 w-full text-center">
+              <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs font-semibold text-red-400 w-full text-center leading-relaxed">
                 {error}
               </div>
+
+              {verificationUrl && (
+                <a
+                  href={verificationUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full text-center py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  Open Verification Page ↗
+                </a>
+              )}
+
               <Button
                 id="onboarding-verify-retry"
                 size="lg"
+                disabled={loading}
                 onClick={startVerification}
-                className="rounded-full bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon hover:bg-carbon-dark text-white border-0 font-bold shadow-lg shadow-[#0D6F73]/30 w-full flex items-center justify-center gap-2"
+                className="rounded-full bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon hover:bg-carbon-dark text-white border-0 font-bold shadow-lg shadow-[#0D6F73]/30 w-full flex items-center justify-center gap-2 cursor-pointer"
               >
-                Retry Verification <RefreshCw className="size-4" />
+                {loading ? <Spinner className="size-4" /> : <>Retry Verification <RefreshCw className="size-4" /></>}
               </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={loading}
+                onClick={handleManualReviewFallback}
+                className="rounded-full border-white/20 text-white/80 hover:text-white hover:bg-white/10 text-xs py-2 w-full flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <UserCheck className="size-3.5 text-emerald-400" />
+                Continue with Manual Review
+              </Button>
+              <p className="text-[11px] text-white/40 text-center">
+                Our admin team will review and approve your application within 24 hours.
+              </p>
             </>
           )}
         </div>

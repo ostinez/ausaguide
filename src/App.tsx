@@ -17,7 +17,7 @@ const CheckoutPage = lazy(() => import("@/pages/checkout"))
 const ConfirmationPage = lazy(() => import("@/pages/confirmation"))
 const AuthPage = lazy(() => import("@/pages/auth"))
 const DashboardPage = lazy(() => import("@/pages/dashboard"))
-const EarningsDashboard = lazy(() => import("@/pages/earnings"))
+const HostEarningsDashboard = lazy(() => import("@/pages/HostEarningsDashboard"))
 
 const Admin2Layout = lazy(() => import("@/components/admin2/Admin2Layout"))
 const Admin2Overview = lazy(() => import("@/pages/admin2/Admin2Overview"))
@@ -138,8 +138,8 @@ export default function App() {
               <Route path="/host/dashboard" element={<HostDashboardPage />} />
               <Route path="/host/bookings" element={<Navigate to="/host-dashboard?tab=bookings" replace />} />
               <Route path="/host/tours" element={<Navigate to="/host-dashboard?tab=tours" replace />} />
-              <Route path="/host/earnings" element={<Navigate to="/dashboard/earnings" replace />} />
-              <Route path="/dashboard/earnings" element={<EarningsDashboard />} />
+              <Route path="/host/earnings" element={<HostEarningsDashboard />} />
+              <Route path="/dashboard/earnings" element={<HostEarningsDashboard />} />
               <Route path="/host/tours/new" element={<NewTourPage />} />
               <Route path="/create-tour" element={<NewTourPage />} />
               <Route path="/host/tours/:id/edit" element={<EditTourPage />} />

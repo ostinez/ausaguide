@@ -1956,7 +1956,7 @@ export default function DashboardPage() {
 
  function handleViewChange(v: string) {
  if (v === "earnings") {
- navigate("/dashboard/earnings")
+ navigate("/host/earnings")
  return
  }
  setView(v)

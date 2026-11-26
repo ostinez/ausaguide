@@ -69,7 +69,12 @@ describe("useMessages Hook", () => {
  })
 
  it("sends message with correct receiver_id", async () => {
- const mockInsert = vi.fn().mockResolvedValue({ error: null })
+ const mockInsert = vi.fn().mockReturnValue({
+   select: vi.fn().mockReturnValue({
+     maybeSingle: vi.fn().mockResolvedValue({ data: { id: "msg-1", message: "Hello Ausaguide!" }, error: null }),
+     single: vi.fn().mockResolvedValue({ data: { id: "msg-1", message: "Hello Ausaguide!" }, error: null }),
+   }),
+ })
  const mockQueryBuilder: any = {
  eq: vi.fn().mockImplementation(() => mockQueryBuilder),
  neq: vi.fn().mockImplementation(() => mockQueryBuilder),

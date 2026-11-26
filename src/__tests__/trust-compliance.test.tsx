@@ -43,7 +43,16 @@ vi.mock("@/lib/supabase", () => {
         updateUser: vi.fn(() => Promise.resolve({ data: {}, error: null })),
         signOut: vi.fn(() => Promise.resolve({ error: null })),
       },
-      from: vi.fn(() => ({
+      from: vi.fn((table?: string) => {
+        if (table === "hosts") {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({ data: null, error: null }),
+            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+          }
+        }
+        return {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({ data: null, error: null }),
@@ -57,7 +66,8 @@ vi.mock("@/lib/supabase", () => {
         }),
         update: vi.fn().mockReturnThis(),
         upsert: vi.fn().mockResolvedValue({ data: null, error: null }),
-      })),
+        }
+      }),
       functions: {
         invoke: vi.fn().mockResolvedValue({
           data: { url: "https://verify.didit.me/session-123" },

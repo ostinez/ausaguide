@@ -140,7 +140,7 @@ export function Navbar() {
       { href: "/dashboard", label: "Dashboard" },
       { href: "/dashboard?tab=tours", label: "Tours" },
       { href: "/dashboard?tab=bookings", label: "Bookings" },
-      { href: "/dashboard/earnings", label: "Earnings" },
+      { href: "/host/earnings", label: "Earnings" },
       { href: "/dashboard?tab=reviews", label: "Reviews" },
     ]
   } else {
