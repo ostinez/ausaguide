@@ -43,13 +43,22 @@ export function TravelerMapDashboard({
   // Categorize active & past bookings
   const upcomingBookings = useMemo(() => {
     return bookings.filter(
-      (b) => (b.status === "confirmed" || b.status === "pending") && !isBefore(parseISO(b.booking_date), today)
+      (b) =>
+        (b.status === "confirmed" ||
+          b.status === "pending" ||
+          b.status === "awaiting_confirmation" ||
+          b.status === "checked_in") &&
+        !isBefore(parseISO(b.booking_date), today)
     )
   }, [bookings, today])
 
   const pastBookings = useMemo(() => {
     return bookings.filter(
-      (b) => b.status === "completed" || isBefore(parseISO(b.booking_date), today)
+      (b) =>
+        b.status === "completed" ||
+        (b.status !== "cancelled" &&
+          b.status !== "declined" &&
+          isBefore(parseISO(b.booking_date), today))
     )
   }, [bookings, today])
 
@@ -73,10 +82,21 @@ export function TravelerMapDashboard({
 
       if (statusFilter === "all") return true
       if (statusFilter === "upcoming") {
-        return (b.status === "confirmed" || b.status === "pending") && !isBefore(parseISO(b.booking_date), today)
+        return (
+          (b.status === "confirmed" ||
+            b.status === "pending" ||
+            b.status === "awaiting_confirmation" ||
+            b.status === "checked_in") &&
+          !isBefore(parseISO(b.booking_date), today)
+        )
       }
       if (statusFilter === "past") {
-        return b.status === "completed" || isBefore(parseISO(b.booking_date), today)
+        return (
+          b.status === "completed" ||
+          (b.status !== "cancelled" &&
+            b.status !== "declined" &&
+            isBefore(parseISO(b.booking_date), today))
+        )
       }
       if (statusFilter === "cancelled") {
         return b.status === "cancelled"

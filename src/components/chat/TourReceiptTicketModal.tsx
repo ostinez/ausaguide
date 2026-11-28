@@ -71,10 +71,16 @@ export function TourReceiptTicketModal({
   const callEndTime = endDate.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
 
   const currency = booking.currency || "KES"
-  const amount = Number(booking.total_price || 0).toLocaleString()
+  const rawAmount = Number(
+    (booking as any).payment_amount ||
+      (booking as any).total_amount ||
+      booking.total_price ||
+      0
+  )
+  const amount = rawAmount.toLocaleString()
   const guestCount = booking.guest_count || 1
-  const traveler = booking.guest_name || travelerName || (isHost ? "Traveler" : "You")
-  const host = hostName || "Ausaguide Host"
+  const traveler = travelerName || booking.traveler_name || booking.guest_name || (isHost ? "Traveler" : "You")
+  const host = hostName || booking.host_name || "Ausaguide Host"
 
   // Detect Payment Method
   const paymentIdStr = (booking.payment_id || "").toLowerCase()

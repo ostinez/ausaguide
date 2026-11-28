@@ -16,6 +16,8 @@ export interface TourBookingInfo {
   payment_status?: string
   payment_id?: string | null
   guest_name?: string | null
+  host_name?: string | null
+  traveler_name?: string | null
   guest_email?: string | null
   guest_phone?: string | null
   notes?: string | null

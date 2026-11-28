@@ -368,7 +368,7 @@ function ProfileSidebar({
         // 2. Load all bookings between the two users
         let bookingQuery = supabase
           .from("bookings")
-          .select("id, status, booking_date, booking_time, total_price, currency, guest_count, guest_name, guest_email, guest_phone, notes, status_history, created_at, tours(id, title, location)")
+          .select("id, host_id, guest_id, status, booking_date, booking_time, total_price, payment_amount, currency, guest_count, guest_name, guest_email, guest_phone, notes, status_history, created_at, tours(id, title, location), guest:profiles!bookings_guest_id_fkey(full_name), host:profiles!bookings_host_id_fkey(full_name)")
 
         if (authUser?.id && userId) {
           bookingQuery = bookingQuery
@@ -387,10 +387,12 @@ function ProfileSidebar({
             booking_date: bData.booking_date,
             booking_time: (bData as any).booking_time,
             guest_count: bData.guest_count || 1,
-            total_price: bData.total_price || 0,
+            total_price: Number((bData as any).payment_amount || bData.total_price || 0),
             currency: bData.currency || "KES",
             status: bData.status || "confirmed",
-            guest_name: bData.guest_name || prof?.full_name,
+            guest_name: (bData as any).guest?.full_name || bData.guest_name || prof?.full_name,
+            traveler_name: (bData as any).guest?.full_name || bData.guest_name || prof?.full_name,
+            host_name: (bData as any).host?.full_name || (isHost ? authUser?.full_name : prof?.full_name),
             guest_email: bData.guest_email,
             guest_phone: bData.guest_phone,
             notes: bData.notes,
@@ -403,7 +405,7 @@ function ProfileSidebar({
         if (activeConversation?.bookingId && !allBookings.some((b) => b.id === activeConversation.bookingId)) {
           const { data: singleB } = await supabase
             .from("bookings")
-            .select("id, status, booking_date, booking_time, total_price, currency, guest_count, guest_name, guest_email, guest_phone, notes, status_history, created_at, tours(id, title, location)")
+            .select("id, host_id, guest_id, status, booking_date, booking_time, total_price, payment_amount, currency, guest_count, guest_name, guest_email, guest_phone, notes, status_history, created_at, tours(id, title, location), guest:profiles!bookings_guest_id_fkey(full_name), host:profiles!bookings_host_id_fkey(full_name)")
             .eq("id", activeConversation.bookingId)
             .maybeSingle()
           if (singleB) {
@@ -414,10 +416,12 @@ function ProfileSidebar({
               booking_date: singleB.booking_date,
               booking_time: (singleB as any).booking_time,
               guest_count: singleB.guest_count || 1,
-              total_price: singleB.total_price || 0,
+              total_price: Number((singleB as any).payment_amount || singleB.total_price || 0),
               currency: singleB.currency || "KES",
               status: singleB.status || "confirmed",
-              guest_name: singleB.guest_name || prof?.full_name,
+              guest_name: (singleB as any).guest?.full_name || singleB.guest_name || prof?.full_name,
+              traveler_name: (singleB as any).guest?.full_name || singleB.guest_name || prof?.full_name,
+              host_name: (singleB as any).host?.full_name || (isHost ? authUser?.full_name : prof?.full_name),
               guest_email: singleB.guest_email,
               guest_phone: singleB.guest_phone,
               notes: singleB.notes,
@@ -1014,11 +1018,22 @@ export default function MessagesPage() {
       try {
         const { data: bData } = await supabase
           .from("bookings")
-          .select("id, status, booking_date, booking_time, total_price, currency, guest_count, guest_name, guest_email, guest_phone, notes, status_history, created_at, payment_id, tours(id, title, location)")
+          .select("id, host_id, guest_id, status, booking_date, booking_time, total_price, payment_amount, currency, guest_count, guest_name, guest_email, guest_phone, notes, status_history, created_at, payment_id, tours(id, title, location), guest:profiles!bookings_guest_id_fkey(full_name), host:profiles!bookings_host_id_fkey(full_name)")
           .eq("id", activeConv.bookingId)
           .maybeSingle()
 
         if (bData) {
+          const resolvedTravelerName =
+            (bData as any).guest?.full_name ||
+            bData.guest_name ||
+            (authUser?.role === "host" ? activeConv.other.full_name : authUser?.full_name) ||
+            "Traveler"
+          const resolvedHostName =
+            (bData as any).host?.full_name ||
+            (authUser?.role === "host" ? authUser?.full_name : activeConv.other.full_name) ||
+            "Ausaguide Host"
+          const resolvedTotalPaid = Number((bData as any).payment_amount || bData.total_price || 0)
+
           setSelectedReceiptBooking({
             id: bData.id,
             tour_id: (bData.tours as any)?.id,
@@ -1026,11 +1041,13 @@ export default function MessagesPage() {
             booking_date: bData.booking_date,
             booking_time: (bData as any).booking_time,
             guest_count: bData.guest_count || 1,
-            total_price: bData.total_price || 0,
+            total_price: resolvedTotalPaid,
             currency: bData.currency || "KES",
             status: bData.status || "confirmed",
             payment_id: (bData as any).payment_id,
-            guest_name: bData.guest_name || activeConv.other.full_name,
+            guest_name: resolvedTravelerName,
+            traveler_name: resolvedTravelerName,
+            host_name: resolvedHostName,
             guest_email: bData.guest_email,
             guest_phone: bData.guest_phone,
             notes: bData.notes,
@@ -1629,8 +1646,17 @@ export default function MessagesPage() {
           isOpen={isReceiptModalOpen}
           onClose={() => setIsReceiptModalOpen(false)}
           booking={selectedReceiptBooking}
-          hostName={activeConv?.other.full_name || "Host"}
-          travelerName={selectedReceiptBooking.guest_name || activeConv?.other.full_name || "Traveler"}
+          hostName={
+            selectedReceiptBooking.host_name ||
+            (authUser?.role === "host" ? authUser.full_name : activeConv?.other.full_name) ||
+            "Ausaguide Host"
+          }
+          travelerName={
+            selectedReceiptBooking.traveler_name ||
+            selectedReceiptBooking.guest_name ||
+            (authUser?.role === "host" ? activeConv?.other.full_name : authUser?.full_name) ||
+            "Traveler"
+          }
           priorityNumber={activeConv ? upcomingTourPriorityMap.get(activeConv.id) : undefined}
           isHost={authUser?.role === "host"}
         />

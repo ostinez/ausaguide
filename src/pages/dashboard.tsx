@@ -1842,6 +1842,7 @@ export default function DashboardPage() {
  const bookings = await fetchBookingsByGuestId(profile.id)
  setTravelerBookings(bookings)
  } catch (err) {
+ console.error("[loadDashboard] Error loading dashboard:", err)
  setError(err instanceof Error ? err.message : "Failed to load dashboard")
  } finally {
  setLoading(false)

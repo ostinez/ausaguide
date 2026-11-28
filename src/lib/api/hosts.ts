@@ -92,7 +92,7 @@ function mapBooking(row: BookingRow & { tour?: TourRow | null }): Booking {
  check_out_date: row.check_out_date,
  guest_count: row.guest_count,
  status: row.status,
- total_price: Number(row.total_price),
+ total_price: Number((row as any).payment_amount || row.total_price || 0),
  stripe_payment_intent_id: row.stripe_payment_intent_id,
  daily_room_url: row.daily_room_url,
  guest_name: row.guest_name,
@@ -271,6 +271,7 @@ export async function fetchBookingsByHostId(hostId: string): Promise<Booking[]> 
 }
 
 export async function fetchBookingsByGuestId(guestId: string): Promise<Booking[]> {
+ try {
  const { data, error } = await supabase
  .from("bookings")
  .select(
@@ -283,10 +284,17 @@ export async function fetchBookingsByGuestId(guestId: string): Promise<Booking[]
  )
  .eq("guest_id", guestId)
  .order("booking_date", { ascending: true })
- .limit(10)
+ .limit(50)
 
- if (error) throw error
+ if (error) {
+ console.error("[fetchBookingsByGuestId] Supabase query error:", error)
+ throw error
+ }
  return (data ?? []).map((row) => mapBooking(row as BookingRow & { tour?: TourRow | null }))
+ } catch (err) {
+ console.error("[fetchBookingsByGuestId] Failed to fetch traveler bookings:", err)
+ throw err
+ }
 }
 
 /* ─────────────────── Admin API ─────────────────── */
