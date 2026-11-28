@@ -399,22 +399,23 @@ function BookingRow({
       const targetPhone = (hostProf as any)?.mpesa_phone || hostProf?.phone || booking.guest_phone
       const targetName = hostProf?.full_name || "Ausaguide Host"
 
-      const { data, error: fnErr } = await supabase.functions.invoke("inta-pay-host", {
+      const totalBookingAmount = Number(booking.payment_amount || booking.total_price || 0)
+      const hostCutAmount = Math.round(totalBookingAmount * 0.80)
+
+      const { data, error: fnErr } = await supabase.functions.invoke("mpesa-b2c-payout", {
         body: {
           booking_id: booking.id,
-          bookingId: booking.id,
           host_id: booking.host_id,
-          hostId: booking.host_id,
-          amount: booking.payment_amount || booking.total_price,
-          account_number: targetPhone,
-          account_name: targetName,
+          amount: hostCutAmount,
+          host_name: targetName,
           phone: targetPhone,
         },
       })
       if (fnErr) throw new Error(fnErr.message || "Payout failed")
-      if (data?.error) throw new Error(data.error)
+      if (data?.error || data?.errorMessage) throw new Error(data.error || data.errorMessage)
       setPayoutDone(true)
-      toast.success("Tour marked complete and host payout initiated!")
+      toast.success("Tour marked complete and M-Pesa payout initiated!")
+      onRefresh?.()
     } catch (err: any) {
       toast.error(err?.message || "Failed to initiate host payout")
     } finally {

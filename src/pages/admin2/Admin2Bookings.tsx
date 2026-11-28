@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
-import { Filter } from "lucide-react"
+import { Filter, Loader2, Zap } from "lucide-react"
 import { SkeletonTable } from "@/components/ui/Skeleton"
+import { toast } from "sonner"
 
 export default function Admin2Bookings() {
  const [bookings, setBookings] = useState<any[]>([])
  const [loading, setLoading] = useState(true)
  const [statusFilter, setStatusFilter] = useState("all")
+ const [forcingId, setForcingId] = useState<string | null>(null)
 
  const fetchBookings = async () => {
  setLoading(true)
@@ -15,6 +17,8 @@ export default function Admin2Bookings() {
  .select(`
  id, 
  status, 
+ host_id,
+ host_paid,
  total_price, 
  created_at, 
  booking_date,
@@ -27,6 +31,28 @@ export default function Admin2Bookings() {
  setBookings(data)
  }
  setLoading(false)
+ }
+
+ const handleForceCompleteAndPayout = async (booking: any) => {
+ if (!confirm(`Force complete booking ${booking.id.slice(0, 8)} and trigger M-Pesa B2C payout?`)) return
+ setForcingId(booking.id)
+ try {
+ const { data, error } = await supabase.functions.invoke("mpesa-b2c-payout", {
+ body: {
+ booking_id: booking.id,
+ host_id: booking.host_id,
+ },
+ })
+ if (error) throw new Error(error.message || "Edge Function failed")
+ if (data?.error || data?.errorMessage) throw new Error(data.error || data.errorMessage)
+ toast.success("Booking force-completed and M-Pesa B2C payout triggered!")
+ fetchBookings()
+ } catch (err: any) {
+ console.error("Force complete & payout failed:", err)
+ toast.error(err?.message || "Failed to force complete & payout")
+ } finally {
+ setForcingId(null)
+ }
  }
 
  useEffect(() => {
@@ -78,12 +104,13 @@ export default function Admin2Bookings() {
  <th className="px-6 py-4 font-semibold">Date</th>
  <th className="px-6 py-4 font-semibold">Amount</th>
  <th className="px-6 py-4 font-semibold">Status</th>
+ <th className="px-6 py-4 font-semibold text-right">Actions</th>
  </tr>
  </thead>
  <tbody className="divide-y divide-white/5">
  {filteredBookings.length === 0 ? (
  <tr>
- <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+ <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
  No bookings found matching the current filter
  </td>
  </tr>
@@ -115,6 +142,21 @@ export default function Admin2Bookings() {
  >
  {booking.status}
  </span>
+ </td>
+ <td className="px-6 py-4 text-right">
+ {!(booking.status === 'completed' && booking.host_paid) ? (
+ <button
+ type="button"
+ onClick={() => handleForceCompleteAndPayout(booking)}
+ disabled={forcingId === booking.id}
+ className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
+ >
+ {forcingId === booking.id ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />}
+ <span>Force Complete & Payout</span>
+ </button>
+ ) : (
+ <span className="text-xs text-emerald-400 font-medium">Paid</span>
+ )}
  </td>
  </tr>
  ))
