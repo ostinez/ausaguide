@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate, Link, useSearchParams } from "react-router-dom"
-import { User, Bell, Lock, Tag, CheckCircle2, Settings, Shield, DollarSign, MapPin, ExternalLink, ArrowLeft } from "lucide-react"
+import { User, Bell, Lock, Tag, CheckCircle2, Settings, Shield, DollarSign, MapPin, ExternalLink, ArrowLeft, BadgeCheck, Upload, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -18,7 +18,6 @@ import { getHostInitials } from "@/lib/tour-utils"
 import Dropzone from "@/components/ui/Dropzone"
 import OtpInput from "@/components/ui/OtpInput"
 import { Switch } from "@/components/ui/switch"
-import { LocationPermissionModal } from "@/components/host/LocationPermissionModal"
 
 const INTEREST_OPTIONS = [
  { value: "food", label: "Food & Drink" },
@@ -43,7 +42,7 @@ export default function SettingsPage() {
  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const queryTab = searchParams.get("tab")
-  const defaultTab = queryTab && ["personal", "interests", "notifications", "privacy", "security", "payout", "tours"].includes(queryTab)
+  const defaultTab = queryTab && ["personal", "interests", "notifications", "privacy", "security", "payout", "tours", "verification"].includes(queryTab)
     ? queryTab
     : (queryTab === "profile" ? "personal" : "personal")
 
@@ -57,6 +56,7 @@ export default function SettingsPage() {
 
   if (role === "host") {
     tabs.push(
+      { id: "verification", label: "Verification", icon: BadgeCheck },
       { id: "payout", label: "Payouts", icon: DollarSign },
       { id: "tours", label: "Tours", icon: MapPin }
     )
@@ -100,10 +100,13 @@ export default function SettingsPage() {
  const [publicProfile, setPublicProfile] = useState(true)
  const [dmPrivacy, setDmPrivacy] = useState<"everyone" | "followers" | "bookings">("everyone")
  const [readReceipts, setReadReceipts] = useState(true)
- const [showLocationModal, setShowLocationModal] = useState(false)
 
  // Verification
  const [isVerified, setIsVerified] = useState(false)
+ const [isVerifiedGuide, setIsVerifiedGuide] = useState(false)
+ const [verificationStatus, setVerificationStatus] = useState<string | null>(null)
+ const [verifyLicenceFile, setVerifyLicenceFile] = useState<File | null>(null)
+ const [applyingForVerification, setApplyingForVerification] = useState(false)
 
  // Payout Settings
  const [payoutMethod, setPayoutMethod] = useState("mpesa")
@@ -314,6 +317,8 @@ export default function SettingsPage() {
  setTwoFactorBackupCodes(p.two_factor_backup_codes ?? [])
  setAvatarUrl(p.avatar_url || null)
 				setIsVerified(!!p.is_verified || ["verified", "approved"].includes((p as any).verification_status))
+				setIsVerifiedGuide(Boolean((p as any).verified_guide))
+				setVerificationStatus((p as any).verification_status || null)
  setTiktok((p as any).tiktok || "")
  setInstagram((p as any).instagram || "")
  setFacebook((p as any).facebook || "")
@@ -454,6 +459,8 @@ export default function SettingsPage() {
  setHostType(p.host_type || "")
  setAvatarUrl(p.avatar_url || null)
 				setIsVerified(!!p.is_verified || ["verified", "approved"].includes((p as any).verification_status))
+				setIsVerifiedGuide(Boolean((p as any).verified_guide))
+				setVerificationStatus((p as any).verification_status || null)
 
  const fields = role === "host" ? ["avatar_url", "bio", "location", "phone", "languages"] : ["avatar_url", "bio", "location"]
  const missing = fields.filter((key) => {
@@ -792,31 +799,6 @@ export default function SettingsPage() {
  </span>
  )}
  </div>
-
- {/* Host Live Location Sharing (Settings -> Privacy) */}
- {role === "host" && (
- <div className="flex items-start justify-between rounded-xl border border-border/50 bg-card shadow-modern px-5 py-4">
- <div>
- <div className="flex items-center gap-2">
- <MapPin className="size-4 text-primary" />
- <p className="text-sm font-semibold text-foreground">Host Live Location Sharing</p>
- </div>
- <p className="text-xs text-muted-foreground mt-1 max-w-md">
- Share your live coordinates so travelers exploring nearby can see your profile on the map and book local experiences with you.
- </p>
- </div>
- <Button
- type="button"
- variant="outline"
- size="sm"
- onClick={() => setShowLocationModal(true)}
- className="rounded-xl border-primary/40 text-primary hover:bg-primary/10 text-xs font-semibold shrink-0 gap-1.5"
- >
- <MapPin className="size-3.5" />
- <span>Update Location</span>
- </Button>
- </div>
- )}
 
  {/* Direct Messaging Permissions */}
  <div className="rounded-xl border border-border/50 bg-card shadow-modern p-5 space-y-3">
@@ -1212,7 +1194,111 @@ export default function SettingsPage() {
  </div>
  )}
 
- {activeTab !== "security" && activeTab !== "tours" && (
+ {activeTab === "verification" && role === "host" && (
+ <div className="space-y-6">
+ <div>
+ <h2 className="text-lg font-bold text-foreground">Verified Guide Badge</h2>
+ <p className="text-xs text-muted-foreground mt-1">
+ Stand out to travelers with a Verified Guide badge on your profile and tours.
+ </p>
+ </div>
+
+ {isVerifiedGuide ? (
+ <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-6 flex items-start gap-4">
+ <BadgeCheck className="size-8 text-emerald-400 shrink-0 mt-0.5" />
+ <div>
+ <h3 className="text-base font-bold text-emerald-300">You are a Verified Guide</h3>
+ <p className="text-xs text-emerald-200/80 mt-1">
+ Your guide credentials have been approved by our team. Your Verified Guide badge is visible on your public host profile and tour listings.
+ </p>
+ </div>
+ </div>
+ ) : verificationStatus === "pending_review" ? (
+ <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-6 flex items-start gap-4">
+ <Clock className="size-8 text-amber-400 shrink-0 mt-0.5" />
+ <div>
+ <h3 className="text-base font-bold text-amber-300">Application Under Review</h3>
+ <p className="text-xs text-amber-200/80 mt-1">
+ We have received your guide licence and our team is reviewing it. You will be notified as soon as your Verified Guide badge is approved.
+ </p>
+ </div>
+ </div>
+ ) : (
+ <div className="rounded-xl border border-border bg-card shadow-modern p-6 space-y-5">
+ <div className="space-y-1.5">
+ <h3 className="text-sm font-semibold text-foreground">Apply for Verified Guide</h3>
+ <p className="text-xs text-muted-foreground leading-relaxed">
+ Upload your official guide licence (e.g., TRA or KPSGA certificate) for manual review. You can continue hosting and publishing tours while your application is reviewed.
+ </p>
+ </div>
+
+ <div className="space-y-2">
+ <Label htmlFor="guide-licence-upload" className="text-xs font-semibold text-foreground">
+ Guide Licence (PDF, JPG, or PNG)
+ </Label>
+ <input
+ id="guide-licence-upload"
+ type="file"
+ accept=".pdf,image/*"
+ onChange={(e) => setVerifyLicenceFile(e.target.files?.[0] || null)}
+ className="block w-full text-xs text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary/15 file:text-primary hover:file:bg-primary/25 cursor-pointer"
+ />
+ {verifyLicenceFile && (
+ <p className="text-xs text-teal">Selected: {verifyLicenceFile.name}</p>
+ )}
+ </div>
+
+ <Button
+ type="button"
+ disabled={applyingForVerification || !verifyLicenceFile || !userId}
+ onClick={async () => {
+ if (!userId || !verifyLicenceFile) return
+ setApplyingForVerification(true)
+ try {
+ const ext = verifyLicenceFile.name.split(".").pop() || "pdf"
+ const filePath = `${userId}/guide-licence-${Date.now()}.${ext}`
+ const { error: uploadError } = await supabase.storage
+ .from("licenses")
+ .upload(filePath, verifyLicenceFile, { upsert: true })
+
+ if (uploadError) throw uploadError
+
+ const { data: publicUrlData } = supabase.storage
+ .from("licenses")
+ .getPublicUrl(filePath)
+
+ const { error: updateErr } = await supabase
+ .from("profiles")
+ .update({
+ verification_status: "pending_review",
+ license_status: "pending",
+ certificate_url: publicUrlData.publicUrl,
+ })
+ .eq("id", userId)
+
+ if (updateErr) throw updateErr
+
+ setVerificationStatus("pending_review")
+ setVerifyLicenceFile(null)
+ toast.success("Verification application submitted! Our team will review your licence shortly.")
+ } catch (err: any) {
+ console.error("Verification application failed:", err)
+ toast.error(err?.message || "Failed to submit verification application.")
+ } finally {
+ setApplyingForVerification(false)
+ }
+ }}
+ className="rounded-full bg-[#0D6F73] hover:bg-[#095457] text-white gap-2"
+ >
+ <Upload className="size-4" />
+ {applyingForVerification ? "Submitting..." : "Submit Application"}
+ </Button>
+ </div>
+ )}
+ </div>
+ )}
+
+ {activeTab !== "security" && activeTab !== "tours" && activeTab !== "verification" && (
  <div className="mt-8 flex items-center gap-3">
  <Button type="submit" className="rounded-full">Save Changes</Button>
  {saved && (
@@ -1224,15 +1310,6 @@ export default function SettingsPage() {
  </div>
  )}
  </form>
-
- <LocationPermissionModal
-   isOpen={showLocationModal}
-   onClose={() => setShowLocationModal(false)}
-   userId={userId || ""}
-   onSuccess={() => {
-     setShowLocationModal(false)
-   }}
- />
  </div>
  </div>
  </div>

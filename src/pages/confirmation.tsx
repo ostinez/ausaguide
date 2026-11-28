@@ -2,7 +2,6 @@ import { useState, useEffect } from "react"
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom"
 import ReviewForm from '@/components/ui/ReviewForm';
 import { createOrGetDailyRoom } from "@/lib/api/daily"
-import { LiveLocationMap } from "@/components/map/LiveLocationMap"
 import { format } from "date-fns"
 import {
  CheckCircle2,
@@ -371,16 +370,14 @@ export default function ConfirmationPage() {
       </div>
       )}
 
-        {/* Live Location Map for In-Person Tours */}
-        {tour && !isVirtual && (
-          <div className="mt-4">
-            <LiveLocationMap
-              hostId={booking.host_id}
-              hostName={hostName}
-              tourLatitude={Number(tour.latitude || -1.2863)}
-              tourLongitude={Number(tour.longitude || 36.8172)}
-              tourTitle={tour.title}
-            />
+        {/* Meeting Point for In-Person Tours */}
+        {tour && !isVirtual && tour.meeting_point && (
+          <div className="mt-4 rounded-2xl border border-primary/20 bg-card p-4 space-y-1">
+            <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+              <MapPin className="size-3.5 text-primary" />
+              Meeting Point
+            </p>
+            <p className="text-sm text-foreground font-medium">{tour.meeting_point}</p>
           </div>
         )}
 

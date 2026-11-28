@@ -45,6 +45,5 @@ export const HOW_IT_WORKS_STEPS = [
 
 export const NAV_LINKS = [
  { href: "/tours", label: "Explore Tours" },
- { href: "/map", label: "Map" },
  { href: "/help", label: "Help" },
 ]

@@ -25,7 +25,7 @@ export default function Admin2Verifications() {
  const { data, error } = await supabase
  .from("profiles")
  .select("*")
- .or("role.in.(host,pending_guide),host_type.not.is.null,host_tier.not.is.null,requested_tier.not.is.null,license_status.eq.pending")
+ .or("role.in.(host,pending_guide),host_type.not.is.null,host_tier.not.is.null,requested_tier.not.is.null,license_status.eq.pending,verification_status.eq.pending_review")
  .order("created_at", { ascending: false })
  
  if (!error && data) {
@@ -321,6 +321,7 @@ export default function Admin2Verifications() {
   )
 
   const isPendingCertifiedGuide = (p: any) => {
+    if (p.verification_status === "pending_review" && !p.verified_guide) return true
     if (isLocalHost(p)) return false
     return Boolean(
       (p.role === "pending_guide" || p.license_status === "pending" || p.requested_tier === "certified_guide" || p.host_tier === "certified_guide" || p.host_type === "guide") &&
@@ -362,7 +363,7 @@ export default function Admin2Verifications() {
  activeTab === 'approved' ? "bg-green-500/10 border-green-500/20 text-green-400" : "text-gray-400 hover:text-white"
  )}
  >
- Approved Guides ({profiles.filter(p => p.verified_guide === true && p.host_tier === 'certified_guide').length})
+ Approved Guides ({profiles.filter(p => p.verified_guide === true).length})
  </button>
  <button
  onClick={() => setActiveTab('all')}
@@ -425,12 +426,12 @@ export default function Admin2Verifications() {
  )}
  </td>
  <td className="px-6 py-4">
- {user.verified_guide === true && user.host_tier === 'certified_guide' ? (
+ {user.verified_guide === true ? (
  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-500/10 border border-green-500/20 text-green-400 rounded-full text-xs font-semibold">
  <CheckCircle2 className="size-3" />
- <span>Certified Guide</span>
+ <span>Verified Guide</span>
  </span>
- ) : user.license_status === 'pending' ? (
+ ) : (user.license_status === 'pending' || user.verification_status === 'pending_review') ? (
  <span className="inline-flex items-center px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-full text-xs font-semibold">
  Pending Review
  </span>
@@ -451,7 +452,7 @@ export default function Admin2Verifications() {
  History
  </button>
  
- {user.license_status === 'pending' && (
+ {(user.license_status === 'pending' || user.verification_status === 'pending_review') && !user.verified_guide && (
  <>
  <a 
  href="https://verify.tra.go.ke" 
@@ -479,7 +480,7 @@ export default function Admin2Verifications() {
  </>
  )}
 
- {user.verified_guide === true && user.host_tier === 'certified_guide' && (
+ {user.verified_guide === true && (
  <button
  onClick={() => setRevokingHost(user)}
  disabled={actionLoading === user.id}

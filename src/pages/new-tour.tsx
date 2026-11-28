@@ -61,7 +61,6 @@ export default function NewTourPage() {
  const [submitting, setSubmitting] = useState(false)
   const [checkingHostStatus, setCheckingHostStatus] = useState(true)
   const [isVerifiedHost, setIsVerifiedHost] = useState(false)
-  const [isLocalHostUser, setIsLocalHostUser] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -90,10 +89,6 @@ export default function NewTourPage() {
             prof.requested_tier === "local" ||
             (!prof.verified_guide && prof.role !== "pending_guide" && prof.requested_tier !== "certified_guide" && !prof.tra_number)
           )
-          setIsLocalHostUser(isLocal)
-          if (isLocal) {
-            setTourType("virtual")
-          }
 
           // TASK 1: If local host and verification_status is "verified" (e.g. from Didit), allow publishing
           const isVerified = Boolean(
@@ -238,51 +233,27 @@ export default function NewTourPage() {
       return
     }
 
-    if (isLocalHostUser && tourType !== "virtual") {
-      toast.error("Local hosts are restricted to Virtual Experiences only. Physical tours require Certified Guide status.")
-      return
-    }
-
-    // Fresh verification validation from database to prevent false publish blocks
+    // Fresh authorization validation from database
     let isAuthorizedToPublish = isVerifiedHost
     if (targetStatus === "published" && !isAuthorizedToPublish && hostId) {
       try {
         const { data: freshProf } = await supabase
           .from("profiles")
-          .select("id, role, status, verification_status, is_verified, verified_guide, license_status, host_type, host_tier, requested_tier")
+          .select("id, role, status")
           .eq("id", hostId)
           .maybeSingle()
 
-        if (freshProf) {
-          const isFreshLocal = Boolean(
-            freshProf.host_type === "local" ||
-            freshProf.host_type === "local_host" ||
-            freshProf.host_tier === "local_host" ||
-            freshProf.requested_tier === "local" ||
-            isLocalHostUser
-          )
-          if (
-            freshProf.role === "admin" ||
-            freshProf.role === "host" ||
-            freshProf.verification_status === "verified" ||
-            freshProf.verification_status === "approved" ||
-            freshProf.is_verified === true ||
-            freshProf.status === "active" ||
-            freshProf.verified_guide === true ||
-            freshProf.license_status === "approved" ||
-            (isFreshLocal && (freshProf.verification_status === "verified" || freshProf.is_verified === true || freshProf.status === "active" || freshProf.role === "host"))
-          ) {
-            isAuthorizedToPublish = true
-            setIsVerifiedHost(true)
-          }
+        if (freshProf && (freshProf.role === "admin" || freshProf.role === "host" || freshProf.status === "active")) {
+          isAuthorizedToPublish = true
+          setIsVerifiedHost(true)
         }
       } catch (err) {
-        console.warn("Fresh verification check error:", err)
+        console.warn("Fresh profile check error:", err)
       }
     }
 
     if (!isAuthorizedToPublish && targetStatus === "published") {
-      toast.error("You must be a verified host to publish tours. Please complete identity verification first.")
+      toast.error("You must be signed in as a host to publish tours.")
       return
     }
 
@@ -331,7 +302,7 @@ export default function NewTourPage() {
  host_id: hostId,
  title: title.trim(),
  description: description.trim(),
-      price: isLocalHostUser || tourType === "virtual" ? (Number(virtualPrice) || 0) : (Number(physicalPrice) || 0),
+      price: tourType === "virtual" ? (Number(virtualPrice) || 0) : (Number(physicalPrice) || 0),
  physical_price: Number(physicalPrice) || 0,
  virtual_price: Number(virtualPrice) || 0,
  currency,
@@ -513,15 +484,14 @@ export default function NewTourPage() {
  <SelectValue placeholder="Select Type" />
  </SelectTrigger>
  <SelectContent>
-                  {!isLocalHostUser && (
-                    <SelectItem value="in_person">Physical / In-Person Experience</SelectItem>
-                  )}
+                  <SelectItem value="in_person">Physical / In-Person Experience</SelectItem>
                   <SelectItem value="virtual">Virtual / Live Video</SelectItem>
  </SelectContent>
  </Select>
-              {isLocalHostUser && (
-                <p className="text-[11px] text-teal-400/90 mt-1">
-                  Local hosts are authorized for Virtual / Live Video experiences only.
+              {tourType === "in_person" && (
+                <p className="text-[11px] text-amber-400/90 mt-1.5 flex items-start gap-1">
+                  <Info className="size-3.5 shrink-0 mt-0.5" />
+                  <span>We encourage hosts to hold a valid local tourism permit to avoid disturbance from local authorities during physical tours.</span>
                 </p>
               )}
  </div>
@@ -778,17 +748,17 @@ export default function NewTourPage() {
           <div className="rounded-xl border border-[#0D6F73]/30 bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon/5 p-4 space-y-3">
             <h3 className="font-semibold text-sm flex items-center gap-2 text-foreground">
               <TrendingUp className="size-4 text-[#0D6F73]" />
-              {isLocalHostUser
+              {tourType === "virtual"
                 ? "Market Pricing Benchmarks — Virtual Experiences (Kenya)"
                 : "Market Pricing Benchmarks — In-Person Tours (Kenya)"}
             </h3>
             <p className="text-xs text-muted-foreground">
-              {isLocalHostUser
+              {tourType === "virtual"
                 ? "See what hosts charge for virtual and live video experiences. Price competitively to attract global travelers."
-                : "See what licensed guides charge for in-person tours and safaris. Price competitively without undervaluing your time."}
+                : "See what guides charge for in-person tours and safaris. Price competitively without undervaluing your time."}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {(isLocalHostUser
+              {(tourType === "virtual"
                 ? [
                     { platform: "Virtual City Walks", type: "Live streaming & Q&A", low: "KSh 1,000", high: "KSh 2,500", avg: "KSh 1,750", color: "#FF5A5F" },
                     { platform: "Cultural Masterclasses", type: "Cooking, craft & storytelling", low: "KSh 1,500", high: "KSh 3,500", avg: "KSh 2,500", color: "#FF8000" },
@@ -833,7 +803,6 @@ export default function NewTourPage() {
  </Select>
  </div>
 
-{!isLocalHostUser && (
  <div className="space-y-2">
  <Label htmlFor="tour-physical-price">Physical Price (In-Person)</Label>
  <div className="relative">
@@ -845,13 +814,14 @@ export default function NewTourPage() {
  value={physicalPrice}
  onChange={(e) => {
  setPhysicalPrice(e.target.value)
- setPrice(e.target.value)
+ if (tourType !== "virtual") {
+   setPrice(e.target.value)
+ }
  }}
  className="pl-9"
  />
  </div>
  </div>
-)}
 
  <div className="space-y-2">
  <Label htmlFor="tour-virtual-price">Virtual Price (Virtual Live)</Label>
@@ -864,7 +834,7 @@ export default function NewTourPage() {
  value={virtualPrice}
                   onChange={(e) => {
                     setVirtualPrice(e.target.value)
-                    if (isLocalHostUser || tourType === "virtual") {
+                    if (tourType === "virtual") {
                       setPrice(e.target.value)
                     }
                   }}

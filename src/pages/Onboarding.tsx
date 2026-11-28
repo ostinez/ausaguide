@@ -10,25 +10,19 @@ import { supabase } from "@/lib/supabase"
 import { validateName, validateUsername } from "@/lib/validation"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import { sendGuideApplicationNotification } from "@/lib/api/emails"
 import { OnboardingInterests } from "@/components/auth/OnboardingInterests"
-import { LocationPermissionModal } from "@/components/host/LocationPermissionModal"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { 
  Loader2, 
  Sparkles, 
- Shield, 
  ShieldCheck,
  UserCheck, 
  RefreshCw, 
  Search, 
  Compass, 
  Home, 
- Award, 
  ArrowRight,
  PartyPopper,
- Check,
- FileCheck
+ Check
 } from "lucide-react"
 
 
@@ -232,6 +226,7 @@ function StepProfile({
 }) {
   const [name, setName] = useState("")
   const [username, setUsername] = useState("")
+  const [location, setLocation] = useState("")
   const [communityBio, setCommunityBio] = useState("")
   const [email, setEmail] = useState("")
   const [userId, setUserId] = useState(propUserId)
@@ -255,6 +250,7 @@ function StepProfile({
           if (profile) {
             setName(profile.full_name || user.user_metadata?.full_name || "")
             setUsername(profile.username || user.user_metadata?.username || "")
+            setLocation(profile.location || "")
             setCommunityBio(profile.bio || "")
           } else {
             setName(user.user_metadata?.full_name || "")
@@ -334,8 +330,15 @@ function StepProfile({
         id: effectiveUserId,
         full_name: name.trim(),
         username: username.trim().toLowerCase(),
+        location: location.trim() || null,
         languages: role === "host" ? ["English", "Swahili"] : ["English"],
         bio: role === "host" ? communityBio.trim() : null,
+      }
+      if (role === "host") {
+        profilePayload.status = "active"
+        profilePayload.onboarding_completed = true
+        profilePayload.host_tier = "local_host"
+        profilePayload.host_type = "local_host"
       }
       if (effectiveEmail) {
         profilePayload.email = effectiveEmail
@@ -368,8 +371,9 @@ function StepProfile({
               user_id: effectiveUserId,
               full_name: name.trim(),
               email: effectiveEmail,
-              city: "Nairobi",
+              city: location.trim() || "Nairobi",
               host_type: "local_host",
+              status: "approved",
               bio: communityBio.trim() || "New host registered on Ausaguide.",
             },
             { onConflict: "user_id" }
@@ -452,19 +456,34 @@ function StepProfile({
         </div>
 
         {role === "host" && (
-          <div className="space-y-1.5">
-            <Label htmlFor="onboarding-bio" className="text-xs font-semibold text-foreground">
-              About Your Tours & Local Passion <span className="text-destructive">*</span>
-            </Label>
-            <textarea
-              id="onboarding-bio"
-              rows={3}
-              placeholder="Tell travelers what makes your experiences special..."
-              value={communityBio}
-              onChange={(e) => setCommunityBio(e.target.value)}
-              className="w-full rounded-xl border border-border/80 bg-background p-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
+          <>
+            <div className="space-y-1.5">
+              <Label htmlFor="onboarding-location" className="text-xs font-semibold text-foreground">
+                Location / City
+              </Label>
+              <Input
+                id="onboarding-location"
+                type="text"
+                placeholder="e.g. Diani Beach, Kwale County"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                className="border-border/80 text-foreground placeholder:text-muted-foreground/50 text-sm"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="onboarding-bio" className="text-xs font-semibold text-foreground">
+                About Your Tours & Local Passion <span className="text-destructive">*</span>
+              </Label>
+              <textarea
+                id="onboarding-bio"
+                rows={3}
+                placeholder="Tell travelers what makes your experiences special..."
+                value={communityBio}
+                onChange={(e) => setCommunityBio(e.target.value)}
+                className="w-full rounded-xl border border-border/80 bg-background p-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+          </>
         )}
 
         <div className="pt-2">
@@ -1027,7 +1046,7 @@ export function StepVerifyID({
     </div>
   )
 }
-function StepDone({ name, role, hostTier }: { name: string; role: Role; hostTier?: string | null }) {
+function StepDone({ name, role }: { name: string; role: Role }) {
  const navigate = useNavigate()
  const particles = useConfetti(true)
  const [navigating, setNavigating] = useState(false)
@@ -1087,9 +1106,7 @@ function StepDone({ name, role, hostTier }: { name: string; role: Role; hostTier
  </h2>
  <p className="text-sm text-white/60 max-w-md mx-auto leading-relaxed">
  {role === "host"
- ? hostTier === "certified_guide"
- ? "Your Certified Guide application is under review. You can start hosting now as a Local Host. Once approved, you'll be upgraded to a Certified Guide with a blue Verified Guide badge."
- : "Your host profile is being reviewed. You can start exploring tours in the meantime."
+ ? "Your host account is active! You can start creating and publishing tours right away. Want a Verified Guide badge? Apply anytime in Settings."
  : "Your adventure starts now. Discover authentic local experiences in Kenya."}
  </p>
  </motion.div>
@@ -1152,259 +1169,6 @@ function StepDone({ name, role, hostTier }: { name: string; role: Role; hostTier
 
 
 
-// ── Step: Host Tier & Verification ──────────────────
-function StepHostTier({
- userId,
- userEmail,
- userName,
- onComplete,
-}: {
- userId: string
- userEmail: string
- userName: string
- onComplete: (tier: "certified_guide" | "local_host" | "security") => void
-}) {
- const [tier, setTier] = useState<"certified_guide" | "local_host" | "security" | null>(null)
- const [traNumber, setTraNumber] = useState("")
- const [kpsga, setKpsga] = useState("")
- const [licenseExpiry, setLicenseExpiry] = useState("")
- const [licenseFile, setLicenseFile] = useState<File | null>(null)
- const [agreed, setAgreed] = useState(false)
- const [uploading, setUploading] = useState(false)
- const [uploadProgressMsg, setUploadProgressMsg] = useState("")
- const fileRef = useRef<HTMLInputElement>(null)
-
- const handleContinue = async () => {
- if (!tier) return
-
- if (tier === "certified_guide") {
- // Validate Guide fields
- if (!traNumber.trim() || !licenseFile || !agreed) {
- toast.error("Please complete all required fields and wait for the file to upload.")
- return
- }
-
- setUploading(true)
- setUploadProgressMsg("Uploading your file... Please wait.")
- try {
- // Upload certificate to Supabase Storage
- const ext = licenseFile.name.split(".").pop()
- const path = `${userId}/cert-${Date.now()}.${ext}`
- const { error: upErr } = await supabase.storage.from("licenses").upload(path, licenseFile)
- if (upErr) throw upErr
- const { data: { publicUrl } } = supabase.storage.from("licenses").getPublicUrl(path)
-
- // Save to profile
- const updateData: any = {
- tra_number: traNumber.trim(),
- kpsga_number: kpsga.trim() || null,
- certificate_url: publicUrl,
- verified_guide: false,
- rejected_as_guide: false,
- license_status: "pending",
- host_tier: "certified_guide",
-          host_type: "certified_guide",
-          requested_tier: "certified_guide",
- }
- if (licenseExpiry) updateData.license_expiry = licenseExpiry
-
- const { error: updateErr } = await supabase
- .from("profiles")
- .update(updateData)
- .eq("id", userId)
- if (updateErr) throw updateErr
-
- // Create Admin Notification (In-App)
- try {
- const { data: admins } = await supabase
- .from("profiles")
- .select("id")
- .eq("role", "admin")
- if (admins && admins.length > 0) {
- const notificationsToInsert = admins.map((admin) => ({
- user_id: admin.id,
- message: `New Certified Guide Application from ${userName} (TRA: ${traNumber})`,
- type: "guide_application",
- read: false,
- }))
- await supabase.from("notifications").insert(notificationsToInsert)
- }
- } catch (notifErr) {
- console.error("Failed to create admin in-app notification:", notifErr)
- }
-
- // Notify admin via Email
- sendGuideApplicationNotification(
- "ausaguides@gmail.com",
- userName,
- userEmail,
- traNumber.trim(),
- kpsga.trim() || null,
- publicUrl
- ).catch(console.error)
-
- toast.success("Your Certified Guide application has been submitted for review. You can now start hosting as a Local Host.")
- onComplete(tier)
- } catch (err: any) {
- console.error(err)
- toast.error("Please complete all required fields and wait for the file to upload.")
- } finally {
- setUploading(false)
- setUploadProgressMsg("")
- }
- } else {
- // Local Host chosen
- setUploading(true)
- try {
- const { error } = await supabase
- .from("profiles")
- .update({
- host_tier: "local_host",
- verified_guide: false,
- } as any)
- .eq("id", userId)
- if (error) error
-
- toast.success("Host tier updated successfully.")
- onComplete(tier)
- } catch (err: any) {
- console.error(err)
- toast.error("Failed to update host tier.")
- } finally {
- setUploading(false)
- }
- }
- }
-
- return (
- <div className="flex flex-col gap-6 py-4 w-full">
- <div className="text-center space-y-2">
- <Award className="size-12 mx-auto text-[#FFD700] animate-bounce" />
- <h2 className="text-2xl font-black text-white">What kind of host are you?</h2>
- <p className="text-sm text-white/60">This helps travelers find the right experience for them.</p>
- </div>
-
-   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-  {([
-  { value: "local_host" as const, label: "Local Host", desc: "Passionate local sharing culture, hidden gems, and stories. Instant approval after Didit ID.", color: "border-teal-500", icon: <Home className="size-8 text-teal-400 mb-2" /> },
-  { value: "certified_guide" as const, label: "Certified Guide", desc: "Licensed guide holding a government TRA/KPSGA license. Requires admin review.", color: "border-[#0D6F73]", icon: <Award className="size-8 text-[#0D6F73] mb-2" /> },
-  { value: "security" as const, label: "Security Escort", desc: "Certified security & VIP protection personnel. Requires verified credentials.", color: "border-amber-500", icon: <Shield className="size-8 text-amber-400 mb-2" /> },
-  ]).map(({ value, label, desc, color, icon }) => (
- <button
- key={value}
- type="button"
- onClick={() => setTier(value)}
- className={`rounded-2xl border-2 p-5 text-left transition-all duration-200 ${
- tier === value ? `${color} bg-card shadow-modern` : "border-white/10 bg-card shadow-modern hover:border-white/20"
- }`}
- >
- {icon}
- <p className="font-bold text-white text-base">{label}</p>
- <p className="text-xs text-white/50 mt-1 leading-relaxed">{desc}</p>
- </button>
- ))}
- </div>
-
- {tier === "certified_guide" && (
- <div className="space-y-4 animate-in fade-in duration-300">
- <div className="space-y-1.5">
- <Label htmlFor="tra-number" className="text-white/85 text-xs font-semibold">TRA Number (required)</Label>
- <Input
- id="tra-number"
- type="text"
- placeholder="Tourism Regulatory Authority license number"
- value={traNumber}
- onChange={(e) => setTraNumber(e.target.value)}
- className="border-white/20 bg-card shadow-modern text-white placeholder:text-white/30 h-10 text-xs rounded-xl"
- required
- />
- </div>
-
- <div className="space-y-1.5">
- <Label htmlFor="kpsga-number" className="text-white/85 text-xs font-semibold">KPSGA Number (optional)</Label>
- <Input
- id="kpsga-number"
- type="text"
- placeholder="Kenya Professional Safari Guides Association number"
- value={kpsga}
- onChange={(e) => setKpsga(e.target.value)}
- className="border-white/20 bg-card shadow-modern text-white placeholder:text-white/30 h-10 text-xs rounded-xl"
- />
- </div>
-
- <div className="space-y-1.5">
- <Label htmlFor="license-expiry" className="text-white/85 text-xs font-semibold">License Expiry Date (optional)</Label>
- <Input
- id="license-expiry"
- type="date"
- value={licenseExpiry}
- onChange={(e) => setLicenseExpiry(e.target.value)}
- className="border-white/20 bg-card shadow-modern text-white placeholder:text-white/30 h-10 text-xs rounded-xl scheme-dark"
- />
- </div>
-
- <div className="space-y-2">
- <Label className="text-white/85 text-xs font-semibold">Upload your tour guide license / certification (required)</Label>
- <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden"
- onChange={e => { if (e.target.files?.[0]) setLicenseFile(e.target.files[0]); e.target.value = "" }} />
- <button
- type="button"
- onClick={() => fileRef.current?.click()}
- className="w-full py-3 rounded-xl border border-dashed border-[#0D6F73]/40 text-sm text-[#a78bfa] hover:border-[#0D6F73] hover:bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon/5 transition-colors"
- >
- <span className="flex items-center justify-center gap-2">
- {licenseFile ? (
- <>
- <FileCheck className="size-4 text-[#0D6F73]" /> {licenseFile.name}
- </>
- ) : (
- "Click to upload license / certificate"
- )}
- </span>
- </button>
- <p className="text-[11px] text-white/30">PDF or image (JPG/PNG). This will be reviewed by our team.</p>
- </div>
-
- <label className="flex items-start gap-3 cursor-pointer group pt-2 select-none">
- <div
- onClick={() => setAgreed(!agreed)}
- className={cn(
- "mt-0.5 size-5 shrink-0 rounded border-2 flex items-center justify-center transition-all",
- agreed ? "bg-carbon-dark shadow-modern-glow border border-brand text-brand hover:bg-carbon border-[#0D6F73]" : "border-white/20 hover:border-[#0D6F73]/50"
- )}
- >
- {agreed && <Check className="size-3 text-white" />}
- </div>
- <p className="text-xs text-white/60 leading-relaxed">
- I confirm that the information provided is accurate and I am a licensed tour guide under Kenyan law. I understand that providing false information may result in account suspension.
- </p>
- </label>
- </div>
- )}
-
- <Button
- size="lg"
- disabled={!tier || uploading}
- onClick={handleContinue}
- className="w-full rounded-full bg-gradient-to-r from-[#0D6F73] to-[#0D6F73] hover:opacity-90 text-white border-0 font-bold shadow-lg shadow-[#0D6F73]/30 transition-all duration-300 flex items-center justify-center gap-2"
- >
- {uploading ? (
- <>
- <Loader2 className="size-4 animate-spin mr-2" />
- {uploadProgressMsg || "Processing..."}
- </>
- ) : (
- <>
- Continue
- <ArrowRight className="size-4" />
- </>
- )}
- </Button>
- </div>
- )
-}
-
-// ── Main page ──────────────────────────────────────────
 export default function OnboardingPage() {
  const navigate = useNavigate()
  const [step, setStep] = useState(0)
@@ -1488,17 +1252,8 @@ export default function OnboardingPage() {
 
         if (isHostOnboarded && !isDoneRedirect) {
           localStorage.setItem("user_id", user.id)
-          const isLocalHost = profile.host_tier === "local_host" || profile.host_type === "local_host" || profile.host_type === "local" || (!profile.tra_number && profile.license_status !== "pending");
-          const isVerifiedLocal = isLocalHost && (profile.status === "active" || profile.verification_status === "verified" || profile.verification_status === "approved" || profile.is_verified);
-          const isApprovedGuide = Boolean(profile.verified_guide || profile.license_status === "approved");
-
-          if (isVerifiedLocal || isApprovedGuide) {
-            localStorage.setItem("user_role", "host")
-            navigate("/host-dashboard", { replace: true })
-          } else if (profile.host_tier === "certified_guide" || profile.host_type === "security" || profile.role === "pending_guide" || profile.license_status === "pending") {
-            localStorage.setItem("user_role", "traveler")
-            navigate("/pending-verification", { replace: true })
-          }
+          localStorage.setItem("user_role", "host")
+          navigate("/host-dashboard", { replace: true })
           return
         }
 
@@ -1521,10 +1276,7 @@ export default function OnboardingPage() {
  }, [navigate])
 
 
- const [hostTierSelected, setHostTierSelected] = useState<"certified_guide" | "local_host" | "security" | null>(null)
-  const [showVerifiedModal, setShowVerifiedModal] = useState(false)
-  const [showLocationModal, setShowLocationModal] = useState(false)
- const [userEmail, setUserEmail] = useState("")
+ const [, setUserEmail] = useState("")
 
  // Load email for guide notification
  useEffect(() => {
@@ -1551,18 +1303,7 @@ export default function OnboardingPage() {
       tip: "Profiles with a verified bio and avatar receive 3x more bookings.",
     },
     ...(role === "host"
-      ? [
-          {
-            label: "Host Type",
-            title: "Guide Credentials",
-            tip: "Certified guides earn up to 40% higher booking revenue.",
-          },
-          {
-            label: "Verify ID",
-            title: "Identity Verification",
-            tip: "Government ID verification unlocks the trusted Host badge.",
-          },
-        ]
+      ? []
       : [
           {
             label: "Interests",
@@ -1614,35 +1355,9 @@ export default function OnboardingPage() {
  {role === "host" ? (
  <>
  {step === 3 && (
- <StepHostTier
- userId={userId}
- userEmail={userEmail}
- userName={completedName || "Guide"}
- onComplete={(tier) => {
-  setHostTierSelected(tier)
-  setStep(4)
- }}
- />
- )}
- {step === 4 && (
- <StepVerifyID
- userId={userId}
- hostTier={hostTierSelected}
- onComplete={(isApprovedLocalHost) => {
-  if (isApprovedLocalHost) {
-  setShowVerifiedModal(true)
-  setStep(5)
-  } else {
-  navigate("/pending-verification", { replace: true })
-  }
- }}
- />
- )}
- {step === 5 && (
  <StepDone
  name={completedName || "Explorer"}
  role={role}
- hostTier={hostTierSelected}
  />
  )}
  </>
@@ -1707,49 +1422,6 @@ export default function OnboardingPage() {
  </Stepper>
  </div>
  </div>
-
- {/* Account Verified Modal for Local Hosts */}
- <Dialog open={showVerifiedModal} onOpenChange={setShowVerifiedModal}>
- <DialogContent className="max-w-md bg-[#0c1a19] border border-[#235E5D]/50 text-white rounded-3xl p-6 sm:p-8 text-center shadow-2xl">
- <DialogHeader className="items-center text-center">
- <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl bg-[#0D6F73]/20 border border-[#0D6F73]/40 shadow-lg shadow-[#0D6F73]/20">
- <Shield className="size-8 text-[#0D6F73]" />
- </div>
- <DialogTitle className="text-2xl font-black tracking-tight text-white text-center">
- Your account is verified! Welcome to Ausaguide.
- </DialogTitle>
- <DialogDescription className="text-sm text-gray-300 mt-2 text-center leading-relaxed">
- Your identity has been verified and your host account is now active. You're ready to share your world.
- </DialogDescription>
- </DialogHeader>
- <div className="mt-6">
- <Button
- id="verified-modal-go-dashboard"
- size="lg"
- onClick={() => {
-  setShowVerifiedModal(false)
-  setShowLocationModal(true)
- }}
- className="w-full rounded-xl bg-gradient-to-r from-[#0D6F73] to-[#10b981] hover:from-[#0a585b] hover:to-[#059669] text-white font-bold py-3 shadow-lg shadow-[#0D6F73]/30 cursor-pointer flex items-center justify-center gap-2"
- >
- Continue to Location Setup <ArrowRight className="size-4" />
- </Button>
- </div>
- </DialogContent>
- </Dialog>
-
- <LocationPermissionModal
-   isOpen={showLocationModal}
-   onClose={() => {
-     setShowLocationModal(false)
-     navigate("/host-dashboard", { replace: true })
-   }}
-   userId={userId}
-   onSuccess={() => {
-     setShowLocationModal(false)
-     navigate("/host-dashboard", { replace: true })
-   }}
- />
  </div>
  )
 }

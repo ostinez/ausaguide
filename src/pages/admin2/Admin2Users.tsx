@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
-import { Search, Loader2, Award, Home, Shield } from "lucide-react"
+import { Search, Loader2, Award, Home, Shield, BadgeCheck } from "lucide-react"
 import { SkeletonTable } from "@/components/ui/Skeleton"
 import { toast } from "sonner"
 
@@ -14,7 +14,7 @@ export default function Admin2Users() {
     setLoading(true)
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, email, full_name, role, host_tier, host_type, requested_tier, verification_status, status, created_at")
+      .select("id, email, full_name, role, host_tier, host_type, requested_tier, verification_status, verified_guide, status, created_at")
       .order("created_at", { ascending: false })
     
     if (!error && data) {
@@ -65,6 +65,32 @@ export default function Admin2Users() {
     } catch (error: any) {
       console.error("Failed to update role:", error)
       toast.error(`Failed to update user role: ${error.message}`)
+    }
+    setUpdatingId(null)
+  }
+
+  const handleToggleVerifiedGuide = async (user: any) => {
+    const nextVerified = !user.verified_guide
+    setUpdatingId(user.id)
+    try {
+      const updates: Record<string, any> = {
+        verified_guide: nextVerified,
+        is_verified: nextVerified,
+        verification_status: nextVerified ? "verified" : "unverified",
+        license_status: nextVerified ? "approved" : null,
+      }
+      const { error } = await supabase
+        .from("profiles")
+        .update(updates)
+        .eq("id", user.id)
+
+      if (error) throw error
+
+      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, ...updates } : u))
+      toast.success(nextVerified ? `${user.full_name || "Host"} is now a Verified Guide!` : `Verified Guide badge removed for ${user.full_name || "host"}.`)
+    } catch (error: any) {
+      console.error("Failed to toggle verified guide:", error)
+      toast.error(`Failed to update verification: ${error.message}`)
     }
     setUpdatingId(null)
   }
@@ -141,6 +167,7 @@ export default function Admin2Users() {
                 <tr>
                   <th className="px-6 py-4 font-semibold">User</th>
                   <th className="px-6 py-4 font-semibold">Requested Tier</th>
+                  <th className="px-6 py-4 font-semibold">Verified Guide</th>
                   <th className="px-6 py-4 font-semibold">Sign Up Date</th>
                   <th className="px-6 py-4 font-semibold w-52">Role Override</th>
                 </tr>
@@ -148,7 +175,7 @@ export default function Admin2Users() {
               <tbody className="divide-y divide-white/5">
                 {filteredUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
                       No users found matching "{search}"
                     </td>
                   </tr>
@@ -168,6 +195,25 @@ export default function Admin2Users() {
                       </td>
                       <td className="px-6 py-4">
                         {renderTierBadge(user)}
+                      </td>
+                      <td className="px-6 py-4">
+                        {user.role === "host" || user.role === "pending_guide" ? (
+                          <button
+                            type="button"
+                            onClick={() => handleToggleVerifiedGuide(user)}
+                            disabled={updatingId === user.id}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-colors cursor-pointer disabled:opacity-50 ${
+                              user.verified_guide
+                                ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25"
+                                : "bg-white/5 text-gray-400 border-white/10 hover:bg-white/10 hover:text-white"
+                            }`}
+                          >
+                            <BadgeCheck className={`size-3.5 ${user.verified_guide ? "text-emerald-400" : "text-gray-500"}`} />
+                            <span>{user.verified_guide ? "Verified" : "Verify"}</span>
+                          </button>
+                        ) : (
+                          <span className="text-gray-600 text-xs">—</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-gray-400 whitespace-nowrap text-xs">
                         {new Date(user.created_at).toLocaleDateString(undefined, {

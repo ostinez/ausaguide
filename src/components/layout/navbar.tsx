@@ -124,7 +124,6 @@ export function Navbar() {
       { href: "/waitlist", label: "Waitlist" },
       { href: "/tree-planting", label: "Tree Planting" },
       { href: "/mental-health", label: "Mental Health" },
-      { href: "/map", label: "Map" },
       { href: "/help", label: "Help" },
     ]
   } else if (userRole === "admin") {

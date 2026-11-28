@@ -44,7 +44,6 @@ const WishlistPage = lazy(() => import("@/pages/wishlist"))
 const SettingsPage = lazy(() => import("@/pages/settings"))
 const MessagesPage = lazy(() => import("@/pages/messages"))
 const ExplorePage = lazy(() => import("@/pages/Explore"))
-const MapPage = lazy(() => import("@/pages/map"))
 const TreePlantingPage = lazy(() => import("@/pages/TreePlanting"))
 const TreePlantedPage = lazy(() => import("@/pages/TreePlanted"))
 const MentalHealthPage = lazy(() => import("@/pages/MentalHealth"))
@@ -165,7 +164,6 @@ export default function App() {
             <Route path="/about" element={<AboutPage />} />
             <Route path="/founder" element={<FounderPage />} />
             <Route path="/help" element={<HelpPage />} />
-            <Route path="/map" element={<MapPage />} />
             <Route path="/host-waitlist" element={<HostWaitlistPage />} />
             <Route path="/waitlist" element={<WaitlistPage />} />
             <Route path="/email-preferences" element={<EmailPreferencesPage />} />

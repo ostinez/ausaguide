@@ -55,7 +55,6 @@ import { createOrGetDailyRoom } from "@/lib/api/daily"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import { LocationToggle } from "@/components/host/LocationToggle"
 import { GlassmorphismSidebar } from "@/components/ui/GlassmorphismSidebar"
 import { BorderGlow } from "@/components/ui/BorderGlow"
 import { usePlatform } from "@/hooks/use-platform"
@@ -2085,10 +2084,6 @@ export default function DashboardPage() {
  navigate(`/messages?userId=${travelerId}`)
  }}
  />
-
- {hostProfile && (
- <LocationToggle userId={hostProfile.id} className="animate-in slide-in-from-right duration-500" />
- )}
 
  {/* Top Card: Total Balance (Host Earnings) */}
  <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-teal-900 via-teal-950 to-zinc-950 p-6 sm:p-8 text-white shadow-xl border border-teal-500/30">

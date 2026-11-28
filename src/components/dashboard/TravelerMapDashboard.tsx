@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import type { Booking } from "@/lib/types"
-import { TravelerBookingsMap } from "./TravelerBookingsMap"
 import { CancelledBookingAlert } from "./CancelledBookingAlert"
 import ReviewForm from "@/components/ui/ReviewForm"
 import { Link } from "react-router-dom"
@@ -320,14 +319,60 @@ export function TravelerMapDashboard({
           )}
         </div>
 
-        {/* RIGHT COLUMN: DARK INTERACTIVE MAP (7 COLS) */}
-        <div className="lg:col-span-7 order-1 lg:order-2 sticky top-6">
-          <TravelerBookingsMap
-            bookings={bookings}
-            selectedBookingId={selectedBookingId}
-            onSelectBooking={(id) => setSelectedBookingId(id)}
-            className="h-[480px] lg:h-[680px] w-full rounded-2xl overflow-hidden border border-border/50 shadow-modern"
-          />
+        {/* RIGHT COLUMN: BOOKING SUMMARY CARDS (7 COLS) */}
+        <div className="lg:col-span-7 order-1 lg:order-2 space-y-3">
+          {filteredBookings.length === 0 ? (
+            <Card className="border-border/50 bg-card shadow-sm">
+              <CardContent className="p-8 text-center text-sm text-muted-foreground">
+                Select a booking from the list to view details, or explore new tours.
+              </CardContent>
+            </Card>
+          ) : (
+            filteredBookings.map((booking) => {
+              const tour = booking.tour
+              const meetingPoint = tour?.meeting_point || "Confirmed upon booking"
+              return (
+                <Card
+                  key={booking.id}
+                  onClick={() => setSelectedBookingId(booking.id)}
+                  className={`border-border/50 bg-card shadow-sm transition-colors cursor-pointer ${
+                    selectedBookingId === booking.id ? "border-primary/60 ring-1 ring-primary/30" : "hover:border-primary/30"
+                  }`}
+                >
+                  <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-semibold text-sm text-foreground truncate">
+                          {tour?.title || "Booked Tour"}
+                        </h4>
+                        <Badge variant="outline" className="text-[10px] capitalize">
+                          {booking.status.replace("_", " ")}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                        <MapPin className="size-3.5 text-primary shrink-0" />
+                        <span className="truncate">{meetingPoint}</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                        <Calendar className="size-3.5 text-primary shrink-0" />
+                        <span>
+                          {booking.booking_date}
+                          {booking.booking_time ? ` · ${booking.booking_time.substring(0, 5)}` : ""}
+                        </span>
+                      </p>
+                    </div>
+                    {tour?.id && (
+                      <Link to={`/tours/${tour.id}`} onClick={(e) => e.stopPropagation()}>
+                        <Button size="sm" variant="outline" className="rounded-full text-xs shrink-0">
+                          View Tour <ExternalLink className="size-3 ml-1" />
+                        </Button>
+                      </Link>
+                    )}
+                  </CardContent>
+                </Card>
+              )
+            })
+          )}
         </div>
       </div>
     </div>

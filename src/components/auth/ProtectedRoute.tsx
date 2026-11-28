@@ -60,15 +60,6 @@ export function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) 
   profile?.host_type === "local"
  )
 
- const isCertifiedGuide = Boolean(
-  profile?.host_tier === "certified_guide" ||
-  profile?.host_type === "certified_guide" ||
-  profile?.host_type === "guide" ||
-  Boolean(profile?.tra_number) ||
-  profile?.license_status === "pending" ||
-  profile?.license_status === "approved"
- )
-
  // Check if user has applied as a Host/Guide
  // Verified guide/host:
  // 1. Certified Guides who have verified_guide === true or license_status === 'approved'
@@ -120,18 +111,8 @@ export function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) 
   )
  )
 
- // Pending Host/Guide: ONLY certified guides awaiting admin review of their license,
- // or accounts explicitly marked as pending_guide. Active/local hosts are NOT pending.
- const isPending = Boolean(
-  !isAdmin &&
-  !isVerifiedHost &&
-  profile?.role !== "host" &&
-  !hasHostRecord &&
-  (
-   profile?.role === "pending_guide" ||
-   (isCertifiedGuide && (profile?.license_status === "pending" || profile?.status === "pending"))
-  )
- )
+ // Pending Host/Guide: Only accounts explicitly blocked/pending before onboarding
+ const isPending = false
 
  let role: "admin" | "host" | "traveler" = "traveler"
  if (isAdmin) {
